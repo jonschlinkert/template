@@ -1,0 +1,39 @@
+{
+  "name": "template",
+  "description": "Utils for processing Lo-dash templates.",
+  "version": "0.1.0",
+  "homepage": "https://github.com/jonschlinkert/template",
+  "author": {
+    "name": "Jon Schlinkert",
+    "url": "https://github.com/jonschlinkert"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jonschlinkert/template.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jonschlinkert/template/issues"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/jonschlinkert/template/blob/master/LICENSE-MIT"
+    }
+  ],
+  "main": "index.js",
+  "engines": {
+    "node": ">= 0.8.0"
+  },
+  "dependencies": {
+    "fs-utils": "~0.1.9",
+    "lodash": "~2.4.1"
+  },
+  "devDependencies": {
+    "mocha": "~1.17.0",
+    "chai": "~1.8.1"
+  },
+  "keywords": [
+    "lodash",
+    "templates"
+  ]
+}

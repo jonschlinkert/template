@@ -15,53 +15,51 @@ var delim = require('delims');
 
 var template = module.exports = {};
 
+// Defaults passed to 'delim'
+var defaults = {body: '', beginning: '', end: '', flags: 'g'};
+
 // Process templates
-var template = function(content, data, options) {
+var template = function(text, data, options) {
   data = Object.create(data || {});
 
   // Delimiter options
-  var defaults = {body: '', beginning: '', end: '', flags: 'g'};
   var opts = _.extend({}, defaults, options);
-
-  // Template settings
-  var settings = _.extend({variable: opts.namespace || ''}, opts.settings);
-
-  // Store the original content
-  var original = content;
+  var settings = {variable: opts.namespace || ''};
+  var original = text;
 
   // Process templates recursively until no more templates are found
-  if(opts.delims) {
+  if (opts.delims) {
     settings = _.extend(settings, delim(opts.delims, opts));
-    while (content.indexOf(opts.delims[0]) >= 0) {
-      content = _.template(content, data, settings);
-      if (content === original) { break; }
+    while (text.indexOf(opts.delims[0]) >= 0) {
+      text = _.template(text, data, delim(opts.delims, opts));
+      if (text === original) {break;}
     }
   } else {
     // If no custom delimiters are provided, use the defaults.
-    while (content.indexOf('${') >= 0 || content.indexOf('%>') >= 0) {
-      content = _.template(content, data, settings);
-      if (content === original) { break; }
+    while (text.indexOf('${') >= 0 || text.indexOf('%>') >= 0) {
+      text = _.template(text, data, settings);
+      if (text === original) {break;}
     }
   }
-  return content;
+  return text;
 };
 
 
 // Read files and process any templates therein
-template.process = function(src, data, options) {
-  var content = file.readFileSync(src);
-  return template(content, data, options);
+template.read = function(text, data, options) {
+  text = file.readFileSync(text);
+  return template(text, data, options);
 };
 
 
 // Copy files and process any templates therein
-template.copy = function (src, dest, options) {
+template.copy = function (text, dest, data, options) {
   var opts = _.extend({}, {process: true}, options || {});
-  src = file.readFileSync(src);
+  text = file.readFileSync(text);
   if(opts.process === true) {
-    src = template(src, opts.data, opts);
+    text = template(text, data, opts);
   }
-  file.writeFileSync(dest, src, opts);
+  file.writeFileSync(dest, text, opts);
 };
 
 module.exports = template;

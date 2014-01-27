@@ -1,6 +1,6 @@
 # template [![NPM version](https://badge.fury.io/js/template.png)](http://badge.fury.io/js/template)
 
-> A simple to use Lo-Dash template processing library
+> A simple to use [Lo-Dash template](http://lodash.com/docs#template) processing library
 
 
 ## Quickstart
@@ -11,37 +11,79 @@ Install with [npm](npmjs.org):
 npm i template --save
 ```
 
+## Methods
 
-## Usage
+### template
+
+By default the `template()` method expects the following parameters:
 
 ```js
-template.process(String, {Context}, {Options});
+template(text, data, [options])
 ```
+
+For example, the following:
 
 ```js
 var template = require('template');
-var foo = fs.readFileSync('foo.txt', 'utf8');
 
-var data = {
-  one: "baz",
-  two: function(val) {
-    return val || 'nada!';
-  }
-};
+template('Name: <%= name %>', {name: 'Jon'});
+```
+results in:
 
-template.process(foo, data, {delims: ['{%', '%}']});
+```
+Name: Jon
 ```
 
-## String patterns
-Will evaluate and process the following patterns:
+### template.read
+
+To read a file from the file system before processing, use `template.read`:
 
 ```js
-// Variables
+template.read('file.md', data, options);
+```
+
+### template.copy
+
+A convenience method for synchronously copying files from A to B.
+
+```js
+template.copy(src, dest, data, options);
+```
+
+Pass `{process: false}` to the options disable template processing.
+
+
+## Options
+
+### custom delimiters
+All of the options from the [delims](https://github.com/jonschlinkert/delims) library may be passed to the options object.
+
+For example, this:
+
+```js
+template('Hi, my name is {%= name %}', {name: 'Jon Schlinkert'}, {delims: ['{%', '%}']});
+```
+
+Results in:
+
+```
+Hi, my name is Jon Schlinkert
+```
+
+
+## Valid templates
+Any of the following expressions may be used in templates:
+
+```js
+// Strings
+"foo"
+
+// Property strings
 foo
 foo.bar
 foo.bar.baz
 
-// Functions, as properties on the data object
+// Method calls, passed as properties on the data object
 one()
 two.three()
 
@@ -50,13 +92,6 @@ _.foo()
 _.foo(bar)
 _.foo("baz")
 ```
-
-## Options
-
-
-
-### delimiters
-All of the options from the [delims](https://github.com/jonschlinkert/delims) library may be passed to the options object.
 
 
 ## Authors

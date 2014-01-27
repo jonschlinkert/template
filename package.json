@@ -1,6 +1,6 @@
 {
   "name": "template",
-  "description": "Utility library for processing Lo-dash templates.",
+  "description": "An easy-to-use utility library for processing Lo-dash templates.",
   "version": "0.1.0",
   "homepage": "https://github.com/jonschlinkert/template",
   "author": {

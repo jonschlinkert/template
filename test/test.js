@@ -1,13 +1,3 @@
-/**
- * Assemble
- *
- * Assemble <http://assemble.io>
- * Created and maintained by Jon Schlinkert and Brian Woodward
- *
- * Copyright (c) 2014 Upstage.
- * Licensed under the MIT License (MIT).
- */
-
 /*
  * template
  * https://github.com/jonschlinkert/template
@@ -32,7 +22,6 @@ var template = require('../index.js');
 var fixture = function(template) {
   return file.readFileSync(path.join(__dirname, 'fixtures', template));
 };
-
 
 describe('process templates using _.template:', function () {
   it('should process a template with default delimiters.', function () {
@@ -84,6 +73,13 @@ describe('process templates:', function () {
     expect(actual).to.eql(expected);
   });
 
+  it('should process a template with a string.', function () {
+    var tmpl = '<%= "STRING" %>';
+    var actual = template(tmpl);
+    var expected = 'STRING';
+    expect(actual).to.eql(expected);
+  });
+
   it('should process a template with default delimiters with no space.', function () {
     var tmpl = fixture('default-delims-no-space.tmpl');
     var actual = template(tmpl, data);
@@ -98,10 +94,31 @@ describe('process templates:', function () {
     expect(actual).to.eql(expected);
   });
 
+  it('should process a template with custom delimiters, but not es6 and default delims.', function () {
+    var tmpl = fixture('custom-delims-only.tmpl');
+    var actual = template(tmpl, data, {delims: ['{%', '%}']});
+    var expected = '${ name }\n<%= name %>\nJon';
+    expect(actual).to.eql(expected);
+  });
+
   it('should process a template with es6 delimiters.', function () {
     var tmpl = fixture('es6-delims.tmpl');
     var actual = template(tmpl, data);
     var expected = 'Jon';
+    expect(actual).to.eql(expected);
+  });
+
+  it('should process a templates using Lo-Dash defaults, including es6 delimiters.', function () {
+    var tmpl = fixture('es6-and-default.tmpl');
+    var actual = template(tmpl, data);
+    var expected = 'Jon\nJon\n{%= name %}';
+    expect(actual).to.eql(expected);
+  });
+
+  it('should process templates in a string using Lo-Dash defaults.', function () {
+    var tmpl = '<%= first %> ${ last }';
+    var actual = template(tmpl, {first: 'Jon', last: 'Schlinkert'});
+    var expected = 'Jon Schlinkert';
     expect(actual).to.eql(expected);
   });
 
@@ -126,7 +143,14 @@ describe('process templates:', function () {
     expect(actual).to.eql(expected);
   });
 
-  it('should use the "evaluate" delimater to generate HTML.', function () {
+  it('should use the "evaluate" delimiter to generate HTML.', function () {
+    var list = '<% _.forEach(people, function(name) { %><li><%- name %></li><% }); %>';
+    var actual = _.template(list, { 'people': ['Jon', 'Brian'] }, {delims: ['{%', '%}']});
+    var expected = '<li>Jon</li><li>Brian</li>';
+    expect(actual).to.eql(expected);
+  });
+
+  it('should use the "evaluate" delimiter to generate HTML.', function () {
     var list = '<% _.forEach(people, function(name) { %><li><%- name %></li><% }); %>';
     var actual = _.template(list, { 'people': ['Jon', 'Brian'] });
     var expected = '<li>Jon</li><li>Brian</li>';

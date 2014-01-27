@@ -27,7 +27,7 @@ var template = function(text, data, options) {
   var settings = {variable: opts.namespace || ''};
   var original = text;
 
-  // Process templates recursively until no more templates are found
+  // Look for templates to process until no more can be found
   if (opts.delims) {
     settings = _.extend(settings, delim(opts.delims, opts));
     while (text.indexOf(opts.delims[0]) >= 0) {

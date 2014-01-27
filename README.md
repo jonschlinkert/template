@@ -1,7 +1,6 @@
 # template [![NPM version](https://badge.fury.io/js/template.png)](http://badge.fury.io/js/template)
 
-> A simple to use [Lo-Dash template](http://lodash.com/docs#template) processing library
-
+> An easy-to-use [Lo-Dash template](http://lodash.com/docs#template) processing library.
 
 ## Quickstart
 

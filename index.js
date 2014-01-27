@@ -11,59 +11,57 @@
 // node_modules
 var _ = require('lodash');
 var file = require('fs-utils');
+var delim = require('delims');
 
 var template = module.exports = {};
 
-// Escape custom template delimiters
-var escapeDelim = function(re) {
-  return re.replace(/(.)/g, '\\$1');
-};
-
-template.setDelimiters = function (delims, expression) {
-  // Generate RegExp patterns dynamically.
-  var open = escapeDelim(delims[0]);
-  expression = expression || '([\\s\\S]+?)';
-  var close = escapeDelim(delims[1]);
-  return {
-    evaluate: new RegExp(open + expression + close, 'g'),
-    interpolate: new RegExp(open + '=' + expression + close, 'g'),
-    escape: new RegExp(open + '-' + expression + close, 'g')
-  };
-};
-
 // Process templates
-template.process = function(content, options) {
-  var defaults = {process: true, data: {}};
-  var opts = _.extend(defaults, options);
-  var settings = _.extend({variable: opts.namespace || ''});
+var template = function(content, data, options) {
+  data = Object.create(data || {});
 
-  var last = content;
+  // Delimiter options
+  var defaults = {body: '', beginning: '', end: '', flags: 'g'};
+  var opts = _.extend({}, defaults, options);
+
+  // Template settings
+  var settings = _.extend({variable: opts.namespace || ''}, opts.settings);
+
+  // Store the original content
+  var original = content;
+
+  // Process templates recursively until no more templates are found
   if(opts.delims) {
-    var delims = template.setDelimiters(opts.delims);
-    settings = _.extend(settings, delims);
-    while (content.indexOf(opts.delims[1]) >= 0) {
-      content = _.template(content, opts.data, settings);
-      if (content === last) { break; }
-      last = content;
+    settings = _.extend(settings, delim(opts.delims, opts));
+    while (content.indexOf(opts.delims[0]) >= 0) {
+      content = _.template(content, data, settings);
+      if (content === original) { break; }
     }
   } else {
+    // If no custom delimiters are provided, use the defaults.
     while (content.indexOf('${') >= 0 || content.indexOf('%>') >= 0) {
-      content = _.template(content, opts.data, settings);
-      if (content === last) { break; }
-      last = content;
+      content = _.template(content, data, settings);
+      if (content === original) { break; }
     }
   }
   return content;
 };
 
-// Copy files synchronously and process any templates within
-template.copy = function (src, dest, options) {
-  var defaults = {delims: ['{%', '%}'], process: true, data: {}};
-  var opts = _.extend(defaults, options);
 
+// Read files and process any templates therein
+template.process = function(src, data, options) {
+  var content = file.readFileSync(src);
+  return template(content, data, options);
+};
+
+
+// Copy files and process any templates therein
+template.copy = function (src, dest, options) {
+  var opts = _.extend({}, {process: true}, options || {});
   src = file.readFileSync(src);
   if(opts.process === true) {
-    src = template.process(src, opts);
+    src = template(src, opts.data, opts);
   }
   file.writeFileSync(dest, src, opts);
 };
+
+module.exports = template;

@@ -79,39 +79,53 @@ describe('process templates:', function () {
 
   it('should process a template with default delimiters.', function () {
     var tmpl = fixture('default-delims.tmpl');
-    var actual = template.process(tmpl, {data: data});
+    var actual = template(tmpl, data);
+    var expected = 'Jon';
+    expect(actual).to.eql(expected);
+  });
+
+  it('should process a template with default delimiters with no space.', function () {
+    var tmpl = fixture('default-delims-no-space.tmpl');
+    var actual = template(tmpl, data);
     var expected = 'Jon';
     expect(actual).to.eql(expected);
   });
 
   it('should process a template with custom delimiters.', function () {
     var tmpl = fixture('custom-delims.tmpl');
-    var actual = template.process(tmpl, {data: data, delims: ['{%', '%}']});
+    var actual = template(tmpl, data, {delims: ['{%', '%}']});
     var expected = 'Jon';
     expect(actual).to.eql(expected);
   });
 
   it('should process a template with es6 delimiters.', function () {
     var tmpl = fixture('es6-delims.tmpl');
-    var actual = template.process(tmpl, {data: data});
+    var actual = template(tmpl, data);
     var expected = 'Jon';
     expect(actual).to.eql(expected);
   });
 
   it('should process templates with nested variables.', function () {
-    var tmpl = fixture('variables.tmpl');
-    var actual = template.process(tmpl, {data: data});
+    var tmpl = fixture('nested.tmpl');
+    var actual = template(tmpl, data);
+    var expected = 'Jon\nJon\nJon';
+    expect(actual).to.eql(expected);
+  });
+
+  it('should process templates with a custom variable.', function () {
+    var tmpl = fixture('variable.tmpl');
+    var actual = template(tmpl, data, {namespace: '_cust'});
     var expected = 'Jon\nJon\nJon';
     expect(actual).to.eql(expected);
   });
 
   it('should process a mixin.', function () {
     var tmpl = fixture('mixin-str.tmpl');
-    var actual = template.process(tmpl, {data: data});
+    var actual = template(tmpl, data);
     var expected = 'baz';
     expect(actual).to.eql(expected);
   });
-//
+
   it('should use the "evaluate" delimater to generate HTML.', function () {
     var list = '<% _.forEach(people, function(name) { %><li><%- name %></li><% }); %>';
     var actual = _.template(list, { 'people': ['Jon', 'Brian'] });
@@ -121,21 +135,21 @@ describe('process templates:', function () {
 
   it('should process a mixin\'s default value.', function () {
     var tmpl = fixture('mixin-default.tmpl');
-    var actual = template.process(tmpl, {data: data});
+    var actual = template(tmpl, data);
     var expected = 'DEFAULT!';
     expect(actual).to.eql(expected);
   });
 
   it('should process functions in templates.', function () {
     var tmpl = fixture('functions.tmpl');
-    var actual = template.process(tmpl, {data: data});
+    var actual = template(tmpl, data);
     var expected = 'FUNCTION!\nVAL!\nTHREE!!';
     expect(actual).to.eql(expected);
   });
 
   it('should process functions in templates.', function () {
     var tmpl = fixture('date.tmpl');
-    var actual = template.process(tmpl);
+    var actual = template(tmpl);
     var expected = actual.indexOf('GMT') !== -1;
     expect(expected).to.eql(true);
   });
@@ -143,7 +157,7 @@ describe('process templates:', function () {
   it('should copy a file and process templates.', function () {
     var src  = 'test/fixtures/COPY.tmpl';
     var dest = 'test/actual/COPY.md';
-    template.copy(src, dest, {data: data});
+    template.copy(src, dest, {data: data, delims: ['{%', '%}']});
 
     var expected = file.readFileSync('test/actual/COPY.md');
     expect(expected).to.eql('Jon');

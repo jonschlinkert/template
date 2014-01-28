@@ -19,11 +19,10 @@ _.str = require('underscore.string');
 // Mixin non-conflict methods to `_` namespace
 _.mixin(_.str.exports());
 
+
+
 // Defaults passed to 'delim' lib
 var defaults = {body: '', beginning: '', end: '', flags: 'g'};
-
-
-var template = module.exports = {};
 
 // Process templates
 var template = function(text, data, options) {
@@ -51,7 +50,6 @@ var template = function(text, data, options) {
   }
   return text;
 };
-
 
 // Read files and process any templates therein
 template.read = function(text, data, options) {

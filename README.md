@@ -69,7 +69,6 @@ Results in:
 Hi, my name is Jon Schlinkert
 ```
 
-
 ## Valid templates
 Any of the following expressions may be used in templates:
 
@@ -92,6 +91,13 @@ _.foo(bar)
 _.foo("baz")
 ```
 
+## 3rd Party Libs
+
+**[underscore.string][str]**
+
+All of the methods from [underscore.string][str] are available on the `_.str` object. Additionally, all of the _non-conflicting_ methods are available on the `_` Lo-Dash namespace. See the [underscore.string documentation][str-docs] for more details.
+
+
 ## Authors
 **Jon Schlinkert**
 
@@ -107,3 +113,6 @@ _.foo("baz")
 ## License
 Copyright (c) 2014 [Jon Schlinkert](http://twitter.com/jonschlinkert), [Brian Woodward](http://twitter.com/doowb), contributors.
 Released under the [MIT license](./LICENSE-MIT)
+
+[str]: https://github.com/epeli/underscore.string
+[str-docs]: https://github.com/epeli/underscore.string#nodejs-installation

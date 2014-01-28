@@ -23,21 +23,30 @@ var fixture = function(template) {
   return file.readFileSync(path.join(__dirname, 'fixtures', template));
 };
 
-describe('process templates using _.template:', function () {
-  it('should process a template with default delimiters.', function () {
-    var compiled = _.template('hello <%= name %>');
-    compiled({ 'name': 'fred' });
 
-    var actual = compiled({ 'name': 'fred' });
-    expect(actual).to.eql('hello fred');
+describe('Mixin methods from underscore.string:', function () {
+  it('should slugify the string with _.str namespace', function () {
+    var tmpl = fixture('_str-slugify.tmpl');
+    var actual = template(tmpl);
+    expect(actual).to.eql('this-should-be-slugified');
   });
 
-  it('should process a template with es6 delimiters.', function () {
-    var compiled = _.template('hello ${ name }');
-    compiled({ 'name': 'fred' });
+  it('should slugify the string.', function () {
+    var tmpl = fixture('_slugify.tmpl');
+    var actual = template(tmpl);
+    expect(actual).to.eql('this-should-be-slugified');
+  });
 
-    var actual = compiled({ 'name': 'fred' });
-    expect(actual).to.eql('hello fred');
+  it('should titleize the string with _.str namespace', function () {
+    var tmpl = fixture('_str-titleize.tmpl');
+    var actual = template(tmpl);
+    expect(actual).to.eql('This Should Be Titleized');
+  });
+
+  it('should titleize the string.', function () {
+    var tmpl = fixture('_titleize.tmpl');
+    var actual = template(tmpl);
+    expect(actual).to.eql('This Should Be Titleized');
   });
 });
 
@@ -181,10 +190,29 @@ describe('process templates:', function () {
   it('should copy a file and process templates.', function () {
     var src  = 'test/fixtures/COPY.tmpl';
     var dest = 'test/actual/COPY.md';
-    template.copy(src, dest, {data: data, delims: ['{%', '%}']});
+    template.copy(src, dest, data, {delims: ['{%', '%}']});
 
     var expected = file.readFileSync('test/actual/COPY.md');
     expect(expected).to.eql('Jon');
-    file.delete('test/actual');
+    file.delete('test/actual/COPY.md');
+  });
+});
+
+
+describe('process templates using _.template:', function () {
+  it('should process a template with default delimiters.', function () {
+    var compiled = _.template('hello <%= name %>');
+    compiled({ 'name': 'fred' });
+
+    var actual = compiled({ 'name': 'fred' });
+    expect(actual).to.eql('hello fred');
+  });
+
+  it('should process a template with es6 delimiters.', function () {
+    var compiled = _.template('hello ${ name }');
+    compiled({ 'name': 'fred' });
+
+    var actual = compiled({ 'name': 'fred' });
+    expect(actual).to.eql('hello fred');
   });
 });

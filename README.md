@@ -92,7 +92,6 @@ _.foo(bar)
 _.foo("baz")
 ```
 
-
 ## Authors
 **Jon Schlinkert**
 

@@ -1,7 +1,7 @@
 {
   "name": "template",
   "description": "An easy-to-use utility library for processing Lo-dash templates.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "homepage": "https://github.com/jonschlinkert/template",
   "author": {
     "name": "Jon Schlinkert",
@@ -25,16 +25,18 @@
     "node": ">= 0.8.0"
   },
   "dependencies": {
-    "lodash": "~2.4.1",
     "delims": "~0.1.0",
-    "fs-utils": "~0.1.11"
+    "fs-utils": "~0.1.11",
+    "lodash": "~2.4.1",
+    "underscore.string": "~2.3.3"
   },
   "devDependencies": {
-    "mocha": "~1.17.0",
-    "chai": "~1.8.1"
+    "chai": "~1.8.1",
+    "mocha": "~1.17.0"
   },
   "keywords": [
     "lodash",
+    "template",
     "templates"
   ]
 }

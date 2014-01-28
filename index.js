@@ -13,10 +13,17 @@ var _ = require('lodash');
 var file = require('fs-utils');
 var delim = require('delims');
 
-var template = module.exports = {};
+// Mix in the methods from underscore string
+_.str = require('underscore.string');
 
-// Defaults passed to 'delim'
+// Mixin non-conflict methods to `_` namespace
+_.mixin(_.str.exports());
+
+// Defaults passed to 'delim' lib
 var defaults = {body: '', beginning: '', end: '', flags: 'g'};
+
+
+var template = module.exports = {};
 
 // Process templates
 var template = function(text, data, options) {
@@ -30,6 +37,7 @@ var template = function(text, data, options) {
   // Look for templates to process until no more can be found
   if (opts.delims) {
     settings = _.extend(settings, delim(opts.delims, opts));
+    // Inspired by grunt.template
     while (text.indexOf(opts.delims[0]) >= 0) {
       text = _.template(text, data, delim(opts.delims, opts));
       if (text === original) {break;}

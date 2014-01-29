@@ -30,15 +30,16 @@ var template = function(text, data, options) {
 
   // Delimiter options
   var opts = _.extend({}, defaults, options);
-  var settings = {variable: opts.namespace || ''};
+  var settings = _.extend({variable: opts.namespace}, opts.settings);
   var original = text;
 
   // Look for templates to process until no more can be found
   if (opts.delims) {
+    // Extend settings with custom delimiters
     settings = _.extend(settings, delim(opts.delims, opts));
     // Inspired by grunt.template
     while (text.indexOf(opts.delims[0]) >= 0) {
-      text = _.template(text, data, delim(opts.delims, opts));
+      text = _.template(text, data, settings);
       if (text === original) {break;}
     }
   } else {
@@ -50,6 +51,7 @@ var template = function(text, data, options) {
   }
   return text;
 };
+
 
 // Read files and process any templates therein
 template.read = function(text, data, options) {

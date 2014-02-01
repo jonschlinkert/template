@@ -30,7 +30,7 @@ var template = function(text, data, options) {
 
   // Delimiter options
   var opts = _.extend({}, defaults, options);
-  var settings = _.extend({variable: opts.namespace}, opts.settings);
+  var settings = _.extend({variable: opts.variable}, opts.settings);
   var original = text;
 
   // Look for templates to process until no more can be found

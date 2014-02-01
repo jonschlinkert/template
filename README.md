@@ -53,6 +53,7 @@ Pass `{process: false}` to the options disable template processing.
 
 
 ## Options
+Template supports all [Lo-Dash template](http://lodash.com/docs#template) options, as well as a few extras.
 
 ### custom delimiters
 All of the options from the [delims](https://github.com/jonschlinkert/delims) library may be passed to the options object.

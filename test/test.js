@@ -140,7 +140,7 @@ describe('process templates:', function () {
 
   it('should process templates with a custom variable.', function () {
     var tmpl = fixture('variable.tmpl');
-    var actual = template(tmpl, data, {namespace: '_cust'});
+    var actual = template(tmpl, data, {variable: '_cust'});
     var expected = 'Jon\nJon\nJon';
     expect(actual).to.eql(expected);
   });

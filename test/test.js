@@ -23,7 +23,6 @@ var fixture = function(template) {
   return file.readFileSync(path.join(__dirname, 'fixtures', template));
 };
 
-
 describe('Mixin methods from underscore.string:', function () {
   it('should slugify the string with _.str namespace', function () {
     var tmpl = fixture('_str-slugify.tmpl');
@@ -33,7 +32,7 @@ describe('Mixin methods from underscore.string:', function () {
 
   it('should slugify the string.', function () {
     var tmpl = fixture('_slugify.tmpl');
-    var actual = template(tmpl);
+    var actual = template(tmpl, null, {nonconflict: true});
     expect(actual).to.eql('this-should-be-slugified');
   });
 
@@ -45,7 +44,7 @@ describe('Mixin methods from underscore.string:', function () {
 
   it('should titleize the string.', function () {
     var tmpl = fixture('_titleize.tmpl');
-    var actual = template(tmpl);
+    var actual = template(tmpl, null, {nonconflict: true});
     expect(actual).to.eql('This Should Be Titleized');
   });
 });

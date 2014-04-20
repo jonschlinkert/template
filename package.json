@@ -1,7 +1,7 @@
 {
   "name": "template",
-  "description": "An easy-to-use utility library for processing Lo-dash templates.",
-  "version": "0.1.5",
+  "description": "Process Lo-dash templates recursively.",
+  "version": "0.1.6",
   "homepage": "https://github.com/jonschlinkert/template",
   "author": {
     "name": "Jon Schlinkert",
@@ -25,8 +25,8 @@
     "node": ">= 0.8.0"
   },
   "dependencies": {
-    "delims": "~0.1.0",
-    "fs-utils": "~0.1.11",
+    "delims": "~0.1.2",
+    "fs-utils": "~0.4.0",
     "lodash": "~2.4.1",
     "underscore.string": "~2.3.3"
   },

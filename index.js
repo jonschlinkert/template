@@ -1,21 +1,18 @@
 /*
- * template
- * https://github.com/jonschlinkert/template
+ * template <https://github.com/jonschlinkert/template>
  *
  * Copyright (c) 2014 Jon Schlinkert
  * Licensed under the MIT license.
  */
 
-'use strict';
-
-// node_modules
-var _ = require('lodash');
-var file = require('fs-utils');
-var delim = require('delims');
+const _ = require('lodash');
+const file = require('fs-utils');
+const delim = require('delims');
 
 // Mix in the methods from underscore string
 _.str = require('underscore.string');
-
+_.mixin(_.str.exports());
+_.str.include('Underscore.string', 'string');
 
 // Defaults passed to 'delim' lib
 var defaults = {body: '', beginning: '', end: '', flags: 'g'};

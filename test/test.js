@@ -1,129 +1,213 @@
 /*
- * template
- * https://github.com/jonschlinkert/template
+ * template <https://github.com/jonschlinkert/template>
  *
- * Copyright (c) 2013 Jon Schlinkert
+ * Copyright (c) 2014 Jon Schlinkert
  * Licensed under the MIT license.
  */
-
 'use strict';
 
-
-// Node.js
 var path = require('path');
-
-// node_modules
-var expect = require('chai').expect;
 var file = require('fs-utils');
+var expect = require('chai').expect;
 var _ = require('lodash');
-
-// Local libs
 var template = require('../index.js');
-var fixture = function(template) {
-  return file.readFileSync(path.join(__dirname, 'fixtures', template));
+
+function read(filepath) {
+  return file.readFileSync(filepath);
+}
+
+var data = {
+  name: 'Jon',
+  person: {name: 'Jon', first: {name: 'Jon'} },
+  fn: function(val) {
+    return val || "FUNCTION!";
+  },
+  two: {
+    three: function(val) {
+      return val || "THREE!!";
+    }
+  }
 };
 
-describe('Mixin methods from underscore.string:', function () {
-  it('should slugify the string with _.str namespace', function () {
-    var tmpl = fixture('_str-slugify.tmpl');
-    var actual = template(tmpl);
-    expect(actual).to.eql('this-should-be-slugified');
-  });
+data.lower = function(str) {
+  return str.toLowerCase();
+};
+data.upper = function(str) {
+  return str.toUpperCase();
+};
 
-  it('should slugify the string.', function () {
-    var tmpl = fixture('_slugify.tmpl');
-    var actual = template(tmpl, null, {nonconflict: true});
-    expect(actual).to.eql('this-should-be-slugified');
-  });
+data.include = function (filepath) {
+  return read(filepath);
+};
 
-  it('should titleize the string with _.str namespace', function () {
-    var tmpl = fixture('_str-titleize.tmpl');
-    var actual = template(tmpl);
-    expect(actual).to.eql('This Should Be Titleized');
-  });
-
-  it('should titleize the string.', function () {
-    var tmpl = fixture('_titleize.tmpl');
-    var actual = template(tmpl, null, {nonconflict: true});
-    expect(actual).to.eql('This Should Be Titleized');
-  });
+_.mixin({
+  getVal: function(val) {
+    return val || 'DEFAULT!';
+  },
+  include: function (filepath) {
+    return read(filepath);
+  }
 });
 
-describe('process templates:', function () {
-  var data = {
-    name: 'Jon',
-    person: {
-      name: 'Jon',
-      first: {
-        name: 'Jon'
-      }
-    },
-    fn: function(val) {
-      return val || "FUNCTION!";
-    },
-    two: {
-      three: function(val) {
-        return val || "THREE!!";
-      }
-    }
-  };
 
-  _.mixin({
-    getVal: function(val) {
-      return val || 'DEFAULT!';
-    }
-  });
-
-  it('should process a template with default delimiters.', function () {
-    var tmpl = fixture('default-delims.tmpl');
-    var actual = template(tmpl, data);
-    var expected = 'Jon';
-    expect(actual).to.eql(expected);
-  });
-
-  it('should process a template with a string.', function () {
+describe('when a plain string is passed:', function () {
+  it('should process the template and return the string.', function () {
     var tmpl = '<%= "STRING" %>';
     var actual = template(tmpl);
     var expected = 'STRING';
     expect(actual).to.eql(expected);
   });
+});
 
-  it('should process a template with default delimiters with no space.', function () {
-    var tmpl = fixture('default-delims-no-space.tmpl');
+
+describe('when mixins are mixed into Lo-Dash:', function () {
+  it('should use the mixins in templates.', function () {
+    var tmpl = '<%= _.getVal("baz") %>';
+    var actual = template(tmpl, data);
+    var expected = 'baz';
+    expect(actual).to.eql(expected);
+  });
+
+  it('should use the mixin\'s default value if no arguments are passed.', function () {
+    var tmpl = '<%= _.getVal() %>';
+    var actual = template(tmpl, data);
+    var expected = 'DEFAULT!';
+    expect(actual).to.eql(expected);
+  });
+
+  it('should process templates recursively.', function () {
+    var tmpl = read('test/fixtures/_a.tmpl');
+    var actual = template(tmpl, data);
+    var expected = 'C here!';
+    expect(actual).to.eql(expected);
+  });
+});
+
+
+describe('when functions are passed on the context:', function () {
+  it('should process templates recursively.', function () {
+    var tmpl = read('test/fixtures/a.tmpl');
+    var actual = template(tmpl, data);
+    var expected = 'D here!';
+    expect(actual).to.eql(expected);
+  });
+
+
+  describe('and no value is passed to the template.', function () {
+    it('should use the function\'s default value.', function () {
+      var tmpl = '<%= fn() %>';
+      var actual = template(tmpl, data);
+      var expected = 'FUNCTION!';
+      expect(actual).to.eql(expected);
+    });
+  });
+
+  describe('and a value is passed to the template.', function () {
+    it('should use value that was passed.', function () {
+      var tmpl = '<%= fn("VAL!") %>';
+      var actual = template(tmpl, data);
+      var expected = 'VAL!';
+      expect(actual).to.eql(expected);
+    });
+  });
+
+  describe('and the function is on a nested property.', function () {
+    it('should use the function.', function () {
+      var tmpl = '<%= two.three() %>';
+      var actual = template(tmpl, data);
+      var expected = 'THREE!!';
+      expect(actual).to.eql(expected);
+    });
+  });
+
+  it('should use the function.', function () {
+    var tmpl = '<%= fn() %> <%= fn("VAL!") %> <%= two.three() %>';
+    var actual = template(tmpl, data);
+    var expected = 'FUNCTION! VAL! THREE!!';
+    expect(actual).to.eql(expected);
+  });
+
+  it('should use the function.', function () {
+    var tmpl = '<%= lower("FOO") %>';
+    var actual = template(tmpl, data);
+    expect(actual).to.eql('foo');
+  });
+
+  it('should use the function.', function () {
+    var tmpl = '<%= new Date() %>';
+    var actual = template(tmpl);
+    var expected = actual.indexOf('GMT') !== -1;
+    expect(expected).to.eql(true);
+  });
+});
+
+describe('when functions and mixins are both used in templates:', function () {
+  it('should process templates recursively.', function () {
+    var tmpl = read('test/fixtures/a.tmpl');
+    var actual = template(tmpl, data);
+    var expected = 'D here!';
+    expect(actual).to.eql(expected);
+  });
+});
+
+
+describe('Mixin methods from underscore.string:', function () {
+  it('should slugify the string with _.str namespace', function () {
+    var tmpl = '<%= _.slugify("This should be slugified") %>';
+    var actual = template(tmpl);
+    expect(actual).to.eql('this-should-be-slugified');
+  });
+
+  it('should slugify the string.', function () {
+    var tmpl = '<%= _.slugify("This should be slugified") %>';
+    var actual = template(tmpl, null, {nonconflict: true});
+    expect(actual).to.eql('this-should-be-slugified');
+  });
+
+  it('should titleize the string with _.str namespace', function () {
+    var tmpl = '<%= _.str.titleize("This should be titleized") %>';
+    var actual = template(tmpl);
+    expect(actual).to.eql('This Should Be Titleized');
+  });
+
+  it('should titleize the string.', function () {
+    var tmpl = '<%= _.str.titleize("This should be titleized") %>';
+    var actual = template(tmpl, null, {nonconflict: true});
+    expect(actual).to.eql('This Should Be Titleized');
+  });
+});
+
+
+describe('when default delimiters are used:', function () {
+  it('should process the template.', function () {
+    var tmpl = '<%= name %>';
     var actual = template(tmpl, data);
     var expected = 'Jon';
     expect(actual).to.eql(expected);
   });
 
-  it('should process a template with custom delimiters.', function () {
-    var tmpl = fixture('custom-delims.tmpl');
-    var actual = template(tmpl, data, {delims: ['{%', '%}']});
+  it('should process the template with no spaces.', function () {
+    var tmpl = '<%=name%>';
+    var actual = template(tmpl, data);
     var expected = 'Jon';
-    expect(actual).to.eql(expected);
-  });
-
-  it('should process a template with custom delimiters, but not es6 and default delims.', function () {
-    var tmpl = fixture('custom-delims-only.tmpl');
-    var actual = template(tmpl, data, {delims: ['{%', '%}']});
-    var expected = '${ name }\n<%= name %>\nJon';
     expect(actual).to.eql(expected);
   });
 
   it('should process a template with es6 delimiters.', function () {
-    var tmpl = fixture('es6-delims.tmpl');
+    var tmpl = '${ name }';
     var actual = template(tmpl, data);
     var expected = 'Jon';
     expect(actual).to.eql(expected);
   });
 
-  it('should process a templates using Lo-Dash defaults, including es6 delimiters.', function () {
-    var tmpl = fixture('es6-and-default.tmpl');
+  it('should process default delims and es6 delims.', function () {
+    var tmpl = '${ name } <%= name %> {%= name %}';
     var actual = template(tmpl, data);
-    var expected = 'Jon\nJon\n{%= name %}';
+    var expected = 'Jon Jon {%= name %}';
     expect(actual).to.eql(expected);
   });
 
-  it('should process templates in a string using Lo-Dash defaults.', function () {
+  it('should process default delims and es6 delims.', function () {
     var tmpl = '<%= first %> ${ last }';
     var actual = template(tmpl, {first: 'Jon', last: 'Schlinkert'});
     var expected = 'Jon Schlinkert';
@@ -131,87 +215,76 @@ describe('process templates:', function () {
   });
 
   it('should process templates with nested variables.', function () {
-    var tmpl = fixture('nested.tmpl');
+    var tmpl = '<%= name %> <%= person.name %> <%= person.first.name %>';
     var actual = template(tmpl, data);
-    var expected = 'Jon\nJon\nJon';
+    var expected = 'Jon Jon Jon';
+    expect(actual).to.eql(expected);
+  });
+});
+
+
+
+describe('when custom delimiters are passed as a third arg:', function () {
+  it('should process the template.', function () {
+    var tmpl = '{%= name %}';
+    var actual = template(tmpl, data, {delims: ['{%', '%}']});
+    var expected = 'Jon';
     expect(actual).to.eql(expected);
   });
 
-  it('should process templates with a custom variable.', function () {
-    var tmpl = fixture('variable.tmpl');
-    var actual = template(tmpl, data, {variable: '_cust'});
-    var expected = 'Jon\nJon\nJon';
+  it('should should not process es6 and default delims.', function () {
+    var tmpl = '${ name } <%= name %> {%= name %}';
+    var actual = template(tmpl, data, {delims: ['{%', '%}']});
+    var expected = '${ name } <%= name %> Jon';
     expect(actual).to.eql(expected);
   });
+});
 
-  it('should process a mixin.', function () {
-    var tmpl = fixture('mixin-str.tmpl');
-    var actual = template(tmpl, data);
-    var expected = 'baz';
-    expect(actual).to.eql(expected);
-  });
-
-  it('should use the "evaluate" delimiter to generate HTML.', function () {
+describe('when the evaluate delimiters are used:', function () {
+  it('should generate HTML without escaping it.', function () {
     var list = '<% _.forEach(people, function(name) { %><li><%- name %></li><% }); %>';
     var actual = _.template(list, { 'people': ['Jon', 'Brian'] }, {delims: ['{%', '%}']});
     var expected = '<li>Jon</li><li>Brian</li>';
     expect(actual).to.eql(expected);
   });
 
-  it('should use the "evaluate" delimiter to generate HTML.', function () {
+  it('should generate HTML without escaping it.', function () {
     var list = '<% _.forEach(people, function(name) { %><li><%- name %></li><% }); %>';
     var actual = _.template(list, { 'people': ['Jon', 'Brian'] });
     var expected = '<li>Jon</li><li>Brian</li>';
     expect(actual).to.eql(expected);
   });
+});
 
-  it('should process a mixin\'s default value.', function () {
-    var tmpl = fixture('mixin-default.tmpl');
-    var actual = template(tmpl, data);
-    var expected = 'DEFAULT!';
+
+
+
+
+describe('when the `variable` setting is defined:', function () {
+  it('should process templates with a custom variable.', function () {
+    var tmpl = '<%= _cust.name %> <%= _cust.person.name %> <%= _cust.person.first.name %>';
+    var actual = template(tmpl, data, {variable: '_cust'});
+    var expected = 'Jon Jon Jon';
     expect(actual).to.eql(expected);
-  });
-
-  it('should process functions in templates.', function () {
-    var tmpl = fixture('functions.tmpl');
-    var actual = template(tmpl, data);
-    var expected = 'FUNCTION!\nVAL!\nTHREE!!';
-    expect(actual).to.eql(expected);
-  });
-
-  it('should process functions in templates.', function () {
-    var tmpl = fixture('date.tmpl');
-    var actual = template(tmpl);
-    var expected = actual.indexOf('GMT') !== -1;
-    expect(expected).to.eql(true);
-  });
-
-  it('should copy a file and process templates.', function () {
-    var src  = 'test/fixtures/COPY.tmpl';
-    var dest = 'test/actual/COPY.md';
-    template.copy(src, dest, data, {delims: ['{%', '%}']});
-
-    var expected = file.readFileSync('test/actual/COPY.md');
-    expect(expected).to.eql('Jon');
-    file.delete('test/actual/COPY.md');
   });
 });
 
 
-describe('process templates using _.template:', function () {
-  it('should process a template with default delimiters.', function () {
-    var compiled = _.template('hello <%= name %>');
-    compiled({ 'name': 'fred' });
 
-    var actual = compiled({ 'name': 'fred' });
-    expect(actual).to.eql('hello fred');
+describe('when _.template is used:', function () {
+  it('should process templates with default delimiters.', function () {
+    var compiled = _.template('hello <%= name %>');
+    compiled({ 'name': 'Jon Schlinkert' });
+
+    var actual = compiled({ 'name': 'Jon Schlinkert' });
+    expect(actual).to.eql('hello Jon Schlinkert');
   });
 
-  it('should process a template with es6 delimiters.', function () {
+  it('should process templates with es6 delimiters.', function () {
     var compiled = _.template('hello ${ name }');
-    compiled({ 'name': 'fred' });
+    compiled({ 'name': 'Jon Schlinkert' });
 
-    var actual = compiled({ 'name': 'fred' });
-    expect(actual).to.eql('hello fred');
+    var actual = compiled({ 'name': 'Jon Schlinkert' });
+    expect(actual).to.eql('hello Jon Schlinkert');
   });
 });

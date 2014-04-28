@@ -12,30 +12,25 @@ const delim = require('delims');
 // Mix in the methods from underscore string
 _.str = require('underscore.string');
 _.mixin(_.str.exports());
-_.str.include('Underscore.string', 'string');
 
 // Defaults passed to 'delim' lib
 var defaults = {body: '', beginning: '', end: '', flags: 'g'};
 
 // Process templates
 var template = function(str, data, options) {
+  // Clone the data
   data = _.extend({}, data);
 
   // Delimiter options
-  var opts = _.defaults({}, options, defaults);
-
-  // Mixin non-conflict methods to `_` namespace
-  if(opts.nonconflict && opts.nonconflict === true) {
-    _.mixin(_.str.exports());
-  }
-
-  var settings = _.extend({variable: opts.variable}, opts.settings);
+  var opts = _.extend({}, defaults, options);
+  var settings = _.extend({}, {variable: opts.variable}, opts.settings || {});
+  // Store a copy of the original string
   var original = str;
 
   // Look for templates to process until no more can be found
   if (opts.delims) {
     // Extend settings with custom delimiters
-    settings = _.extend(settings, delim(opts.delims, opts));
+    settings = _.extend({}, settings, delim(opts.delims, opts));
     // Inspired by grunt.template
     while (str.indexOf(opts.delims[0]) >= 0) {
       str = _.template(str, data, settings);

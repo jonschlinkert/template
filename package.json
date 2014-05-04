@@ -1,7 +1,7 @@
 {
   "name": "template",
   "description": "Process Lo-dash templates recursively.",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "homepage": "https://github.com/jonschlinkert/template",
   "author": {
     "name": "Jon Schlinkert",

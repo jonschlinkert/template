@@ -164,7 +164,13 @@ describe('Mixin methods from underscore.string:', function () {
     expect(actual).to.eql('this-should-be-slugified');
   });
 
-  it('should titleize the string with _.str namespace', function () {
+  it('should slugify the string with a mixin on the _.str namespace.', function () {
+    var tmpl = '<%= _.str.slugify("This should be slugified") %>';
+    var actual = template(tmpl, null, {nonconflict: true});
+    expect(actual).to.eql('this-should-be-slugified');
+  });
+
+  it('should titleize the string with a mixin on the _.str namespace', function () {
     var tmpl = '<%= _.str.titleize("This should be titleized") %>';
     var actual = template(tmpl);
     expect(actual).to.eql('This Should Be Titleized');

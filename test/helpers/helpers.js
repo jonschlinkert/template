@@ -1,10 +1,14 @@
+var fs = require('fs');
 var path = require('path');
-var file = require('fs-utils');
 
+var _ = require('lodash');
+_.str = require('underscore.string');
+_.mixin(_.str.exports());
 
 exports.read = function(filepath) {
-  return file.readFileSync(filepath);
+  return fs.readFileSync(filepath, 'utf8');
 };
+
 
 exports.data = {
   name: 'Jon',

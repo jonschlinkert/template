@@ -1,7 +1,7 @@
 {
   "name": "template",
-  "description": "Process Lo-dash templates recursively.",
-  "version": "0.1.8",
+  "description": "Process nested Lo-dash templates recursively. Usually templates that are nested in multiple files will not be evaluated.",
+  "version": "0.2.1",
   "homepage": "https://github.com/jonschlinkert/template",
   "author": {
     "name": "Jon Schlinkert",
@@ -25,14 +25,14 @@
     "node": ">= 0.8.0"
   },
   "dependencies": {
-    "delims": "~0.1.4",
-    "fs-utils": "~0.4.1",
-    "lodash": "~2.4.1",
-    "underscore.string": "~2.3.3"
+    "delims": "^0.1.4",
+    "lodash": "^2.4.1"
   },
   "devDependencies": {
     "chai": "~1.9.1",
-    "mocha": "~1.18.2"
+    "mocha": "*",
+    "underscore.string": "^2.3.3",
+    "verb": "~0.2.6"
   },
   "keywords": [
     "lodash",
@@ -42,5 +42,8 @@
     "template",
     "templates",
     "underscore"
-  ]
+  ],
+  "scripts": {
+    "test": "mocha -R spec"
+  }
 }

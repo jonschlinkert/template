@@ -1,17 +1,15 @@
-/*
+/*!
  * template <https://github.com/jonschlinkert/template>
  *
  * Copyright (c) 2014 Jon Schlinkert
  * Licensed under the MIT license.
  */
 
-const _ = require('lodash');
-const file = require('fs-utils');
-const delim = require('delims');
+'use strict';
 
-// Mix in the methods from underscore string
-_.str = require('underscore.string');
-_.mixin(_.str.exports());
+var _ = require('lodash');
+var delim = require('delims');
+
 
 // Defaults passed to 'delim' lib
 var defaults = {body: '', beginning: '', end: '', flags: 'g'};
@@ -46,21 +44,11 @@ var template = function(str, data, options) {
   return str;
 };
 
-
 // Read files and process any templates therein
 template.read = function(filepath, data, options) {
-  filepath = file.readFileSync(filepath);
+  filepath = fs.readFileSync(filepath, 'utf8');
   return template(filepath, data, options);
 };
 
-// Copy files and process any templates therein
-template.copy = function (filepath, dest, data, options) {
-  var opts = _.extend({}, {process: true}, options || {});
-  filepath = file.readFileSync(filepath);
-  if(opts.process === true) {
-    filepath = template(filepath, data, opts);
-  }
-  file.writeFileSync(dest, filepath, opts);
-};
 
 module.exports = template;

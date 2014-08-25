@@ -1,0 +1,54 @@
+{
+  "name": "view-cache-2",
+  "description": "Templates.",
+  "version": "0.1.0",
+  "homepage": "https://github.com/jonschlinkert/view-cache-2",
+  "author": {
+    "name": "Jon Schlinkert",
+    "url": "https://github.com/jonschlinkert"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/jonschlinkert/view-cache-2.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jonschlinkert/view-cache-2/issues"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/jonschlinkert/view-cache-2/blob/master/LICENSE-MIT"
+    }
+  ],
+  "keywords": [
+    "docs",
+    "documentation",
+    "generate",
+    "generator",
+    "markdown",
+    "templates",
+    "verb"
+  ],
+  "main": "index.js",
+  "engines": {
+    "node": ">=0.10.0"
+  },
+  "scripts": {
+    "test": "mocha -R spec"
+  },
+  "devDependencies": {
+    "mocha": "*",
+    "should": "^4.0.4",
+    "verb": ">= 0.2.6",
+    "verb-tag-jscomments": "^0.2.1"
+  },
+  "dependencies": {
+    "config-cache": "^0.2.2",
+    "delimiters": "^0.1.0",
+    "engine-cache": "^0.1.2",
+    "gray-matter": "^0.4.2",
+    "layouts": "^0.3.1",
+    "lodash": "^2.4.1",
+    "template-loader": "^0.2.0"
+  }
+}

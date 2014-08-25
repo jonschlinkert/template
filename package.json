@@ -21,13 +21,37 @@
     }
   ],
   "keywords": [
+    "assemble",
+    "cache",
+    "compile",
+    "consolidate",
+    "content",
+    "data",
+    "delimiters",
+    "delims",
     "docs",
     "documentation",
+    "engine",
+    "express",
+    "front",
     "generate",
     "generator",
+    "gray-matter",
+    "lo-dash",
+    "lodash",
     "markdown",
+    "matter",
+    "noop",
+    "parse",
+    "parser",
+    "parsers",
+    "pass-through",
+    "process",
+    "render",
     "templates",
-    "verb"
+    "underscore",
+    "verb",
+    "yaml"
   ],
   "main": "index.js",
   "engines": {
@@ -46,9 +70,13 @@
     "config-cache": "^0.2.2",
     "delimiters": "^0.1.0",
     "engine-cache": "^0.1.2",
-    "gray-matter": "^0.4.2",
+    "engine-lodash": "^0.1.1",
+    "engine-noop": "^0.1.0",
     "layouts": "^0.3.1",
     "lodash": "^2.4.1",
+    "parser-cache": "^0.1.5",
+    "parser-front-matter": "^0.1.0",
+    "parser-noop": "^0.1.0",
     "template-loader": "^0.2.0"
   }
 }

@@ -1,5 +1,5 @@
 /*!
- * engine-cache <https://github.com/jonschlinkert/engine-cache>
+ * engine-engines <https://github.com/jonschlinkert/engine-engines>
  *
  * Copyright (c) 2014 Jon Schlinkert, Brian Woodward, contributors.
  * Licensed under the MIT license.
@@ -7,6 +7,8 @@
 
 'use strict';
 
+var fs = require('fs');
+var path = require('path');
 var assert = require('assert');
 var should = require('should');
 var Template = require('..');
@@ -18,7 +20,7 @@ describe('template engine', function() {
   });
 
   describe('.engine()', function() {
-    it('should engine template engines to the `cache` object.', function() {
+    it('should engine template engines to the `engines` object.', function() {
       template.engine('a', {
         render: function () {}
       });
@@ -32,11 +34,11 @@ describe('template engine', function() {
         render: function () {}
       });
 
-      template.cache.should.have.property('.a');
-      template.cache.should.have.property('.b');
-      template.cache.should.have.property('.c');
-      template.cache.should.have.property('.d');
-      Object.keys(template.cache).length.should.equal(4);
+      template.engines.should.have.property('.a');
+      template.engines.should.have.property('.b');
+      template.engines.should.have.property('.c');
+      template.engines.should.have.property('.d');
+      Object.keys(template.engines).length.should.equal(6);
     });
 
     it('should normalize engine extensions to not have a dot.', function() {
@@ -53,11 +55,11 @@ describe('template engine', function() {
         render: function () {}
       });
 
-      template.cache.should.have.property('.a');
-      template.cache.should.have.property('.b');
-      template.cache.should.have.property('.c');
-      template.cache.should.have.property('.d');
-      Object.keys(template.cache).length.should.equal(4);
+      template.engines.should.have.property('.a');
+      template.engines.should.have.property('.b');
+      template.engines.should.have.property('.c');
+      template.engines.should.have.property('.d');
+      Object.keys(template.engines).length.should.equal(6);
     });
 
     it('should be chainable.', function() {
@@ -81,11 +83,67 @@ describe('template engine', function() {
       assert.equal(typeof a, 'object');
       assert.equal(typeof a.render, 'function');
 
-      template.cache.should.have.property('.a');
-      template.cache.should.have.property('.b');
-      template.cache.should.have.property('.c');
-      template.cache.should.have.property('.d');
-      Object.keys(template.cache).length.should.equal(4);
+      // console.log(template)
+
+      template.engines.should.have.property('.a');
+      template.engines.should.have.property('.b');
+      template.engines.should.have.property('.c');
+      template.engines.should.have.property('.d');
+      Object.keys(template.engines).length.should.equal(6);
+    });
+  });
+});
+
+
+describe('engines', function() {
+  var lodash = template.getEngine('md');
+
+  it('should render content with lodash.', function(done) {
+    var ctx = {name: 'Jon Schlinkert'};
+
+    lodash.render('<%= name %>', ctx, function (err, content) {
+      content.should.equal('Jon Schlinkert');
+      done();
+    });
+  });
+
+  it('should use custom delimiters: swig.', function(done) {
+    var ctx = {name: 'Jon Schlinkert', delims: ['{%', '%}']};
+
+    lodash.render('{%= name %}', ctx, function (err, content) {
+      content.should.equal('Jon Schlinkert');
+      done();
+    });
+  });
+
+  it('should use custom delimiters: hbs.', function(done) {
+    var ctx = {name: 'Jon Schlinkert', delims: ['{{', '}}']};
+
+    lodash.render('{{= name }}', ctx, function (err, content) {
+      content.should.equal('Jon Schlinkert');
+      done();
+    });
+  });
+
+  it('should use helpers registered on the imports property.', function(done) {
+    var ctx = {
+      name: 'Jon Schlinkert',
+      imports: {
+        include: function(name) {
+          var filepath = path.join('test/fixtures', name);
+          return fs.readFileSync(filepath, 'utf8');
+        },
+        upper: function(str) {
+          return str.toUpperCase()
+        }
+      }
+    };
+
+    lodash.render('<%= upper(include("content.tmpl")) %>', ctx, function (err, content) {
+      if (err) console.log(err);
+
+      content.should.equal('JON SCHLINKERT');
+      done();
     });
   });
 });

@@ -7,20 +7,14 @@
 
 'use strict';
 
-var fs = require('fs');
-var path = require('path');
 var util = require('util');
 var Layouts = require('layouts');
-var matter = require('gray-matter');
+var Delimiters = require('delimiters');
 var Engines = require('engine-cache');
 var Parsers = require('parser-cache');
 var Cache = require('config-cache');
 var _ = require('lodash');
 var extend = _.extend;
-
-
-var Delimiters = require('delimiters');
-var delimiters = new Delimiters();
 
 
 /**
@@ -47,8 +41,13 @@ function Template(options) {
   this._engines = new Engines();
   this._parsers = new Parsers();
 
+  this.engines = this.engines || {};
+  this.parsers = this.parsers || {};
+
   this.defaultConfig();
-  this.initOptions();
+  this.defaultOptions();
+  this.defaultEngines();
+  this.defaultParsers();
 }
 
 util.inherits(Template, Cache);
@@ -83,7 +82,7 @@ Template.prototype.defaultConfig = function() {
  * @api private
  */
 
-Template.prototype.initOptions = function() {
+Template.prototype.defaultOptions = function() {
   this.option('cwd', process.cwd());
 
   this.option('partialLayout', null);
@@ -97,6 +96,30 @@ Template.prototype.initOptions = function() {
   this.addDelims('es6', ['${', '}'], {
     interpolate: /\$\{([^\\}]*(?:\\.[^\\}]*)*)\}/g
   });
+};
+
+
+/**
+ * Load default parsers
+ *
+ * @api private
+ */
+
+Template.prototype.defaultParsers = function() {
+  this.parser('md', require('parser-front-matter'));
+  this.parser('*', require('parser-noop'));
+};
+
+
+/**
+ * Load default engines.
+ *
+ * @api private
+ */
+
+Template.prototype.defaultEngines = function() {
+  this.engine('md', require('engine-lodash'));
+  this.engine('*', require('engine-noop'));
 };
 
 
@@ -151,8 +174,38 @@ Template.prototype.getEngine = function (ext) {
 };
 
 
+/**
+ * Register the given parser callback `fn` as `ext`.
+ *
+ * ```js
+ * var parser = require('parsnip');
+ * parsers.register('hbs', parser.markdown);
+ * ```
+ *
+ * @param {String} `ext`
+ * @param {Function|Object} `fn` or `options`
+ * @param {Object} `options`
+ * @return {parsers} to enable chaining.
+ * @api public
+ */
+
+Template.prototype.parser = function (ext, options, fn) {
+  this._parsers.register.apply(this, arguments);
+  return this;
+};
+
+
+/**
+ * Add an object of layouts to `cache.layouts`.
+ *
+ * @param {Arguments}
+ * @return {Template} to enable chaining.
+ * @api public
+ */
+
+Template.prototype.getParser = function (ext) {
+  return this._parsers.get.apply(this, arguments);
+};
+
+
 module.exports = Template;
-
-
-var template = new Template();
-// console.log(template.engine)

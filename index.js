@@ -12,7 +12,8 @@ var Layouts = require('layouts');
 var Delimiters = require('delimiters');
 var Engines = require('engine-cache');
 var Parsers = require('parser-cache');
-var Cache = require('config-cache');
+var Helpers = require('helper-cache');
+var Cache = require('simple-cache');
 var _ = require('lodash');
 var extend = _.extend;
 
@@ -38,11 +39,13 @@ function Template(options) {
   Delimiters.call(this, options);
   Cache.call(this, options);
 
+  this._helpers = new Helpers();
   this._engines = new Engines();
   this._parsers = new Parsers();
 
   this.engines = this.engines || {};
   this.parsers = this.parsers || {};
+  this.helpers = this.helpers || {};
 
   this.defaultConfig();
   this.defaultOptions();
@@ -85,6 +88,7 @@ Template.prototype.defaultConfig = function() {
 Template.prototype.defaultOptions = function() {
   this.option('cwd', process.cwd());
 
+  this.option('bindHelpers', true);
   this.option('partialLayout', null);
   this.option('layout', null);
   this.option('layoutTag', 'body');
@@ -92,7 +96,7 @@ Template.prototype.defaultOptions = function() {
   this.option('delims', {});
   this.option('layoutDelims', ['{{', '}}']);
 
-  this.addDelims('default', ['<%', '%>']);
+  this.addDelims('*', ['<%', '%>']);
   this.addDelims('es6', ['${', '}'], {
     interpolate: /\$\{([^\\}]*(?:\\.[^\\}]*)*)\}/g
   });
@@ -134,10 +138,10 @@ Template.prototype.defaultEngines = function() {
  */
 
 Template.prototype.lazyLayouts = function(options) {
-  if (!this.layoutCache) {
+  if (!this._layouts) {
     var opts = _.extend({}, this.options, options);
 
-    this.layoutCache = new Layouts({
+    this._layouts = new Layouts({
       locals: opts.locals,
       layouts: opts.layouts,
       delims: opts.layoutDelims,
@@ -148,10 +152,14 @@ Template.prototype.lazyLayouts = function(options) {
 
 
 /**
- * Add an object of layouts to `cache.layouts`.
+ * Register the given view engine callback `fn` as `ext`.
  *
- * @param {Arguments}
- * @return {Template} to enable chaining.
+ * See [engine-cache] for details and documentation.
+ *
+ * @param {String} `ext`
+ * @param {Function|Object} `fn` or `options`
+ * @param {Object} `options`
+ * @return {Object} `Template` to enable chaining
  * @api public
  */
 
@@ -162,10 +170,18 @@ Template.prototype.engine = function (ext, options, fn) {
 
 
 /**
- * Add an object of layouts to `cache.layouts`.
+ * Get the engine registered for the given `ext`. If no
+ * `ext` is passed, the entire cache is returned.
  *
- * @param {Arguments}
- * @return {Template} to enable chaining.
+ * ```js
+ * var consolidate = require('consolidate')
+ * template.engine('hbs', consolidate.handlebars);
+ * template.getEngine('hbs');
+ * // => {render: [function], renderFile: [function]}
+ * ```
+ *
+ * @param {String} `ext` The engine to get.
+ * @return {Object} Object of methods for the specified engine.
  * @api public
  */
 
@@ -175,17 +191,32 @@ Template.prototype.getEngine = function (ext) {
 
 
 /**
- * Register the given parser callback `fn` as `ext`.
+ * Create a helper cache for the given engine.
+ */
+
+Template.prototype.getEngine = function (ext) {
+  return this._engines.get.apply(this, arguments);
+};
+
+
+/**
+ * Register the given parser callback `fn` as `ext`. If `ext`
+ * is not given, the parser `fn` will be pushed into the
+ * default parser stack.
  *
  * ```js
- * var parser = require('parsnip');
- * parsers.register('hbs', parser.markdown);
+ * // Default stack
+ * template.parser(require('parser-front-matter'));
+ *
+ * // Associated with `.hbs` file extension
+ * template.parser('hbs', require('parser-front-matter'));
  * ```
+ *
+ * See [parser-cache] for the full range of options and documentation.
  *
  * @param {String} `ext`
  * @param {Function|Object} `fn` or `options`
- * @param {Object} `options`
- * @return {parsers} to enable chaining.
+ * @return {Object} `Template` to enable chaining.
  * @api public
  */
 
@@ -196,16 +227,146 @@ Template.prototype.parser = function (ext, options, fn) {
 
 
 /**
- * Add an object of layouts to `cache.layouts`.
+ * Run a stack of parser for the given `file`. If `file` is an object
+ * with an `ext` property, then `ext` is used to get the parser
+ * stack. If `ext` doesn't have a stack, the default `noop` parser
+ * will be used.
  *
- * @param {Arguments}
- * @return {Template} to enable chaining.
+ * ```js
+ * var str = fs.readFileSync('some-file.md', 'utf8');
+ * template.parse({ext: '.md', content: str}, function (err, file) {
+ *   console.log(file);
+ * });
+ * ```
+ *
+ * Or, explicitly pass an array of parser functions as a section argument.
+ *
+ * ```js
+ * template.parse(file, [a, b, c], function (err, file) {
+ *   console.log(file);
+ * });
+ * ```
+ * See [parser-cache] for the full range of options and documentation.
+ *
+ * @param  {Object|String} `file` Either a string or an object.
+ * @param  {Array} `stack` Optionally pass an array of functions to use as parsers.
+ * @param  {Object} `options`
+ * @return {Object} Normalize `file` object.
+ */
+
+Template.prototype.parse = function (file, stack, options) {
+  var args = [].slice.call(arguments);
+
+  var o = _.merge({}, options);
+
+  if (typeof file === 'object') {
+    o = _.merge({}, o, file);
+  }
+
+  var ext = o.ext;
+
+  if (!Array.isArray(stack)) {
+    options = stack;
+    stack = null;
+  }
+
+  if (ext) {
+    stack = this.getParsers(ext);
+  }
+
+  if (!stack) {
+    stack = this.getParsers('*');
+  }
+
+  this._parsers.parse.call(this, file, stack, options);
+  return this;
+};
+
+
+/**
+ * Get a cached parser stack for the given `ext`.
+ *
+ * @param {String} `ext` The parser stack to get.
+ * @return {Object} `Template` to enable chaining.
  * @api public
  */
 
-Template.prototype.getParser = function (ext) {
+Template.prototype.getParsers = function (ext) {
   return this._parsers.get.apply(this, arguments);
 };
 
 
+/**
+ * Add a new template `type` to Template by passing the singular
+ * and plural names to be used for `type`.
+ *
+ * @param {String} `type` Name of the new type to add
+ * @param {Object} `options`
+ * @return {Object} `Template` to enable chaining.
+ * @api public
+ */
+
+// Template.prototype.type = function(type, plural, options) {
+//   var opts = extend({}, options);
+
+//   if (typeof plural !== 'string') {
+//     throw new Error('A plural form must be defined for: "' + type + '".');
+//   }
+//   this.cache[plural] = {};
+
+//   Template.prototype[type] = function (patterns, options) {
+//     return this[plural](patterns, options);
+//   };
+
+//   Template.prototype[plural] = function (patterns, options) {
+//     if (!arguments.length) {
+//       return this.cache[plural];
+//     }
+//     return this;
+//   };
+
+//   return this;
+// };
+
+
+/**
+ * Add a custom template helper.
+ *
+ * **Example:**
+ *
+ * ```js
+ * template.registerHelper('include', function(filepath) {
+ *   return fs.readFileSync(filepath, 'utf8');
+ * });
+ * ```
+ * **Usage:**
+ *
+ * ```js
+ * template.process('<%= include("foo.md") %>');
+ * ```
+ *
+ * @param  {String} `key`
+ * @param  {Object} `value`
+ * @return {Template} to enable chaining.
+ * @chainable
+ * @api public
+ */
+
+Template.prototype.registerHelper = function (key, value) {
+  if (this.option('bindHelpers')) {
+    this._helpers.register.call(this, key, _.bind(value, this));
+  } else {
+    this._helpers.register.call(this, key, value);
+  }
+  return this;
+};
+
+
+/**
+ * Expose `Template`
+ *
+ * @type {Class}
+ */
+
 module.exports = Template;
+

@@ -1,0 +1,95 @@
+{
+  "name": "layouts",
+  "description": "Wrap templates with layouts. Layouts can be nested and optionally use other layouts.",
+  "version": "0.3.1",
+  "homepage": "https://github.com/jonschlinkert/layouts",
+  "author": {
+    "name": "Jon Schlinkert",
+    "url": "https://github.com/jonschlinkert"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/jonschlinkert/layouts.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jonschlinkert/layouts/issues"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/jonschlinkert/layouts/blob/master/LICENSE-MIT"
+    }
+  ],
+  "keywords": [
+    "atpl",
+    "consolidate",
+    "dot",
+    "dust",
+    "eco",
+    "ect",
+    "ejs",
+    "engine",
+    "engines",
+    "express",
+    "haml-coffee",
+    "hamljs",
+    "handlebars",
+    "hogan.js",
+    "jade",
+    "jazz",
+    "jqtpl",
+    "layout",
+    "layouts",
+    "liquor",
+    "lodash",
+    "mote",
+    "mustache",
+    "nest",
+    "nested",
+    "nunjucks",
+    "page",
+    "qejs",
+    "ractive",
+    "stack",
+    "stacked",
+    "swig",
+    "template",
+    "templates",
+    "templayed",
+    "tmpl",
+    "toffee",
+    "transformers",
+    "underscore",
+    "walrus",
+    "whiskers",
+    "wrap"
+  ],
+  "main": "index.js",
+  "engines": {
+    "node": ">=0.10.0"
+  },
+  "scripts": {
+    "test": "mocha -R spec"
+  },
+  "devDependencies": {
+    "globby": "^0.1.1",
+    "gray-matter": "^0.4.2",
+    "mocha": "*",
+    "should": "^4.0.4",
+    "verb": ">= 0.2.6",
+    "verb-tag-jscomments": "^0.2.0"
+  },
+  "dependencies": {
+    "config-cache": "^0.1.5",
+    "debug": "^1.0.4",
+    "delims": "^0.3.0",
+    "falsey": "^0.1.0",
+    "lodash": "^2.4.1"
+  },
+  "readme": "# layouts [![NPM version](https://badge.fury.io/js/layouts.png)](http://badge.fury.io/js/layouts)\n\n> Wrap templates with layouts. Layouts can be nested and optionally use other layouts.\n\n## Install\n#### [npm](npmjs.org)\n\n```bash\nnpm i layouts --save\n```\n\n## Usage\n\n```js\nvar layouts = require('layouts');\n```\n\n## API\n[## Layouts](index.js#L33)\n\nCreate a new instance of `Layouts`, optionally passing the default `cache` and `options` to use.\n\n* `cache` **{Object}**: A template cache. See [Layouts#set](#set) for object details.  \n* `options` **{Object}**: Options to use.  \n* `options.delims` **{Array}**: Template delimiters to use formatted as an array (`['{{', '}}']`)  \n* `options.tag` **{String}**: The tag name to use. Default is `body` (e.g. `{{ body }}`)  \n\n**Example:**\n\n```js\nvar Layouts = require('layouts');\nvar layouts = new Layouts();\n```\n\n\n [## setLayout](index.js#L104)\n\nStore a template on the cache by its `name`, the `layout` to use, and the template's `content.\n\n* `name` **{String|Object}**: If `name` is a string, `layout` and `content` are required.  \n* `data` **{String|Object}**: Pass a string defining the name of layout to use for the given template, or pass an object with a `layout` property.  \n* `content` **{String}**: The template \"content\", this will not be compiled or rendered.  \n\n**Example:**\n\n```js\nlayouts.setLayout('a', 'b', '<h1>Foo</h1>\\n{{body}}\\n');\n```\n\n\n [## _defaultLayout](index.js#L123)\n\n\nDefine the default layout variable and delimiters to be used.\n\n\n [## getLayout](index.js#L154)\n\nGet a cached template by `name`.\n\n* `name` **{String}**  \n* returns **{Object}**: The template object to return.  \n\n**Example:**\n\n```js\nlayouts.getLayout('a');\n//=> { layout: 'b', content: '<h1>Foo</h1>\\n{{body}}\\n' }\n```\n\n\n [## renderLayout](index.js#L312)\n\nRender a layout using Lo-Dash, by passing content (`str`), `context` and `options`.\n\n* `str` **{String}**: Content for the layout to render.  \n* `options` **{Object}**: Additional options used for building the render settings.  \n* returns **{String}**: Rendered string.  \n\n**Example:**\n\n```js\nlayouts.renderLayout(str, context, options);\n```\n\nSince this method uses Lo-Dash to process templates custom delimiters\nmay be passed on the `options.delims` property. This allows layouts to\nbe rendered prior to injecting \"pages\" or other str with templates that\n_should not_ be rendered when the layout stack is processed.\n\n**Example:**\n\n```js\nlayouts.renderLayout(str, context, {\n  delims: ['<%','%>']\n});\n```\n\n\n [## replaceTag](index.js#L342)\n\nReplace a `{{body}}` tag with the given `str`. Custom delimiters and/or variable may be passed on the `options`. Unlike `renderLayout`, this method does not render templates, it only peforms a basic regex replacement.\n\n* `str` **{String}**: The string to use as a replacement value.  \n* `content` **{String}**: A string with a `{{body}}` tag where the `str` should be injected.  \n* returns **{String}**: Resulting flattened content.  \n\n**Example:**\n\n```js\nlayouts.replaceTag('ABC', 'Before {{body}} After');\n//=> 'Before ABC After'\n```\n\n\n [## inject](index.js#L365)\n\nReturn an object with the string (`str`) and `data` required to build a final layout. This is useful if you need to use your own template engine to handle this final step.\n\n* `str` **{String}**: The string to be injected into the layout. Usually a page, or inner layout, etc.  \n* `name` **{String}**: The name of the first layout to use to build the stack.  \n* returns **{Object}**: Resulting flattened layout.  \n\n**Example:**\n\n```js\nvar page = layouts.inject(str, 'base');\nvar tmpl = _.template(page, context);\n```\n\n## Author\n\n**Jon Schlinkert**\n \n+ [github/jonschlinkert](https://github.com/jonschlinkert)\n+ [twitter/jonschlinkert](http://twitter.com/jonschlinkert) \n\n## License\nCopyright (c) 2014 Jon Schlinkert, contributors.  \nReleased under the MIT license\n\n***\n\n_This file was generated by [verb-cli](https://github.com/assemble/verb-cli) on August 17, 2014._",
+  "readmeFilename": "README.md",
+  "_id": "layouts@0.3.1",
+  "_shasum": "0426c69ed109431f63f698f10d453e7ede960fad",
+  "_from": "layouts@",
+  "_resolved": "https://registry.npmjs.org/layouts/-/layouts-0.3.1.tgz"
+}

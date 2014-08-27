@@ -45,7 +45,7 @@ function Template(options) {
 
   this.engines = this.engines || {};
   this.parsers = this.parsers || {};
-  this.helpers = this.helpers || {};
+  // this.helpers = this.helpers || {};
 
   this.defaultConfig();
   this.defaultOptions();
@@ -165,6 +165,15 @@ Template.prototype.lazyLayouts = function(options) {
 
 Template.prototype.engine = function (ext, options, fn) {
   this._engines.register.apply(this, arguments);
+
+  if (typeof ext !== 'string') {
+    ext = '*';
+  }
+  if (ext[0] !== '.') {
+    ext = '.' + ext;
+  }
+
+  this.helpers[ext] = new Helpers();
   return this;
 };
 
@@ -191,11 +200,20 @@ Template.prototype.getEngine = function (ext) {
 
 
 /**
- * Create a helper cache for the given engine.
+ * Get and set helpers for the given `ext` (engine). If no
+ * `ext` is passed, the entire helper cache is returned.
+ *
+ *
+ * @param {String} `ext` The helper cache to get and set to.
+ * @return {Object} Object of helpers for the specified engine.
+ * @api public
  */
 
-Template.prototype.getEngine = function (ext) {
-  return this._engines.get.apply(this, arguments);
+Template.prototype.helpers = function (ext) {
+  if (ext[0] !== '.') {
+    ext = '.' + ext;
+  }
+  return this.helpers[ext];
 };
 
 
@@ -327,39 +345,6 @@ Template.prototype.getParsers = function (ext) {
 
 //   return this;
 // };
-
-
-/**
- * Add a custom template helper.
- *
- * **Example:**
- *
- * ```js
- * template.registerHelper('include', function(filepath) {
- *   return fs.readFileSync(filepath, 'utf8');
- * });
- * ```
- * **Usage:**
- *
- * ```js
- * template.process('<%= include("foo.md") %>');
- * ```
- *
- * @param  {String} `key`
- * @param  {Object} `value`
- * @return {Template} to enable chaining.
- * @chainable
- * @api public
- */
-
-Template.prototype.registerHelper = function (key, value) {
-  if (this.option('bindHelpers')) {
-    this._helpers.register.call(this, key, _.bind(value, this));
-  } else {
-    this._helpers.register.call(this, key, value);
-  }
-  return this;
-};
 
 
 /**

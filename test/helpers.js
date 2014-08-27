@@ -15,12 +15,26 @@ var _ = require('lodash');
 describe('.registerHelper():', function () {
   it('should register template helper functions:', function () {
     var template = new Template();
+    template.engine('a', {
+      render: function () {}
+    });
+    template.engine('b', {
+      render: function () {}
+    });
+    template.engine('c', {
+      render: function () {}
+    });
+    template.engine('d', {
+      render: function () {}
+    });
 
-    template.registerHelper('a', function (str) {
+    var helpers = template.helpers('*');
+
+    helpers.registerHelper('a', function (str) {
       return str.toLowerCase();
     });
 
-    template.registerHelper('b', function (str) {
+    helpers.registerHelper('b', function (str) {
       return str.toUpperCase();
     });
 

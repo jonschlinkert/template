@@ -12,49 +12,63 @@ var Template = require('..');
 var _ = require('lodash');
 
 
-describe('.registerHelper():', function () {
+describe('.set():', function () {
   it('should register template helper functions:', function () {
     var template = new Template();
+    template.engine('a', {
+      render: function () {}
+    });
+    template.engine('b', {
+      render: function () {}
+    });
+    template.engine('c', {
+      render: function () {}
+    });
+    template.engine('d', {
+      render: function () {}
+    });
 
-    template.registerHelper('a', function (str) {
+    var helpers = template.helpers('*');
+
+    helpers.set('a', function (str) {
       return str.toLowerCase();
     });
 
-    template.registerHelper('b', function (str) {
+    helpers.set('b', function (str) {
+      return str.toUpperCase();
+    });
+    console.log(template.helpers('*'))
+
+    template.helpers.should.have.property('.a');
+    template.helpers.should.have.property('.b');
+    helpers.get('a').should.be.a.function;
+    helpers.get('b').should.be.a.function;
+  });
+
+  it('should register _bound_ template helper functions by default:', function () {
+    var template = new Template();
+
+    template.set('a', function (str) {
+      return str.toLowerCase();
+    });
+
+    template.set('b', function (str) {
       return str.toUpperCase();
     });
 
-    console.log(template)
-    // template.cache.helpers.should.have.property('a');
-    // template.cache.helpers.should.have.property('b');
+    template.helpers.should.have.property('.a');
+    template.helpers.should.have.property('.b');
   });
-
-  // it('should register _bound_ template helper functions by default:', function () {
-  //   var template = new Template();
-
-  //   template.registerHelper('a', function (str) {
-  //     return str.toLowerCase();
-  //   });
-
-  //   template.registerHelper('b', function (str) {
-  //     return str.toUpperCase();
-  //   });
-
-  //   template.cache.helpers.should.have.property('a');
-  //   template.cache.helpers.should.have.property('b');
-
-
-  // });
 
   // it('should register _un-bound_ template helpers when `bindHelpers` is false:', function () {
   //   var template = new Template();
   //   template.option('bindHelpers', false);
 
-  //   template.registerHelper('a', function (str) {
+  //   template.set('a', function (str) {
   //     return str.toLowerCase();
   //   });
 
-  //   template.registerHelper('b', function (str) {
+  //   template.set('b', function (str) {
   //     return str.toUpperCase();
   //   });
 

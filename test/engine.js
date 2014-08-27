@@ -141,7 +141,6 @@ describe('engines', function() {
 
     lodash.render('<%= upper(include("content.tmpl")) %>', ctx, function (err, content) {
       if (err) console.log(err);
-
       content.should.equal('JON SCHLINKERT');
       done();
     });

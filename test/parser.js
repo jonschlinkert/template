@@ -1,5 +1,5 @@
 /*!
- * parser-parsers <https://github.com/jonschlinkert/parser-parsers>
+ * view-cache <https://github.com/jonschlinkert/view-cache>
  *
  * Copyright (c) 2014 Jon Schlinkert, Brian Woodward, contributors.
  * Licensed under the MIT license.
@@ -7,11 +7,12 @@
 
 'use strict';
 
-var assert = require('assert');
 var should = require('should');
-var Parsers = require('..');
-var template = new Parsers();
-
+var Template = require('..');
+var template = new Template();
+var matter = require('gray-matter');
+var utils = require('parser-utils');
+var _ = require('lodash');
 
 describe('template parser', function() {
   beforeEach(function() {
@@ -19,19 +20,11 @@ describe('template parser', function() {
   });
 
   describe('.parser()', function() {
-    it('should add a parser to the `parsers.parsers` object.', function() {
-      template.parser('a', {
-        parse: function () {}
-      });
-      template.parser('b', {
-        parse: function () {}
-      });
-      template.parser('c', {
-        parse: function () {}
-      });
-      template.parser('d', {
-        parse: function () {}
-      });
+    it('should add a parser to the `parsers` object.', function() {
+      template.parser('a', function () {});
+      template.parser('b', function () {});
+      template.parser('c', function () {});
+      template.parser('d', function () {});
 
       template.parsers.should.have.property('.a');
       template.parsers.should.have.property('.b');
@@ -41,18 +34,10 @@ describe('template parser', function() {
     });
 
     it('should normalize parser extensions to not have a dot.', function() {
-      template.parser('.a', {
-        parse: function () {}
-      });
-      template.parser('.b', {
-        parse: function () {}
-      });
-      template.parser('.c', {
-        parse: function () {}
-      });
-      template.parser('.d', {
-        parse: function () {}
-      });
+      template.parser('.a', function () {});
+      template.parser('.b', function () {});
+      template.parser('.c', function () {});
+      template.parser('.d', function () {});
 
       template.parsers.should.have.property('.a');
       template.parsers.should.have.property('.b');
@@ -63,24 +48,15 @@ describe('template parser', function() {
 
     it('should be chainable.', function() {
       template
-        .parser('a', {
-          parse: function () {}
-        })
-        .parser('b', {
-          parse: function () {}
-        })
-        .parser('c', {
-          parse: function () {}
-        })
-        .parser('d', {
-          parse: function () {}
-        });
+        .parser('a', function () {})
+        .parser('b', function () {})
+        .parser('c', function () {})
+        .parser('d', function () {});
 
 
-      var a = template.getParser('.a');
-
-      assert.equal(typeof a, 'object');
-      assert.equal(typeof a.parse, 'function');
+      var a = template.getParsers('.a');
+      a.should.be.an.array;
+      a.length.should.equal(3);
 
       // console.log(template)
 
@@ -91,133 +67,184 @@ describe('template parser', function() {
       Object.keys(template.parsers).length.should.equal(6);
     });
   });
+
+
+  describe('.parse()', function() {
+    it('should pass through content with noop parser.', function (done) {
+      var noop = template.getParsers('*');
+
+      template.parse('<%= name %>', noop, function (err, file) {
+        if (err) {
+          console.log(err);
+        }
+        file.content.should.equal('<%= name %>');
+        done();
+      });
+    });
+
+  });
 });
 
 
-describe('parsers', function() {
-  it('should pass through content with noop parser.', function (done) {
-    var noop = template.getParser('*');
 
-    noop.parse('<%= name %>', function (err, file) {
-      if (err) console.log(err);
+describe('default parsers', function () {
+  before(function () {
+    template.init();
 
-      file.should.eql({
-        data: {},
-        original: '<%= name %>',
-        content: '<%= name %>',
-        options: {}
+    template.parser('md', function md (file, next) {
+      file = utils.extendFile(file);
+      _.merge(file, matter(file.content));
+      next(null, file);
+    });
+  });
+
+  describe('when no file extension is provided:', function () {
+    var template = new Template();
+
+    it('should parser parsers to the default stack:', function (done) {
+
+      template
+        .parser(function (file, next) {
+          file.a = file.a || 'a';
+          next(null, file);
+        })
+        .parser(function (file, next) {
+          file.a = file.a + 'b';
+          next(null, file);
+        })
+        .parser(function (file, next) {
+          file.a = file.a + 'c';
+          next(null, file);
+        });
+
+      template.getParsers('*').length.should.equal(4);
+
+      template.parse({a: ''}, function (err, file) {
+        file.a.should.equal('abc');
       });
       done();
     });
   });
 
-  it('should synchronously pass through content.', function () {
-    var noop = template.getParser('*');
+  it('should parse content with the default parser.', function (done) {
+    template.parse('str', function (err, file) {
+      if (err) {
+        console.log(err);
+      }
 
-    noop.parseSync('<%= abc %>').should.eql({
-      data: {},
-      original: '<%= abc %>',
-      content: '<%= abc %>',
-      options: {}
-    });
-  });
-});
-
-
-describe('parsers', function() {
-  var parser = template.getParser('md');
-
-  describe('.parseSync()', function() {
-    it('should parse a string.', function() {
-      var o = parser.parseSync('abc');
-      o.should.have.property('data');
-      o.should.have.property('content');
-      o.content.should.equal('abc');
+      file.should.be.an.object;
+      file.should.have.property('path');
+      file.should.have.property('data');
+      file.should.have.property('content');
+      file.should.have.property('orig');
     });
 
-    it('should parse the content property on an object.', function() {
-      var o = parser.parseSync({content: 'abc'});
-      o.should.have.property('data');
-      o.should.have.property('content');
-      o.content.should.equal('abc');
-    });
+    done();
   });
 
-  describe('.parse()', function() {
-    it('should parse a string.', function(done) {
-      parser.parse('abc', function (err, file) {
-        if (err) {
-          console.log(err);
-        }
+  it('should run a parser stack passed as a second param:', function () {
+    var template = new Template();
 
-        file.should.have.property('data');
-        file.should.have.property('content');
-        file.content.should.equal('abc');
-        done();
+    template
+      .parser('a', function (file, next) {
+        file.content = 'abc-' + file.content;
+        next(null, file);
+      })
+      .parser('a', function (file, next) {
+        file.content = file.content.toUpperCase();
+        next(null, file);
+      })
+      .parser('a', function (file, next) {
+        file.content = file.content.replace(/(.)/g, '$1 ')
+        next(null, file);
       });
+
+    var stack = template.getParsers('a');
+
+    template.parse({content: 'xyz'}, stack, function (err, file) {
+      file.content.should.equal('A B C - X Y Z ');
     });
+  });
 
-    it('should parse the content property on an object.', function(done) {
-      parser.parse({content: 'abc'}, function (err, file) {
-        if (err) {
-          done(err);
-        }
+  it('should run a parser stack based on file extension:', function () {
+    var template = new Template();
 
-        file.should.have.property('data');
-        file.should.have.property('content');
-        file.content.should.equal('abc');
-        done();
+    template
+      .parser('a', function (file, next) {
+        file.content = 'abc-' + file.content;
+        next(null, file);
+      })
+      .parser('a', function (file, next) {
+        file.content = file.content.toUpperCase();
+        next(null, file);
+      })
+      .parser('a', function (file, next) {
+        file.content = file.content.replace(/(.)/g, '$1 ')
+        next(null, file);
       });
+
+    template.parse({ext: 'a', content: 'xyz'}, function (err, file) {
+      file.content.should.equal('A B C - X Y Z ');
     });
   });
 
-  describe('.parseFilesSync()', function() {
-    it('should parse a glob of files synchronously.', function() {
-      var files = parser.parseFilesSync('test/fixtures/parsers/*.md');
+  it('should parse content with the given parser.', function (done) {
+    var matter = template.getParsers('md');
 
-      files.length.should.equal(3);
-      files[0].should.be.an.object;
-      files[0].should.have.property('data');
-      files[0].should.have.property('content');
+    var fixture = '---\ntitle: Front Matter\n---\nThis is content.';
+    template.parse(fixture, matter, function (err, file) {
+      if (err) {
+        console.log(err);
+      }
 
-      files[0].data.title.should.equal('Alpha');
-      files[1].data.title.should.equal('Beta');
-      files[2].data.title.should.equal('Gamma');
+      file.should.be.an.object;
+      file.should.have.property('path');
+      file.should.have.property('data');
+      file.should.have.property('content');
+      file.should.have.property('orig');
+
+      file.data.should.eql({title: 'Front Matter'});
+      file.content.should.eql('\nThis is content.');
     });
+
+    done();
   });
 
-  describe('.parseFile()', function() {
-    it('should parse a file.', function(done) {
-      parser.parseFile('test/fixtures/parsers/a.md', function (err, file) {
-        if (err) {
-          done(err);
-        }
+  it('should parse content with the default parser.', function (done) {
+    var matter = template.getParsers('md');
 
-        file.should.have.property('data');
-        file.should.have.property('content');
-        file.content.should.equal('\nThis is markdown file `a.md`.');
-        file.data.should.eql({title: 'Alpha'});
-        done();
-      });
+    template.parse('str', matter, function (err, file) {
+      if (err) {console.log(err); }
+      file.content.should.eql('str');
     });
+    done();
   });
 
-  describe('.parseFiles()', function() {
-    it('should parse a glob of files.', function(done) {
-      parser.parseFiles('test/fixtures/parsers/*.md', function (err, files) {
-        if (err) {
-          done(err);
-        }
-        files.length.should.equal(3);
-        files[0].should.be.an.object;
-        files[0].should.have.property('data');
-        files[0].should.have.property('content');
+  it('should retain the original `orig.content` value.', function (done) {
 
-        files[0].data.title.should.equal('Alpha');
-        files[1].data.title.should.equal('Beta');
-        files[2].data.title.should.equal('Gamma');
-        done();
-      });
+    var file = {
+      path: 'a/b/c.md',
+      content: 'Hooray!',
+      blah: 'bbb',
+      data: {
+        title: 'FLFLFLF'
+      }
+    };
+
+    var a = utils.extendFile(file, {title: 'ABC'});
+    template.parse(a, function (err, file) {
+      if (err)  console.log(err);
+      file.orig.content.should.eql('Hooray!');
     });
+
+    a.orig.content = 'fosososoos';
+
+    template.parse(a, function (err, file) {
+      if (err)  console.log(err);
+      file.orig.content.should.eql('Hooray!');
+    });
+
+    done();
   });
+
 });

@@ -39,18 +39,19 @@ function Template(options) {
   Delimiters.call(this, options);
   Cache.call(this, options);
 
-  this._helpers = new Helpers();
-  this._engines = new Engines();
-  this._parsers = new Parsers();
+  this._ = {};
+  this._.engines = new Engines();
+  this._.parsers = new Parsers();
 
   this.engines = this.engines || {};
   this.parsers = this.parsers || {};
-  // this.helpers = this.helpers || {};
+  this.helpers = this.helpers || {};
 
   this.defaultConfig();
   this.defaultOptions();
   this.defaultEngines();
   this.defaultParsers();
+  this.defaultTemplates();
 }
 
 util.inherits(Template, Cache);
@@ -89,9 +90,9 @@ Template.prototype.defaultOptions = function() {
   this.option('cwd', process.cwd());
 
   this.option('bindHelpers', true);
-  this.option('partialLayout', null);
   this.option('layout', null);
   this.option('layoutTag', 'body');
+  this.option('partialLayout', null);
 
   this.option('delims', {});
   this.option('layoutDelims', ['{{', '}}']);
@@ -124,6 +125,19 @@ Template.prototype.defaultParsers = function() {
 Template.prototype.defaultEngines = function() {
   this.engine('md', require('engine-lodash'));
   this.engine('*', require('engine-noop'));
+};
+
+
+/**
+ * Register default template types.
+ *
+ * @api private
+ */
+
+Template.prototype.defaultTemplates = function() {
+  this.template('layout', 'layouts', {isLayout: true});
+  this.template('partial', 'partials');
+  this.template('page', 'pages');
 };
 
 
@@ -164,7 +178,7 @@ Template.prototype.lazyLayouts = function(options) {
  */
 
 Template.prototype.engine = function (ext, options, fn) {
-  this._engines.register.apply(this, arguments);
+  this._.engines.register.apply(this, arguments);
 
   if (typeof ext !== 'string') {
     ext = '*';
@@ -195,7 +209,23 @@ Template.prototype.engine = function (ext, options, fn) {
  */
 
 Template.prototype.getEngine = function (ext) {
-  return this._engines.get.apply(this, arguments);
+  return this._.engines.get.apply(this, arguments);
+};
+
+
+/**
+ * Set a helper on the cache.
+ *
+ * @api public
+ */
+
+Template.prototype.helper = function (key, fn) {
+  if (this.option('bindHelpers')) {
+    this.helpers[key] = _.bind(fn, this);
+  } else {
+    this.helpers[key] = fn;
+  }
+  return this;
 };
 
 
@@ -239,7 +269,7 @@ Template.prototype.helpers = function (ext) {
  */
 
 Template.prototype.parser = function (ext, options, fn) {
-  this._parsers.register.apply(this, arguments);
+  this._.parsers.register.apply(this, arguments);
   return this;
 };
 
@@ -296,7 +326,7 @@ Template.prototype.parse = function (file, stack, options) {
     stack = this.getParsers('*');
   }
 
-  this._parsers.parse.call(this, file, stack, options);
+  this._.parsers.parse.call(this, file, stack, options);
   return this;
 };
 
@@ -310,7 +340,7 @@ Template.prototype.parse = function (file, stack, options) {
  */
 
 Template.prototype.getParsers = function (ext) {
-  return this._parsers.get.apply(this, arguments);
+  return this._.parsers.get.apply(this, arguments);
 };
 
 
@@ -324,25 +354,38 @@ Template.prototype.getParsers = function (ext) {
  * @api public
  */
 
-// Template.prototype.type = function(type, plural, options) {
-//   var opts = extend({}, options);
+Template.prototype.template = function(type, plural, isLayout) {
+  if (typeof plural !== 'string') {
+    throw new Error('A plural form must be defined for: "' + type + '".');
+  }
 
-//   if (typeof plural !== 'string') {
-//     throw new Error('A plural form must be defined for: "' + type + '".');
-//   }
-//   this.cache[plural] = {};
+  this.cache[plural] = {};
 
-//   Template.prototype[type] = function (patterns, options) {
-//     return this[plural](patterns, options);
-//   };
+  Template.prototype[type] = function (key, value) {
+    return this[plural](key, value);
+  };
 
-//   Template.prototype[plural] = function (patterns, options) {
-//     if (!arguments.length) {
-//       return this.cache[plural];
-//     }
-//     return this;
-//   };
+  Template.prototype[plural] = function (key, value) {
+    if (!arguments.length) {
+      return this.cache[plural];
+    }
+    return this;
+  };
 
+  return this;
+};
+
+
+/**
+ * Add an object of partials to `cache.partials`.
+ *
+ * @param {Arguments}
+ * @return {Object} `Template` to enable chaining.
+ * @api public
+ */
+
+// Template.prototype.partial = function (key, value) {
+//   this.cache.partials[key] = value;
 //   return this;
 // };
 

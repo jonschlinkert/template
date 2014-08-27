@@ -145,4 +145,30 @@ describe('engines', function() {
       done();
     });
   });
+
+
+  describe('.getEngine()', function() {
+    it('should get an engine.', function() {
+      template.engine('a', {
+        render: function () {}
+      });
+      template.engine('b', {
+        render: function () {}
+      });
+      template.engine('c', {
+        render: function () {}
+      });
+      template.engine('d', {
+        render: function () {}
+      });
+
+      // 4 + 2 built-in engines
+      Object.keys(template.engines).length.should.equal(6);
+
+      template.getEngine('a').should.have.property('render');
+      template.getEngine('b').should.have.property('render');
+      template.getEngine('c').should.have.property('render');
+      template.getEngine('d').should.have.property('render');
+    });
+  });
 });

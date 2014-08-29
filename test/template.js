@@ -19,7 +19,7 @@ describe('.create():', function () {
     template.create('include', 'includes');
     template.include('foo', 'bar');
 
-    // console.log(template.cache)
+    console.log(template.cache)
 
     template.should.have.property('include');
     template.should.have.property('includes');

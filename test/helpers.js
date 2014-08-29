@@ -43,8 +43,8 @@ describe('.set():', function () {
       return str.toUpperCase();
     });
 
-    template.helpers.should.have.property('.a');
-    template.helpers.should.have.property('.b');
+    helpers.should.have.property('a');
+    helpers.should.have.property('b');
     helpers.get('a').should.be.a.function;
     helpers.get('b').should.be.a.function;
   });
@@ -60,8 +60,8 @@ describe('.set():', function () {
       return str.toUpperCase();
     });
 
-    template.helpers.should.have.property('.a');
-    template.helpers.should.have.property('.b');
+    helpers.should.have.property('a');
+    helpers.should.have.property('b');
   });
 
   it('should register _un-bound_ template helpers when `bindHelpers` is false:', function (done) {
@@ -76,10 +76,10 @@ describe('.set():', function () {
       return str.toUpperCase();
     });
 
-    template.helpers.should.have.property('.a');
-    template.helpers.should.have.property('.b');
+    helpers.should.have.property('a');
+    helpers.should.have.property('b');
 
-    var lodash = template.getEngine('md');
+    var lodash = template.engine('md');
     var ctx = {name: 'Jon Schlinkert'};
 
     lodash.render('<%= name %>', ctx, function (err, content) {
@@ -88,5 +88,4 @@ describe('.set():', function () {
       done();
     });
   });
-
 });

@@ -7,14 +7,14 @@
 
 'use strict';
 
+var _ = require('lodash');
 var util = require('util');
-var Layouts = require('layouts');
 var Delimiters = require('delimiters');
 var Engines = require('engine-cache');
 var Parsers = require('parser-cache');
 var Helpers = require('helper-cache');
-var Cache = require('simple-cache');
-var _ = require('lodash');
+var Storage = require('simple-cache');
+var Layouts = require('layouts');
 var extend = _.extend;
 
 
@@ -37,9 +37,10 @@ var extend = _.extend;
 
 function Template(options) {
   Delimiters.call(this, options);
-  Cache.call(this, options);
+  Storage.call(this, options);
 
   this.init();
+
   this.defaultConfig();
   this.defaultOptions();
   this.defaultEngines();
@@ -47,7 +48,7 @@ function Template(options) {
   this.defaultTemplates();
 }
 
-util.inherits(Template, Cache);
+util.inherits(Template, Storage);
 extend(Template.prototype, Delimiters.prototype);
 
 
@@ -60,15 +61,12 @@ extend(Template.prototype, Delimiters.prototype);
 Template.prototype.init = function() {
   this._ = {};
 
-  this.engines = {};
-  this.parsers = {};
-
-  this._.parsers = new Parsers({parsers: this.parsers});
-  this._.engines = new Engines({engines: this.engines});
-
   this.engines = this.engines || {};
   this.parsers = this.parsers || {};
   this.helpers = this.helpers || {};
+
+  this._.parsers = new Parsers(this.parsers);
+  this._.engines = new Engines(this.engines);
 };
 
 
@@ -179,7 +177,16 @@ Template.prototype.lazyLayouts = function(options) {
 
 
 /**
- * Register the given view engine callback `fn` as `ext`.
+ * Register the given view engine callback `fn` as `ext`. If only `ext`
+ * is passed, the engine registered for `ext` is returned. If no `ext`
+ * is passed, the entire cache is returned.
+ *
+ * ```js
+ * var consolidate = require('consolidate')
+ * template.engine('hbs', consolidate.handlebars);
+ * template.engines('hbs');
+ * // => {render: [function], renderFile: [function]}
+ * ```
  *
  * See [engine-cache] for details and documentation.
  *
@@ -191,15 +198,10 @@ Template.prototype.lazyLayouts = function(options) {
  */
 
 Template.prototype.engine = function (ext, options, fn) {
+  if (arguments.length <= 1) {
+    return this._.engines.get(ext);
+  }
   this._.engines.register(ext, options, fn);
-
-  if (typeof ext !== 'string') {
-    ext = '*';
-  }
-  if (ext[0] !== '.') {
-    ext = '.' + ext;
-  }
-
   return this;
 };
 
@@ -235,10 +237,7 @@ Template.prototype.getEngine = function (ext) {
  */
 
 Template.prototype.helpers = function (ext) {
-  if (ext[0] !== '.') {
-    ext = '.' + ext;
-  }
-  return this.helpers[ext];
+  return this.getEngine(ext).helpers;
 };
 
 

@@ -83,7 +83,7 @@ describe('template engine', function() {
       assert.equal(typeof a, 'object');
       assert.equal(typeof a.render, 'function');
 
-      console.log(template)
+      // console.log(template)
 
       template.engines.should.have.property('.a');
       template.engines.should.have.property('.b');

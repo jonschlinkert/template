@@ -58,7 +58,6 @@ describe('template parser', function() {
       a.should.be.an.array;
       a.length.should.equal(3);
 
-      // console.log(template)
 
       template.parsers.should.have.property('.a');
       template.parsers.should.have.property('.b');
@@ -84,7 +83,6 @@ describe('template parser', function() {
 
   });
 });
-
 
 
 describe('default parsers', function () {

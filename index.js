@@ -7,14 +7,14 @@
 
 'use strict';
 
+var _ = require('lodash');
 var util = require('util');
-var Layouts = require('layouts');
 var Delimiters = require('delimiters');
 var Engines = require('engine-cache');
 var Parsers = require('parser-cache');
 var Helpers = require('helper-cache');
-var Cache = require('simple-cache');
-var _ = require('lodash');
+var Storage = require('simple-cache');
+var Layouts = require('layouts');
 var extend = _.extend;
 
 
@@ -37,25 +37,38 @@ var extend = _.extend;
 
 function Template(options) {
   Delimiters.call(this, options);
-  Cache.call(this, options);
+  Storage.call(this, options);
 
-  this._ = {};
-  this._.engines = new Engines();
-  this._.parsers = new Parsers();
-
-  this.engines = this.engines || {};
-  this.parsers = this.parsers || {};
-  this.helpers = this.helpers || {};
+  this.init();
 
   this.defaultConfig();
   this.defaultOptions();
   this.defaultEngines();
+  this.defaultHelpers();
   this.defaultParsers();
   this.defaultTemplates();
 }
 
-util.inherits(Template, Cache);
+util.inherits(Template, Storage);
 extend(Template.prototype, Delimiters.prototype);
+
+
+/**
+ * Initialize default cache configuration.
+ *
+ * @api private
+ */
+
+Template.prototype.init = function() {
+  this.engines = this.engines || {};
+  this.parsers = this.parsers || {};
+
+  this._ = {};
+
+  this._.helpers = this.helpers || {};
+  this._.parsers = new Parsers(this.parsers);
+  this._.engines = new Engines(this.engines);
+};
 
 
 /**
@@ -70,7 +83,6 @@ Template.prototype.defaultConfig = function() {
   this.set('imports', {});
   this.set('helpers', {});
   this.set('parsers', {});
-  this.set('routes', {});
   this.set('mixins', {});
 
   this.set('templates', {});
@@ -129,15 +141,28 @@ Template.prototype.defaultEngines = function() {
 
 
 /**
+ * Load default helpers.
+ *
+ * @api private
+ */
+
+Template.prototype.defaultHelpers = function() {
+  this.helper('partial', function (name, locals, settings) {
+    return self.render(name, locals, settings);
+  });
+};
+
+
+/**
  * Register default template types.
  *
  * @api private
  */
 
 Template.prototype.defaultTemplates = function() {
-  this.template('layout', 'layouts', {isLayout: true});
-  this.template('partial', 'partials');
-  this.template('page', 'pages');
+  this.create('layout', 'layouts', {isLayout: true});
+  this.create('partial', 'partials');
+  this.create('page', 'pages');
 };
 
 
@@ -162,88 +187,6 @@ Template.prototype.lazyLayouts = function(options) {
       tag: opts.layoutTag
     });
   }
-};
-
-
-/**
- * Register the given view engine callback `fn` as `ext`.
- *
- * See [engine-cache] for details and documentation.
- *
- * @param {String} `ext`
- * @param {Function|Object} `fn` or `options`
- * @param {Object} `options`
- * @return {Object} `Template` to enable chaining
- * @api public
- */
-
-Template.prototype.engine = function (ext, options, fn) {
-  this._.engines.register.apply(this, arguments);
-
-  if (typeof ext !== 'string') {
-    ext = '*';
-  }
-  if (ext[0] !== '.') {
-    ext = '.' + ext;
-  }
-
-  this.helpers[ext] = new Helpers();
-  return this;
-};
-
-
-/**
- * Get the engine registered for the given `ext`. If no
- * `ext` is passed, the entire cache is returned.
- *
- * ```js
- * var consolidate = require('consolidate')
- * template.engine('hbs', consolidate.handlebars);
- * template.getEngine('hbs');
- * // => {render: [function], renderFile: [function]}
- * ```
- *
- * @param {String} `ext` The engine to get.
- * @return {Object} Object of methods for the specified engine.
- * @api public
- */
-
-Template.prototype.getEngine = function (ext) {
-  return this._.engines.get.apply(this, arguments);
-};
-
-
-/**
- * Set a helper on the cache.
- *
- * @api public
- */
-
-Template.prototype.helper = function (key, fn) {
-  if (this.option('bindHelpers')) {
-    this.helpers[key] = _.bind(fn, this);
-  } else {
-    this.helpers[key] = fn;
-  }
-  return this;
-};
-
-
-/**
- * Get and set helpers for the given `ext` (engine). If no
- * `ext` is passed, the entire helper cache is returned.
- *
- *
- * @param {String} `ext` The helper cache to get and set to.
- * @return {Object} Object of helpers for the specified engine.
- * @api public
- */
-
-Template.prototype.helpers = function (ext) {
-  if (ext[0] !== '.') {
-    ext = '.' + ext;
-  }
-  return this.helpers[ext];
 };
 
 
@@ -303,8 +246,6 @@ Template.prototype.parser = function (ext, options, fn) {
  */
 
 Template.prototype.parse = function (file, stack, options) {
-  var args = [].slice.call(arguments);
-
   var o = _.merge({}, options);
 
   if (typeof file === 'object') {
@@ -326,7 +267,7 @@ Template.prototype.parse = function (file, stack, options) {
     stack = this.getParsers('*');
   }
 
-  this._.parsers.parse.call(this, file, stack, options);
+  this._.parsers.parse(file, stack, options);
   return this;
 };
 
@@ -345,8 +286,116 @@ Template.prototype.getParsers = function (ext) {
 
 
 /**
- * Add a new template `type` to Template by passing the singular
- * and plural names to be used for `type`.
+ * Register the given view engine callback `fn` as `ext`. If only `ext`
+ * is passed, the engine registered for `ext` is returned. If no `ext`
+ * is passed, the entire cache is returned.
+ *
+ * ```js
+ * var consolidate = require('consolidate')
+ * template.engine('hbs', consolidate.handlebars);
+ * template.engines('hbs');
+ * // => {render: [function], renderFile: [function]}
+ * ```
+ *
+ * See [engine-cache] for details and documentation.
+ *
+ * @param {String} `ext`
+ * @param {Function|Object} `fn` or `options`
+ * @param {Object} `options`
+ * @return {Object} `Template` to enable chaining
+ * @api public
+ */
+
+Template.prototype.engine = function (ext, options, fn) {
+  var args = [].slice.call(arguments);
+
+  if (args.length <= 1) {
+    return this._.engines.get(ext);
+  }
+
+  this._.engines.register(ext, options, fn);
+  return this;
+};
+
+
+/**
+ * Get the engine registered for the given `ext`. If no
+ * `ext` is passed, the entire cache is returned.
+ *
+ * ```js
+ * var consolidate = require('consolidate')
+ * template.engine('hbs', consolidate.handlebars);
+ * template.getEngine('hbs');
+ * // => {render: [function], renderFile: [function]}
+ * ```
+ *
+ * @param {String} `ext` The engine to get.
+ * @return {Object} Object of methods for the specified engine.
+ * @api public
+ */
+
+Template.prototype.getEngine = function (ext) {
+  return this._.engines.get(ext);
+};
+
+
+/**
+ * Register the given helper `fn` as `name`.
+ *
+ * @param {String} `name` The name of the helper.
+ * @param {String} `fn` The helper function.
+ * @return {Object} `Template` to enable chaining.
+ * @api public
+ */
+
+Template.prototype.helper = function (name, fn) {
+  this.cache.helpers[name] = _.bind(fn, this);
+  return this;
+};
+
+
+/**
+ * Get and set helpers for the given `ext` (engine). If no
+ * `ext` is passed, the entire helper cache is returned.
+ *
+ * @param {String} `ext` The helper cache to get and set to.
+ * @return {Object} Object of helpers for the specified engine.
+ * @api public
+ */
+
+Template.prototype.helpers = function (ext) {
+  return this.getEngine(ext).helpers;
+};
+
+
+/**
+ * Private method for adding layouts settings to the `cache` for
+ * the current template engine.
+ *
+ * @param {String} `ext` The extension to associate with the layout settings.
+ * @param {String} `name`
+ * @param {Object} `value`
+ * @param {Object} `options`
+ * @api private
+ */
+
+// Template.prototype._addLayout = function(ext, name, file, options) {
+//   this.lazyLayouts(ext, options);
+//   var layouts = {};
+
+//   layouts[name] = {
+//     name: name,
+//     data: file.data,
+//     content: file.content
+//   };
+
+//   this.layoutEngines[ext].setLayout(layouts);
+// };
+
+
+/**
+ * Add a new template `type` and methods to the `Template.prototype`
+ * by passing the singular and plural names to be used.
  *
  * @param {String} `type` Name of the new type to add
  * @param {Object} `options`
@@ -354,19 +403,29 @@ Template.prototype.getParsers = function (ext) {
  * @api public
  */
 
-Template.prototype.template = function(type, plural, isLayout) {
+Template.prototype.create = function(type, plural, isLayout) {
   if (typeof plural !== 'string') {
     throw new Error('A plural form must be defined for: "' + type + '".');
   }
 
   this.cache[plural] = {};
 
-  Template.prototype[type] = function (key, value) {
-    return this[plural](key, value);
+  Template.prototype[type] = function (key, template, data) {
+    if (typeof key === 'object') {
+      _.extend(this.cache[plural], key);
+    } else {
+      this.cache[plural][key] = {content: template, data: data};
+    }
+
+    // if (isLayout) {
+    //   this._addLayout(ext, key, file, opts);
+    // }
+    return this;
   };
 
   Template.prototype[plural] = function (key, value) {
-    if (!arguments.length) {
+    var args = [].slice.call(arguments);
+    if (!args.length) {
       return this.cache[plural];
     }
     return this;
@@ -388,6 +447,12 @@ Template.prototype.template = function(type, plural, isLayout) {
 //   this.cache.partials[key] = value;
 //   return this;
 // };
+//
+
+function typeOf(val) {
+  return {}.toString.call(val).toLowerCase()
+    .replace(/\[object ([\S]+)\]/, '$1');
+}
 
 
 /**

@@ -9,12 +9,17 @@
 
 var should = require('should');
 var Template = require('..');
+var template = new Template();
 var _ = require('lodash');
 
 
 describe('.set():', function () {
+  beforeEach(function () {
+    template.init();
+  });
+
   it('should register template helper functions:', function () {
-    var template = new Template();
+
     template.engine('a', {
       render: function () {}
     });
@@ -37,55 +42,50 @@ describe('.set():', function () {
     helpers.set('b', function (str) {
       return str.toUpperCase();
     });
-    console.log(template.helpers('*'))
 
-    template.helpers.should.have.property('.a');
-    template.helpers.should.have.property('.b');
+    helpers.should.have.property('a');
+    helpers.should.have.property('b');
     helpers.get('a').should.be.a.function;
     helpers.get('b').should.be.a.function;
   });
 
   it('should register _bound_ template helper functions by default:', function () {
-    var template = new Template();
+    var helpers = template.helpers('*');
 
-    template.set('a', function (str) {
+    helpers.set('a', function (str) {
       return str.toLowerCase();
     });
 
-    template.set('b', function (str) {
+    helpers.set('b', function (str) {
       return str.toUpperCase();
     });
 
-    template.helpers.should.have.property('.a');
-    template.helpers.should.have.property('.b');
+    helpers.should.have.property('a');
+    helpers.should.have.property('b');
   });
 
-  // it('should register _un-bound_ template helpers when `bindHelpers` is false:', function () {
-  //   var template = new Template();
-  //   template.option('bindHelpers', false);
+  it('should register _un-bound_ template helpers when `bindHelpers` is false:', function (done) {
+    template.option('bindHelpers', false);
 
-  //   template.set('a', function (str) {
-  //     return str.toLowerCase();
-  //   });
+    var helpers = template.helpers('*');
+    helpers.set('a', function (str) {
+      return str.toLowerCase();
+    });
 
-  //   template.set('b', function (str) {
-  //     return str.toUpperCase();
-  //   });
+    helpers.set('b', function (str) {
+      return str.toUpperCase();
+    });
 
-  //   template.cache.helpers.should.have.property('a');
-  //   template.cache.helpers.should.have.property('b');
+    helpers.should.have.property('a');
+    helpers.should.have.property('b');
 
+    var lodash = template.getEngine('md');
+    var ctx = {name: 'Jon Schlinkert'};
 
-
-  //   var lodash = template.getEngine('md');
-  //   var ctx = {name: 'Jon Schlinkert'};
-
-  //   lodash.render('<%= name %>', ctx, function (err, content) {
-  //     content.should.equal('Jon Schlinkert');
-  //     done();
-  //   });
-
-
-  // });
-
+    lodash.render('<%= name %>', ctx, function (err, content) {
+      if (err) console.log(err);
+      content.should.equal('Jon Schlinkert');
+      done();
+    });
+  });
 });

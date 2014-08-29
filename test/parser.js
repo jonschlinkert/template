@@ -86,7 +86,6 @@ describe('template parser', function() {
 });
 
 
-
 describe('default parsers', function () {
   before(function () {
     template.init();

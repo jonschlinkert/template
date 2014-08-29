@@ -83,7 +83,7 @@ describe('template engine', function() {
       assert.equal(typeof a, 'object');
       assert.equal(typeof a.render, 'function');
 
-      // console.log(template)
+      console.log(template)
 
       template.engines.should.have.property('.a');
       template.engines.should.have.property('.b');
@@ -97,6 +97,7 @@ describe('template engine', function() {
 
 describe('engines', function() {
   var lodash = template.getEngine('md');
+
 
   it('should render content with lodash.', function(done) {
     var ctx = {name: 'Jon Schlinkert'};

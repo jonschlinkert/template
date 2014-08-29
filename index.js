@@ -39,14 +39,7 @@ function Template(options) {
   Delimiters.call(this, options);
   Cache.call(this, options);
 
-  this._ = {};
-  this._.engines = new Engines();
-  this._.parsers = new Parsers();
-
-  this.engines = this.engines || {};
-  this.parsers = this.parsers || {};
-  this.helpers = this.helpers || {};
-
+  this.init();
   this.defaultConfig();
   this.defaultOptions();
   this.defaultEngines();
@@ -64,13 +57,33 @@ extend(Template.prototype, Delimiters.prototype);
  * @api private
  */
 
+Template.prototype.init = function() {
+  this._ = {};
+
+  this.engines = {};
+  this.parsers = {};
+
+  this._.parsers = new Parsers({parsers: this.parsers});
+  this._.engines = new Engines({engines: this.engines});
+
+  this.engines = this.engines || {};
+  this.parsers = this.parsers || {};
+  this.helpers = this.helpers || {};
+};
+
+
+/**
+ * Initialize default cache configuration.
+ *
+ * @api private
+ */
+
 Template.prototype.defaultConfig = function() {
   this.set('locals', {});
 
   this.set('imports', {});
   this.set('helpers', {});
   this.set('parsers', {});
-  this.set('routes', {});
   this.set('mixins', {});
 
   this.set('templates', {});
@@ -135,9 +148,9 @@ Template.prototype.defaultEngines = function() {
  */
 
 Template.prototype.defaultTemplates = function() {
-  this.template('layout', 'layouts', {isLayout: true});
-  this.template('partial', 'partials');
-  this.template('page', 'pages');
+  this.create('layout', 'layouts', {isLayout: true});
+  this.create('partial', 'partials');
+  this.create('page', 'pages');
 };
 
 
@@ -178,7 +191,7 @@ Template.prototype.lazyLayouts = function(options) {
  */
 
 Template.prototype.engine = function (ext, options, fn) {
-  this._.engines.register.apply(this, arguments);
+  this._.engines.register(ext, options, fn);
 
   if (typeof ext !== 'string') {
     ext = '*';
@@ -187,7 +200,6 @@ Template.prototype.engine = function (ext, options, fn) {
     ext = '.' + ext;
   }
 
-  this.helpers[ext] = new Helpers();
   return this;
 };
 
@@ -209,30 +221,13 @@ Template.prototype.engine = function (ext, options, fn) {
  */
 
 Template.prototype.getEngine = function (ext) {
-  return this._.engines.get.apply(this, arguments);
-};
-
-
-/**
- * Set a helper on the cache.
- *
- * @api public
- */
-
-Template.prototype.helper = function (key, fn) {
-  if (this.option('bindHelpers')) {
-    this.helpers[key] = _.bind(fn, this);
-  } else {
-    this.helpers[key] = fn;
-  }
-  return this;
+  return this._.engines.get(ext);
 };
 
 
 /**
  * Get and set helpers for the given `ext` (engine). If no
  * `ext` is passed, the entire helper cache is returned.
- *
  *
  * @param {String} `ext` The helper cache to get and set to.
  * @return {Object} Object of helpers for the specified engine.
@@ -345,8 +340,8 @@ Template.prototype.getParsers = function (ext) {
 
 
 /**
- * Add a new template `type` to Template by passing the singular
- * and plural names to be used for `type`.
+ * Add a new template `type` and methods to the `Template.prototype`
+ * by passing the singular and plural names to be used.
  *
  * @param {String} `type` Name of the new type to add
  * @param {Object} `options`
@@ -354,7 +349,7 @@ Template.prototype.getParsers = function (ext) {
  * @api public
  */
 
-Template.prototype.template = function(type, plural, isLayout) {
+Template.prototype.create = function(type, plural, isLayout) {
   if (typeof plural !== 'string') {
     throw new Error('A plural form must be defined for: "' + type + '".');
   }
@@ -362,13 +357,15 @@ Template.prototype.template = function(type, plural, isLayout) {
   this.cache[plural] = {};
 
   Template.prototype[type] = function (key, value) {
-    return this[plural](key, value);
+    return this.cache[plural][key] = value;
   };
 
   Template.prototype[plural] = function (key, value) {
     if (!arguments.length) {
       return this.cache[plural];
     }
+
+    // do stuff
     return this;
   };
 

@@ -17,11 +17,12 @@ describe('.create():', function () {
   it('should create a new template `type`:', function () {
     var template = new Template();
     template.create('include', 'includes');
-    template.include('foo', 'bar');
-
-    console.log(template.cache)
+    template.include('a', 'one');
+    template.include('b', 'two');
+    template.include('c', 'three');
 
     template.should.have.property('include');
     template.should.have.property('includes');
+    Object.keys(template.cache.includes).length.should.equal(3);
   });
 });

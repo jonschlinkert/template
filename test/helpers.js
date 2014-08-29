@@ -79,7 +79,7 @@ describe('.set():', function () {
     helpers.should.have.property('a');
     helpers.should.have.property('b');
 
-    var lodash = template.engine('md');
+    var lodash = template.getEngine('md');
     var ctx = {name: 'Jon Schlinkert'};
 
     lodash.render('<%= name %>', ctx, function (err, content) {

@@ -97,8 +97,6 @@ describe('template engine', function() {
 
 describe('engines', function() {
   var lodash = template.getEngine('md');
-
-
   it('should render content with lodash.', function(done) {
     var ctx = {name: 'Jon Schlinkert'};
 

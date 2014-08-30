@@ -13,7 +13,7 @@ var template = new Template();
 var _ = require('lodash');
 
 
-describe('.set():', function () {
+describe('.addHelper():', function () {
   beforeEach(function () {
     template.init();
   });
@@ -35,28 +35,28 @@ describe('.set():', function () {
 
     var helpers = template.helpers('*');
 
-    helpers.set('a', function (str) {
+    helpers.addHelper('a', function (str) {
       return str.toLowerCase();
     });
 
-    helpers.set('b', function (str) {
+    helpers.addHelper('b', function (str) {
       return str.toUpperCase();
     });
 
     helpers.should.have.property('a');
     helpers.should.have.property('b');
-    helpers.get('a').should.be.a.function;
-    helpers.get('b').should.be.a.function;
+    helpers.getHelper('a').should.be.a.function;
+    helpers.getHelper('b').should.be.a.function;
   });
 
   it('should register _bound_ template helper functions by default:', function () {
     var helpers = template.helpers('*');
 
-    helpers.set('a', function (str) {
+    helpers.addHelper('a', function (str) {
       return str.toLowerCase();
     });
 
-    helpers.set('b', function (str) {
+    helpers.addHelper('b', function (str) {
       return str.toUpperCase();
     });
 
@@ -68,11 +68,11 @@ describe('.set():', function () {
     template.option('bindHelpers', false);
 
     var helpers = template.helpers('*');
-    helpers.set('a', function (str) {
+    helpers.addHelper('a', function (str) {
       return str.toLowerCase();
     });
 
-    helpers.set('b', function (str) {
+    helpers.addHelper('b', function (str) {
       return str.toUpperCase();
     });
 

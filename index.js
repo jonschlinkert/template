@@ -9,6 +9,7 @@
 
 var _ = require('lodash');
 var util = require('util');
+var path = require('path');
 var Delimiters = require('delimiters');
 var Engines = require('engine-cache');
 var Parsers = require('parser-cache');
@@ -369,31 +370,6 @@ Template.prototype.helpers = function (ext) {
 
 
 /**
- * Private method for adding layouts settings to the `cache` for
- * the current template engine.
- *
- * @param {String} `ext` The extension to associate with the layout settings.
- * @param {String} `name`
- * @param {Object} `value`
- * @param {Object} `options`
- * @api private
- */
-
-// Template.prototype._addLayout = function(ext, name, file, options) {
-//   this.lazyLayouts(ext, options);
-//   var layouts = {};
-
-//   layouts[name] = {
-//     name: name,
-//     data: file.data,
-//     content: file.content
-//   };
-
-//   this.layoutEngines[ext].setLayout(layouts);
-// };
-
-
-/**
  * Add a new template `type` and methods to the `Template.prototype`
  * by passing the singular and plural names to be used.
  *
@@ -418,7 +394,7 @@ Template.prototype.create = function(type, plural, isLayout) {
     }
 
     // if (isLayout) {
-    //   this._addLayout(ext, key, file, opts);
+      // this._addLayout(ext, key, file, opts);
     // }
     return this;
   };
@@ -436,23 +412,44 @@ Template.prototype.create = function(type, plural, isLayout) {
 
 
 /**
- * Add an object of partials to `cache.partials`.
+ * Render `str` with the given `options` and `callback`.
  *
- * @param {Arguments}
- * @return {Object} `Template` to enable chaining.
+ * @param  {Object} `options` Options to pass to registered view engines.
+ * @return {String}
  * @api public
  */
 
-// Template.prototype.partial = function (key, value) {
-//   this.cache.partials[key] = value;
-//   return this;
-// };
-//
+Template.prototype.render = function (file, opts, cb) {
+  if (typeof opts === 'function') {
+    cb = opts;
+    opts = {};
+  }
 
-function typeOf(val) {
-  return {}.toString.call(val).toLowerCase()
-    .replace(/\[object ([\S]+)\]/, '$1');
-}
+  if (typeof file !== 'object' || file && !file.hasOwnProperty('content')) {
+    throw new Error('render() expects "' + chalk.yellow(file) + '" to be an object.');
+  }
+
+  extend(opts, _.omit(file, ['content']));
+  var ext = opts.ext || path.extname(file.path) || '*';
+  var engine = this.getEngine(ext);
+
+  try {
+    engine.render(file.content, opts, function (err, content, destExt) {
+      if (err) {
+        return cb(err);
+      }
+
+      ext = opts.ext || engine.outputFormat || destExt || ext;
+      if (ext && ext[0] !== '.') {
+        ext = '.' + ext;
+      }
+
+      cb(null, content, ext);
+    }.bind(this));
+  } catch (err) {
+    cb(err);
+  }
+};
 
 
 /**

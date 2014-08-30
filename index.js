@@ -10,10 +10,10 @@
 var _ = require('lodash');
 var util = require('util');
 var path = require('path');
+var chalk = require('chalk');
 var Delimiters = require('delimiters');
 var Engines = require('engine-cache');
 var Parsers = require('parser-cache');
-var Helpers = require('helper-cache');
 var Storage = require('simple-cache');
 var Layouts = require('layouts');
 var extend = _.extend;
@@ -148,7 +148,9 @@ Template.prototype.defaultEngines = function() {
  */
 
 Template.prototype.defaultHelpers = function() {
-  this.helper('partial', function (name, locals, settings) {
+  var self = this;
+
+  this.addHelper('partial', function (name, locals, settings) {
     return self.render(name, locals, settings);
   });
 };
@@ -370,6 +372,20 @@ Template.prototype.helpers = function (ext) {
 
 
 /**
+ * Get and set helpers for the given `ext` (engine). If no
+ * `ext` is passed, the entire helper cache is returned.
+ *
+ * @param {String} `ext` The helper cache to get and set to.
+ * @return {Object} Object of helpers for the specified engine.
+ * @api public
+ */
+
+Template.prototype.addHelper = function (ext) {
+  return this.getEngine(ext).helpers;
+};
+
+
+/**
  * Add a new template `type` and methods to the `Template.prototype`
  * by passing the singular and plural names to be used.
  *
@@ -429,7 +445,8 @@ Template.prototype.render = function (file, opts, cb) {
     throw new Error('render() expects "' + chalk.yellow(file) + '" to be an object.');
   }
 
-  extend(opts, _.omit(file, ['content']));
+  opts = extend({}, opts, _.omit(file, ['content']));
+
   var ext = opts.ext || path.extname(file.path) || '*';
   var engine = this.getEngine(ext);
 

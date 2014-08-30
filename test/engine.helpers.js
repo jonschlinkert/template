@@ -14,6 +14,7 @@ var Template = require('..');
 var template = new Template();
 var consolidate = require('consolidate');
 
+
 describe('engine render:', function () {
   it('should render a file with the specified engine:', function (done) {
     var lodash = template.getEngine('md');
@@ -23,6 +24,35 @@ describe('engine render:', function () {
       content.should.equal('Jon Schlinkert');
       done();
     });
+  });
+
+  it('should register helpers with the given engine:', function (done) {
+    template.engine('hbs', consolidate.handlebars);
+    var engine = template.getEngine('hbs');
+    var helpers = engine.helpers;
+
+    helpers.addHelper('include', function (filepath) {
+      return fs.readFileSync(filepath, 'utf8');
+    });
+
+    engine.helpers.should.have.property('include');
+    done();
+  });
+
+  it('should use helpers with the render method:', function (done) {
+    template.engine('hbs', consolidate.handlebars);
+    var engine = template.getEngine('hbs');
+    var helpers = engine.helpers;
+
+    helpers.addHelper('include', function (filepath) {
+      return fs.readFileSync(filepath, 'utf8');
+    });
+
+    engine.render('{{include "README.md"}}', function (err, content) {
+      if (err) console.log(err);
+      /^# view-cache/.test(content).should.be.true;
+    });
+    done();
   });
 
   it('should render a file using helpers passed to an engine.', function(done) {

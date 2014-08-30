@@ -13,8 +13,6 @@ var should = require('should');
 var Template = require('..');
 var template = new Template();
 var consolidate = require('consolidate');
-var engines = require('engines');
-
 
 
 describe('template render:', function () {

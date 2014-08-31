@@ -45,9 +45,9 @@ function Template(options) {
 
   this.defaultConfig();
   this.defaultOptions();
+  this.defaultParsers();
   this.defaultEngines();
   this.defaultHelpers();
-  this.defaultParsers();
   this.defaultTemplates();
 }
 
@@ -413,20 +413,21 @@ Template.prototype.create = function(type, plural, options) {
     if (typeof key === 'object') {
       _.extend(o, _.values(key)[0]);
       key = _.keys(key)[0];
-      o.locals = value;
+      o.path = key;
     } else {
       o.content = value;
-      o.locals = locals;
     }
 
-
     o.path = o.path || key;
-    o.locals = _.extend({}, o.locals);
 
     var ext = /\./.test(o.path) ? path.extname(o.path) : '*';
     var parsers = this.getParsers(ext);
 
     this.cache[plural][key] = this.parseSync(o, parsers, locals);
+
+    // if (layout) {
+    //   this._addLayout(ext, key, file, opts);
+    // }
     return this;
   };
 
@@ -453,23 +454,37 @@ Template.prototype.create = function(type, plural, options) {
  * @api public
  */
 
-Template.prototype.render = function (file, opts, cb) {
-  if (typeof opts === 'function') {
-    cb = opts;
-    opts = {};
+Template.prototype.render = function (file, options, cb) {
+  if (typeof options === 'function') {
+    cb = options;
+    options = {};
   }
 
   if (typeof file !== 'object' || file && !file.hasOwnProperty('content')) {
     throw new Error('render() expects "' + file + '" to be an object.');
   }
 
-  opts = extend({}, opts, _.omit(file, ['content']));
+  var o = _.omit(file, ['data', 'orig']);
+  var opts = extend({}, options, o, file.data);
 
   var ext = opts.ext || path.extname(file.path) || '*';
   var engine = this.getEngine(ext);
 
   // Extend engine-specific helpers with generic helpers.
   opts.helpers = _.extend({}, this.cache.helpers, opts.helpers);
+  if (!opts.partials) {
+    opts.partials = {};
+  }
+
+  if (this.option('mergePartials')) {
+    _.forEach(this.viewType.partial, function (type) {
+      opts.partials = extend({}, opts.partials, this.cache[type]);
+    }.bind(this));
+  } else {
+    _.forEach(this.viewType.partial, function (type) {
+      opts[type] = extend({}, opts[type], this.cache[type]);
+    }.bind(this));
+  }
 
   try {
     engine.render(file.content, opts, function (err, content, destExt) {

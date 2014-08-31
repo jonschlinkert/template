@@ -49,7 +49,7 @@ describe('template page', function () {
     it('should add the third arg to the `data` property.', function () {
       var template = new Template();
       template.page('a', 'b', {title: 'c'});
-      template.cache.pages.a.data.should.eql({title: 'c'});
+      template.cache.pages.a.data.should.have.property('title');
     });
   });
 
@@ -124,3 +124,4 @@ describe('template page', function () {
     });
   });
 });
+

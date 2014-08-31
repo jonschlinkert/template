@@ -49,7 +49,7 @@ describe('template layout', function () {
     it('should add the third arg to the `data` property.', function () {
       var template = new Template();
       template.layout('a', 'b', {title: 'c'});
-      template.cache.layouts.a.data.should.eql({title: 'c'});
+      template.cache.layouts.a.data.should.have.property('title');
     });
   });
 

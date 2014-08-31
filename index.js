@@ -199,15 +199,7 @@ Template.prototype.lazyLayouts = function(options) {
  * is not given, the parser `fn` will be pushed into the
  * default parser stack.
  *
- * ```js
- * // Default stack
- * template.parser(require('parser-front-matter'));
- *
- * // Associated with `.hbs` file extension
- * template.parser('hbs', require('parser-front-matter'));
- * ```
- *
- * See [parser-cache] for the full range of options and documentation.
+ * {%= docs("api-parser") %}
  *
  * @param {String} `ext`
  * @param {Function|Object} `fn` or `options`
@@ -380,7 +372,6 @@ Template.prototype.create = function(type, plural, isLayout) {
       key = _.keys(key)[0];
       o.locals = value;
     } else {
-      o.path = key;
       o.content = value;
       o.locals = locals;
     }
@@ -434,7 +425,8 @@ Template.prototype.render = function (file, opts, cb) {
   var ext = opts.ext || path.extname(file.path) || '*';
   var engine = this.getEngine(ext);
 
-  opts.helpers = _.extend({}, opts.helpers, this.cache.helpers);
+  // Extend engine-specific helpers with generic helpers.
+  opts.helpers = _.extend({}, this.cache.helpers, opts.helpers);
 
   try {
     engine.render(file.content, opts, function (err, content, destExt) {

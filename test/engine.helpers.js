@@ -16,6 +16,48 @@ var consolidate = require('consolidate');
 
 
 describe('engine render:', function () {
+  it('should register helpers for an engine:', function () {
+    template.engine('hbs', {
+      render: function () {}
+    });
+
+    var helpers = template.helpers('hbs');
+
+    helpers.addHelper('foo', function (str) {
+      return str.toLowerCase();
+    });
+
+    helpers.addHelper('bar', function (str) {
+      return str.toUpperCase();
+    });
+
+    helpers.should.have.property('foo');
+    helpers.should.have.property('bar');
+    helpers.getHelper('foo').should.be.a.function;
+    helpers.getHelper('bar').should.be.a.function;
+  });
+
+  it('should be chainable:', function () {
+    template.engine('hbs', {
+      render: function () {}
+    });
+
+    var helpers = template.helpers('hbs');
+
+    helpers
+      .addHelper('foo', function (str) {
+        return str.toLowerCase();
+      })
+      .addHelper('bar', function (str) {
+        return str.toUpperCase();
+      });
+
+    helpers.should.have.property('foo');
+    helpers.should.have.property('bar');
+    helpers.getHelper('foo').should.be.a.function;
+    helpers.getHelper('bar').should.be.a.function;
+  });
+
   it('should render a file with the specified engine:', function (done) {
     var lodash = template.getEngine('md');
 

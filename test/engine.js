@@ -20,7 +20,7 @@ describe('template engine', function() {
   });
 
   describe('.engine()', function() {
-    it('should engine template engines to the `engines` object.', function() {
+    it('should add engines to the `engines` object.', function() {
       template.engine('a', {
         render: function () {}
       });

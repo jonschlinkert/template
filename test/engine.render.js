@@ -12,9 +12,10 @@ var path = require('path');
 var should = require('should');
 var Template = require('..');
 var template = new Template();
+var consolidate = require('consolidate');
 
-describe('template render:', function () {
-  it('should render a file with the explicitly specified engine:', function (done) {
+describe('engine render:', function () {
+  it('should render a file with the specified engine:', function (done) {
     var lodash = template.getEngine('md');
 
     lodash.render('<%= name %>', {name: 'Jon Schlinkert'}, function (err, content) {
@@ -24,17 +25,7 @@ describe('template render:', function () {
     });
   });
 
-  it('should determine the engine from the `path` on the given object:', function (done) {
-    var file = {name: 'Jon Schlinkert', path: 'a/b/c.md', content: '<%= name %>'};
-
-    template.render(file, {}, function (err, content) {
-      if (err) console.log(err);
-      content.should.equal('Jon Schlinkert');
-      done();
-    });
-  });
-
-  it('should use helpers registered on the imports property.', function(done) {
+  it('should render a file using helpers passed to an engine.', function(done) {
     var lodash = template.getEngine('md');
     var ctx = {
       name: 'Jon Schlinkert',

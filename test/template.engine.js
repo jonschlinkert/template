@@ -14,13 +14,14 @@ var should = require('should');
 var Template = require('..');
 var template = new Template();
 
+
 describe('template engine', function() {
   beforeEach(function() {
     template.clear();
   });
 
   describe('.engine()', function() {
-    it('should engine template engines to the `engines` object.', function() {
+    it('should add engines to the `engines` object.', function() {
       template.engine('a', {
         render: function () {}
       });

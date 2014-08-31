@@ -18,36 +18,6 @@ describe('.addHelper():', function () {
     template.init();
   });
 
-  it('should register template helper functions:', function () {
-
-    template.engine('a', {
-      render: function () {}
-    });
-    template.engine('b', {
-      render: function () {}
-    });
-    template.engine('c', {
-      render: function () {}
-    });
-    template.engine('d', {
-      render: function () {}
-    });
-
-    var helpers = template.helpers('*');
-
-    helpers.addHelper('a', function (str) {
-      return str.toLowerCase();
-    });
-
-    helpers.addHelper('b', function (str) {
-      return str.toUpperCase();
-    });
-
-    helpers.should.have.property('a');
-    helpers.should.have.property('b');
-    helpers.getHelper('a').should.be.a.function;
-    helpers.getHelper('b').should.be.a.function;
-  });
 
   it('should register _bound_ template helper functions by default:', function () {
     var helpers = template.helpers('*');
@@ -66,15 +36,15 @@ describe('.addHelper():', function () {
 
   it('should register _un-bound_ template helpers when `bindHelpers` is false:', function (done) {
     template.option('bindHelpers', false);
-
     var helpers = template.helpers('*');
-    helpers.addHelper('a', function (str) {
-      return str.toLowerCase();
-    });
 
-    helpers.addHelper('b', function (str) {
-      return str.toUpperCase();
-    });
+    helpers
+      .addHelper('a', function (str) {
+        return str.toLowerCase();
+      })
+      .addHelper('b', function (str) {
+        return str.toUpperCase();
+      });
 
     helpers.should.have.property('a');
     helpers.should.have.property('b');

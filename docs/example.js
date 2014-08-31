@@ -16,10 +16,6 @@ engine.addHelper('include', function (filepath) {
   return fs.readFileSync(filepath, 'utf8');
 });
 
-engine.addMixin('include', function (filepath) {
-  return fs.readFileSync(filepath, 'utf8');
-});
-
 
 template.page('home.hbs', 'this is content.');
 template.partial('sidebar.hbs', '<section>Sidebar</section>');
@@ -45,5 +41,5 @@ template.render(file, function (err, content) {
   console.log(content);
 });
 
-  // var inspect = require('util').inspect;
-  // console.log(inspect(template, null, 10));
+  var inspect = require('util').inspect;
+  console.log(inspect(template, null, 10));

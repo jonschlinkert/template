@@ -65,6 +65,11 @@ Template.prototype.init = function() {
   this.engines = this.engines || {};
   this.parsers = this.parsers || {};
 
+  this.viewType = {};
+  this.viewType.partial = [];
+  this.viewType.renderable = [];
+  this.viewType.layout = [];
+
   this._ = {};
 
   this._.helpers = this.helpers || {};
@@ -160,8 +165,8 @@ Template.prototype.defaultHelpers = function() {
  */
 
 Template.prototype.defaultTemplates = function() {
-  this.create('page', 'pages', {isRenderable: true});
-  this.create('layout', 'layouts', {isLayout: true});
+  this.create('page', 'pages', {renderable: true});
+  this.create('layout', 'layouts', {layout: true});
   this.create('partial', 'partials');
 };
 
@@ -378,8 +383,8 @@ Template.prototype.addHelper = function (name, fn, thisArg) {
  * @param {String} `type` Singular name of the type to create, e.g. `page`.
  * @param {String} `plural` Plural name of the template type, e.g. `pages`.
  * @param {Object} `options` Options for the template type.
- *   @option {Boolean} [options] `isRenderable` Is the template a partial view?
- *   @option {Boolean} [options] `isLayout` Can the template be used as a layout?
+ *   @option {Boolean} [options] `renderable` Is the template a partial view?
+ *   @option {Boolean} [options] `layout` Can the template be used as a layout?
  * @return {Object} `Template` to enable chaining.
  * @api public
  */
@@ -393,15 +398,16 @@ Template.prototype.create = function(type, plural, options) {
 
   this.cache[plural] = this.cache[plural] || {};
 
-  if (opts.isRenderable) {
-    this.union('isRenderable', plural);
-  } else if (opts.isLayout) {
-    this.union('isLayout', plural);
+  if (opts.renderable) {
+    this.viewType.renderable.push(plural);
+  } else if (opts.layout) {
+    this.viewType.layout.push(plural);
   } else {
-    this.union('isPartial', plural);
+    this.viewType.partial.push(plural);
   }
 
   Template.prototype[type] = function (key, value, locals) {
+    var args = [].slice.call(arguments);
     var o = {};
 
     if (typeof key === 'object') {
@@ -413,6 +419,7 @@ Template.prototype.create = function(type, plural, options) {
       o.locals = locals;
     }
 
+
     o.path = o.path || key;
     o.locals = _.extend({}, o.locals);
 
@@ -420,10 +427,6 @@ Template.prototype.create = function(type, plural, options) {
     var parsers = this.getParsers(ext);
 
     this.cache[plural][key] = this.parseSync(o, parsers, locals);
-
-    // if (isLayout) {
-    //   this._addLayout(ext, key, file, opts);
-    // }
     return this;
   };
 
@@ -432,6 +435,9 @@ Template.prototype.create = function(type, plural, options) {
     if (!args.length) {
       return this.cache[plural];
     }
+
+    // do stuff
+
     return this;
   };
 

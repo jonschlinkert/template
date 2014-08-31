@@ -24,7 +24,7 @@ describe('template create:', function () {
   });
 
   describe('when a new template type is created:', function () {
-    it('should add templates registered for that type to a corresponding property on the cache:', function () {
+    it('should add templates registered for that type to its corresponding (plural) object on the cache:', function () {
       var template = new Template();
       template.create('apple', 'apples');
 
@@ -36,44 +36,44 @@ describe('template create:', function () {
     });
   });
 
-  describe('when the `isRenderable` flag is set on the options:', function () {
-    it('should push the name of the type into the `isRenderable` array on the cache:', function () {
+  describe('when the `renderable` flag is set on the options:', function () {
+    it('should push the name of the type into the `renderable` array on the cache:', function () {
       var template = new Template();
-      template.create('apple', 'apples', {isRenderable: true});
+      template.create('apple', 'apples', {renderable: true});
 
-      _.contains(template.cache.isRenderable, 'pages').should.be.true;
-      _.contains(template.cache.isRenderable, 'apples').should.be.true;
+      _.contains(template.viewType.renderable, 'pages').should.be.true;
+      _.contains(template.viewType.renderable, 'apples').should.be.true;
     });
   });
 
-  describe('when the `isLayout` flag is set on the options:', function () {
-    it('should push the name of the type into the `isLayout` array on the cache:', function () {
+  describe('when the `layout` flag is set on the options:', function () {
+    it('should push the name of the type into the `layout` array on the cache:', function () {
       var template = new Template();
-      template.create('orange', 'oranges', {isLayout: true});
+      template.create('orange', 'oranges', {layout: true});
 
-      _.contains(template.cache.isLayout, 'layouts').should.be.true;
-      _.contains(template.cache.isLayout, 'oranges').should.be.true;
+      _.contains(template.viewType.layout, 'layouts').should.be.true;
+      _.contains(template.viewType.layout, 'oranges').should.be.true;
     });
   });
 
-  describe('when neither the `isLayout` flag, nor the `isRenderable` is set on the options:', function () {
-    it('should push the name of the type into the `isPartial` array on the cache:', function () {
+  describe('when neither the `layout` flag, nor the `renderable` is set on the options:', function () {
+    it('should push the name of the type into the `partial` array on the cache:', function () {
       var template = new Template();
       template.create('banana', 'bananas');
 
-      _.contains(template.cache.isPartial, 'partials').should.be.true;
-      _.contains(template.cache.isPartial, 'bananas').should.be.true;
+      _.contains(template.viewType.partial, 'partials').should.be.true;
+      _.contains(template.viewType.partial, 'bananas').should.be.true;
     });
   });
 
 
-  describe('when the `isPartial` flag is set on the options:', function () {
-    it('should push the name of the type into the `isPartial` array on the cache:', function () {
+  describe('when the `partial` flag is set on the options:', function () {
+    it('should push the name of the type into the `partial` array on the cache:', function () {
       var template = new Template();
-      template.create('banana', 'bananas', {isPartial: true});
+      template.create('banana', 'bananas', {partial: true});
 
-      _.contains(template.cache.isPartial, 'partials').should.be.true;
-      _.contains(template.cache.isPartial, 'bananas').should.be.true;
+      _.contains(template.viewType.partial, 'partials').should.be.true;
+      _.contains(template.viewType.partial, 'bananas').should.be.true;
     });
   });
 });

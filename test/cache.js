@@ -133,43 +133,4 @@ describe('Template', function () {
       template.cache['e.f.g'].should.eql(1);
     });
   });
-
-  describe('exists():', function () {
-    var template = new Template();
-    var obj = {a: {b: {c: 1, d: '', e: null, f: undefined, 'g.h.i': 2}}};
-
-    template.merge(obj);
-
-    it('immediate property should exist.', function() {
-      template.exists('a').should.be.ok;
-    });
-    it('nested property should exist.', function() {
-      template.exists('a.b').should.be.ok;
-    });
-    it('nested property should exist.', function() {
-      template.exists('a.b.c').should.be.ok;
-    });
-    it('nested property should exist.', function() {
-      template.exists('a.b.d').should.be.ok;
-    });
-    it('nested property should exist.', function() {
-      template.exists('a.b.e').should.be.ok;
-    });
-    it('nested property should exist.', function() {
-      template.exists('a.b.f').should.be.ok;
-    });
-    it('literal backslash should escape period in property name.', function() {
-      template.exists('a.b.g\\.h\\.i').should.be.ok;
-    });
-    it('nonexistent property should not exist.', function() {
-      template.exists('x').should.eql(false);
-    });
-    it('nonexistent property should not exist.', function() {
-      template.exists('a.x').should.eql(false);
-    });
-    it('nonexistent property should not exist.', function() {
-      template.exists('a.b.x').should.eql(false);
-    });
-  });
-
 });

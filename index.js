@@ -107,6 +107,7 @@ Template.prototype.defaultOptions = function() {
   this.option('layout', null);
   this.option('layoutTag', 'body');
   this.option('partialLayout', null);
+  this.option('mergePartials', true);
 
   this.option('delims', {});
   this.option('layoutDelims', ['{{', '}}']);
@@ -214,12 +215,7 @@ Template.prototype.parser = function (ext, options, fn) {
 
 
 /**
- * Run a stack of parser for the given `file`. If `file` is an object
- * with an `ext` property, then `ext` is used to get the parser
- * stack. If `ext` doesn't have a stack, the default `noop` parser
- * will be used.
- *
- * {%= docs("api-parse") %}
+ * Private method for normalizing args passed to parsers.
  *
  * @param  {Object|String} `file` Either a string or an object.
  * @param  {Array} `stack` Optionally pass an array of functions to use as parsers.
@@ -252,9 +248,39 @@ Template.prototype._parse = function (method, file, stack, options) {
   return this._.parsers[method](file, stack, options);
 };
 
+
+/**
+ * Run a `file` through the given `stack` of parsers. If `file` is
+ * an object with a `path` property, then the `extname` is used to
+ * get the parser stack. If a stack isn't found on the cache the
+ * default `noop` parser will be used.
+ *
+ * {%= docs("api-parse") %}
+ *
+ * @param  {Object|String} `file` Either a string or an object.
+ * @param  {Array} `stack` Optionally pass an array of functions to use as parsers.
+ * @param  {Object} `options`
+ * @return {Object} Normalize `file` object.
+ */
+
 Template.prototype.parse = function (file, stack, options) {
   return this._parse('parse', file, stack, options);
 };
+
+
+/**
+ * Run a `file` through the given `stack` of parsers; like `.parse()`,
+ * but synchronous. If `file` is an object with a `path` property,
+ * then the `extname` is used to get the parser stack. If a stack isn't
+ * found on the cache the default `noop` parser will be used.
+ *
+ * {%= docs("api-parseSync") %}
+ *
+ * @param  {Object|String} `file` Either a string or an object.
+ * @param  {Array} `stack` Optionally pass an array of functions to use as parsers.
+ * @param  {Object} `options`
+ * @return {Object} Normalize `file` object.
+ */
 
 Template.prototype.parseSync = function (file, stack, options) {
   return this._parse('parseSync', file, stack, options);
@@ -348,16 +374,21 @@ Template.prototype.addHelper = function (name, fn, thisArg) {
 
 
 /**
- * Add a new template `type` and methods to the `Template.prototype`
- * by passing the singular and plural names to be used.
+ * Add a new template `type`, along with associated get/set methods.
+ * You must specify both the singular and plural names for the type.
  *
- * @param {String} `type` Name of the new type to add
- * @param {Object} `options`
+ * @param {String} `type` Singular name of the type to create, e.g. `page`.
+ * @param {String} `plural` Plural name of the template type, e.g. `pages`.
+ * @param {Object} `options` Options for the template type.
+ *   @option {Boolean} [options] `isRenderable` Is the template a partial view?
+ *   @option {Boolean} [options] `isLayout` Can the template be used as a layout?
  * @return {Object} `Template` to enable chaining.
  * @api public
  */
 
-Template.prototype.create = function(type, plural, isLayout) {
+Template.prototype.create = function(type, plural, options) {
+  var opts = _.extend({}, options);
+
   if (typeof plural !== 'string') {
     throw new Error('A plural form must be defined for: "' + type + '".');
   }

@@ -1,23 +1,23 @@
 {
-  "name": "view-cache-2",
+  "name": "view-cache",
   "description": "Templates.",
   "version": "0.1.0",
-  "homepage": "https://github.com/jonschlinkert/view-cache-2",
+  "homepage": "https://github.com/jonschlinkert/view-cache",
   "author": {
     "name": "Jon Schlinkert",
     "url": "https://github.com/jonschlinkert"
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/jonschlinkert/view-cache-2.git"
+    "url": "git://github.com/jonschlinkert/view-cache.git"
   },
   "bugs": {
-    "url": "https://github.com/jonschlinkert/view-cache-2/issues"
+    "url": "https://github.com/jonschlinkert/view-cache/issues"
   },
   "licenses": [
     {
       "type": "MIT",
-      "url": "https://github.com/jonschlinkert/view-cache-2/blob/master/LICENSE-MIT"
+      "url": "https://github.com/jonschlinkert/view-cache/blob/master/LICENSE-MIT"
     }
   ],
   "keywords": [

@@ -216,6 +216,7 @@ Template.prototype.parser = function (ext, options, fn) {
  * @param  {Array} `stack` Optionally pass an array of functions to use as parsers.
  * @param  {Object} `options`
  * @return {Object} Normalize `file` object.
+ * @api private
  */
 
 Template.prototype._parse = function (method, file, stack, options) {
@@ -256,6 +257,7 @@ Template.prototype._parse = function (method, file, stack, options) {
  * @param  {Array} `stack` Optionally pass an array of functions to use as parsers.
  * @param  {Object} `options`
  * @return {Object} Normalize `file` object.
+ * @api public
  */
 
 Template.prototype.parse = function (file, stack, options) {
@@ -275,6 +277,7 @@ Template.prototype.parse = function (file, stack, options) {
  * @param  {Array} `stack` Optionally pass an array of functions to use as parsers.
  * @param  {Object} `options`
  * @return {Object} Normalize `file` object.
+ * @api public
  */
 
 Template.prototype.parseSync = function (file, stack, options) {

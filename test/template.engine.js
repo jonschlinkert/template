@@ -14,6 +14,7 @@ var should = require('should');
 var Template = require('..');
 var template = new Template();
 
+
 describe('template engine', function() {
   beforeEach(function() {
     template.clear();

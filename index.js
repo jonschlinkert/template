@@ -81,13 +81,8 @@ Template.prototype.init = function() {
 
 Template.prototype.defaultConfig = function() {
   this.set('locals', {});
-
   this.set('imports', {});
   this.set('helpers', {});
-  this.set('parsers', {});
-  this.set('mixins', {});
-
-  this.set('templates', {});
   this.set('layouts', {});
   this.set('partials', {});
   this.set('pages', {});
@@ -165,9 +160,9 @@ Template.prototype.defaultHelpers = function() {
  */
 
 Template.prototype.defaultTemplates = function() {
+  this.create('page', 'pages', {isRenderable: true});
   this.create('layout', 'layouts', {isLayout: true});
   this.create('partial', 'partials');
-  this.create('page', 'pages');
 };
 
 
@@ -394,6 +389,14 @@ Template.prototype.create = function(type, plural, options) {
   }
 
   this.cache[plural] = this.cache[plural] || {};
+
+  if (opts.isRenderable) {
+    this.union('isRenderable', plural);
+  } else if (opts.isLayout) {
+    this.union('isLayout', plural);
+  } else {
+    this.union('isPartial', plural);
+  }
 
   Template.prototype[type] = function (key, value, locals) {
     var o = {};

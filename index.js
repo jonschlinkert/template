@@ -140,8 +140,15 @@ Template.prototype.defaultParsers = function() {
  */
 
 Template.prototype.defaultEngines = function() {
-  this.engine('md', require('engine-lodash'));
-  this.engine('*', require('engine-noop'));
+  this.engine('md', require('engine-lodash'), {
+    layoutDelims: ['{%', '%}'],
+    destExt: '.html'
+  });
+
+  this.engine('*', require('engine-noop'), {
+    layoutDelims: ['{%', '%}'],
+    destExt: '.html'
+  });
 };
 
 

@@ -11,7 +11,7 @@ var _ = require('lodash');
 var util = require('util');
 var path = require('path');
 var chalk = require('chalk');
-var utils = require('parser-utils')
+var utils = require('parser-utils');
 var Delimiters = require('delimiters');
 var Engines = require('engine-cache');
 var Parsers = require('parser-cache');
@@ -102,12 +102,13 @@ Template.prototype.defaultConfig = function() {
 
 Template.prototype.defaultOptions = function() {
   this.option('cwd', process.cwd());
+  this.option('ext', '*');
 
   this.option('bindHelpers', true);
   this.option('layout', null);
   this.option('layoutTag', 'body');
   this.option('partialLayout', null);
-  this.option('mergePartials', true);
+  this.option('mergePartials', false);
 
   this.option('delims', {});
   this.option('layoutDelims', ['{{', '}}']);
@@ -204,6 +205,7 @@ Template.prototype.lazyLayouts = function(options) {
  *
  * @param {String} `ext`
  * @param {Function|Object} `fn` or `options`
+ * @param {Function} `fn` Callback function.
  * @return {Object} `Template` to enable chaining.
  * @api public
  */
@@ -245,7 +247,6 @@ Template.prototype._parse = function (method, file, stack, options) {
   if (!stack) {
     stack = this.getParsers('*');
   }
-
   return this._.parsers[method](file, stack, options);
 };
 
@@ -339,7 +340,6 @@ Template.prototype.engine = function (ext, options, fn) {
  * @return {Object} Object of methods for the specified engine.
  * @api public
  */
-
 Template.prototype.getEngine = function (ext) {
   return this._.engines.get(ext);
 };
@@ -390,14 +390,93 @@ Template.prototype.addHelper = function (name, fn, thisArg) {
  */
 
 Template.prototype.create = function(type, plural, options) {
-  var opts = _.extend({}, options);
-
   if (typeof plural !== 'string') {
     throw new Error('A plural form must be defined for: "' + type + '".');
   }
 
-  this.cache[plural] = this.cache[plural] || {};
+  var opts = extend({ext: this.options.ext}, options);
+  if (!this.cache[plural]) {
+    this.set(plural, {});
+  }
 
+  // Add `viewType` arrays to the cache
+  this._setType(plural, opts);
+
+  // Singular template `type` (e.g. `page`)
+  Template.prototype[type] = function (key, value, locals) {
+    var args = [].slice.call(arguments);
+    var arity = args.length;
+    var obj = {}, name;
+
+    if (arity === 1) {
+      if (isFilepath(key)) {
+        // if no `path` property exists, use the actual key
+        if (!_.values(key)[0].hasOwnProperty('path')) {
+          _.values(key)[0].path = Object.keys(key)[0];
+        }
+        _.extend(obj, key);
+      } else {
+        if (!key.hasOwnProperty('content')) {
+          key = {content: key};
+        }
+        if (key.hasOwnProperty('path')) {
+          obj[key.path] = key;
+        } else {
+          throw new Error('template.'+type+'() cannot find a key for:', key);
+        }
+      }
+    } else {
+      if (typeof value === 'string') {
+        value = {content: value};
+        value.path = key;
+      }
+      obj[key] = value;
+    }
+
+
+    _.forIn(obj, function (file, key) {
+      var ext = path.extname(file.path);
+      if (!ext) {
+        ext = opts.ext;
+      }
+
+      var fileProps = ['data', 'content', 'orig', 'path'];
+
+      // Separate the `root` properties from the `data`
+      var root = _.pick(file, fileProps);
+      root.data = _.extend({}, _.omit(file, fileProps), locals, root.data);
+      var stack = this.getParsers(ext);
+
+      this.cache[plural][key] = this.parseSync(root, stack, locals);
+    }.bind(this));
+
+    return this;
+  };
+
+  // Plural template `type` (e.g. `pages`)
+  Template.prototype[plural] = function (key, value, locals) {
+    if (!arguments.length) {
+      return this.cache[plural];
+    }
+
+    // this.cache[plural]
+    return this;
+  };
+
+  return this;
+};
+
+
+/**
+ * Keeps track of custom view types, so we can pass them properly to
+ * registered engines.
+ *
+ * @param {String} `plural`
+ * @param {Object} `opts`
+ * @api private
+ */
+
+Template.prototype._setType = function (plural, opts) {
   if (opts.renderable) {
     this.viewType.renderable.push(plural);
   } else if (opts.layout) {
@@ -405,44 +484,6 @@ Template.prototype.create = function(type, plural, options) {
   } else {
     this.viewType.partial.push(plural);
   }
-
-  Template.prototype[type] = function (key, value, locals) {
-    var args = [].slice.call(arguments);
-    var o = {};
-
-    if (typeof key === 'object') {
-      _.extend(o, _.values(key)[0]);
-      key = _.keys(key)[0];
-      o.path = key;
-    } else {
-      o.content = value;
-    }
-
-    o.path = o.path || key;
-
-    var ext = /\./.test(o.path) ? path.extname(o.path) : '*';
-    var parsers = this.getParsers(ext);
-
-    this.cache[plural][key] = this.parseSync(o, parsers, locals);
-
-    // if (layout) {
-    //   this._addLayout(ext, key, file, opts);
-    // }
-    return this;
-  };
-
-  Template.prototype[plural] = function (key, value) {
-    var args = [].slice.call(arguments);
-    if (!args.length) {
-      return this.cache[plural];
-    }
-
-    // do stuff
-
-    return this;
-  };
-
-  return this;
 };
 
 
@@ -478,7 +519,11 @@ Template.prototype.render = function (file, options, cb) {
 
   if (this.option('mergePartials')) {
     _.forEach(this.viewType.partial, function (type) {
-      opts.partials = extend({}, opts.partials, this.cache[type]);
+      var partials = extend({}, opts.partials, this.cache[type]);
+      _.forIn(partials, function (value, key) {
+        opts.partials[key] = value.content;
+        opts.locals = _.extend({}, opts.locals, value.data);
+      });
     }.bind(this));
   } else {
     _.forEach(this.viewType.partial, function (type) {
@@ -503,6 +548,19 @@ Template.prototype.render = function (file, options, cb) {
     cb(err);
   }
 };
+
+
+/**
+ * Returns `true` if an object's key looks like it might
+ * be a filepath.
+ *
+ * @api private
+ */
+
+function isFilepath(key) {
+  return _.keys(key).length === 1 &&
+    typeof key === 'object';
+}
 
 
 /**

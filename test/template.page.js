@@ -23,8 +23,8 @@ describe('template page', function () {
 
     it('should add the template string to the `content` property.', function () {
       var template = new Template();
-      template.page('a', 'this is content.');
-      template.cache.pages.a.content.should.equal('this is content.');
+      template.page('a.md', 'this is content.');
+      template.cache.pages['a.md'].content.should.equal('this is content.');
     });
 
     it('should add original `content` to the `orig.content` property.', function () {
@@ -83,6 +83,20 @@ describe('template page', function () {
       var template = new Template();
       template.page({a: {content: 'b', data: {c: 'c'}}});
       template.cache.pages.a.data.should.have.property('c');
+    });
+
+    it('should add templates with a `path` property.', function () {
+      var template = new Template();
+      template.page({path: 'foo.hbs', content: '<title>{{author}}</title>', author: 'Brian Woodward'});
+      template.cache.pages['foo.hbs'].content.should.equal('<title>{{author}}</title>');
+      template.cache.pages['foo.hbs'].data.should.have.property('author');
+    });
+
+    it('should add the template string to the `content` property.', function () {
+      var template = new Template();
+      template.page({'bar.hbs': {content: '<title>{{author}}</title>', author: 'Jon Schlinkert'}});
+      template.cache.pages['bar.hbs'].content.should.equal('<title>{{author}}</title>');
+      template.cache.pages['bar.hbs'].data.should.have.property('author');
     });
   });
 

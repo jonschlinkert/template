@@ -162,9 +162,8 @@ Template.prototype.defaultHelpers = function() {
   if (!this.helpers.hasOwnProperty('partial')) {
     this.addHelper('partial', function (name, locals) {
       var partial = this.cache.partials[name];
-      var ctx = extend({}, partial.data, locals);
-      return _.template(partial.content, ctx);
-    });
+      return this.render(partial, locals);
+    }.bind(this));
   }
 };
 
@@ -528,9 +527,9 @@ Template.prototype._mergePartials = function (options, shouldMerge) {
     if (shouldMerge) {
       // Merge all partial templates onto the same object.
       var partials = merge({}, opts.partials, this.cache[type]);
-
       _.forIn(partials, function (value, key) {
         opts.partials[key] = value.content;
+        console.log(opts.partials[key])
         opts.locals = merge({}, opts.locals, value.data);
       });
 

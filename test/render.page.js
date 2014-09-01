@@ -93,7 +93,7 @@ describe('render page:', function () {
       template.create('post', 'posts', {renderable: true});
       template.create('include', 'includes');
 
-      template.include('sidebar', '<nav>sidebar stuff...</nav>');
+      template.include('sidebar', '<nav>sidebar stuff...{{a}}foo</nav>', {a: 'b'});
       template.post('2014-08-31.md', '---\nauthor: Brian Woodward\n---\n<title>{{author}}</title>\n{{> sidebar }}', {
         author: 'Jon Schlinkert'
       });
@@ -103,7 +103,7 @@ describe('render page:', function () {
 
         template.render(post, function (err, content) {
           if (err) console.log(err);
-          content.should.equal('<title>Jon Schlinkert</title>\n<nav>sidebar stuff...</nav>');
+          content.should.equal('<title>Jon Schlinkert</title>\n<nav>sidebar stuff...bfoo</nav>');
         });
       });
       done();

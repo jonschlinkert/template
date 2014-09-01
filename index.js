@@ -555,20 +555,9 @@ Template.prototype.render = function (file, options, cb) {
   }
 
   if (typeof file === 'string') {
-    for (var i = 0; i < this.viewType.renderable.length; i++) {
-      var type = this.viewType.renderable[i];
-      var files = this.cache[type];
-      var keys = Object.keys(files);
-      for (var j = 0; j < keys.length; j++) {
-        if (files[keys[j]]) {
-          file = files[keys[j]];
-          break;
-        }
-      }
-      if (typeof file === 'object') {
-        break;
-      }
-    }
+    file = _.map(this.viewType.renderable, function(type) {
+      return _.find(this.cache[type], {path: file});
+    }.bind(this))[0];
   }
 
   if (typeof file === 'object' && !file.hasOwnProperty('content')) {

@@ -25,6 +25,18 @@ describe('when the name of a cached template is passed to `.render()`:', functio
       done();
     });
   });
+
+  it('should render the first matching template is dupes are found:', function (done) {
+    template.page('aaa.md', '<%= name %>', {name: 'Brian Woodward'});
+    template.create('post', 'posts', {renderable: true});
+    template.post('aaa.md', '<%= name %>', {name: 'Jon Schlinkert'});
+
+    template.render('aaa.md', function (err, content) {
+      if (err) console.log(err);
+      content.should.equal('Brian Woodward');
+      done();
+    });
+  });
 });
 describe('template render:', function () {
   it('should determine the engine from the `path` on the given object:', function (done) {

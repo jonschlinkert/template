@@ -15,7 +15,7 @@ var utils = require('parser-utils');
 var Delimiters = require('delimiters');
 var Engines = require('engine-cache');
 var Parsers = require('parser-cache');
-var Storage = require('simple-cache');
+var Storage = require('config-cache');
 var Layouts = require('layouts');
 var extend = _.extend;
 
@@ -433,7 +433,6 @@ Template.prototype.create = function(type, plural, options) {
       obj[key] = value;
     }
 
-
     _.forIn(obj, function (file, key) {
       var ext = path.extname(file.path);
       if (!ext) {
@@ -551,8 +550,7 @@ Template.prototype.render = function (file, options, cb) {
 
 
 /**
- * Returns `true` if an object's key looks like it might
- * be a filepath.
+ * Returns `true` if an object's key might be a filepath.
  *
  * @api private
  */

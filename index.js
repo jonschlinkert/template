@@ -10,7 +10,6 @@
 var _ = require('lodash');
 var util = require('util');
 var path = require('path');
-var chalk = require('chalk');
 var utils = require('parser-utils');
 var Delimiters = require('delimiters');
 var Engines = require('engine-cache');

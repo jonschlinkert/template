@@ -27,13 +27,13 @@ describe('render page:', function () {
     template.engine('swig', consolidate.swig);
     template.engine('tmpl', consolidate.lodash);
 
-    template.page({path: 'fixture.hbs', content: '<title>{{author}}</title>', author: 'Jon Schlinkert'});
-    template.page({path: 'fixture.tmpl', content: '<title><%= author %></title>', author: 'Jon Schlinkert'});
-    template.page({path: 'fixture.jade', content: 'title= author', author: 'Jon Schlinkert'});
-    template.page({path: 'fixture.swig', content: '<title>{{author}}</title>', author: 'Jon Schlinkert'});
-    template.page({'fixture.swig': {content: '<title>{{author}}</title>', author: 'Jon Schlinkert'}});
-    template.page('fixture.hbs', '<title>{{author}}</title>', {author: 'Jon Schlinkert'});
-    template.page('fixture.md', '---\nauthor: Jon Schlinkert\n---\n<title>{{author}}</title>', {author: 'Brian Woodward'});
+    template.page({path: 'a.hbs', content: '<title>{{author}}</title>', author: 'Jon Schlinkert'});
+    template.page({path: 'b.tmpl', content: '<title><%= author %></title>', author: 'Jon Schlinkert'});
+    template.page({path: 'c.jade', content: 'title= author', author: 'Jon Schlinkert'});
+    template.page({path: 'd.swig', content: '<title>{{author}}</title>', author: 'Jon Schlinkert'});
+    template.page({'e.swig': {content: '<title>{{author}}</title>', author: 'Jon Schlinkert'}});
+    template.page('f.hbs', '<title>{{author}}</title>', {author: 'Jon Schlinkert'});
+    template.page('g.md', '---\nauthor: Brian Woodward\n---\n<title>{{author}}</title>', {author: 'Jon Schlinkert'});
 
     Object.keys(template.cache.pages).forEach(function(file) {
       var page = template.cache.pages[file];
@@ -50,7 +50,7 @@ describe('render page:', function () {
     template.engine('hbs', consolidate.handlebars);
     template.engine('md', consolidate.handlebars);
 
-    template.page('fixture.md', '---\nauthor: Jon Schlinkert\n---\n<title>{{author}}</title>', {author: 'Brian Woodward'});
+    template.page('fixture.md', '---\nauthor: Brian Woodward\n---\n<title>{{author}}</title>', {author: 'Jon Schlinkert'});
 
     Object.keys(template.cache.pages).forEach(function(file) {
       var page = template.cache.pages[file];
@@ -61,33 +61,31 @@ describe('render page:', function () {
     });
     done();
   });
-});
 
-describe('template.render()', function () {
   describe('when custom template types are passed to a built-in engine:', function () {
     it('should render them with the `.render()` method:', function (done) {
       template.create('post', 'posts', {renderable: true});
       template.create('include', 'includes');
 
       template.include('sidebar.md', '<nav>sidebar stuff...</nav>');
-      template.post('2014-08-31.md', '---\nauthor: Jon Schlinkert\n---\n<title><%= author%></title>\n<%= partial("sidebar.md") %>', {
-        author: 'Brian Woodward'
+      template.post('2014-08-31.md', '---\nauthor: Brian Woodward\n---\n<title><%= author %></title>\n<%= include("sidebar.md") %>', {
+        author: 'Jon Schlinkert'
       });
 
       Object.keys(template.cache.posts).forEach(function(file) {
         var post = template.cache.posts[file];
 
         template.render(post, function (err, content) {
+          console.log(this)
           if (err) console.log(err);
-          console.log(content)
-          content.should.equal('<title>Jon Schlinkert</title>');
+          content.should.equal('<title>Jon Schlinkert</title>\n<nav>sidebar stuff...</nav>');
+          done();
         });
       });
-      done();
     });
   });
 
-  xdescribe('when custom template types are passed to a non built-in engine:', function () {
+  describe('when custom template types are passed to a non built-in engine:', function () {
     it('should render them with the `.render()` method:', function (done) {
       template.engine('hbs', consolidate.handlebars);
       template.engine('md', consolidate.handlebars);
@@ -95,9 +93,9 @@ describe('template.render()', function () {
       template.create('post', 'posts', {renderable: true});
       template.create('include', 'includes');
 
-      template.include('sidebar.hbs', '<nav>sidebar stuff...</nav>');
-      template.post('2014-08-31.md', '---\nauthor: Jon Schlinkert\n---\n<title>{{author}}</title>\n{{> sidebar }}', {
-        author: 'Brian Woodward'
+      template.include('sidebar', '<nav>sidebar stuff...</nav>');
+      template.post('2014-08-31.md', '---\nauthor: Brian Woodward\n---\n<title>{{author}}</title>\n{{> sidebar }}', {
+        author: 'Jon Schlinkert'
       });
 
       Object.keys(template.cache.posts).forEach(function(file) {
@@ -105,7 +103,7 @@ describe('template.render()', function () {
 
         template.render(post, function (err, content) {
           if (err) console.log(err);
-          content.should.equal('<title>Jon Schlinkert</title>');
+          content.should.equal('<title>Jon Schlinkert</title>\n<nav>sidebar stuff...</nav>');
         });
       });
       done();

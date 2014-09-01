@@ -113,7 +113,7 @@ describe('template partial', function () {
       var template = new Template();
       template.partial({'a.md': {content: '---\nname: AAA\n---\nThis is content.', data: {name: 'BBB'}}});
       template.cache.partials.should.have.property('a.md');
-      template.cache.partials['a.md'].data.name.should.equal('AAA');
+      template.cache.partials['a.md'].data.name.should.equal('BBB');
     });
 
     it('should use the key as `file.path` if one does not exist.', function () {

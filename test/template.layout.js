@@ -113,7 +113,7 @@ describe('template layout', function () {
       var template = new Template();
       template.layout({'a.md': {content: '---\nname: AAA\n---\nThis is content.', data: {name: 'BBB'}}});
       template.cache.layouts.should.have.property('a.md');
-      template.cache.layouts['a.md'].data.name.should.equal('AAA');
+      template.cache.layouts['a.md'].data.name.should.equal('BBB');
     });
 
     it('should use the key as `file.path` if one does not exist.', function () {

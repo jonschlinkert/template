@@ -10,7 +10,6 @@
 var _ = require('lodash');
 var util = require('util');
 var path = require('path');
-var utils = require('parser-utils');
 var Delimiters = require('delimiters');
 var Engines = require('engine-cache');
 var Parsers = require('parser-cache');
@@ -63,6 +62,7 @@ extend(Template.prototype, Delimiters.prototype);
 Template.prototype.init = function() {
   this.engines = this.engines || {};
   this.parsers = this.parsers || {};
+  this.delims = {};
 
   this.viewType = {};
   this.viewType.partial = [];
@@ -150,11 +150,13 @@ Template.prototype.defaultEngines = function() {
  */
 
 Template.prototype.defaultHelpers = function() {
-  this.addHelper('partial', function (name, locals) {
-    var partial = this.cache.partials[name];
-    var ctx = _.extend({}, partial.data, locals);
-    return _.template(partial.content, ctx);
-  });
+  if (!this.helpers.hasOwnProperty('partial')) {
+    this.addHelper('partial', function (name, locals) {
+      var partial = this.cache.partials[name];
+      var ctx = _.extend({}, partial.data, locals);
+      return _.template(partial.content, ctx);
+    });
+  }
 };
 
 
@@ -413,7 +415,7 @@ Template.prototype.create = function(type, plural, options) {
         if (!_.values(key)[0].hasOwnProperty('path')) {
           _.values(key)[0].path = Object.keys(key)[0];
         }
-        _.extend(obj, key);
+        _.merge(obj, key);
       } else {
         if (!key.hasOwnProperty('content')) {
           key = {content: key};
@@ -442,10 +444,14 @@ Template.prototype.create = function(type, plural, options) {
 
       // Separate the `root` properties from the `data`
       var root = _.pick(file, fileProps);
-      root.data = _.extend({}, _.omit(file, fileProps), locals, root.data);
+      root.data = _.merge({}, _.omit(file, fileProps), locals, root.data);
       var stack = this.getParsers(ext);
 
-      this.cache[plural][key] = this.parseSync(root, stack, locals);
+      this.cache[plural][key] = this.parseSync(root, stack, root.data);
+
+      if (opts.layout) {
+        // register with Layouts
+      }
     }.bind(this));
 
     return this;
@@ -460,6 +466,15 @@ Template.prototype.create = function(type, plural, options) {
     // this.cache[plural]
     return this;
   };
+
+  // Create helpers to handle each template type we create.
+  if (!this.helpers.hasOwnProperty(type)) {
+    this.addHelper(type, function (name, locals) {
+      var partial = this.cache[plural][name];
+      var ctx = _.merge({}, partial.data, locals);
+      return _.template(partial.content, ctx);
+    });
+  }
 
   return this;
 };
@@ -486,6 +501,39 @@ Template.prototype._setType = function (plural, opts) {
 
 
 /**
+ * Get partials from the cache. If `options.mergePartials` is `true`,
+ * this object will include custom partial types.
+ *
+ * @api private
+ */
+
+Template.prototype._mergePartials = function (options) {
+  var opts = _.extend({}, options);
+
+  if (!opts.partials) {
+    opts.partials = {};
+  }
+
+  _.forEach(this.viewType.partial, function (type) {
+    if (this.option('mergePartials')) {
+      var partials = _.merge({}, opts.partials, this.cache[type]);
+      _.forIn(partials, function (value, key) {
+        opts.partials[key] = value.content;
+        opts.locals = _.merge({}, opts.locals, value.data);
+      });
+    } else {
+      opts[type] = _.merge({}, opts[type], this.cache[type]);
+      _.forIn(opts[type], function (value, key) {
+        opts[type][key] = value.content;
+        opts.locals = _.merge({}, opts.locals, value.data);
+      });
+    }
+  }.bind(this));
+  return opts;
+};
+
+
+/**
  * Render `str` with the given `options` and `callback`.
  *
  * @param  {Object} `options` Options to pass to registered view engines.
@@ -504,44 +552,17 @@ Template.prototype.render = function (file, options, cb) {
   }
 
   var o = _.omit(file, ['data', 'orig']);
-  var opts = extend({}, options, o, file.data);
+  var opts = _.merge({}, options, o, file.data);
 
   var ext = opts.ext || path.extname(file.path) || '*';
   var engine = this.getEngine(ext);
 
   // Extend engine-specific helpers with generic helpers.
-  opts.helpers = _.extend({}, this.cache.helpers, opts.helpers);
-  if (!opts.partials) {
-    opts.partials = {};
-  }
-
-  if (this.option('mergePartials')) {
-    _.forEach(this.viewType.partial, function (type) {
-      var partials = extend({}, opts.partials, this.cache[type]);
-      _.forIn(partials, function (value, key) {
-        opts.partials[key] = value.content;
-        opts.locals = _.extend({}, opts.locals, value.data);
-      });
-    }.bind(this));
-  } else {
-    _.forEach(this.viewType.partial, function (type) {
-      opts[type] = extend({}, opts[type], this.cache[type]);
-    }.bind(this));
-  }
+  opts.helpers = _.merge({}, this.cache.helpers, opts.helpers);
+  opts = this._mergePartials(opts);
 
   try {
-    engine.render(file.content, opts, function (err, content, destExt) {
-      if (err) {
-        return cb(err);
-      }
-
-      ext = opts.ext || engine.outputFormat || destExt || ext;
-      if (ext && ext[0] !== '.') {
-        ext = '.' + ext;
-      }
-
-      cb(null, content, ext);
-    }.bind(this));
+    engine.render(file.content, opts, cb);
   } catch (err) {
     cb(err);
   }

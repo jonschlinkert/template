@@ -127,7 +127,7 @@ describe('template page', function () {
       var template = new Template();
       template.page({'a.md': {content: '---\nname: AAA\n---\nThis is content.', data: {name: 'BBB'}}});
       template.cache.pages.should.have.property('a.md');
-      template.cache.pages['a.md'].data.name.should.equal('AAA');
+      template.cache.pages['a.md'].data.name.should.equal('BBB');
     });
 
     it('should use the key as `file.path` if one does not exist.', function () {

@@ -16,6 +16,7 @@ var Parsers = require('parser-cache');
 var Storage = require('config-cache');
 var Layouts = require('layouts');
 var extend = _.extend;
+var merge = _.merge;
 
 
 /**
@@ -110,6 +111,7 @@ Template.prototype.defaultOptions = function() {
 
   this.option('partialLayout', null);
   this.option('mergePartials', true);
+  this.option('mergeFunction', merge);
   this.option('bindHelpers', true);
 
   this.addDelims('*', ['<%', '%>']);
@@ -153,7 +155,7 @@ Template.prototype.defaultHelpers = function() {
   if (!this.helpers.hasOwnProperty('partial')) {
     this.addHelper('partial', function (name, locals) {
       var partial = this.cache.partials[name];
-      var ctx = _.extend({}, partial.data, locals);
+      var ctx = extend({}, partial.data, locals);
       return _.template(partial.content, ctx);
     });
   }
@@ -185,7 +187,7 @@ Template.prototype.defaultTemplates = function() {
 
 Template.prototype.lazyLayouts = function(options) {
   if (!this._layouts) {
-    var opts = _.extend({}, this.options, options);
+    var opts = extend({}, this.options, options);
 
     this._layouts = new Layouts({
       locals: opts.locals,
@@ -228,10 +230,10 @@ Template.prototype.parser = function (ext, options, fn) {
  */
 
 Template.prototype._parse = function (method, file, stack, options) {
-  var o = _.merge({}, options);
+  var o = merge({}, options);
 
   if (typeof file === 'object') {
-    o = _.merge({}, o, file);
+    o = merge({}, o, file);
   }
 
   var ext = o.ext;
@@ -258,8 +260,7 @@ Template.prototype._parse = function (method, file, stack, options) {
  * get the parser stack. If a stack isn't found on the cache the
  * default `noop` parser will be used.
  *
- * {%= docs("api-parse") %}
- *
+ * @doc api-parse
  * @param  {Object|String} `file` Either a string or an object.
  * @param  {Array} `stack` Optionally pass an array of functions to use as parsers.
  * @param  {Object} `options`
@@ -278,8 +279,7 @@ Template.prototype.parse = function (file, stack, options) {
  * then the `extname` is used to get the parser stack. If a stack isn't
  * found on the cache the default `noop` parser will be used.
  *
- * {%= docs("api-parseSync") %}
- *
+ * @doc api-parseSync
  * @param  {Object|String} `file` Either a string or an object.
  * @param  {Array} `stack` Optionally pass an array of functions to use as parsers.
  * @param  {Object} `options`
@@ -310,8 +310,7 @@ Template.prototype.getParsers = function (ext) {
  * is passed, the engine registered for `ext` is returned. If no `ext`
  * is passed, the entire cache is returned.
  *
- * {%= docs("api-engine") %}
- *
+ * @doc api-engine
  * @param {String} `ext`
  * @param {Function|Object} `fn` or `options`
  * @param {Object} `options`
@@ -335,12 +334,12 @@ Template.prototype.engine = function (ext, options, fn) {
  * Get the engine registered for the given `ext`. If no
  * `ext` is passed, the entire cache is returned.
  *
- * {%= docs("api-getEngine") %}
- *
+ * @doc api-getEngine
  * @param {String} `ext` The engine to get.
  * @return {Object} Object of methods for the specified engine.
  * @api public
  */
+
 Template.prototype.getEngine = function (ext) {
   return this._.engines.get(ext);
 };
@@ -415,7 +414,7 @@ Template.prototype.create = function(type, plural, options) {
         if (!_.values(key)[0].hasOwnProperty('path')) {
           _.values(key)[0].path = Object.keys(key)[0];
         }
-        _.merge(obj, key);
+        merge(obj, key);
       } else {
         if (!key.hasOwnProperty('content')) {
           key = {content: key};
@@ -444,7 +443,7 @@ Template.prototype.create = function(type, plural, options) {
 
       // Separate the `root` properties from the `data`
       var root = _.pick(file, fileProps);
-      root.data = _.merge({}, _.omit(file, fileProps), locals, root.data);
+      root.data = merge({}, _.omit(file, fileProps), locals, root.data);
       var stack = this.getParsers(ext);
 
       this.cache[plural][key] = this.parseSync(root, stack, root.data);
@@ -471,7 +470,7 @@ Template.prototype.create = function(type, plural, options) {
   if (!this.helpers.hasOwnProperty(type)) {
     this.addHelper(type, function (name, locals) {
       var partial = this.cache[plural][name];
-      var ctx = _.merge({}, partial.data, locals);
+      var ctx = merge({}, partial.data, locals);
       return _.template(partial.content, ctx);
     });
   }
@@ -502,30 +501,38 @@ Template.prototype._setType = function (plural, opts) {
 
 /**
  * Get partials from the cache. If `options.mergePartials` is `true`,
- * this object will include custom partial types.
+ * this object will keep custom partial types seperate - otherwise,
+ * all templates with the type `partials` will be merged onto the
+ * same object. This is useful when necessary for the engine being
+ * used.
  *
  * @api private
  */
 
-Template.prototype._mergePartials = function (options) {
-  var opts = _.extend({}, options);
+Template.prototype._mergePartials = function (options, shouldMerge) {
+  shouldMerge = shouldMerge || this.option('mergePartials');
+  var opts = extend({}, options);
 
   if (!opts.partials) {
     opts.partials = {};
   }
 
-  _.forEach(this.viewType.partial, function (type) {
-    if (this.option('mergePartials')) {
-      var partials = _.merge({}, opts.partials, this.cache[type]);
+  this.viewType.partial.forEach(function (type) {
+    if (shouldMerge) {
+      // Merge all partial templates onto the same object.
+      var partials = merge({}, opts.partials, this.cache[type]);
+
       _.forIn(partials, function (value, key) {
         opts.partials[key] = value.content;
-        opts.locals = _.merge({}, opts.locals, value.data);
+        opts.locals = merge({}, opts.locals, value.data);
       });
+
     } else {
-      opts[type] = _.merge({}, opts[type], this.cache[type]);
+      // Otherwise, create an object for each partials type.
+      opts[type] = merge({}, opts[type], this.cache[type]);
       _.forIn(opts[type], function (value, key) {
         opts[type][key] = value.content;
-        opts.locals = _.merge({}, opts.locals, value.data);
+        opts.locals = merge({}, opts.locals, value.data);
       });
     }
   }.bind(this));
@@ -547,18 +554,35 @@ Template.prototype.render = function (file, options, cb) {
     options = {};
   }
 
-  if (typeof file !== 'object' || file && !file.hasOwnProperty('content')) {
+  if (typeof file === 'string') {
+    for (var i = 0; i < this.viewType.renderable.length; i++) {
+      var type = this.viewType.renderable[i];
+      var files = this.cache[type];
+      var keys = Object.keys(files);
+      for (var j = 0; j < keys.length; j++) {
+        if (files[keys[j]]) {
+          file = files[keys[j]];
+          break;
+        }
+      }
+      if (typeof file === 'object') {
+        break;
+      }
+    }
+  }
+
+  if (typeof file === 'object' && !file.hasOwnProperty('content')) {
     throw new Error('render() expects "' + file + '" to be an object.');
   }
 
   var o = _.omit(file, ['data', 'orig']);
-  var opts = _.merge({}, options, o, file.data);
+  var opts = merge({}, options, o, file.data);
 
   var ext = opts.ext || path.extname(file.path) || '*';
   var engine = this.getEngine(ext);
 
-  // Extend engine-specific helpers with generic helpers.
-  opts.helpers = _.merge({}, this.cache.helpers, opts.helpers);
+  // Extend generic helpers into engine-specific helpers.
+  opts.helpers = merge({}, this.cache.helpers, opts.helpers);
   opts = this._mergePartials(opts);
 
   try {
@@ -583,8 +607,6 @@ function isFilepath(key) {
 
 /**
  * Expose `Template`
- *
- * @type {Class}
  */
 
 module.exports = Template;

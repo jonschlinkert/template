@@ -15,6 +15,17 @@ var template = new Template();
 var consolidate = require('consolidate');
 
 
+describe('when the name of a cached template is passed to `.render()`:', function () {
+  it('should get the template and render it:', function (done) {
+    template.page('aaa.md', '<%= name %>', {name: 'Jon Schlinkert'});
+
+    template.render('aaa.md', function (err, content) {
+      if (err) console.log(err);
+      content.should.equal('Jon Schlinkert');
+      done();
+    });
+  });
+});
 describe('template render:', function () {
   it('should determine the engine from the `path` on the given object:', function (done) {
     var file = {path: 'a/b/c.md', content: '<%= name %>', name: 'Jon Schlinkert'};

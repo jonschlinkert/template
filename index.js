@@ -108,7 +108,7 @@ Template.prototype.defaultOptions = function() {
   this.option('layout', null);
   this.option('layoutTag', 'body');
   this.option('partialLayout', null);
-  this.option('mergePartials', true);
+  this.option('mergePartials', false);
 
   this.option('delims', {});
   this.option('layoutDelims', ['{{', '}}']);
@@ -396,7 +396,7 @@ Template.prototype.create = function(type, plural, options) {
 
   var opts = extend({ext: this.options.ext}, options);
   if (!this.cache[plural]) {
-    this.cache[plural] = {};
+    this.set(plural, {});
   }
 
   // Add `viewType` arrays to the cache
@@ -404,31 +404,50 @@ Template.prototype.create = function(type, plural, options) {
 
   // Singular template `type` (e.g. `page`)
   Template.prototype[type] = function (key, value, locals) {
-    var obj = {};
+    var args = [].slice.call(arguments);
+    var arity = args.length;
+    var obj = {}, name;
 
-    if (typeof key === 'object') {
-      _.extend(obj, key);
+    if (arity === 1) {
+      if (isFilepath(key)) {
+        // if no `path` property exists, use the actual key
+        if (!_.values(key)[0].hasOwnProperty('path')) {
+          _.values(key)[0].path = Object.keys(key)[0];
+        }
+        _.extend(obj, key);
+      } else {
+        if (!key.hasOwnProperty('content')) {
+          key = {content: key};
+        }
+        if (key.hasOwnProperty('path')) {
+          obj[key.path] = key;
+        } else {
+          throw new Error('template.'+type+'() cannot find a key for:', key);
+        }
+      }
     } else {
-      if (!value.hasOwnProperty('content')) {
+      if (typeof value === 'string') {
         value = {content: value};
+        value.path = key;
       }
       obj[key] = value;
-      value = null;
     }
 
-    _.forIn(obj, function (file, name) {
-      if (!file.path) {
-        file.path = name;
-      }
 
+    _.forIn(obj, function (file, key) {
       var ext = path.extname(file.path);
       if (!ext) {
         ext = opts.ext;
       }
 
+      var fileProps = ['data', 'content', 'orig', 'path'];
+
+      // Separate the `root` properties from the `data`
+      var root = _.pick(file, fileProps);
+      root.data = _.extend({}, _.omit(file, fileProps), locals, root.data);
       var stack = this.getParsers(ext);
 
-      this.cache[plural][name] = this.parseSync(file, stack, locals);
+      this.cache[plural][key] = this.parseSync(root, stack, locals);
     }.bind(this));
 
     return this;
@@ -500,7 +519,11 @@ Template.prototype.render = function (file, options, cb) {
 
   if (this.option('mergePartials')) {
     _.forEach(this.viewType.partial, function (type) {
-      opts.partials = extend({}, opts.partials, this.cache[type]);
+      var partials = extend({}, opts.partials, this.cache[type]);
+      _.forIn(partials, function (value, key) {
+        opts.partials[key] = value.content;
+        opts.locals = _.extend({}, opts.locals, value.data);
+      });
     }.bind(this));
   } else {
     _.forEach(this.viewType.partial, function (type) {
@@ -525,6 +548,19 @@ Template.prototype.render = function (file, options, cb) {
     cb(err);
   }
 };
+
+
+/**
+ * Returns `true` if an object's key looks like it might
+ * be a filepath.
+ *
+ * @api private
+ */
+
+function isFilepath(key) {
+  return _.keys(key).length === 1 &&
+    typeof key === 'object';
+}
 
 
 /**

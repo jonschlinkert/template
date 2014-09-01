@@ -20,30 +20,9 @@ describe('render page:', function () {
     template = new Template();
   });
 
-
-  it('should determine the engine from the `path` on the given object:', function (done) {
-    template.page({path: 'a/b/c.md', content: '<%= name %>', name: 'Jon Schlinkert'});
-
-    // template.render(file, function (err, content) {
-    //   if (err) console.log(err);
-    //   content.should.equal('Jon Schlinkert');
-    // });
-    done();
-  });
-
-  it('should determine the engine from the `path` on the given object:', function (done) {
-    template.page({path: 'a/b/c.md', content: '<%= name %>'});
-
-    // template.render(file, {name: 'Jon Schlinkert'}, function (err, content) {
-    //   if (err) console.log(err);
-    //   content.should.equal('Jon Schlinkert');
-    // });
-    done();
-  });
-
-
   it('should use `file.path` to determine the correct consolidate engine to render content:', function (done) {
     template.engine('hbs', consolidate.handlebars);
+    template.engine('md', consolidate.handlebars);
     template.engine('jade', consolidate.jade);
     template.engine('swig', consolidate.swig);
     template.engine('tmpl', consolidate.lodash);
@@ -52,16 +31,58 @@ describe('render page:', function () {
     template.page({path: 'fixture.tmpl', content: '<title><%= author %></title>', author: 'Jon Schlinkert'});
     template.page({path: 'fixture.jade', content: 'title= author', author: 'Jon Schlinkert'});
     template.page({path: 'fixture.swig', content: '<title>{{author}}</title>', author: 'Jon Schlinkert'});
+    template.page({'fixture.swig': {content: '<title>{{author}}</title>', author: 'Jon Schlinkert'}});
+    template.page('fixture.hbs', '<title>{{author}}</title>', {author: 'Jon Schlinkert'});
+    template.page('fixture.md', '---\nauthor: Jon Schlinkert\n---\n<title>{{author}}</title>', {author: 'Brian Woodward'});
 
-    console.log(template)
+    Object.keys(template.cache.pages).forEach(function(file) {
+      var page = template.cache.pages[file];
 
-    // files.forEach(function(file) {
-    //   template.render(file, function (err, content) {
-    //     if (err) console.log(err);
-    //     content.should.equal('<title>Jon Schlinkert</title>');
-    //   });
-    // });
+      template.render(page, function (err, content) {
+        if (err) console.log(err);
+        content.should.equal('<title>Jon Schlinkert</title>');
+      });
+    });
+    done();
+  });
 
+  it('should prefer front-matter data over locals:', function (done) {
+    template.engine('hbs', consolidate.handlebars);
+    template.engine('md', consolidate.handlebars);
+
+    template.page('fixture.md', '---\nauthor: Jon Schlinkert\n---\n<title>{{author}}</title>', {author: 'Brian Woodward'});
+
+    Object.keys(template.cache.pages).forEach(function(file) {
+      var page = template.cache.pages[file];
+      template.render(page, function (err, content) {
+        if (err) console.log(err);
+        content.should.equal('<title>Jon Schlinkert</title>');
+      });
+    });
+    done();
+  });
+
+
+  it('should render custom template types:', function (done) {
+    template.option('mergePartials', true);
+
+    template.engine('hbs', consolidate.handlebars);
+    template.engine('md', consolidate.handlebars);
+    template.create('post', 'posts', {renderable: true});
+
+    template.create('include', 'includes');
+
+    template.include('sidebar.hbs', '<nav>sidebar stuff...</nav>');
+    template.post('2014-08-31.md', '---\nauthor: Jon Schlinkert\n---\n<title>{{author}}</title>\n{{> sidebar }}', {author: 'Brian Woodward'});
+
+    Object.keys(template.cache.posts).forEach(function(file) {
+      var post = template.cache.posts[file];
+
+      template.render(post, function (err, content) {
+        if (err) console.log(err);
+        content.should.equal('<title>Jon Schlinkert</title>');
+      });
+    });
     done();
   });
 });

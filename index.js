@@ -103,14 +103,14 @@ Template.prototype.defaultOptions = function() {
   this.option('cwd', process.cwd());
   this.option('ext', '*');
 
-  this.option('bindHelpers', true);
+  this.option('delims', {});
   this.option('layout', null);
   this.option('layoutTag', 'body');
-  this.option('partialLayout', null);
-  this.option('mergePartials', false);
-
-  this.option('delims', {});
   this.option('layoutDelims', ['{{', '}}']);
+
+  this.option('partialLayout', null);
+  this.option('mergePartials', true);
+  this.option('bindHelpers', true);
 
   this.addDelims('*', ['<%', '%>']);
   this.addDelims('es6', ['${', '}'], {
@@ -427,8 +427,8 @@ Template.prototype.create = function(type, plural, options) {
     } else {
       if (typeof value === 'string') {
         value = {content: value};
-        value.path = key;
       }
+      value.path = value.path || key;
       obj[key] = value;
     }
 

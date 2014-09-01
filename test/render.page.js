@@ -61,28 +61,54 @@ describe('render page:', function () {
     });
     done();
   });
+});
 
+describe('template.render()', function () {
+  describe('when custom template types are passed to a built-in engine:', function () {
+    it('should render them with the `.render()` method:', function (done) {
+      template.create('post', 'posts', {renderable: true});
+      template.create('include', 'includes');
 
-  it('should render custom template types:', function (done) {
-    template.option('mergePartials', true);
-
-    template.engine('hbs', consolidate.handlebars);
-    template.engine('md', consolidate.handlebars);
-    template.create('post', 'posts', {renderable: true});
-
-    template.create('include', 'includes');
-
-    template.include('sidebar.hbs', '<nav>sidebar stuff...</nav>');
-    template.post('2014-08-31.md', '---\nauthor: Jon Schlinkert\n---\n<title>{{author}}</title>\n{{> sidebar }}', {author: 'Brian Woodward'});
-
-    Object.keys(template.cache.posts).forEach(function(file) {
-      var post = template.cache.posts[file];
-
-      template.render(post, function (err, content) {
-        if (err) console.log(err);
-        content.should.equal('<title>Jon Schlinkert</title>');
+      template.include('sidebar.md', '<nav>sidebar stuff...</nav>');
+      template.post('2014-08-31.md', '---\nauthor: Jon Schlinkert\n---\n<title><%= author%></title>\n<%= partial("sidebar.md") %>', {
+        author: 'Brian Woodward'
       });
+
+      Object.keys(template.cache.posts).forEach(function(file) {
+        var post = template.cache.posts[file];
+
+        template.render(post, function (err, content) {
+          if (err) console.log(err);
+          console.log(content)
+          content.should.equal('<title>Jon Schlinkert</title>');
+        });
+      });
+      done();
     });
-    done();
+  });
+
+  xdescribe('when custom template types are passed to a non built-in engine:', function () {
+    it('should render them with the `.render()` method:', function (done) {
+      template.engine('hbs', consolidate.handlebars);
+      template.engine('md', consolidate.handlebars);
+
+      template.create('post', 'posts', {renderable: true});
+      template.create('include', 'includes');
+
+      template.include('sidebar.hbs', '<nav>sidebar stuff...</nav>');
+      template.post('2014-08-31.md', '---\nauthor: Jon Schlinkert\n---\n<title>{{author}}</title>\n{{> sidebar }}', {
+        author: 'Brian Woodward'
+      });
+
+      Object.keys(template.cache.posts).forEach(function(file) {
+        var post = template.cache.posts[file];
+
+        template.render(post, function (err, content) {
+          if (err) console.log(err);
+          content.should.equal('<title>Jon Schlinkert</title>');
+        });
+      });
+      done();
+    });
   });
 });

@@ -11,10 +11,13 @@ var _ = require('lodash');
 template.engine('hbs', consolidate.handlebars);
 
 var engine = template.getEngine('hbs').helpers;
-
 engine.addHelper('foo', function (value) {
-  console.log(this)
-  return value;
+  // console.log(value);
+});
+
+template.addHelper('bar', function (value) {
+  // console.log(this)
+  // console.log(value);
 });
 
 template.data({
@@ -36,6 +39,8 @@ template.layout('default.hbs', [
   '  <body>',
   '    {{> sidebar.hbs }}',
   '    {{partial "home.hbs"}}',
+  '    {{foo this}}',
+  '    {{bar this}}',
   '    {% body %}',
   '  </body>',
   '</html>'

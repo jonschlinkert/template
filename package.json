@@ -109,6 +109,7 @@
     "engine-cache": "^0.3.0",
     "engine-lodash": "^0.2.0",
     "engine-noop": "^0.1.0",
+    "helper-cache": "^0.2.1",
     "layouts": "^0.3.2",
     "load-templates": "^0.3.0",
     "lodash": "^2.4.1",

@@ -14,6 +14,7 @@ var Delimiters = require('delimiters');
 var arrayify = require('arrayify-compact');
 var loader = require('load-templates');
 var Engines = require('engine-cache');
+var Helpers = require('helper-cache');
 var Parsers = require('parser-cache');
 var Storage = require('config-cache');
 var Layouts = require('layouts');
@@ -72,6 +73,10 @@ Template.prototype.init = function() {
   this._ = {};
   this._.parsers = new Parsers(this.parsers);
   this._.engines = new Engines(this.engines);
+  this._.helpers = new Helpers({
+    bindFunctions: true,
+    thisArg: this
+  });
   this._.loader = loader(this.options);
 
   this.defaultConfig();
@@ -90,7 +95,6 @@ Template.prototype.init = function() {
 Template.prototype.defaultConfig = function() {
   this.set('locals', {});
   this.set('imports', {});
-  this.set('helpers', {});
   this.set('layouts', {});
   this.set('partials', {});
   this.set('pages', {});
@@ -399,7 +403,11 @@ Template.prototype.helpers = function (ext) {
  */
 
 Template.prototype.addHelper = function (name, fn, thisArg) {
-  this.cache.helpers[name] = _.bind(fn, thisArg || this);
+  return this._.helpers.addHelper(name, fn, thisArg);
+};
+
+Template.prototype.addHelperAsync = function (name, fn, thisArg) {
+  return this._.helpers.addHelperAsync(name, fn, thisArg);
 };
 
 
@@ -479,7 +487,7 @@ Template.prototype.create = function(type, plural, options) {
   };
 
   // Create helpers to handle each template type we create.
-  if (!this.helpers.hasOwnProperty(type)) {
+  if (!this._.helpers.hasOwnProperty(type)) {
     this.addHelper(type, function (name, locals) {
       var partial = this.cache[plural][name];
       var ctx = merge({}, partial.data, locals);
@@ -625,11 +633,13 @@ Template.prototype.render = function (file, options, cb) {
   }
 
   // Extend generic helpers into engine-specific helpers.
-  opts.helpers = merge({}, this.cache.helpers, opts.helpers);
+  opts.helpers = merge({}, this._.helpers, opts.helpers);
   opts = this._mergePartials(opts);
 
   try {
-    engine.render(content, opts, cb.bind(this));
+    engine.render(content, opts, function (err, content) {
+      return this._.helpers.resolve(content, cb.bind(this));
+    }.bind(this));
   } catch (err) {
     cb(err);
   }

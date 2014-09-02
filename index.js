@@ -615,6 +615,7 @@ Template.prototype.render = function (file, options, cb) {
   if (ext[0] !== '.') {
     ext = '.' + ext;
   }
+
   var layoutEngine = this._layouts[ext];
   var content = file.content;
   if (layoutEngine) {

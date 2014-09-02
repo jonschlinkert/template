@@ -7,10 +7,9 @@ var matter = require('gray-matter');
 var utils = require('parser-utils');
 var _ = require('lodash');
 
+template.engine('md', consolidate.handlebars);
 
-template.engine('hbs', consolidate.handlebars);
-
-var engine = template.helpers('hbs');
+var engine = template.helpers('md');
 engine.addHelper('foo', function (value) {
   // console.log(this)
   // console.log(value);
@@ -25,12 +24,16 @@ template.data({
   title: 'Site!'
 });
 
-template.page('home.hbs', 'this is content.');
-template.page('about.hbs','{{name}}', {name: 'Jon Schlinkert', layout: 'default.hbs'});
-template.partial('sidebar.hbs', '<section>Sidebar</section>\n');
-template.partial('navbar.hbs', '<nav><ul><li>link</li></ul></nav>');
+template.page('home.md', 'this is content.', {layout: 'base.md'});
+template.page('about.md','{{name}}', {name: 'Jon Schlinkert', layout: 'default.md'});
 
-template.layout('default.hbs', [
+template.partial('sidebar.md', '<section>Sidebar</section>\n');
+template.partial('navbar.md', '<nav><ul><li>link</li></ul></nav>');
+
+template.layout('base.md', [
+  '---',
+  'layout: default.md',
+  '---',
   '<!DOCTYPE html>',
   '<html lang="en">',
   '  <head>',
@@ -38,23 +41,33 @@ template.layout('default.hbs', [
   '    <title>{{title}}</title>',
   '  </head>',
   '  <body>',
-  '    {{> sidebar.hbs }}',
-  '    {{partial "home.hbs"}}',
-  // '    {{foo this}}',
-  // '    {{bar this}}',
   '    {% body %}',
   '  </body>',
   '</html>'
-].join('\n'));
+].join('\n'), {title: 'Base'});
+
+template.layout('default.md', [
+  '<!DOCTYPE html>',
+  '<html lang="en">',
+  '  <head>',
+  '    <meta charset="UTF-8">',
+  '    <title>{{title}}</title>',
+  '  </head>',
+  '  <body>',
+  '    {% body %}',
+  '  </body>',
+  '</html>'
+].join('\n'), {title: 'Default'});
 
 
-// var file = {path: 'about.hbs', content: '{{name}}', name: 'Jon Schlinkert', layout: 'default.hbs'};
+
+// var file = {path: 'about.md', content: '{{name}}', name: 'Jon Schlinkert', layout: 'default.md'};
 // template.render(file, function (err, content) {
 //   if (err) console.log(err);
 //   console.log(content);
 // });
 
-template.render('about.hbs', function (err, content) {
+template.render('home.md', function (err, content) {
   if (err) console.log(err);
   console.log(content);
 });

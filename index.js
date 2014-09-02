@@ -550,7 +550,7 @@ Template.prototype.create = function(type, plural, options) {
 Template.prototype._normalizeTemplates = function (plural, files, locals, options) {
   var opts = extend({}, options);
 
-  _.forIn(files, function (file, key) {
+  _.forOwn(files, function (file, key) {
     var ext = path.extname(file.path);
     if (!ext) {
       ext = opts.ext;
@@ -594,7 +594,7 @@ Template.prototype._mergePartials = function (options, shouldMerge) {
 
   this.viewType.partial.forEach(function (type) {
     var partials = merge({}, this.cache[type]);
-    _.forIn(partials, function (value, key) {
+    _.forOwn(partials, function (value, key) {
       if (shouldMerge) {
         opts.partials[key] = value.content;
       } else {

@@ -18,11 +18,11 @@ describe('template layout', function () {
     it('should add a layout to the cache.', function () {
       var template = new Template();
 
-      template.layout('x', 'this is a layout');
-      template.layout('y', 'this is a layout');
-      template.layout('z', 'this is a layout');
-      // template.layouts(['test/fixtures/layouts/*.md']);
-      // template.cache.layouts.should.have.property('a');
+      template.layout('x.md', 'this is a layout');
+      template.layout('y.md', 'this is a layout');
+      template.layout('z.md', 'this is a layout');
+      template.layouts(['test/fixtures/layouts/*.md']);
+      template.cache.layouts.should.have.property('a.md');
     });
   });
 });

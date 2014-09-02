@@ -12,6 +12,7 @@ var util = require('util');
 var path = require('path');
 var Delimiters = require('delimiters');
 var arrayify = require('arrayify-compact');
+var loader = require('load-templates');
 var Engines = require('engine-cache');
 var Parsers = require('parser-cache');
 var Storage = require('config-cache');
@@ -40,14 +41,7 @@ var merge = _.merge;
 function Template(options) {
   Delimiters.call(this, options);
   Storage.call(this, options);
-
   this.init();
-
-  this.defaultConfig();
-  this.defaultOptions();
-  this.defaultParsers();
-  this.defaultEngines();
-  this.defaultTemplates();
 }
 
 util.inherits(Template, Storage);
@@ -57,23 +51,33 @@ extend(Template.prototype, Delimiters.prototype);
 /**
  * Initialize default cache configuration.
  *
+ *   - `delims` should be primed before `defaultOptions`
+ *
  * @api private
  */
 
 Template.prototype.init = function() {
-  this.engines = this.engines || {};
-  this.parsers = this.parsers || {};
-  this.layoutSettings = {};
   this.delims = {};
+  this.defaultOptions();
 
   this.viewType = {};
   this.viewType.partial = [];
   this.viewType.renderable = [];
   this.viewType.layout = [];
+  this.layoutSettings = {};
+
+  this.engines = this.engines || {};
+  this.parsers = this.parsers || {};
 
   this._ = {};
   this._.parsers = new Parsers(this.parsers);
   this._.engines = new Engines(this.engines);
+  this._.loader = loader(this.options);
+
+  this.defaultConfig();
+  this.defaultTemplates();
+  this.defaultParsers();
+  this.defaultEngines();
 };
 
 
@@ -112,6 +116,13 @@ Template.prototype.defaultOptions = function() {
   this.option('mergePartials', true);
   this.option('mergeFunction', merge);
   this.option('bindHelpers', true);
+
+  // loader options
+  this.option('noparse', false);
+  this.option('nonormalize', false);
+  this.option('rename', function (filepath) {
+    return path.basename(filepath);
+  });
 
   this.addDelims('*', ['<%', '%>']);
   this.addDelims('es6', ['${', '}'], {
@@ -449,39 +460,21 @@ Template.prototype.create = function(type, plural, options) {
       obj[key] = value;
     }
 
-    _.forIn(obj, function (file, key) {
-      var ext = path.extname(file.path);
-      if (!ext) {
-        ext = opts.ext;
-      }
-
-      var fileProps = ['data', 'content', 'orig', 'path'];
-
-      // Separate the `root` properties from the `data`
-      var root = _.pick(file, fileProps);
-      root.data = merge({}, _.omit(file, fileProps), locals, root.data);
-      var stack = this.getParsers(ext);
-
-      var value = this.parseSync(root, stack, root.data);
-      this.cache[plural][key] = value;
-
-        // register with Layouts
-      if (opts.layout) {
-        if (ext[0] !== '.') {
-          ext = '.' + ext;
-        }
-        this.layoutSettings[ext].setLayout(this.cache[plural]);
-      }
-    }.bind(this));
-
+    this._normalizeTemplates(plural, obj, locals, opts);
     return this;
   };
 
   // Plural template `type` (e.g. `pages`)
-  Template.prototype[plural] = function (key, value, locals) {
-    if (!arguments.length) {
+  Template.prototype[plural] = function (pattern, locals) {
+    var args = [].slice.call(arguments);
+
+    if (!args.length) {
       return this.cache[plural];
     }
+
+    // load templates. options are passed to loader in `.init()`
+    var files = this._.loader.load(pattern, locals, opts);
+    this._normalizeTemplates(plural, files, locals, opts);
     return this;
   };
 
@@ -495,6 +488,46 @@ Template.prototype.create = function(type, plural, options) {
   }
 
   return this;
+};
+
+
+/**
+ * Normalize and extend custom view types onto the cache.
+ *
+ * @param {String} `plural` Object to extend
+ * @param {Object} `files` File objects to normalize
+ * @param {Object} `locals` Local data to extend onto the `file.data` property.
+ * @param {Object} `options` Options to pass to
+ * @api private
+ */
+
+Template.prototype._normalizeTemplates = function (plural, files, locals, options) {
+  var opts = extend({}, options);
+
+  _.forIn(files, function (file, key) {
+    var ext = path.extname(file.path);
+    if (!ext) {
+      ext = opts.ext;
+    }
+
+    var fileProps = ['data', 'content', 'orig', 'path'];
+
+    // Separate the `root` properties from the `data`
+    var root = _.pick(file, fileProps);
+    root.data = merge({}, _.omit(file, fileProps), locals, root.data);
+    var stack = this.getParsers(ext);
+    var value = this.parseSync(root, stack, root.data);
+
+    this.cache[plural][key] = value;
+
+    // register with Layouts
+    if (opts.layout) {
+      if (ext[0] !== '.') {
+        ext = '.' + ext;
+      }
+      this.layoutSettings[ext].setLayout(this.cache[plural]);
+    }
+  }.bind(this));
 };
 
 

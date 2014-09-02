@@ -15,6 +15,15 @@ var Template = require('..');
 var template = new Template();
 
 
+describe('default engines', function() {
+  it('should register default engines automatically.', function() {
+    template.engines.should.have.property('.md');
+    template.engines.should.have.property('.hbs');
+    template.engines.should.have.property('.*');
+    Object.keys(template.engines).length.should.equal(3);
+  });
+});
+
 describe('template engine', function() {
   beforeEach(function() {
     template.clear();
@@ -39,7 +48,7 @@ describe('template engine', function() {
       template.engines.should.have.property('.b');
       template.engines.should.have.property('.c');
       template.engines.should.have.property('.d');
-      Object.keys(template.engines).length.should.equal(6);
+      Object.keys(template.engines).length.should.equal(7);
     });
 
     it('should normalize engine extensions to not have a dot.', function() {
@@ -60,7 +69,7 @@ describe('template engine', function() {
       template.engines.should.have.property('.b');
       template.engines.should.have.property('.c');
       template.engines.should.have.property('.d');
-      Object.keys(template.engines).length.should.equal(6);
+      Object.keys(template.engines).length.should.equal(7);
     });
 
     it('should be chainable.', function() {
@@ -90,7 +99,7 @@ describe('template engine', function() {
       template.engines.should.have.property('.b');
       template.engines.should.have.property('.c');
       template.engines.should.have.property('.d');
-      Object.keys(template.engines).length.should.equal(6);
+      Object.keys(template.engines).length.should.equal(7);
     });
   });
 });
@@ -163,7 +172,7 @@ describe('engines', function() {
       });
 
       // 4 + 2 built-in engines
-      Object.keys(template.engines).length.should.equal(6);
+      Object.keys(template.engines).length.should.equal(7);
 
       template.getEngine('a').should.have.property('render');
       template.getEngine('b').should.have.property('render');

@@ -11,6 +11,7 @@ var _ = require('lodash');
 var util = require('util');
 var path = require('path');
 var Delimiters = require('delimiters');
+var arrayify = require('arrayify-compact');
 var Engines = require('engine-cache');
 var Parsers = require('parser-cache');
 var Storage = require('config-cache');
@@ -46,7 +47,6 @@ function Template(options) {
   this.defaultOptions();
   this.defaultParsers();
   this.defaultEngines();
-  this.defaultHelpers();
   this.defaultTemplates();
 }
 
@@ -63,8 +63,8 @@ extend(Template.prototype, Delimiters.prototype);
 Template.prototype.init = function() {
   this.engines = this.engines || {};
   this.parsers = this.parsers || {};
+  this.layoutSettings = {};
   this.delims = {};
-  this._layouts = {};
 
   this.viewType = {};
   this.viewType.partial = [];
@@ -72,8 +72,6 @@ Template.prototype.init = function() {
   this.viewType.layout = [];
 
   this._ = {};
-
-  this._.helpers = this.helpers || {};
   this._.parsers = new Parsers(this.parsers);
   this._.engines = new Engines(this.engines);
 };
@@ -108,7 +106,7 @@ Template.prototype.defaultOptions = function() {
   this.option('delims', {});
   this.option('layout', null);
   this.option('layoutTag', 'body');
-  this.option('layoutDelims', ['{{', '}}']);
+  this.option('layoutDelims', ['{%', '%}']);
 
   this.option('partialLayout', null);
   this.option('mergePartials', true);
@@ -137,35 +135,22 @@ Template.prototype.defaultParsers = function() {
 /**
  * Load default engines.
  *
- * @api private
- */
-
-Template.prototype.defaultEngines = function() {
-  this.engine('md', require('engine-lodash'), {
-    layoutDelims: ['{%', '%}'],
-    destExt: '.html'
-  });
-
-  this.engine('*', require('engine-noop'), {
-    layoutDelims: ['{%', '%}'],
-    destExt: '.html'
-  });
-};
-
-
-/**
- * Load default helpers.
+ *   - `*` The noop engine is used as a pass-through when no other engine matches.
+ *   - `md` Used to process Lo-Dash templates in markdown files.
  *
  * @api private
  */
 
-Template.prototype.defaultHelpers = function() {
-  if (!this.helpers.hasOwnProperty('partial')) {
-    this.addHelper('partial', function (name, locals) {
-      var partial = this.cache.partials[name];
-      return this.render(partial, locals);
-    }.bind(this));
-  }
+Template.prototype.defaultEngines = function() {
+  this.engine('*', require('engine-noop'), {
+    layoutDelims: ['{%', '%}'],
+    destExt: '.html'
+  });
+
+  this.engine(['md', 'hbs'], require('engine-lodash'), {
+    layoutDelims: ['{%', '%}'],
+    destExt: '.html'
+  });
 };
 
 
@@ -193,10 +178,10 @@ Template.prototype.defaultTemplates = function() {
  */
 
 Template.prototype.lazyLayouts = function(ext, options) {
-  if (!this._layouts[ext]) {
+  if (!this.layoutSettings.hasOwnProperty(ext)) {
     var opts = extend({}, this.options, options);
 
-    this._layouts[ext] = new Layouts({
+    this.layoutSettings[ext] = new Layouts({
       locals: opts.locals,
       layouts: opts.layouts,
       delims: opts.layoutDelims,
@@ -325,29 +310,38 @@ Template.prototype.getParsers = function (ext) {
  * @api public
  */
 
-Template.prototype.engine = function (ext, fn, options) {
+Template.prototype.engine = function (extension, fn, options) {
   var args = [].slice.call(arguments);
 
-  if (args.length <= 1) {
-    return this._.engines.get(ext);
+  if (typeof extension === 'string' && args.length <= 1) {
+    return this._.engines.get(extension);
   }
 
-  this._.engines.register(ext, fn, options);
+  arrayify(extension).forEach(function (ext) {
+    this._registerEngine(ext, fn, options);
+  }.bind(this));
+  return this;
+};
 
+
+/**
+ * Private method to register engines.
+ *
+ * @param {String} `ext`
+ * @param {Function|Object} `fn` or `options`
+ * @param {Object} `options`
+ * @return {Object} `Template` to enable chaining
+ * @api private
+ */
+
+Template.prototype._registerEngine = function (ext, fn, options) {
+  this._.engines.register(ext, fn, options);
   if (ext[0] !== '.') {
     ext = '.' + ext;
   }
 
-    this.lazyLayouts(ext, options);
-
-  // if the language has mapped delimiters, pass it to the layout engine
-  // if (utils.isValidEngineExt(ext)) {
-  //   // Create an instance of `Layout`, passing the layout
-  //   // delimiters to use for the current engine
-  //   this.lazyLayouts(ext, _.defaults({}, options, {
-  //     layoutDelims: utils.engineDelims(ext)
-  //   }));
-  // }
+  // Initialize layouts
+  this.lazyLayouts(ext, options);
   return this;
 };
 
@@ -468,14 +462,15 @@ Template.prototype.create = function(type, plural, options) {
       root.data = merge({}, _.omit(file, fileProps), locals, root.data);
       var stack = this.getParsers(ext);
 
-      this.cache[plural][key] = this.parseSync(root, stack, root.data);
+      var value = this.parseSync(root, stack, root.data);
+      this.cache[plural][key] = value;
 
         // register with Layouts
       if (opts.layout) {
         if (ext[0] !== '.') {
           ext = '.' + ext;
         }
-        this._addLayout(ext, key, this.cache[plural][key]);
+        this.layoutSettings[ext].setLayout(this.cache[plural]);
       }
     }.bind(this));
 
@@ -487,8 +482,6 @@ Template.prototype.create = function(type, plural, options) {
     if (!arguments.length) {
       return this.cache[plural];
     }
-
-    // this.cache[plural]
     return this;
   };
 
@@ -558,31 +551,6 @@ Template.prototype._mergePartials = function (options, shouldMerge) {
 
 
 /**
- * Private method for adding layouts settings to the `cache` for
- * the current template engine.
- *
- * @param {String} `ext` The extension to associate with the layout settings.
- * @param {String} `name`
- * @param {Object} `value`
- * @param {Object} `options`
- * @api private
- */
-
-Template.prototype._addLayout = function(ext, name, value, options) {
-  this.lazyLayouts(ext, options);
-
-  var layouts = {};
-  layouts[name] = {
-    name: name,
-    data: value.data,
-    content: value.content
-  };
-
-  this._layouts[ext].setLayout(layouts);
-};
-
-
-/**
  * Render `str` with the given `options` and `callback`.
  *
  * @param  {Object} `options` Options to pass to registered view engines.
@@ -615,7 +583,8 @@ Template.prototype.render = function (file, options, cb) {
   if (ext[0] !== '.') {
     ext = '.' + ext;
   }
-  var layoutEngine = this._layouts[ext];
+
+  var layoutEngine = this.layoutSettings[ext];
   var content = file.content;
   if (layoutEngine) {
     var obj = layoutEngine.render(file.content, file.layout);

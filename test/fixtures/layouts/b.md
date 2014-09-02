@@ -1,3 +1,3 @@
 <%= title %> ABOVE
-{{body}}
+{% body %}
 <%= title %> BELOW

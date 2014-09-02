@@ -517,31 +517,22 @@ Template.prototype._setType = function (plural, opts) {
 
 Template.prototype._mergePartials = function (options, shouldMerge) {
   shouldMerge = shouldMerge || this.option('mergePartials');
-  var opts = extend({}, options);
+  var opts = extend({partials: {}}, options);
 
-  if (!opts.partials) {
-    opts.partials = {};
-  }
+  this.cache.partials  = extend({}, this.cache.partials, opts.partials);
 
   this.viewType.partial.forEach(function (type) {
-    if (shouldMerge) {
-      // Merge all partial templates onto the same object.
-      var partials = merge({}, opts.partials, this.cache[type]);
-      _.forIn(partials, function (value, key) {
+    var partials = merge({}, this.cache[type]);
+    _.forIn(partials, function (value, key) {
+      if (shouldMerge) {
         opts.partials[key] = value.content;
-        console.log(opts.partials[key])
-        opts.locals = merge({}, opts.locals, value.data);
-      });
-
-    } else {
-      // Otherwise, create an object for each partials type.
-      opts[type] = merge({}, opts[type], this.cache[type]);
-      _.forIn(opts[type], function (value, key) {
+      } else {
         opts[type][key] = value.content;
-        opts.locals = merge({}, opts.locals, value.data);
-      });
-    }
+      }
+      opts = merge({}, opts, value.data);
+    });
   }.bind(this));
+
   return opts;
 };
 
@@ -581,7 +572,7 @@ Template.prototype.render = function (file, options, cb) {
   opts = this._mergePartials(opts);
 
   try {
-    engine.render(file.content, opts, cb);
+    engine.render(file.content, opts, cb.bind(this));
   } catch (err) {
     cb(err);
   }

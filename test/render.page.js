@@ -76,7 +76,6 @@ describe('render page:', function () {
         var post = template.cache.posts[file];
 
         template.render(post, function (err, content) {
-          console.log(this)
           if (err) console.log(err);
           content.should.equal('<title>Jon Schlinkert</title>\n<nav>sidebar stuff...</nav>');
           done();

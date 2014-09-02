@@ -12,6 +12,7 @@ template.engine('hbs', consolidate.handlebars);
 
 var engine = template.getEngine('hbs').helpers;
 engine.addHelper('foo', function (value) {
+  // console.log(this)
   // console.log(value);
 });
 

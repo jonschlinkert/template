@@ -352,6 +352,7 @@ Template.prototype.engine = function (extension, fn, options) {
  */
 
 Template.prototype._registerEngine = function (ext, fn, options) {
+  options = _.extend({thisArg: this, bindFunctions: true}, options);
   this._.engines.register(ext, fn, options);
   if (ext[0] !== '.') {
     ext = '.' + ext;

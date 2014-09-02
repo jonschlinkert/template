@@ -12,13 +12,18 @@ template.engine('hbs', consolidate.handlebars);
 
 var engine = template.getEngine('hbs').helpers;
 
-engine.addHelper('include', function (filepath) {
-  return fs.readFileSync(filepath, 'utf8');
+engine.addHelper('foo', function (value) {
+  console.log(this)
+  return value;
 });
 
+template.data({
+  title: 'Site!'
+});
 
 template.page('home.hbs', 'this is content.');
-template.partial('sidebar.hbs', '<section>Sidebar</section>');
+template.page('about.hbs','{{name}}', {name: 'Jon Schlinkert', layout: 'default.hbs'});
+template.partial('sidebar.hbs', '<section>Sidebar</section>\n');
 template.partial('navbar.hbs', '<nav><ul><li>link</li></ul></nav>');
 
 template.layout('default.hbs', [
@@ -29,17 +34,27 @@ template.layout('default.hbs', [
   '    <title>{{title}}</title>',
   '  </head>',
   '  <body>',
+  '    {{> sidebar.hbs }}',
+  '    {{partial "home.hbs"}}',
   '    {% body %}',
   '  </body>',
   '</html>'
 ].join('\n'));
 
 
-var file = {path: 'about.hbs', content: '{{name}}', name: 'Jon Schlinkert'};
-template.render(file, function (err, content) {
+// var file = {path: 'about.hbs', content: '{{name}}', name: 'Jon Schlinkert', layout: 'default.hbs'};
+// template.render(file, function (err, content) {
+//   if (err) console.log(err);
+//   console.log(content);
+// });
+
+template.render('about.hbs', function (err, content) {
   if (err) console.log(err);
   console.log(content);
 });
 
-  var inspect = require('util').inspect;
-  console.log(inspect(template, null, 10));
+  // console.log(template);
+
+
+// var inspect = require('util').inspect;
+// console.log(inspect(template, null, 10));

@@ -18,20 +18,19 @@ describe('default helpers:', function () {
 
   it('should use the `partial` helper with any engine.', function (done) {
     template.partial('a.md', '---\nname: "AAA"\n---\n<%= name %>', {name: 'BBB'});
-    var file = {path: 'a.md', content: '<%= partial("a.md", {name: "CCC"}) %>'};
 
+    var file = {path: 'a.md', content: '<%= partial("a.md", {name: "CCC"}) %>'};
     template.render(file, function (err, content) {
       if (err) console.log(err);
       content.should.equal('CCC');
     });
-
     done();
   });
 
   it('should use the `partial` helper with any engine.', function (done) {
     template.partial({'abc.md': {content: '---\nname: "AAA"\n---\n<%= name %>', name: 'BBB'}});
-    var file = {path: 'xyz.md', content: '<%= partial("abc.md", {name: "CCC"}) %>'};
 
+    var file = {path: 'xyz.md', content: '<%= partial("abc.md", {name: "CCC"}) %>'};
     template.render(file, {name: 'DDD'}, function (err, content) {
       if (err) console.log(err);
       content.should.equal('CCC');

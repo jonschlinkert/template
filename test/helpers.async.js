@@ -36,11 +36,7 @@ describe('.addHelperAsync():', function () {
     helpers._.helpersAsync.should.have.property('b');
 
     template.page('foo.md', {content: 'A: <%= a(name) %>\nB: <%= b(name) %>'});
-
-    // var lodash = template.getEngine('md');
-    var ctx = {name: 'Jon Schlinkert'};
-
-    template.render('foo.md', ctx, function (err, content) {
+    template.render('foo.md', {name: 'Jon Schlinkert'}, function (err, content) {
       if (err) return done(err);
       content.should.equal('A: jon schlinkert\nB: JON SCHLINKERT');
       done();
@@ -67,10 +63,7 @@ describe('.addHelperAsync():', function () {
 
     template.page('foo.md', {content: 'A: <%= a(name) %>\nB: <%= b(name) %>'});
 
-    // var lodash = template.getEngine('md');
-    var ctx = {name: 'Jon Schlinkert'};
-
-    template.render('foo.md', ctx, function (err, content) {
+    template.render('foo.md', {name: 'Jon Schlinkert'}, function (err, content) {
       if (err) return done(err);
       content.should.equal('A: jon schlinkert\nB: JON SCHLINKERT');
       done();
@@ -93,10 +86,7 @@ describe('.addHelperAsync():', function () {
 
     template.page('foo.md', {content: 'A: <%= a(name) %>\nB: <%= b(name) %>'});
 
-    // var lodash = template.getEngine('md');
-    var ctx = {name: 'Jon Schlinkert'};
-
-    template.render('foo.md', ctx, function (err, content) {
+    template.render('foo.md', {name: 'Jon Schlinkert'}, function (err, content) {
       if (err) return done(err);
       content.should.equal('A: jon schlinkert\nB: JON SCHLINKERT');
       done();

@@ -518,10 +518,15 @@ Template.prototype.create = function(type, plural, options) {
   // Create helpers to handle each template type we create.
   if (!this._.helpers.hasOwnProperty(type)) {
     this.addHelperAsync(type, function (name, locals, next) {
+      var last = _.last(arguments);
       if (typeof locals === 'function') {
         next = locals;
         locals = {};
       }
+      if (typeof next !== 'function') {
+        next = last;
+      }
+
       var partial = this.cache[plural][name];
       if (!partial) {
         console.log(new Error(chalk.red('helper {{' + type + ' "' + name + '"}} not found.')));

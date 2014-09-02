@@ -12,6 +12,7 @@ var should = require('should');
 var Template = require('..');
 var template = new Template();
 var consolidate = require('consolidate');
+var async = require('async');
 
 
 describe('default helpers:', function () {
@@ -36,5 +37,37 @@ describe('default helpers:', function () {
       content.should.equal('CCC');
       done();
     });
+  });
+
+  it('should use the `partial` helper with any engine.', function (done) {
+
+    template.parser('hbs', require('parser-front-matter'));
+
+    template.engine('hbs', consolidate.handlebars);
+    template.engine('md', consolidate.handlebars);
+    template.engine('jade', consolidate.jade);
+    template.engine('swig', consolidate.swig);
+    template.engine('tmpl', consolidate.lodash);
+
+    template.partial('a.hbs', '---\nname: "AAA"\n---\n<title>{{name}}</title>', {name: 'BBB'});
+
+    template.page({path: 'a.hbs', content: '<title>{{author}}</title>', author: 'Jon Schlinkert'});
+    template.page({path: 'b.tmpl', content: '<title><%= author %></title>', author: 'Jon Schlinkert'});
+    template.page({path: 'c.jade', content: 'title= author', author: 'Jon Schlinkert'});
+    template.page({path: 'd.swig', content: '<title>{{author}}</title>', author: 'Jon Schlinkert'});
+    template.page({'e.swig': {content: '<title>{{author}}</title>', author: 'Jon Schlinkert'}});
+    template.page('f.hbs', '<title>{{author}}</title>', {author: 'Jon Schlinkert'});
+    template.page('g.md', '---\nauthor: Brian Woodward\n---\n<title>{{author}}</title>', {author: 'Jon Schlinkert'});
+    template.page({path: 'with-partial.hbs', content: '{{partial "a.hbs" custom.locals}}'});
+
+    async.each(template.cache.pages, function (file, next) {
+      var page = template.cache.pages[file];
+      template.render(page, {custom: {locals: {name: 'Jon Schlinkert' }}}, function (err, content) {
+        if (err) return next(err);
+        content.should.equal('<title>Jon Schlinkert</title>');
+        next(null);
+      });
+    }, done);
+
   });
 });

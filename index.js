@@ -46,7 +46,6 @@ function Template(options) {
   this.defaultOptions();
   this.defaultParsers();
   this.defaultEngines();
-  this.defaultHelpers();
   this.defaultTemplates();
 }
 
@@ -137,35 +136,22 @@ Template.prototype.defaultParsers = function() {
 /**
  * Load default engines.
  *
- * @api private
- */
-
-Template.prototype.defaultEngines = function() {
-  this.engine('md', require('engine-lodash'), {
-    layoutDelims: ['{%', '%}'],
-    destExt: '.html'
-  });
-
-  this.engine('*', require('engine-noop'), {
-    layoutDelims: ['{%', '%}'],
-    destExt: '.html'
-  });
-};
-
-
-/**
- * Load default helpers.
+ *   - `*` The noop engine is used as a pass-through when no other engine matches.
+ *   - `md` Used to process Lo-Dash templates in markdown files.
  *
  * @api private
  */
 
-Template.prototype.defaultHelpers = function() {
-  if (!this.helpers.hasOwnProperty('partial')) {
-    this.addHelper('partial', function (name, locals) {
-      var partial = this.cache.partials[name];
-      return this.render(partial, locals);
-    }.bind(this));
-  }
+Template.prototype.defaultEngines = function() {
+  this.engine('*', require('engine-noop'), {
+    layoutDelims: ['{%', '%}'],
+    destExt: '.html'
+  });
+
+  this.engine('md', require('engine-lodash'), {
+    layoutDelims: ['{%', '%}'],
+    destExt: '.html'
+  });
 };
 
 

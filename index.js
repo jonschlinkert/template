@@ -352,6 +352,7 @@ Template.prototype.engine = function (extension, fn, options) {
  */
 
 Template.prototype._registerEngine = function (ext, fn, options) {
+  options = _.extend({thisArg: this, bindFunctions: true}, options);
   this._.engines.register(ext, fn, options);
   if (ext[0] !== '.') {
     ext = '.' + ext;
@@ -516,20 +517,21 @@ Template.prototype.create = function(type, plural, options) {
 
   // Create helpers to handle each template type we create.
   if (!this._.helpers.hasOwnProperty(type)) {
-
-    // this.addHelper(type, function (name, locals, next) {
-    //   // just started this!
-    // });
-
-    this.addHelper(type, function (name, locals) {
-      try {
-        var partial = this.cache[plural][name];
-        var ctx = merge({}, partial.data, locals);
-        return _.template(partial.content, ctx);
-      } catch(err) {
-        err.message = chalk.red('helper {{' + type + ' "' + name + '"}} not found.');
-        console.log(err);
+    this.addHelperAsync(type, function (name, locals, next) {
+      if (typeof locals === 'function') {
+        next = locals;
+        locals = {};
       }
+      var partial = this.cache[plural][name];
+      if (!partial) {
+        console.log(new Error(chalk.red('helper {{' + type + ' "' + name + '"}} not found.')));
+        return next(null, '');
+      }
+      partial.locals = merge(partial.locals || {}, locals);
+      this.render(partial, {}, function (err, content) {
+        if (err) return next(err);
+        return next(null, content);
+      });
     }.bind(this));
   }
 
@@ -561,6 +563,7 @@ Template.prototype._normalizeTemplates = function (plural, files, locals, option
     // Separate the `root` properties from the `data`
     var root = _.pick(file, fileProps);
     root.data = merge({}, _.omit(file, fileProps), locals, root.data);
+    root.locals = locals || {};
     var stack = this.getParsers(ext);
     var value = this.parseSync(root, stack, root.data);
 
@@ -600,7 +603,7 @@ Template.prototype._mergePartials = function (options, shouldMerge) {
       } else {
         opts[type][key] = value.content;
       }
-      opts = merge({}, opts, value.data);
+      opts = merge({}, opts, value.data, value.locals);
     });
   }.bind(this));
   return opts;
@@ -631,8 +634,8 @@ Template.prototype.render = function (file, options, cb) {
     throw new Error('render() expects "' + file + '" to be an object.');
   }
 
-  var o = _.omit(file, ['data', 'orig']);
-  var opts = merge({}, this.cache.data, options, o, file.data);
+  var o = _.omit(file, ['data', 'orig', 'locals']);
+  var opts = merge({}, this.cache.data, options, o, file.data, file.locals);
 
   var ext = opts.ext || path.extname(file.path) || '*';
   var engine = this.getEngine(ext);

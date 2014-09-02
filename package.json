@@ -104,6 +104,7 @@
   },
   "dependencies": {
     "arrayify-compact": "^0.1.0",
+    "chalk": "^0.5.1",
     "config-cache": "^0.2.2",
     "delimiters": "^0.1.1",
     "engine-cache": "^0.3.1",

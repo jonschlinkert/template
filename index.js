@@ -64,6 +64,7 @@ Template.prototype.init = function() {
   this.engines = this.engines || {};
   this.parsers = this.parsers || {};
   this.delims = {};
+  this._layouts = {};
 
   this.viewType = {};
   this.viewType.partial = [];
@@ -191,11 +192,11 @@ Template.prototype.defaultTemplates = function() {
  * @api private
  */
 
-Template.prototype.lazyLayouts = function(options) {
-  if (!this._layouts) {
+Template.prototype.lazyLayouts = function(ext, options) {
+  if (!this._layouts[ext]) {
     var opts = extend({}, this.options, options);
 
-    this._layouts = new Layouts({
+    this._layouts[ext] = new Layouts({
       locals: opts.locals,
       layouts: opts.layouts,
       delims: opts.layoutDelims,
@@ -324,14 +325,29 @@ Template.prototype.getParsers = function (ext) {
  * @api public
  */
 
-Template.prototype.engine = function (ext, options, fn) {
+Template.prototype.engine = function (ext, fn, options) {
   var args = [].slice.call(arguments);
 
   if (args.length <= 1) {
     return this._.engines.get(ext);
   }
 
-  this._.engines.register(ext, options, fn);
+  this._.engines.register(ext, fn, options);
+
+  if (ext[0] !== '.') {
+    ext = '.' + ext;
+  }
+
+    this.lazyLayouts(ext, options);
+
+  // if the language has mapped delimiters, pass it to the layout engine
+  // if (utils.isValidEngineExt(ext)) {
+  //   // Create an instance of `Layout`, passing the layout
+  //   // delimiters to use for the current engine
+  //   this.lazyLayouts(ext, _.defaults({}, options, {
+  //     layoutDelims: utils.engineDelims(ext)
+  //   }));
+  // }
   return this;
 };
 
@@ -456,6 +472,10 @@ Template.prototype.create = function(type, plural, options) {
 
       if (opts.layout) {
         // register with Layouts
+        if (ext && ext[0] !== '.') {
+          ext = '.' + ext;
+        }
+        this._addLayout(ext, key, this.cache[plural][key]);
       }
     }.bind(this));
 
@@ -484,6 +504,30 @@ Template.prototype.create = function(type, plural, options) {
   return this;
 };
 
+
+/**
+ * Private method for adding layouts settings to the `cache` for
+ * the current template engine.
+ *
+ * @param {String} `ext` The extension to associate with the layout settings.
+ * @param {String} `name`
+ * @param {Object} `value`
+ * @param {Object} `options`
+ * @api private
+ */
+
+Template.prototype._addLayout = function(ext, name, value, options) {
+  this.lazyLayouts(ext, options);
+
+  var layouts = {};
+  layouts[name] = {
+    name: name,
+    data: value.data,
+    content: value.content
+  };
+
+  this._layouts[ext].setLayout(layouts);
+};
 
 /**
  * Keeps track of custom view types, so we can pass them properly to
@@ -567,12 +611,22 @@ Template.prototype.render = function (file, options, cb) {
   var ext = opts.ext || path.extname(file.path) || '*';
   var engine = this.getEngine(ext);
 
+  if (ext[0] !== '.') {
+    ext = '.' + ext;
+  }
+  var layoutEngine = this._layouts[ext];
+  var content = file.content;
+  if (layoutEngine) {
+    var obj = layoutEngine.render(file.content, file.layout);
+    content = obj.content;
+  }
+
   // Extend generic helpers into engine-specific helpers.
   opts.helpers = merge({}, this.cache.helpers, opts.helpers);
   opts = this._mergePartials(opts);
 
   try {
-    engine.render(file.content, opts, cb.bind(this));
+    engine.render(content, opts, cb.bind(this));
   } catch (err) {
     cb(err);
   }

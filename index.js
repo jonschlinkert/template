@@ -470,9 +470,9 @@ Template.prototype.create = function(type, plural, options) {
 
       this.cache[plural][key] = this.parseSync(root, stack, root.data);
 
-      if (opts.layout) {
         // register with Layouts
-        if (ext && ext[0] !== '.') {
+      if (opts.layout) {
+        if (ext[0] !== '.') {
           ext = '.' + ext;
         }
         this._addLayout(ext, key, this.cache[plural][key]);
@@ -504,30 +504,6 @@ Template.prototype.create = function(type, plural, options) {
   return this;
 };
 
-
-/**
- * Private method for adding layouts settings to the `cache` for
- * the current template engine.
- *
- * @param {String} `ext` The extension to associate with the layout settings.
- * @param {String} `name`
- * @param {Object} `value`
- * @param {Object} `options`
- * @api private
- */
-
-Template.prototype._addLayout = function(ext, name, value, options) {
-  this.lazyLayouts(ext, options);
-
-  var layouts = {};
-  layouts[name] = {
-    name: name,
-    data: value.data,
-    content: value.content
-  };
-
-  this._layouts[ext].setLayout(layouts);
-};
 
 /**
  * Keeps track of custom view types, so we can pass them properly to
@@ -578,6 +554,31 @@ Template.prototype._mergePartials = function (options, shouldMerge) {
   }.bind(this));
 
   return opts;
+};
+
+
+/**
+ * Private method for adding layouts settings to the `cache` for
+ * the current template engine.
+ *
+ * @param {String} `ext` The extension to associate with the layout settings.
+ * @param {String} `name`
+ * @param {Object} `value`
+ * @param {Object} `options`
+ * @api private
+ */
+
+Template.prototype._addLayout = function(ext, name, value, options) {
+  this.lazyLayouts(ext, options);
+
+  var layouts = {};
+  layouts[name] = {
+    name: name,
+    data: value.data,
+    content: value.content
+  };
+
+  this._layouts[ext].setLayout(layouts);
 };
 
 

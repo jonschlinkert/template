@@ -1,3 +1,5 @@
+**Example:**
+
 ```js
 var consolidate = require('consolidate')
 template.engine('hbs', consolidate.handlebars);

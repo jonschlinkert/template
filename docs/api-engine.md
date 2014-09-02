@@ -1,3 +1,4 @@
+**Example:**
 
 ```js
 var consolidate = require('consolidate')

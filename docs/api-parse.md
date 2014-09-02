@@ -1,3 +1,5 @@
+**Examples:**
+
 ```js
 var str = fs.readFileSync('a/b/c.md', 'utf8');
 template.parse({path: 'a/b/c.md', content: str}, function (err, file) {

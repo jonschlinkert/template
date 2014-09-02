@@ -106,7 +106,7 @@
     "arrayify-compact": "^0.1.0",
     "config-cache": "^0.2.2",
     "delimiters": "^0.1.1",
-    "engine-cache": "^0.3.0",
+    "engine-cache": "^0.3.1",
     "engine-lodash": "^0.2.0",
     "engine-noop": "^0.1.0",
     "helper-cache": "^0.2.1",

@@ -10,6 +10,7 @@
 var _ = require('lodash');
 var util = require('util');
 var path = require('path');
+var chalk = require('chalk');
 var Delimiters = require('delimiters');
 var arrayify = require('arrayify-compact');
 var loader = require('load-templates');
@@ -116,6 +117,7 @@ Template.prototype.defaultOptions = function() {
   this.option('layoutTag', 'body');
   this.option('layoutDelims', ['{%', '%}']);
 
+  this.option('strictErrors', true);
   this.option('partialLayout', null);
   this.option('mergePartials', true);
   this.option('mergeFunction', merge);
@@ -412,6 +414,26 @@ Template.prototype.addHelperAsync = function (name, fn, thisArg) {
 
 
 /**
+ * Keeps track of custom view types, so we can pass them properly to
+ * registered engines.
+ *
+ * @param {String} `plural`
+ * @param {Object} `opts`
+ * @api private
+ */
+
+Template.prototype._setType = function (plural, opts) {
+  if (opts.renderable) {
+    this.viewType.renderable.push(plural);
+  } else if (opts.layout) {
+    this.viewType.layout.push(plural);
+  } else {
+    this.viewType.partial.push(plural);
+  }
+};
+
+
+/**
  * Add a new template `type`, along with associated get/set methods.
  * You must specify both the singular and plural names for the type.
  *
@@ -420,6 +442,7 @@ Template.prototype.addHelperAsync = function (name, fn, thisArg) {
  * @param {Object} `options` Options for the template type.
  *   @option {Boolean} [options] `renderable` Is the template a partial view?
  *   @option {Boolean} [options] `layout` Can the template be used as a layout?
+ *   @option {Boolean} [options] `partial` Can the template be used as a partial?
  * @return {Object} `Template` to enable chaining.
  * @api public
  */
@@ -434,10 +457,13 @@ Template.prototype.create = function(type, plural, options) {
     this.set(plural, {});
   }
 
-  // Add `viewType` arrays to the cache
+  // Add a `viewType` to the cache for `plural`
   this._setType(plural, opts);
 
-  // Singular template `type` (e.g. `page`)
+  /**
+   * Singular template `type` (e.g. `page`)
+   */
+
   Template.prototype[type] = function (key, value, locals) {
     var args = [].slice.call(arguments);
     var arity = args.length;
@@ -472,14 +498,16 @@ Template.prototype.create = function(type, plural, options) {
     return this;
   };
 
-  // Plural template `type` (e.g. `pages`)
+
+  /**
+   * Plural template `type` (e.g. `pages`)
+   */
+
   Template.prototype[plural] = function (pattern, locals) {
     var args = [].slice.call(arguments);
-
     if (!args.length) {
       return this.cache[plural];
     }
-
     // load templates. options are passed to loader in `.init()`
     var files = this._.loader.load(pattern, locals, opts);
     this._normalizeTemplates(plural, files, locals, opts);
@@ -489,10 +517,15 @@ Template.prototype.create = function(type, plural, options) {
   // Create helpers to handle each template type we create.
   if (!this._.helpers.hasOwnProperty(type)) {
     this.addHelper(type, function (name, locals) {
-      var partial = this.cache[plural][name];
-      var ctx = merge({}, partial.data, locals);
-      return _.template(partial.content, ctx);
-    });
+      try {
+        var partial = this.cache[plural][name];
+        var ctx = merge({}, partial.data, locals);
+        return _.template(partial.content, ctx);
+      } catch(err) {
+        err.message = chalk.red('helper {{' + type + ' "' + name + '"}} not found.');
+        console.log(err);
+      }
+    }.bind(this));
   }
 
   return this;
@@ -528,7 +561,6 @@ Template.prototype._normalizeTemplates = function (plural, files, locals, option
 
     this.cache[plural][key] = value;
 
-    // register with Layouts
     if (opts.layout) {
       if (ext[0] !== '.') {
         ext = '.' + ext;
@@ -536,26 +568,6 @@ Template.prototype._normalizeTemplates = function (plural, files, locals, option
       this.layoutSettings[ext].setLayout(this.cache[plural]);
     }
   }.bind(this));
-};
-
-
-/**
- * Keeps track of custom view types, so we can pass them properly to
- * registered engines.
- *
- * @param {String} `plural`
- * @param {Object} `opts`
- * @api private
- */
-
-Template.prototype._setType = function (plural, opts) {
-  if (opts.renderable) {
-    this.viewType.renderable.push(plural);
-  } else if (opts.layout) {
-    this.viewType.layout.push(plural);
-  } else {
-    this.viewType.partial.push(plural);
-  }
 };
 
 
@@ -586,7 +598,6 @@ Template.prototype._mergePartials = function (options, shouldMerge) {
       opts = merge({}, opts, value.data);
     });
   }.bind(this));
-
   return opts;
 };
 
@@ -616,7 +627,7 @@ Template.prototype.render = function (file, options, cb) {
   }
 
   var o = _.omit(file, ['data', 'orig']);
-  var opts = merge({}, options, o, file.data);
+  var opts = merge({}, this.cache.data, options, o, file.data);
 
   var ext = opts.ext || path.extname(file.path) || '*';
   var engine = this.getEngine(ext);
@@ -627,8 +638,10 @@ Template.prototype.render = function (file, options, cb) {
 
   var layoutEngine = this.layoutSettings[ext];
   var content = file.content;
-  if (layoutEngine) {
-    var obj = layoutEngine.render(file.content, file.layout);
+
+  if (!!layoutEngine) {
+    var layout = file.layout || (file.data && file.data.layout);
+    var obj = layoutEngine.render(file.content, layout);
     content = obj.content;
   }
 

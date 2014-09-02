@@ -516,6 +516,11 @@ Template.prototype.create = function(type, plural, options) {
 
   // Create helpers to handle each template type we create.
   if (!this._.helpers.hasOwnProperty(type)) {
+
+    // this.addHelper(type, function (name, locals, next) {
+    //   // just started this!
+    // });
+
     this.addHelper(type, function (name, locals) {
       try {
         var partial = this.cache[plural][name];

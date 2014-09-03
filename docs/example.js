@@ -10,41 +10,38 @@ var _ = require('lodash');
 template.engine('md', consolidate.handlebars);
 
 var engine = template.helpers('md');
-engine.addHelper('foo', function (value) {
-  // console.log(this)
-  // console.log(value);
-});
 
-template.addHelper('bar', function (value) {
-  // console.log(this)
-  // console.log(value);
-});
+// template.helper('zen', function (snippet) {
+//   return emmet.expand(snippet);
+// });
 
 template.data({
   title: 'Site!'
 });
 
+template.option('pretty', true);
+template.option('rename', function (filepath) {
+  return filepath;
+});
+
+// template.create('post', 'posts', {renderable: true});
+// template.post('home.md', 'this is content.', {layout: 'base.md'});
+
 template.page('home.md', 'this is content.', {layout: 'base.md'});
-template.page('about.md','{{name}}', {name: 'Jon Schlinkert', layout: 'default.md'});
+// template.page('about.md','{{name}}', {name: 'Jon Schlinkert', layout: 'default.md'});
 
 template.partial('sidebar.md', '<section>Sidebar</section>\n');
 template.partial('navbar.md', '<nav><ul><li>link</li></ul></nav>');
+
+// template.snippet('sidebar', 'ul>li*5>a[href=$]{Item $}');
 
 template.layout('base.md', [
   '---',
   'layout: default.md',
   '---',
-  '<!DOCTYPE html>',
-  '<html lang="en">',
-  '  <head>',
-  '    <meta charset="UTF-8">',
-  '    <title>{{title}}</title>',
-  '  </head>',
-  '  <body>',
-  '    {% body %}',
-  '  </body>',
-  '</html>'
-].join('\n'), {title: 'Base'});
+  '<h3>{{section}}</h3>',
+  '<section>{% body %}</section>'
+].join('\n'), {section: 'Foo'});
 
 template.layout('default.md', [
   '<!DOCTYPE html>',
@@ -72,7 +69,7 @@ template.render('home.md', function (err, content) {
   console.log(content);
 });
 
-  // console.log(template);
+// console.log(template);
 
 
 // var inspect = require('util').inspect;

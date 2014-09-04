@@ -162,7 +162,7 @@ Template.prototype.defaultEngines = function() {
     destExt: '.html'
   });
 
-  this.engine(['md', 'hbs'], require('engine-lodash'), {
+  this.engine(['md', 'html'], require('engine-lodash'), {
     layoutDelims: ['{%', '%}'],
     destExt: '.html'
   });
@@ -667,6 +667,12 @@ Template.prototype.render = function (file, options, cb) {
   var ext = ctx.ext || path.extname(file.path) || '*';
   if (ext[0] !== '.') {
     ext = '.' + ext;
+  }
+
+  // If the current engine has custom delims, pass them to the engine
+  var delims = this.delims[ext];
+  if (delims) {
+    extend(ctx, delims);
   }
 
   var layoutEngine = this.layoutSettings[ext];

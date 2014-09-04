@@ -113,6 +113,7 @@ Template.prototype.defaultOptions = function() {
   this.option('delims', {});
   this.option('layoutTag', 'body');
   this.option('layoutDelims', ['{%', '%}']);
+  this.option('engineDelims', null);
   this.option('layout', null);
 
   this.option('strictErrors', true);
@@ -371,14 +372,17 @@ Template.prototype.engine = function (extension, fn, options) {
  */
 
 Template.prototype._registerEngine = function (ext, fn, options) {
-  options = _.extend({thisArg: this, bindFunctions: true}, options);
-  this._.engines.register(ext, fn, options);
+  var opts = _.extend({thisArg: this, bindFunctions: true}, options);
+  this._.engines.register(ext, fn, opts);
+
   if (ext[0] !== '.') {
     ext = '.' + ext;
   }
-
+  if (opts.delims) {
+    this.option('engineDelims', this.makeDelims(opts.delims));
+  }
   // Initialize layouts
-  this.lazyLayouts(ext, options);
+  this.lazyLayouts(ext, opts);
   return this;
 };
 
@@ -427,6 +431,19 @@ Template.prototype.helpers = function (ext) {
 Template.prototype.addHelper = function (name, fn, thisArg) {
   return this._.helpers.addHelper(name, fn, thisArg);
 };
+
+
+/**
+ * Get and set async helpers on `templates.cache.helpers.` Helpers registered
+ * using this method should be generic javascript functions, since they
+ * will be passed to every engine.
+ *
+ * @param {String} `name` The helper to cache or get.
+ * @param {Function} `fn` The helper function.
+ * @param {Object} `thisArg` Context to bind to the helper.
+ * @return {Object} Object of helpers for the specified engine.
+ * @api public
+ */
 
 Template.prototype.addHelperAsync = function (name, fn, thisArg) {
   return this._.helpers.addHelperAsync(name, fn, thisArg);
@@ -487,7 +504,7 @@ Template.prototype.create = function(type, plural, options) {
   Template.prototype[type] = function (key, value, locals) {
     var args = [].slice.call(arguments);
     var arity = args.length;
-    var obj = {}, name;
+    var file = {}, name;
 
     if (arity === 1) {
       if (isFilepath(key)) {
@@ -495,13 +512,13 @@ Template.prototype.create = function(type, plural, options) {
         if (!_.values(key)[0].hasOwnProperty('path')) {
           _.values(key)[0].path = Object.keys(key)[0];
         }
-        merge(obj, key);
+        merge(file, key);
       } else {
         if (!key.hasOwnProperty('content')) {
           key = {content: key};
         }
         if (key.hasOwnProperty('path')) {
-          obj[key.path] = key;
+          file[key.path] = key;
         } else {
           throw new Error('template.'+type+'() cannot find a key for:', key);
         }
@@ -511,10 +528,10 @@ Template.prototype.create = function(type, plural, options) {
         value = {content: value};
       }
       value.path = value.path || key;
-      obj[key] = value;
+      file[key] = value;
     }
 
-    this._normalizeTemplates(plural, obj, locals, opts);
+    this._normalizeTemplates(plural, file, locals, opts);
     return this;
   };
 
@@ -648,14 +665,21 @@ Template.prototype.render = function (file, options, cb) {
     options = {};
   }
 
-  // If `file` is a string, try find a template with that name.
+  // If `file` is a string, try find a cached template with that name.
   if (typeof file === 'string') {
-    var name = file;
-    file = _.map(this.viewType.renderable, function(type) {
-      return _.find(this.cache[type], {path: name});
-    }.bind(this))[0];
+    var str = file;
+    file = this.lookupTemplate(file);
+
+    // if it's not cached, since it's a string assume it should be
+    // rendered and cache it.
+    if (!file) {
+      var id = _.uniqueId('__temp__') +'.html';
+      this.page(id, {content: str}, options);
+      file = this.lookupTemplate(id);
+    }
   }
 
+  // Ensure the correct properties are on the `file` object.
   this.assertProperties(file);
 
   var opts = this.buildContext(file, options);
@@ -666,26 +690,10 @@ Template.prototype.render = function (file, options, cb) {
     ext = '.' + ext;
   }
 
-  // If the current engine has custom delims, pass them to the engine
-  var delims = this.getDelims(ext);
-  // console.log(delims);
-  if (delims) {
-    this.useDelims(ext);
-    opts = extend({}, opts, delims);
-  }
-
-  // Get the layout engine, and template engine for the given `ext`
+  // Get the layout engine for `ext`
   var layoutEngine = this.layoutSettings[ext];
-  var engine = this.getEngine(ext);
 
-  if (opts.engine) {
-    if (opts.engine[0] !== '.') {
-      opts.engine = '.' + opts.engine;
-    }
-    engine = this.getEngine(opts.engine);
-  }
-
-  // Clone the content;
+  // Clone the content
   var content = file.content;
 
   // If a layout engine is defined, run it and update the content.
@@ -699,6 +707,22 @@ Template.prototype.render = function (file, options, cb) {
   opts.helpers = merge({}, this._.helpers, opts.helpers);
   opts = this._mergePartials(opts);
 
+  // If the current engine has custom delims, pass them to the engine
+  var delims = this.getDelims(ext) || this.option('engineDelims');
+  this.useDelims(ext);
+  if (delims) {
+    opts = extend({}, opts, delims);
+  }
+
+  // Get the template engine for `ext`
+  var engine = this.getEngine(ext);
+  if (opts.engine) {
+    if (opts.engine[0] !== '.') {
+      opts.engine = '.' + opts.engine;
+    }
+    engine = this.getEngine(opts.engine);
+  }
+
   try {
     engine.render(content, opts, function (err, content) {
       if (this.option('pretty')) {
@@ -709,6 +733,24 @@ Template.prototype.render = function (file, options, cb) {
   } catch (err) {
     cb(err);
   }
+};
+
+
+/**
+ * Lookup a cached template.
+ *
+ * @param  {String} `key` Name of the template.
+ * @param  {String} `type` Template type. Valid values are `renderable`|`partial`|`layout`.
+ * @return  {Object} Cached template object.
+ * @api private
+ */
+
+Template.prototype.lookupTemplate = function(key, type) {
+  if (!type) type = 'renderable';
+
+  return _.map(this.viewType[type], function(plural) {
+    return _.find(this.cache[plural], {path: key});
+  }.bind(this))[0] || null;
 };
 
 

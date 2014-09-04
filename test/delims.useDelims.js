@@ -71,6 +71,11 @@ describe('template usage:', function () {
 
     // using default delimiters (should process both es6 and `<%= foo %>` delims)
 
+    template.render('${ name }<<= name >>{{= name }}<%= name %>{%= name %}', ctx, function (err, content) {
+      if (err) console.log(err);
+      content.should.equal('____Jon Schlinkert____<<= name >>{{= name }}____Jon Schlinkert____{%= name %}');
+    });
+
     template.render('test.html', ctx, function (err, content) {
       if (err) console.log(err);
       content.should.equal('____Jon Schlinkert____<<= name >>{{= name }}____Jon Schlinkert____{%= name %}');

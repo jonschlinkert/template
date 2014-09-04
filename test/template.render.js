@@ -21,6 +21,16 @@ describe('template render', function () {
     done();
   });
 
+  describe('when an un-cached string is passed to `.render()`:', function () {
+    it('should render it directly:', function (done) {
+      template.render('<%= name %>', {name: 'Jon Schlinkert'}, function (err, content) {
+        if (err) console.log(err);
+        content.should.equal('Jon Schlinkert');
+        done();
+      });
+    });
+  });
+
   describe('when the name of a cached template is passed to `.render()`:', function () {
     it('should get the template and render it:', function (done) {
       template.page('aaa.md', '<%= name %>', {name: 'Jon Schlinkert'});

@@ -21,6 +21,13 @@ describe('template partial', function () {
       template.cache.partials.should.have.property('a.md');
     });
 
+    it('should `.get()` a partial from the cache.', function () {
+      var template = new Template();
+      template.partial('a.md', 'b');
+      // must be escaped for [getobject]
+      template.get('partials.a\\.md').content.should.equal('b');
+    });
+
     it('should add the template string to the `content` property.', function () {
       var template = new Template();
       template.partial('a.md', 'this is content.');
@@ -109,11 +116,12 @@ describe('template partial', function () {
       template.cache.partials['a.md'].data.name.should.equal('AAA');
     });
 
-    it('should prefer front-matter data over locals.', function () {
+    it('should save both locals and front-matter data to the `file` object.', function () {
       var template = new Template();
-      template.partial({'a.md': {content: '---\nname: AAA\n---\nThis is content.', data: {name: 'BBB'}}});
+      template.partial({'a.md': {content: '---\nname: AAA\n---\nThis is content.', name: 'BBB'}});
       template.cache.partials.should.have.property('a.md');
-      template.cache.partials['a.md'].data.name.should.equal('BBB');
+      template.cache.partials['a.md'].data.name.should.equal('AAA');
+      template.cache.partials['a.md'].locals.name.should.equal('BBB');
     });
 
     it('should use the key as `file.path` if one does not exist.', function () {

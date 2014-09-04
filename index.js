@@ -51,9 +51,7 @@ extend(Template.prototype, Delimiters.prototype);
 
 
 /**
- * Initialize default cache configuration.
- *
- *   - `delims` should be primed before `defaultOptions`
+ * Initialize defaults.
  *
  * @api private
  */
@@ -113,9 +111,9 @@ Template.prototype.defaultOptions = function() {
   this.option('ext', '*');
 
   this.option('delims', {});
-  this.option('layout', null);
   this.option('layoutTag', 'body');
   this.option('layoutDelims', ['{%', '%}']);
+  this.option('layout', null);
 
   this.option('strictErrors', true);
   this.option('partialLayout', null);
@@ -205,6 +203,30 @@ Template.prototype.lazyLayouts = function(ext, options) {
       tag: opts.layoutTag
     });
   }
+};
+
+
+/**
+ * Determine the correct layout to use for the given `file`.
+ *
+ * @param  {Object} `file` File object to test search for `layout`.
+ * @return {String} The name of the layout to use.
+ */
+
+Template.prototype.determineLayout = function (file) {
+  if (file.layout) {
+    return file.layout;
+  }
+
+  if (file.data && file.data.layout) {
+    return file.data.layout;
+  }
+
+  if (file.locals && file.locals.layout) {
+    return file.locals.layout;
+  }
+
+  return this.option('layout');
 };
 
 
@@ -629,46 +651,125 @@ Template.prototype.render = function (file, options, cb) {
     options = {};
   }
 
+  // If `file` is a string, try find a template with that name.
   if (typeof file === 'string') {
+    var name = file;
     file = _.map(this.viewType.renderable, function(type) {
-      return _.find(this.cache[type], {path: file});
+      return _.find(this.cache[type], {path: name});
     }.bind(this))[0];
   }
 
-  if (typeof file === 'object' && !file.hasOwnProperty('content')) {
-    throw new Error('render() expects "' + file + '" to be an object.');
-  }
+  this.assertProperties(file);
 
-  var o = _.omit(file, ['data', 'orig', 'locals']);
-  var opts = merge({}, this.cache.data, options, o, file.data, file.locals);
+  var ctx = this.buildContext(file, options);
 
-  var ext = opts.ext || path.extname(file.path) || '*';
-  var engine = this.getEngine(ext);
-
+  // Get file extension
+  var ext = ctx.ext || path.extname(file.path) || '*';
   if (ext[0] !== '.') {
     ext = '.' + ext;
   }
 
   var layoutEngine = this.layoutSettings[ext];
+  var engine = this.getEngine(ext);
+
+  // Clone the content;
   var content = file.content;
 
+  // If a layout engine is defined, run it and update the content.
   if (!!layoutEngine) {
-    var layout = file.layout || (file.data && file.data.layout);
+    var layout = this.determineLayout(file);
     var obj = layoutEngine.render(file.content, layout);
     content = obj.content;
   }
 
   // Extend generic helpers into engine-specific helpers.
-  opts.helpers = merge({}, this._.helpers, opts.helpers);
-  opts = this._mergePartials(opts);
+  ctx.helpers = merge({}, this._.helpers, ctx.helpers);
+  ctx = this._mergePartials(ctx);
 
   try {
-    engine.render(content, opts, function (err, content) {
+    engine.render(content, ctx, function (err, content) {
+      if (this.option('pretty')) {
+        content = this.prettify(content, this.options);
+      }
       return this._.helpers.resolve(content, cb.bind(this));
     }.bind(this));
   } catch (err) {
     cb(err);
   }
+};
+
+
+/**
+ * Build up the context with the given objects. To change how
+ * context is merged, use `options.contextFn`.
+ *
+ * @param  {Object} `file` Normalized file object.
+ * @param  {Object} `methodLocals` Locals defined on the `render` method.
+ * @return  {Object} Merged context object.
+ * @api private
+ */
+
+Template.prototype.buildContext = function(file, methodLocals) {
+  if (this.option('contextFn')) {
+    return this.option('contextFn').call(this, file, methodLocals);
+  }
+
+  var fileRoot = _.omit(file, ['data', 'orig', 'locals']);
+  var res = merge({}, this.cache.data, methodLocals, fileRoot, file.data, file.locals);
+  // console.log(res);
+  return res;
+};
+
+
+/**
+ * Throw an error if `file` does not have `keys`.
+ *
+ * @param  {String} `file` The object to test.
+ * @api public
+ */
+
+Template.prototype.assertProperties = function(file) {
+
+  if (typeof file === 'object' && !file.hasOwnProperty('content')) {
+    throw new Error('render() expects "' + file + '" to be an object.');
+  }
+
+  // var props = ['content', 'path'];
+
+  // if (keys) {
+  //   props = props.concat(keys);
+  // }
+
+  // if (typeof file === 'object') {
+  //   props.forEach(function (prop) {
+  //     if (!file.hasOwnProperty(prop)) {
+  //       throw new Error('render() expects "' + file + '" to have a `' + prop + '` property.');
+  //     }
+  //   });
+  // } else {
+  //   throw new Error('render() expects "' + file + '" to be an object.');
+  // }
+};
+
+
+/**
+ * Format HTML using [js-beautify].
+ *
+ * @param  {String} `html` The HTML to beautify.
+ * @param  {Object} `options` Options to pass to [js-beautify].
+ * @return {String} Formatted string of HTML.
+ */
+
+Template.prototype.prettify = function(html, options) {
+  return prettify(html, _.extend({
+    indent_handlebars: true,
+    indent_inner_html: true,
+    preserve_newlines: false,
+    max_preserve_newlines: 1,
+    brace_style: 'expand',
+    indent_char: ' ',
+    indent_size: 2,
+  }, options));
 };
 
 

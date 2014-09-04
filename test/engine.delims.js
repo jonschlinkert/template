@@ -13,7 +13,8 @@ var should = require('should');
 var Template = require('..');
 var template = new Template();
 
-describe('engine render:', function () {
+
+describe('engine delimiters:', function () {
   it('should use custom delimiters defined on the engine:', function (done) {
     template.engine('*', require('engine-lodash'), {
       delims: ['<<', '>>']

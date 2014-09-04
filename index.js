@@ -111,7 +111,7 @@ Template.prototype.defaultOptions = function() {
   this.option('ext', '*');
 
   this.option('delims', {});
-  this.option('cache', false);
+  this.option('cache', true);
   this.option('pretty', false);
   this.option('layoutTag', 'body');
   this.option('layoutDelims', ['{%', '%}']);
@@ -447,6 +447,46 @@ Template.prototype.addHelperAsync = function (name, fn, thisArg) {
 
 
 /**
+ * Private method for adding default async helpers.
+ *
+ * @param {String} `type` The type of template.
+ * @param {String} `plural` Plural form of `type`.
+ * @api private
+ */
+
+Template.prototype._addHelperAsync = function (type, plural) {
+  this.addHelperAsync(type, function (name, locals, next) {
+    var last = _.last(arguments);
+
+    if (typeof locals === 'function') {
+      next = locals;
+      locals = {};
+    }
+    if (typeof next !== 'function') {
+      next = last;
+    }
+
+    var partial = this.cache[plural][name];
+    if (!partial) {
+      console.log(new Error(chalk.red('helper {{' + type + ' "' + name + '"}} not found.')));
+      next(null, '');
+      return;
+    }
+
+    partial.locals = merge({}, partial.locals, locals);
+    this.render(partial, {}, function (err, content) {
+      if (err) {
+        next(err);
+        return;
+      }
+      next(null, content);
+      return;
+    });
+  }.bind(this));
+};
+
+
+/**
  * Keeps track of custom view types, so we can pass them properly to
  * registered engines.
  *
@@ -542,40 +582,27 @@ Template.prototype.create = function(type, plural, options) {
    * Plural template `type` (e.g. `pages`)
    */
 
-  Template.prototype[plural] = function (pattern, locals) {
+  Template.prototype[plural] = function (key, value) {
     var args = [].slice.call(arguments);
+
     if (!args.length) {
       return this.cache[plural];
     }
+
+    var last = _.last(args);
+    if (args.length > 1 && typeOf(last) === 'object') {
+      opts = merge({}, opts, last);
+    }
+
     // load templates. options are passed to loader in `.init()`
-    var files = this._.loader.load(pattern, locals, opts);
-    this._normalizeTemplates(plural, files, locals, opts);
+    var files = this._.loader.load(key, value, opts);
+    this._normalizeTemplates(plural, files, value, opts);
     return this;
   };
 
   // Create helpers to handle each template type we create.
   if (!this._.helpers.hasOwnProperty(type)) {
-    this.addHelperAsync(type, function (name, locals, next) {
-      var last = _.last(arguments);
-      if (typeof locals === 'function') {
-        next = locals;
-        locals = {};
-      }
-      if (typeof next !== 'function') {
-        next = last;
-      }
-
-      var partial = this.cache[plural][name];
-      if (!partial) {
-        console.log(new Error(chalk.red('helper {{' + type + ' "' + name + '"}} not found.')));
-        return next(null, '');
-      }
-      partial.locals = merge(partial.locals || {}, locals);
-      this.render(partial, {}, function (err, content) {
-        if (err) return next(err);
-        return next(null, content);
-      });
-    }.bind(this));
+    this._addHelperAsync(type, plural);
   }
 
   return this;
@@ -605,12 +632,14 @@ Template.prototype._normalizeTemplates = function (plural, files, locals, option
 
     // Separate the `root` properties from the `data`
     var root = _.pick(file, fileProps);
-    root.data = merge({}, _.omit(file, fileProps), locals, root.data);
-    root.locals = locals || {};
+    var data = merge({}, _.omit(file, fileProps));
+    root.data = merge({}, data, locals, root.data);
+    // root.locals = root.locals || locals || {};
 
     var stack = this.getParsers(ext);
     var value = this.parseSync(root, stack, root.data);
 
+    // console.log(value);
     this.cache[plural][key] = value;
 
     if (opts.layout) {
@@ -627,6 +656,8 @@ Template.prototype._normalizeTemplates = function (plural, files, locals, option
  * same object. This is useful when necessary for the engine being
  * used.
  *
+ * @param  {Object} `options` Options to pass to registered view engines.
+ * @return {String}
  * @api private
  */
 
@@ -654,6 +685,7 @@ Template.prototype._mergePartials = function (options, shouldMerge) {
 /**
  * Render `str` with the given `options` and `callback`.
  *
+ * @param  {Object|String} `file` String or normalized template object.
  * @param  {Object} `options` Options to pass to registered view engines.
  * @return {String}
  * @api public
@@ -665,9 +697,8 @@ Template.prototype.render = function (file, options, cb) {
     options = {};
   }
 
-  // If `file` is a string, try find a cached template with that name.
+  // If `file` is a string, look it up on the cache.
   if (typeof file === 'string') {
-    // var str = file;
     file = this.lookupTemplate(file, 'renderable', options);
   }
 
@@ -689,19 +720,14 @@ Template.prototype.render = function (file, options, cb) {
   opts.helpers = merge({}, this._.helpers, opts.helpers);
   opts = this._mergePartials(opts);
 
-  // If the current engine has custom delims, pass them to the engine
-  var delims = this.getDelims(ext) || this.option('engineDelims');
-  this.useDelims(ext);
-  if (delims) {
-    opts = extend({}, opts, delims);
-  }
-
+  opts = extend({}, opts, this.lookupDelims(ext, opts));
   var engine = this.lookupEngine(ext, opts);
 
   try {
     engine.render(content, opts, function (err, content) {
       if (this.option('pretty')) {
-        content = this.prettify(content, this.options);
+        var opt = extend({}, opts, this.option('pretty'));
+        content = this.prettify(content, opt);
       }
       return this._.helpers.resolve(content, cb.bind(this));
     }.bind(this));
@@ -749,24 +775,58 @@ Template.prototype.applyLayout = function(ext, file) {
  */
 
 Template.prototype.lookupTemplate = function(key, type, options) {
-  if (!type) type = 'renderable';
+  var opts = extend({}, this.options, options);
   var str = key, id;
 
-  var file = _.map(this.viewType[type], function(plural) {
-    return _.find(this.cache[plural], {path: key});
-  }.bind(this))[0] || null;
+  type = type || 'renderable';
 
-  if (!file) {
-    if (this.option('cache')) {
-      id = _.uniqueId('__cache__') +'.html';
-      this.page(id, {content: str}, options);
-      file = this.cache.pages[id];
-    } else {
-      id = _.uniqueId('__nocache__') +'.html';
-      file = {path: id, content: str, data: options};
+  // If caching is enabled, lookup the template
+  if (this.option('cache')) {
+    var cached = _.map(this.viewType[type], function(plural) {
+      return this.cache[plural][key] || _.find(this.cache[plural], {path: key});
+    }.bind(this))[0];
+
+    if (cached) {
+      return cached;
     }
+
+    // if it's not found, cache and normalize it before returning it
+    id = _.uniqueId('__temp__') +'.html';
+    this.page(id, {content: str}, options);
+    key = this.cache.pages[id];
+  } else {
+    id = _.uniqueId('__temp__') +'.html';
+    key = {path: id, content: str, data: options};
   }
-  return file;
+  return key;
+};
+
+
+/**
+ * If the current engine has custom delimiters defined,
+ * pass them to the engine
+ *
+ * @param  {String} `ext` Delimiters to lookup.
+ * @param  {String} `options` Check to see if `engine` is defined on the options.
+ * @return  {Object} The delimiters to use.
+ * @api public
+ */
+
+Template.prototype.lookupDelims = function(ext, opts) {
+  if (ext[0] !== '.') {
+    ext = '.' + ext;
+  }
+
+  var delims = this.getDelims(ext);
+  if (!delims) {
+  // if (opts.delims) {
+  //   return this.getDelims(opts.delims);
+  // }
+    delims = this.option('engineDelims');
+  }
+
+  this.useDelims(ext);
+  return delims;
 };
 
 
@@ -776,9 +836,9 @@ Template.prototype.lookupTemplate = function(key, type, options) {
  *
  *   - `options.engine` Defined on the options for an engine or template.
  *
- * @param  {String} `key` Name of the template.
- * @param  {String} `type` Template type. Valid values are `renderable`|`partial`|`layout`.
- * @return  {Object} Cached template object.
+ * @param  {String} `ext` Engine to lookup.
+ * @param  {String} `options` Check to see if `engine` is defined on the options.
+ * @return  {Object} The engine to use.
  * @api public
  */
 
@@ -866,6 +926,20 @@ Template.prototype.prettify = function(html, options) {
 function isFilepath(key) {
   return _.keys(key).length === 1 &&
     typeof key === 'object';
+}
+
+
+/**
+ * Get the type of a value.
+ *
+ * @param  {*} `value`
+ * @return {*}
+ * @api private
+ */
+
+function typeOf(value) {
+  return {}.toString.call(value).toLowerCase()
+    .replace(/\[object ([\S]+)\]/, '$1');
 }
 
 

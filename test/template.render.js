@@ -10,6 +10,7 @@
 var fs = require('fs');
 var path = require('path');
 var should = require('should');
+var helpers = require('test-helpers')({dir: 'test'});
 var consolidate = require('consolidate');
 var Template = require('..');
 var template = new Template();
@@ -21,8 +22,33 @@ describe('template render', function () {
     done();
   });
 
+
   describe('when an un-cached string is passed to `.render()`:', function () {
-    it('should render it directly:', function (done) {
+    it('should expose `this` to the .render() method:', function (done) {
+      template.render('<%= name %>', {name: 'Jon Schlinkert'}, function (err, content) {
+        if (err) console.log(err);
+        this.should.have.property('cache');
+        this.should.have.property('engines');
+        this.should.have.property('parsers');
+        this.should.have.property('delims');
+        this.should.have.property('options');
+        done();
+      });
+    });
+  });
+
+  describe('when an un-cached string is passed to `.render()`:', function () {
+    it('should render it with caching enabled:', function (done) {
+      template.render('<%= name %>', {name: 'Jon Schlinkert'}, function (err, content) {
+        if (err) console.log(err);
+        content.should.equal('Jon Schlinkert');
+        done();
+      });
+    });
+
+    it('should render it with caching disabled:', function (done) {
+      template.option('cache', false);
+
       template.render('<%= name %>', {name: 'Jon Schlinkert'}, function (err, content) {
         if (err) console.log(err);
         content.should.equal('Jon Schlinkert');

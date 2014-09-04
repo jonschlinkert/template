@@ -100,6 +100,7 @@
     "mocha": "*",
     "should": "^4.0.4",
     "swig": "^1.4.2",
+    "test-helpers": "^0.1.4",
     "verb": ">= 0.2.6",
     "verb-tag-jscomments": "^0.2.1"
   },
@@ -114,7 +115,7 @@
     "helper-cache": "^0.2.2",
     "js-beautify": "^1.5.1",
     "layouts": "^0.3.2",
-    "load-templates": "^0.3.0",
+    "load-templates": "^0.3.1",
     "lodash": "^2.4.1",
     "parser-cache": "^0.4.1",
     "parser-front-matter": "^0.2.2",

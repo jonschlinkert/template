@@ -111,6 +111,7 @@ Template.prototype.defaultOptions = function() {
   this.option('ext', '*');
 
   this.option('delims', {});
+  this.option('cache', false);
   this.option('pretty', false);
   this.option('layoutTag', 'body');
   this.option('layoutDelims', ['{%', '%}']);
@@ -666,16 +667,8 @@ Template.prototype.render = function (file, options, cb) {
 
   // If `file` is a string, try find a cached template with that name.
   if (typeof file === 'string') {
-    var str = file;
-    file = this.lookupTemplate(file);
-
-    // if it's not cached, since it's a string assume it should be
-    // rendered and cache it.
-    if (!file) {
-      var id = _.uniqueId('__temp__') +'.html';
-      this.page(id, {content: str}, options);
-      file = this.lookupTemplate(id);
-    }
+    // var str = file;
+    file = this.lookupTemplate(file, 'renderable', options);
   }
 
   // Ensure the correct properties are on the `file` object.
@@ -690,16 +683,7 @@ Template.prototype.render = function (file, options, cb) {
     ext = '.' + ext;
   }
 
-  // Clone the content
-  var content = file.content;
-
-  // If a layout engine is defined, run it and update the content.
-  var layoutEngine = this.layoutSettings[ext];
-  if (!!layoutEngine) {
-    var layout = this.determineLayout(file);
-    var obj = layoutEngine.render(file.content, layout);
-    content = obj.content;
-  }
+  var content = this.applyLayout(ext, file);
 
   // Extend generic helpers into engine-specific helpers.
   opts.helpers = merge({}, this._.helpers, opts.helpers);
@@ -728,20 +712,61 @@ Template.prototype.render = function (file, options, cb) {
 
 
 /**
- * Lookup a cached template.
+ * If a layout is defined, apply it. Otherwise just return the content as-is.
+ *
+ * @param  {String} `ext` The layout settings to use.
+ * @param  {Object} `file` Template object, with `content` property.
+ * @return  {String} Either the string wrapped with a layout, or the original string if no layout was defined.
+ * @api public
+ */
+
+Template.prototype.applyLayout = function(ext, file) {
+  var layoutEngine = this.layoutSettings[ext];
+  var str = file.content;
+
+  if (!!layoutEngine) {
+    var layout = this.determineLayout(file);
+    var obj = layoutEngine.render(str, layout);
+    return obj.content;
+  }
+  return str;
+};
+
+
+/**
+ * Lookup a cached template. If the template isn't cached, or at least isn't found,
+ * since it's a string we assume it should be rendered. If caching is enabled,
+ * the string, locals and data will be normalized before rendering the string.
+ *
+ * To disable caching of raw strings, just set `options.cache` to false, or defined
+ * `template.option('cache', false)`.
  *
  * @param  {String} `key` Name of the template.
  * @param  {String} `type` Template type. Valid values are `renderable`|`partial`|`layout`.
- * @return  {Object} Cached template object.
- * @api private
+ * @param  {Object} `options` Options or locals.
+ * @return  {Object} Normalized template object.
+ * @api public
  */
 
-Template.prototype.lookupTemplate = function(key, type) {
+Template.prototype.lookupTemplate = function(key, type, options) {
   if (!type) type = 'renderable';
+  var str = key, id;
 
-  return _.map(this.viewType[type], function(plural) {
+  var file = _.map(this.viewType[type], function(plural) {
     return _.find(this.cache[plural], {path: key});
   }.bind(this))[0] || null;
+
+  if (!file) {
+    if (this.option('cache')) {
+      id = _.uniqueId('__cache__') +'.html';
+      this.page(id, {content: str}, options);
+      file = this.cache.pages[id];
+    } else {
+      id = _.uniqueId('__nocache__') +'.html';
+      file = {path: id, content: str, data: options};
+    }
+  }
+  return file;
 };
 
 
@@ -754,7 +779,7 @@ Template.prototype.lookupTemplate = function(key, type) {
  * @param  {String} `key` Name of the template.
  * @param  {String} `type` Template type. Valid values are `renderable`|`partial`|`layout`.
  * @return  {Object} Cached template object.
- * @api private
+ * @api public
  */
 
 Template.prototype.lookupEngine = function(ext, opts) {
@@ -803,7 +828,7 @@ Template.prototype.buildContext = function(file, locals) {
  */
 
 Template.prototype.assertProperties = function(file, props) {
-  var props = ['content', 'path'];
+  props = props || ['content', 'path'];
 
   if (typeof file === 'object' && !file.hasOwnProperty('content')) {
     throw new Error('render() expects "' + file + '" to be an object.');

@@ -574,8 +574,6 @@ Template.prototype.create = function(type, plural, options) {
       file[key] = value;
     }
 
-    opts._viewType = type;
-
     this._normalizeTemplates(type, plural, file, locals, opts);
     return this;
   };
@@ -596,8 +594,6 @@ Template.prototype.create = function(type, plural, options) {
     if (args.length > 1 && typeOf(last) === 'object') {
       opts = merge({}, opts, last);
     }
-
-    opts._viewType = plural;
 
     // load templates. options are passed to loader in `.init()`
     var files = this._.loader.load(key, value, opts);
@@ -643,7 +639,7 @@ Template.prototype._normalizeTemplates = function (type, plural, files, locals, 
     var stack = this.getParsers(ext);
     var value = this.parseSync(root, stack, root.data);
 
-    value._opts = {};
+    value._opts = extend({}, opts);
     value._opts.viewType = type;
 
     this.cache[plural][key] = value;
@@ -725,8 +721,8 @@ Template.prototype.render = function (file, options, cb) {
   // Extend generic helpers into engine-specific helpers.
   opts.helpers = merge({}, this._.helpers, opts.helpers);
   opts = this._mergePartials(opts);
+  merge(opts, this.lookupDelims(ext, file));
 
-  opts = extend({}, opts, this.lookupDelims(ext, file));
   var engine = this.lookupEngine(ext, opts);
 
   try {
@@ -900,6 +896,8 @@ Template.prototype.buildContext = function(file, locals) {
   merge(context, locals);
   merge(context, fileRoot);
   merge(context, file.data, file.locals);
+
+  context = _.omit(context, ['_opts']);
   return context;
 };
 

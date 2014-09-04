@@ -466,36 +466,43 @@ Template.prototype.create = function(type, plural, options) {
    */
 
   Template.prototype[type] = function (key, value, locals) {
-    var args = [].slice.call(arguments);
-    var arity = args.length;
-    var obj = {}, name;
+    // var args = [].slice.call(arguments);
+    // var arity = args.length;
+    // var obj = {}, name;
 
-    if (arity === 1) {
-      if (isFilepath(key)) {
-        // if no `path` property exists, use the actual key
-        if (!_.values(key)[0].hasOwnProperty('path')) {
-          _.values(key)[0].path = Object.keys(key)[0];
-        }
-        merge(obj, key);
-      } else {
-        if (!key.hasOwnProperty('content')) {
-          key = {content: key};
-        }
-        if (key.hasOwnProperty('path')) {
-          obj[key.path] = key;
-        } else {
-          throw new Error('template.'+type+'() cannot find a key for:', key);
-        }
-      }
+    // if (arity === 1) {
+    //   if (isFilepath(key)) {
+    //     // if no `path` property exists, use the actual key
+    //     if (!_.values(key)[0].hasOwnProperty('path')) {
+    //       _.values(key)[0].path = Object.keys(key)[0];
+    //     }
+    //     merge(obj, key);
+    //   } else {
+    //     if (!key.hasOwnProperty('content')) {
+    //       key = {content: key};
+    //     }
+    //     if (key.hasOwnProperty('path')) {
+    //       obj[key.path] = key;
+    //     } else {
+    //       throw new Error('template.'+type+'() cannot find a key for:', key);
+    //     }
+    //   }
+    // } else {
+    //   if (typeof value === 'string') {
+    //     value = {content: value};
+    //   }
+    //   value.path = value.path || key;
+    //   obj[key] = value;
+    // }
+
+    var obj = {};
+    if (arguments.length === 1 && typeof key === 'object' && key.hasOwnProperty('path')) {
+      obj[key.path] = key;
     } else {
-      if (typeof value === 'string') {
-        value = {content: value};
-      }
-      value.path = value.path || key;
-      obj[key] = value;
+      obj = key;
     }
-
-    this._normalizeTemplates(plural, obj, locals, opts);
+    var files = this._.loader.load(obj, value, _.extend({}, _.omit(opts, ['renderable', 'layout', 'partial']), locals));
+    this._normalizeTemplates(plural, files, locals, opts);
     return this;
   };
 

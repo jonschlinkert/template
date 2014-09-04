@@ -13,6 +13,7 @@ var path = require('path');
 var chalk = require('chalk');
 var Delimiters = require('delimiters');
 var arrayify = require('arrayify-compact');
+var prettify = require('js-beautify').html;
 var loader = require('load-templates');
 var Engines = require('engine-cache');
 var Helpers = require('helper-cache');
@@ -57,27 +58,18 @@ extend(Template.prototype, Delimiters.prototype);
  */
 
 Template.prototype.init = function() {
-  this.delims = {};
-  this.defaultOptions();
+  this.engines = this.engines || {};
+  this.parsers = this.parsers || {};
+  this._ = {};
 
+  this.delims = {};
   this.viewType = {};
   this.viewType.partial = [];
   this.viewType.renderable = [];
   this.viewType.layout = [];
   this.layoutSettings = {};
 
-  this.engines = this.engines || {};
-  this.parsers = this.parsers || {};
-
-  this._ = {};
-  this._.parsers = new Parsers(this.parsers);
-  this._.engines = new Engines(this.engines);
-  this._.helpers = new Helpers({
-    bindFunctions: true,
-    thisArg: this
-  });
-  this._.loader = loader(this.options);
-
+  this.defaultOptions();
   this.defaultConfig();
   this.defaultTemplates();
   this.defaultParsers();
@@ -92,6 +84,14 @@ Template.prototype.init = function() {
  */
 
 Template.prototype.defaultConfig = function() {
+  this._.loader = loader(this.options);
+  this._.parsers = new Parsers(this.parsers);
+  this._.engines = new Engines(this.engines);
+  this._.helpers = new Helpers({
+    bindFunctions: true,
+    thisArg: this
+  });
+
   this.set('locals', {});
   this.set('imports', {});
   this.set('layouts', {});
@@ -111,6 +111,7 @@ Template.prototype.defaultOptions = function() {
   this.option('ext', '*');
 
   this.option('delims', {});
+  this.option('pretty', false);
   this.option('layoutTag', 'body');
   this.option('layoutDelims', ['{%', '%}']);
   this.option('engineDelims', null);
@@ -259,23 +260,18 @@ Template.prototype.parser = function (ext, options, fn) {
  */
 
 Template.prototype._parse = function (method, file, stack, options) {
-  var o = merge({}, options);
-
+  var ext;
   if (typeof file === 'object') {
-    o = merge({}, o, file);
+    var o = merge({}, options, file);
+    ext = o.ext;
   }
-
-  var ext = o.ext;
-
   if (!Array.isArray(stack)) {
     options = stack;
     stack = null;
   }
-
   if (ext) {
     stack = this.getParsers(ext);
   }
-
   if (!stack) {
     stack = this.getParsers('*');
   }
@@ -349,11 +345,9 @@ Template.prototype.getParsers = function (ext) {
 
 Template.prototype.engine = function (extension, fn, options) {
   var args = [].slice.call(arguments);
-
   if (typeof extension === 'string' && args.length <= 1) {
     return this._.engines.get(extension);
   }
-
   arrayify(extension).forEach(function (ext) {
     this._registerEngine(ext, fn, options);
   }.bind(this));
@@ -381,6 +375,7 @@ Template.prototype._registerEngine = function (ext, fn, options) {
   if (opts.delims) {
     this.option('engineDelims', this.makeDelims(opts.delims));
   }
+
   // Initialize layouts
   this.lazyLayouts(ext, opts);
   return this;
@@ -460,12 +455,14 @@ Template.prototype.addHelperAsync = function (name, fn, thisArg) {
  */
 
 Template.prototype._setType = function (plural, opts) {
+  var type = this.viewType;
+
   if (opts.renderable) {
-    this.viewType.renderable.push(plural);
+    type.renderable.push(plural);
   } else if (opts.layout) {
-    this.viewType.layout.push(plural);
+    type.layout.push(plural);
   } else {
-    this.viewType.partial.push(plural);
+    type.partial.push(plural);
   }
 };
 
@@ -493,6 +490,10 @@ Template.prototype.create = function(type, plural, options) {
   if (!this.cache[plural]) {
     this.set(plural, {});
   }
+
+  // if (opts.delims) {
+  //   this.option('engineDelims', this.makeDelims(opts.delims));
+  // }
 
   // Add a `viewType` to the cache for `plural`
   this._setType(plural, opts);
@@ -594,9 +595,9 @@ Template.prototype._normalizeTemplates = function (plural, files, locals, option
   var opts = extend({}, options);
 
   _.forOwn(files, function (file, key) {
-    var ext = path.extname(file.path);
-    if (!ext) {
-      ext = opts.ext;
+    var ext = path.extname(file.path) || opts.ext;
+    if (ext[0] !== '.') {
+      ext = '.' + ext;
     }
 
     var fileProps = ['data', 'content', 'orig', 'path'];
@@ -605,15 +606,13 @@ Template.prototype._normalizeTemplates = function (plural, files, locals, option
     var root = _.pick(file, fileProps);
     root.data = merge({}, _.omit(file, fileProps), locals, root.data);
     root.locals = locals || {};
+
     var stack = this.getParsers(ext);
     var value = this.parseSync(root, stack, root.data);
 
     this.cache[plural][key] = value;
 
     if (opts.layout) {
-      if (ext[0] !== '.') {
-        ext = '.' + ext;
-      }
       this.layoutSettings[ext].setLayout(this.cache[plural]);
     }
   }.bind(this));
@@ -682,6 +681,7 @@ Template.prototype.render = function (file, options, cb) {
   // Ensure the correct properties are on the `file` object.
   this.assertProperties(file);
 
+  // Build up the context to pass to the engine.
   var opts = this.buildContext(file, options);
 
   // Get file extension
@@ -690,13 +690,11 @@ Template.prototype.render = function (file, options, cb) {
     ext = '.' + ext;
   }
 
-  // Get the layout engine for `ext`
-  var layoutEngine = this.layoutSettings[ext];
-
   // Clone the content
   var content = file.content;
 
   // If a layout engine is defined, run it and update the content.
+  var layoutEngine = this.layoutSettings[ext];
   if (!!layoutEngine) {
     var layout = this.determineLayout(file);
     var obj = layoutEngine.render(file.content, layout);
@@ -714,14 +712,7 @@ Template.prototype.render = function (file, options, cb) {
     opts = extend({}, opts, delims);
   }
 
-  // Get the template engine for `ext`
-  var engine = this.getEngine(ext);
-  if (opts.engine) {
-    if (opts.engine[0] !== '.') {
-      opts.engine = '.' + opts.engine;
-    }
-    engine = this.getEngine(opts.engine);
-  }
+  var engine = this.lookupEngine(ext, opts);
 
   try {
     engine.render(content, opts, function (err, content) {
@@ -755,24 +746,52 @@ Template.prototype.lookupTemplate = function(key, type) {
 
 
 /**
+ * Get the template engine for the given `ext`. Alternatively,
+ * an engine may be defined in any of the following ways:
+ *
+ *   - `options.engine` Defined on the options for an engine or template.
+ *
+ * @param  {String} `key` Name of the template.
+ * @param  {String} `type` Template type. Valid values are `renderable`|`partial`|`layout`.
+ * @return  {Object} Cached template object.
+ * @api private
+ */
+
+Template.prototype.lookupEngine = function(ext, opts) {
+  if (opts.engine) {
+    if (opts.engine[0] !== '.') {
+      opts.engine = '.' + opts.engine;
+    }
+    return this.getEngine(opts.engine);
+  } else {
+    return this.getEngine(ext);
+  }
+};
+
+
+/**
  * Build up the context with the given objects. To change how
  * context is merged, use `options.contextFn`.
  *
  * @param  {Object} `file` Normalized file object.
- * @param  {Object} `methodLocals` Locals defined on the `render` method.
+ * @param  {Object} `methodLocals` Locals defined on the `.render()` method.
  * @return  {Object} Merged context object.
  * @api private
  */
 
-Template.prototype.buildContext = function(file, methodLocals) {
+Template.prototype.buildContext = function(file, locals) {
   if (this.option('contextFn')) {
-    return this.option('contextFn').call(this, file, methodLocals);
+    return this.option('contextFn').call(this, file, locals);
   }
 
   var fileRoot = _.omit(file, ['data', 'orig', 'locals']);
-  var res = merge({}, this.cache.data, methodLocals, fileRoot, file.data, file.locals);
-  // console.log(res);
-  return res;
+
+  var context = {};
+  merge(context, this.cache.data);
+  merge(context, locals);
+  merge(context, fileRoot);
+  merge(context, file.data, file.locals);
+  return context;
 };
 
 
@@ -783,27 +802,12 @@ Template.prototype.buildContext = function(file, methodLocals) {
  * @api public
  */
 
-Template.prototype.assertProperties = function(file) {
+Template.prototype.assertProperties = function(file, props) {
+  var props = ['content', 'path'];
 
   if (typeof file === 'object' && !file.hasOwnProperty('content')) {
     throw new Error('render() expects "' + file + '" to be an object.');
   }
-
-  // var props = ['content', 'path'];
-
-  // if (keys) {
-  //   props = props.concat(keys);
-  // }
-
-  // if (typeof file === 'object') {
-  //   props.forEach(function (prop) {
-  //     if (!file.hasOwnProperty(prop)) {
-  //       throw new Error('render() expects "' + file + '" to have a `' + prop + '` property.');
-  //     }
-  //   });
-  // } else {
-  //   throw new Error('render() expects "' + file + '" to be an object.');
-  // }
 };
 
 

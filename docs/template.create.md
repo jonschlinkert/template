@@ -14,6 +14,19 @@ Template objects are always normalized to the following:
 }
 ```
 
+### Options
+
+  - `delims`
+  - `engine`
+
+**Functions**:
+
+  - `loader`
+  - `rename`
+  - `normalize`
+  - `context`
+
+
 **Example:**:
 
 ```js

@@ -129,9 +129,6 @@ Template.prototype.defaultOptions = function() {
   });
 
   this.addDelims('*', ['<%', '%>']);
-  this.addDelims('es6', ['${', '}'], {
-    interpolate: /\$\{([^\\}]*(?:\\.[^\\}]*)*)\}/g
-  });
 };
 
 
@@ -661,22 +658,32 @@ Template.prototype.render = function (file, options, cb) {
 
   this.assertProperties(file);
 
-  var ctx = this.buildContext(file, options);
+  var opts = this.buildContext(file, options);
 
   // Get file extension
-  var ext = ctx.ext || path.extname(file.path) || '*';
+  var ext = opts.ext || path.extname(file.path) || '*';
   if (ext[0] !== '.') {
     ext = '.' + ext;
   }
 
   // If the current engine has custom delims, pass them to the engine
-  var delims = this.delims[ext];
+  var delims = this.getDelims(ext);
+  // console.log(delims);
   if (delims) {
-    extend(ctx, delims);
+    this.useDelims(ext);
+    opts = extend({}, opts, delims);
   }
 
+  // Get the layout engine, and template engine for the given `ext`
   var layoutEngine = this.layoutSettings[ext];
   var engine = this.getEngine(ext);
+
+  if (opts.engine) {
+    if (opts.engine[0] !== '.') {
+      opts.engine = '.' + opts.engine;
+    }
+    engine = this.getEngine(opts.engine);
+  }
 
   // Clone the content;
   var content = file.content;
@@ -689,11 +696,11 @@ Template.prototype.render = function (file, options, cb) {
   }
 
   // Extend generic helpers into engine-specific helpers.
-  ctx.helpers = merge({}, this._.helpers, ctx.helpers);
-  ctx = this._mergePartials(ctx);
+  opts.helpers = merge({}, this._.helpers, opts.helpers);
+  opts = this._mergePartials(opts);
 
   try {
-    engine.render(content, ctx, function (err, content) {
+    engine.render(content, opts, function (err, content) {
       if (this.option('pretty')) {
         content = this.prettify(content, this.options);
       }

@@ -37,7 +37,7 @@ describe('template usage:', function () {
 
     template.useDelims('es6');
     var b = process('${ name }[[= name ]]{{= name }}<%= name %>{%= name %}', ctx);
-    b.should.equal('____Jon Schlinkert____[[= name ]]{{= name }}<%= name %>{%= name %}');
+    b.should.equal('____Jon Schlinkert____[[= name ]]{{= name }}____Jon Schlinkert____{%= name %}');
 
     template.useDelims('square');
     var c = process('${ name }[[= name ]]{{= name }}<%= name %>{%= name %}', ctx);
@@ -48,38 +48,58 @@ describe('template usage:', function () {
     d.should.equal('${ name }[[= name ]]____Jon Schlinkert____<%= name %>{%= name %}');
   });
 
-  xit('should use the currently set delimiters with `template.render()`:', function () {
-    // var template = new Template();
+  it('should use the currently set delimiters with `template.render()`:', function () {
+    var template = new Template();
 
-    // var ctx = {name: '____Jon Schlinkert____'};
+    template.engine('lodash', require('engine-lodash'));
 
-    // template.addDelims('lodash', ['<%', '%>']);
-    // template.addDelims('hbs', ['{{', '}}']);
-    // template.addDelims('square', ['[[', ']]']);
+    template.addDelims('foo', ['<%', '%>']);
+    template.addDelims('bar', ['{{', '}}']);
+    template.addDelims('baz', ['<<', '>>']);
+    template.addDelims('quux', ['${', '}'], {
+      interpolate: /\$\{([^\\}]*(?:\\.[^\\}]*)*)\}/g
+    });
 
-    // template.page('test.', '${ name }[[= name ]]{{= name }}<%= name %>{%= name %}');
+    var base = '${ name }<<= name >>{{= name }}<%= name %>{%= name %}';
+    var ctx = {name: '____Jon Schlinkert____'};
 
-    // // using default template
-    // template.render('test.txt', ctx, function (err, content) {
-    //   if (err) console.log(err);
-    //   console.log(content)
-    //   // content.should.equal('____Jon Schlinkert____[[= name ]]{{= name }}____Jon Schlinkert____{%= name %}');
-    // });
+    template.page('test.html', base);
+    template.page('test.foo', base, {engine: 'lodash'});
+    template.page('test.bar', base, {engine: 'lodash'});
+    template.page('test.baz', base, {engine: 'lodash'});
+    template.page('test.quux', base, {engine: 'lodash'});
 
-    // template.useDelims('lodash');
-    // var a = process('${ name }[[= name ]]{{= name }}<%= name %>{%= name %}', ctx);
-    // a.should.equal('${ name }[[= name ]]{{= name }}____Jon Schlinkert____{%= name %}');
+    // using default delimiters (should process both es6 and `<%= foo %>` delims)
 
-    // template.useDelims('es6');
-    // var b = process('${ name }[[= name ]]{{= name }}<%= name %>{%= name %}', ctx);
-    // b.should.equal('____Jon Schlinkert____[[= name ]]{{= name }}<%= name %>{%= name %}');
+    template.render('test.html', ctx, function (err, content) {
+      if (err) console.log(err);
+      content.should.equal('____Jon Schlinkert____<<= name >>{{= name }}____Jon Schlinkert____{%= name %}');
+    });
 
-    // template.useDelims('square');
-    // var c = process('${ name }[[= name ]]{{= name }}<%= name %>{%= name %}', ctx);
-    // c.should.equal('${ name }____Jon Schlinkert____{{= name }}<%= name %>{%= name %}');
+    // custom delimters
 
-    // template.useDelims('hbs');
-    // var d = process('${ name }[[= name ]]{{= name }}<%= name %>{%= name %}', ctx);
-    // d.should.equal('${ name }[[= name ]]____Jon Schlinkert____<%= name %>{%= name %}');
+    template.useDelims('foo');
+    template.render('test.foo', ctx, function (err, content) {
+      if (err) console.log(err);
+      content.should.equal('${ name }<<= name >>{{= name }}____Jon Schlinkert____{%= name %}');
+    });
+
+    template.useDelims('bar');
+    template.render('test.bar', ctx, function (err, content) {
+      if (err) console.log(err);
+      content.should.equal('${ name }<<= name >>____Jon Schlinkert____<%= name %>{%= name %}');
+    });
+
+    template.useDelims('baz');
+    template.render('test.baz', ctx, function (err, content) {
+      if (err) console.log(err);
+      content.should.equal('${ name }____Jon Schlinkert____{{= name }}<%= name %>{%= name %}');
+    });
+
+    template.useDelims('quux');
+    template.render('test.quux', ctx, function (err, content) {
+      if (err) console.log(err);
+      content.should.equal('____Jon Schlinkert____<<= name >>{{= name }}<%= name %>{%= name %}');
+    });
   });
 });

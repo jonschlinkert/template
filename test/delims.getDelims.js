@@ -33,26 +33,6 @@ describe('.useDelims():', function () {
     });
   });
 
-  it('should use es6 built-in template:', function () {
-    var template = new Template();
-
-    template.useDelims('es6');
-    template.getDelims().should.eql({
-      beginning: '',
-      matter: '([\\s\\S]+?)',
-      body: '',
-      end: '',
-      flags: 'g',
-      noncapture: false,
-      open: '\\$\\{',
-      close: '\\}',
-      delims: ['${', '}'],
-      escape: /\$\{-([\s\S]+?)\}/g,
-      evaluate: /\$\{([\s\S]+?)\}/g,
-      interpolate: /\$\{([^\\}]*(?:\\.[^\\}]*)*)\}/g
-    });
-  });
-
   it('should allow default built-in template to be overridden:', function () {
     var template = new Template();
 

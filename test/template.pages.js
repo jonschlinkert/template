@@ -44,7 +44,6 @@ describe('template page', function () {
     it('should add locals to the `data` property.', function () {
       var template = new Template();
       template.pages('a.md', 'b', {c: 'c'});
-      // console.log(template.cache.pages)
       template.cache.pages['a.md'].data.should.have.property('c');
     });
 
@@ -57,7 +56,7 @@ describe('template page', function () {
     it('should add the third arg to the `data` property.', function () {
       var template = new Template();
       template.pages('a.md', 'b', {title: 'c'});
-      template.cache.pages['a.md'].data.should.eql({title: 'c'});
+      template.cache.pages['a.md'].data.should.have.property('title');
     });
   });
 

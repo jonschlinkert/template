@@ -20,18 +20,17 @@ describe('template delimiters:', function () {
     template.create('doc', 'docs', {renderable: true, delims: ['<<', '>>']})
 
     template.doc('foo', {content: '<<= name >>', name: 'Jon Schlinkert'});
-    template.doc('bar', {content: '<<= name >>', name: 'Brian Woodward'});
+    template.docs('bar', {content: '<<= name >>', name: 'Brian Woodward'});
 
     template.render('foo', function (err, content) {
       if (err) console.log(err);
-      console.log(content)
-      // content.should.equal('Jon Schlinkert');
+      content.should.equal('Jon Schlinkert');
     });
 
-    // template.render('bar', function (err, content) {
-    //   if (err) console.log(err);
-    //   content.should.equal('Brian Woodward');
-    // });
+    template.render('bar', function (err, content) {
+      if (err) console.log(err);
+      content.should.equal('Brian Woodward');
+    });
     done();
   });
 });

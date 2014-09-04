@@ -64,6 +64,7 @@ Template.prototype.init = function() {
 
   this.delims = {};
   this.viewType = {};
+  this.viewType.delims = {};
   this.viewType.partial = [];
   this.viewType.renderable = [];
   this.viewType.layout = [];
@@ -454,7 +455,7 @@ Template.prototype.addHelperAsync = function (name, fn, thisArg) {
  * @api private
  */
 
-Template.prototype._addHelperAsync = function (type, plural) {
+Template.prototype._addHelperAsync = function (type, plural, addHelper) {
   this.addHelperAsync(type, function (name, locals, next) {
     var last = _.last(arguments);
 
@@ -529,12 +530,12 @@ Template.prototype.create = function(type, plural, options) {
 
   var opts = extend({ext: this.options.ext}, options);
   if (!this.cache[plural]) {
-    this.set(plural, {});
+    this.cache[plural] = {};
   }
 
-  // if (opts.delims) {
-  //   this.option('engineDelims', this.makeDelims(opts.delims));
-  // }
+  if (opts.delims) {
+    this.viewType.delims[type] = this.makeDelims(opts.delims);
+  }
 
   // Add a `viewType` to the cache for `plural`
   this._setType(plural, opts);
@@ -573,7 +574,9 @@ Template.prototype.create = function(type, plural, options) {
       file[key] = value;
     }
 
-    this._normalizeTemplates(plural, file, locals, opts);
+    opts._viewType = type;
+
+    this._normalizeTemplates(type, plural, file, locals, opts);
     return this;
   };
 
@@ -594,9 +597,11 @@ Template.prototype.create = function(type, plural, options) {
       opts = merge({}, opts, last);
     }
 
+    opts._viewType = plural;
+
     // load templates. options are passed to loader in `.init()`
     var files = this._.loader.load(key, value, opts);
-    this._normalizeTemplates(plural, files, value, opts);
+    this._normalizeTemplates(type, plural, files, value, opts);
     return this;
   };
 
@@ -619,7 +624,7 @@ Template.prototype.create = function(type, plural, options) {
  * @api private
  */
 
-Template.prototype._normalizeTemplates = function (plural, files, locals, options) {
+Template.prototype._normalizeTemplates = function (type, plural, files, locals, options) {
   var opts = extend({}, options);
 
   _.forOwn(files, function (file, key) {
@@ -634,12 +639,13 @@ Template.prototype._normalizeTemplates = function (plural, files, locals, option
     var root = _.pick(file, fileProps);
     var data = merge({}, _.omit(file, fileProps));
     root.data = merge({}, data, locals, root.data);
-    // root.locals = root.locals || locals || {};
 
     var stack = this.getParsers(ext);
     var value = this.parseSync(root, stack, root.data);
 
-    // console.log(value);
+    value._opts = {};
+    value._opts.viewType = type;
+
     this.cache[plural][key] = value;
 
     if (opts.layout) {
@@ -720,7 +726,7 @@ Template.prototype.render = function (file, options, cb) {
   opts.helpers = merge({}, this._.helpers, opts.helpers);
   opts = this._mergePartials(opts);
 
-  opts = extend({}, opts, this.lookupDelims(ext, opts));
+  opts = extend({}, opts, this.lookupDelims(ext, file));
   var engine = this.lookupEngine(ext, opts);
 
   try {
@@ -774,30 +780,43 @@ Template.prototype.applyLayout = function(ext, file) {
  * @api public
  */
 
-Template.prototype.lookupTemplate = function(key, type, options) {
+Template.prototype.lookupTemplate = function (key, type, options) {
   var opts = extend({}, this.options, options);
-  var str = key, id;
+  var str = key,
+    id;
 
   type = type || 'renderable';
 
   // If caching is enabled, lookup the template
   if (this.option('cache')) {
-    var cached = _.map(this.viewType[type], function(plural) {
-      return this.cache[plural][key] || _.find(this.cache[plural], {path: key});
-    }.bind(this))[0];
+    var len = this.viewType[type].length;
+    var cached;
+
+    for (var i = 0; i < len; i++) {
+      var plural = this.viewType[type][i];
+      cached = this.cache[plural][key];
+      if (cached) {
+        break;
+      }
+      cached = _.find(this.cache[plural], {
+        path: key
+      });
+    }
 
     if (cached) {
       return cached;
     }
 
     // if it's not found, cache and normalize it before returning it
-    id = _.uniqueId('__temp__') +'.html';
+    id = _.uniqueId('__temp__') + '.html';
     this.page(id, {content: str}, options);
     key = this.cache.pages[id];
+
   } else {
-    id = _.uniqueId('__temp__') +'.html';
+    id = _.uniqueId('__temp__') + '.html';
     key = {path: id, content: str, data: options};
   }
+
   return key;
 };
 
@@ -812,16 +831,21 @@ Template.prototype.lookupTemplate = function(key, type, options) {
  * @api public
  */
 
-Template.prototype.lookupDelims = function(ext, opts) {
+Template.prototype.lookupDelims = function(ext, file) {
   if (ext[0] !== '.') {
     ext = '.' + ext;
   }
 
-  var delims = this.getDelims(ext);
+  var opts = extend({}, file._opts), delims;
+  if (opts.viewType) {
+    delims = this.viewType.delims[opts.viewType];
+  }
+
   if (!delims) {
-  // if (opts.delims) {
-  //   return this.getDelims(opts.delims);
-  // }
+    delims = this.getDelims(ext);
+  }
+
+  if (!delims) {
     delims = this.option('engineDelims');
   }
 

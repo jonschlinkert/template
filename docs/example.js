@@ -18,7 +18,7 @@ template.data({
   section: ''
 });
 
-template.option('pretty', true);
+template.option('pretty', false);
 template.option('rename', function (filepath) {
   return filepath;
 });
@@ -30,7 +30,7 @@ template.page('home.md', 'this is content.', {layout: 'base.md'});
 // template.page('about.md','{{name}}', {name: 'Jon Schlinkert', layout: 'default.md'});
 
 template.partial('sidebar.md', '<section>Sidebar</section>\n');
-template.partial('navbar.md', '<nav><ul><li>link</li></ul></nav>');
+template.partial('navbar.md', '<nav><ul><li>link</li></ul></nav>', {pretty: true});
 
 // template.snippet('sidebar', 'ul>li*5>a[href=$]{Item $}');
 
@@ -39,6 +39,7 @@ template.layout('base.md', [
   'layout: default.md',
   '---',
   '<h3>{{section}}</h3>',
+  '<div>{{> navbar.md }}</div>',
   '<section>{% body %}</section>'
 ].join('\n'), {section: 'Foo'});
 

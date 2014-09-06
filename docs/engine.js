@@ -12,7 +12,7 @@ var _ = require('lodash');
 
 module.exports = function (template) {
   return function (options) {
-    var opts = _.extend({engine: 'hbs'}, template.options, options);
+    var opts = _.extend({globals: template.options}, options);
 
     return through.obj(function (file, encoding, cb) {
       if (file.isNull()) {
@@ -26,11 +26,14 @@ module.exports = function (template) {
 
       var o = {};
       var name = path.basename(file.path);
+
       o[name] = _.extend({}, file);
       o[name].content = file.contents.toString('utf8');
       o[name].path = name;
-
+      o[name].destExt = opts.destExt || opts.globals.destExt || '.html';
       template.page(o, opts);
+
+      var destExt = o[name].destExt;
 
       try {
         var stream = this;
@@ -42,7 +45,7 @@ module.exports = function (template) {
           } else {
 
             file.contents = new Buffer(content);
-            file.path = gutil.replaceExtension(file.path, opts.destExt || file.ext);
+            file.path = gutil.replaceExtension(file.path, destExt);
             stream.push(file);
             cb();
           }

@@ -750,10 +750,9 @@ Template.prototype.render = function (file, options, cb) {
  */
 
 Template.prototype.resolveExtension = function(file, options) {
-  var opts = extend({}, options);
-  // if ()
+  var opts = extend({}, file, file._opts, file.data, options);
+  opts = _.omit(opts, ['_opts', 'stat', 'data']);
 
-  console.log(arguments);
   // Get file extension
   var ext = opts.ext || path.extname(file.path) || '*';
   if (ext[0] !== '.') {

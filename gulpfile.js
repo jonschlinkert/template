@@ -11,7 +11,7 @@ template.engine('hbs', require('engine-handlebars'), {
   destExt: '.html'
 });
 
-// template.set('assets', 'dist/assets');
+template.set('assets', 'dist/assets');
 template.partials('test/**/*.hbs');
 
 template.data({
@@ -20,7 +20,7 @@ template.data({
 });
 
 gulp.task('default', function() {
-  gulp.src('tmp/*.hbs')
+  gulp.src('test/fixtures/pages/*.hbs')
     .pipe(engine())
     .pipe(pretty({
       indent_handlebars: true,
@@ -31,5 +31,5 @@ gulp.task('default', function() {
       indent_char: ' ',
       indent_size: 2,
     }))
-    .pipe(gulp.dest('dist'))
+    .pipe(gulp.dest('test/actual'))
 });

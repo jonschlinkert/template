@@ -93,6 +93,7 @@
   },
   "devDependencies": {
     "async": "^0.9.0",
+    "calculate-assets": "^0.1.2",
     "consolidate": "^0.10.0",
     "engine-handlebars": "^0.2.0",
     "gray-matter": "^0.5.0",

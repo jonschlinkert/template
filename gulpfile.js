@@ -10,7 +10,7 @@ template.engine('hbs', require('engine-handlebars'), {
   destExt: '.html'
 });
 
-template.option('extensions', ['hbs', 'md']);
+template.set('extensions', ['hbs', 'md']);
 template.option('pretty', true);
 template.option('assets', 'dist/assets');
 template.option('rename', function (filepath) {

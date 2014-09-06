@@ -44,6 +44,7 @@ var merge = _.merge;
 function Template(options) {
   Delimiters.call(this, options);
   Storage.call(this, options);
+  this.defaultOptions();
   this.init();
 }
 
@@ -60,7 +61,15 @@ extend(Template.prototype, Delimiters.prototype);
 Template.prototype.init = function() {
   this.engines = this.engines || {};
   this.parsers = this.parsers || {};
+
   this._ = {};
+  this._.loader = loader(this.options);
+  this._.parsers = new Parsers(this.parsers);
+  this._.engines = new Engines(this.engines);
+  this._.helpers = new Helpers({
+    bindFunctions: true,
+    thisArg: this
+  });
 
   this.delims = {};
   this.viewType = {};
@@ -71,7 +80,6 @@ Template.prototype.init = function() {
   this.viewType.layout = [];
   this.layoutSettings = {};
 
-  this.defaultOptions();
   this.defaultConfig();
   this.defaultTemplates();
   this.defaultParsers();
@@ -86,14 +94,6 @@ Template.prototype.init = function() {
  */
 
 Template.prototype.defaultConfig = function() {
-  this._.loader = loader(this.options);
-  this._.parsers = new Parsers(this.parsers);
-  this._.engines = new Engines(this.engines);
-  this._.helpers = new Helpers({
-    bindFunctions: true,
-    thisArg: this
-  });
-
   this.set('locals', {});
   this.set('imports', {});
   this.set('layouts', {});
@@ -109,24 +109,24 @@ Template.prototype.defaultConfig = function() {
  */
 
 Template.prototype.defaultOptions = function() {
+  this.option('cache', true);
+  this.option('strictErrors', true);
+
   this.option('cwd', process.cwd());
   this.option('destExt', '.html');
   this.option('ext', '*');
-  this.option('extensions', ['md', 'html']);
+  this.option('extensions', ['md', 'html', 'hbs']);
 
-  this.option('delims', {});
-  this.option('cache', true);
-  this.option('pretty', false);
   this.option('layoutTag', 'body');
   this.option('layoutDelims', ['{%', '%}']);
-  this.option('engineDelims', null);
   this.option('layout', null);
 
-  this.option('strictErrors', true);
   this.option('partialLayout', null);
   this.option('mergePartials', true);
   this.option('mergeFunction', merge);
   this.option('bindHelpers', true);
+
+  this.option('pretty', false);
 
   // loader options
   this.option('noparse', false);
@@ -135,6 +135,9 @@ Template.prototype.defaultOptions = function() {
     return path.basename(filepath);
   });
 
+  // Delimiters
+  this.option('delims', {});
+  this.option('engineDelims', null);
   this.addDelims('*', ['<%', '%>']);
 };
 
@@ -146,9 +149,9 @@ Template.prototype.defaultOptions = function() {
  */
 
 Template.prototype.defaultParsers = function() {
-  var exts = this.option('extensions');
-
-  this.parser(exts, require('parser-front-matter'));
+  // get default extensions
+  var extensions = this.option('extensions');
+  this.parser(extensions, require('parser-front-matter'));
   this.parser('*', require('parser-noop'));
 };
 
@@ -163,13 +166,11 @@ Template.prototype.defaultParsers = function() {
  */
 
 Template.prototype.defaultEngines = function() {
-  var exts = this.option('extensions');
-
-  this.engine(exts, require('engine-lodash'), {
+  var extensions = this.option('extensions');
+  this.engine(extensions, require('engine-lodash'), {
     layoutDelims: ['{%', '%}'],
     destExt: '.html'
   });
-
   this.engine('*', require('engine-noop'), {
     layoutDelims: ['{%', '%}'],
     destExt: '.html'
@@ -569,6 +570,7 @@ Template.prototype.create = function(type, plural, options) {
 
   Template.prototype[type] = function (key, value, locals) {
     var o = {};
+
     if (arguments.length === 1 &&
       typeof key === 'object' && key.hasOwnProperty('path')) {
       o[key.path] = key;
@@ -603,6 +605,7 @@ Template.prototype.create = function(type, plural, options) {
 
     // load templates. options are passed to loader in `.init()`
     var files = this._.loader.load(key, value, opts);
+
     this._normalizeTemplates(type, plural, files, value, opts);
     return this;
   };

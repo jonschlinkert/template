@@ -64,6 +64,7 @@ Template.prototype.init = function() {
 
   this.delims = {};
   this.viewType = {};
+  this.viewType.engine = {};
   this.viewType.delims = {};
   this.viewType.partial = [];
   this.viewType.renderable = [];
@@ -537,6 +538,10 @@ Template.prototype.create = function(type, plural, options) {
     this.viewType.delims[type] = this.makeDelims(opts.delims);
   }
 
+  if (opts.engine) {
+    this.viewType.engine[type] = opts.engine;
+  }
+
   // Add a `viewType` to the cache for `plural`
   this._setType(plural, opts);
 
@@ -545,36 +550,19 @@ Template.prototype.create = function(type, plural, options) {
    */
 
   Template.prototype[type] = function (key, value, locals) {
-    var args = [].slice.call(arguments);
-    var arity = args.length;
-    var file = {}, name;
-
-    if (arity === 1) {
-      if (isFilepath(key)) {
-        // if no `path` property exists, use the actual key
-        if (!_.values(key)[0].hasOwnProperty('path')) {
-          _.values(key)[0].path = Object.keys(key)[0];
-        }
-        merge(file, key);
-      } else {
-        if (!key.hasOwnProperty('content')) {
-          key = {content: key};
-        }
-        if (key.hasOwnProperty('path')) {
-          file[key.path] = key;
-        } else {
-          throw new Error('template.'+type+'() cannot find a key for:', key);
-        }
-      }
+    var o = {};
+    if (arguments.length === 1 &&
+      typeof key === 'object' && key.hasOwnProperty('path')) {
+      o[key.path] = key;
     } else {
-      if (typeof value === 'string') {
-        value = {content: value};
-      }
-      value.path = value.path || key;
-      file[key] = value;
+      o = key;
     }
 
-    this._normalizeTemplates(type, plural, file, locals, opts);
+    var root = _.omit(opts, ['renderable', 'layout', 'partial']);
+    var data = _.extend({}, root, locals);
+
+    var files = this._.loader.load(o, value, data);
+    this._normalizeTemplates(type, plural, files, locals, opts);
     return this;
   };
 
@@ -863,10 +851,9 @@ Template.prototype.lookupDelims = function(ext, file) {
  */
 
 Template.prototype.lookupEngine = function(ext, opts) {
-  if (opts.engine) {
-    if (opts.engine[0] !== '.') {
-      opts.engine = '.' + opts.engine;
-    }
+  if (opts.ext) {
+    return this.getEngine(opts.ext);
+  } else if (opts.engine) {
     return this.getEngine(opts.engine);
   } else {
     return this.getEngine(ext);
@@ -937,18 +924,6 @@ Template.prototype.prettify = function(html, options) {
     indent_size: 2,
   }, options));
 };
-
-
-/**
- * Returns `true` if an object's key might be a filepath.
- *
- * @api private
- */
-
-function isFilepath(key) {
-  return _.keys(key).length === 1 &&
-    typeof key === 'object';
-}
 
 
 /**

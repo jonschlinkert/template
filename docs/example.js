@@ -2,13 +2,11 @@
 
 var Template = require('..');
 var template = new Template();
-var consolidate = require('consolidate');
 var matter = require('gray-matter');
 var utils = require('parser-utils');
 var _ = require('lodash');
 
-template.engine('md', consolidate.handlebars);
-
+template.engine('md', require('engine-handlebars'));
 var engine = template.helpers('md');
 
 // template.helper('zen', function (snippet) {
@@ -16,7 +14,8 @@ var engine = template.helpers('md');
 // });
 
 template.data({
-  title: 'Site!'
+  title: 'Site!',
+  section: ''
 });
 
 template.option('pretty', true);

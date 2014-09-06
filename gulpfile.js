@@ -1,18 +1,28 @@
+var path = require('path');
 var gulp = require('gulp');
 var pretty = require('gulp-prettify');
-
 var Template = require('./');
 var template = new Template();
 var engine = require('./docs/engine')(template);
 // var resolve = require('resolve-dep');
 
-
 template.engine('hbs', require('engine-handlebars'), {
   destExt: '.html'
 });
 
-template.set('assets', 'dist/assets');
-template.partials('test/**/*.hbs');
+template.option('extensions', ['hbs', 'md']);
+template.option('pretty', true);
+template.option('assets', 'dist/assets');
+template.option('rename', function (filepath) {
+  return path.basename(filepath, path.extname(filepath));
+});
+
+
+template.partials('test/fixtures/partials/*.hbs');
+template.layouts('test/fixtures/layouts/*.hbs');
+
+// template.layout('base.hbs', require('./test/fixtures/layouts/base'));
+// template.layout('default.hbs', require('./test/fixtures/layouts/default'));
 
 template.data({
   name: 'Engine!',

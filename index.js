@@ -112,6 +112,7 @@ Template.prototype.defaultOptions = function() {
   this.option('cwd', process.cwd());
   this.option('destExt', '.html');
   this.option('ext', '*');
+  this.option('extensions', ['md', 'html']);
 
   this.option('delims', {});
   this.option('cache', true);
@@ -145,7 +146,9 @@ Template.prototype.defaultOptions = function() {
  */
 
 Template.prototype.defaultParsers = function() {
-  this.parser('md', require('parser-front-matter'));
+  var exts = this.option('extensions');
+
+  this.parser(exts, require('parser-front-matter'));
   this.parser('*', require('parser-noop'));
 };
 
@@ -160,12 +163,14 @@ Template.prototype.defaultParsers = function() {
  */
 
 Template.prototype.defaultEngines = function() {
-  this.engine('*', require('engine-noop'), {
+  var exts = this.option('extensions');
+
+  this.engine(exts, require('engine-lodash'), {
     layoutDelims: ['{%', '%}'],
     destExt: '.html'
   });
 
-  this.engine(['md', 'html'], require('engine-lodash'), {
+  this.engine('*', require('engine-noop'), {
     layoutDelims: ['{%', '%}'],
     destExt: '.html'
   });
@@ -250,8 +255,12 @@ Template.prototype.determineLayout = function (file) {
  * @api public
  */
 
-Template.prototype.parser = function (ext, options, fn) {
-  this._.parsers.register.apply(this, arguments);
+Template.prototype.parser = function (extensions, options, fn) {
+  var args = [].slice.call(arguments, 1);
+
+  arrayify(extensions).forEach(function (ext) {
+    this._.parsers.register.apply(this, [ext].concat(args));
+  }.bind(this));
   return this;
 };
 
@@ -738,9 +747,15 @@ Template.prototype.render = function (file, options, cb) {
  * Determine the correct file extension to use, taking the following
  * into consideration, and in this order:
  *
- *   - `options.ext` An explicitly passed file extension
- *   - `file.ext` An explicitly passed engine
- *   - `file.path` An explicitly passed engine
+ *   - `options.ext`
+ *   - `file.data.ext`
+ *   - `file.ext`
+ *   - `file._opts.ext`
+ *   - `path.extname(file.path)`
+ *
+ * The reasoning is that if an engine is explicitly defined, it should
+ * take precendence over an engine that is automatically calculated
+ * from `file.path`.
  *
  * @param  {String} `ext` The layout settings to use.
  * @param  {Object} `file` Template file object.
@@ -750,7 +765,7 @@ Template.prototype.render = function (file, options, cb) {
  */
 
 Template.prototype.resolveExtension = function(file, options) {
-  var opts = extend({}, file, file._opts, file.data, options);
+  var opts = extend({}, file._opts, file, file.data, options);
   opts = _.omit(opts, ['_opts', 'stat', 'data']);
 
   // Get file extension

@@ -213,6 +213,7 @@ Template.prototype.lazyLayouts = function(ext, options) {
  *
  * @param  {Object} `file` File object to test search for `layout`.
  * @return {String} The name of the layout to use.
+ * @api private
  */
 
 Template.prototype.determineLayout = function (file) {
@@ -733,7 +734,7 @@ Template.prototype.render = function (file, options, cb) {
  * @param  {String} `ext` The layout settings to use.
  * @param  {Object} `file` Template object, with `content` property.
  * @return  {String} Either the string wrapped with a layout, or the original string if no layout was defined.
- * @api public
+ * @api private
  */
 
 Template.prototype.applyLayout = function(ext, file) {
@@ -761,7 +762,7 @@ Template.prototype.applyLayout = function(ext, file) {
  * @param  {String} `type` Template type. Valid values are `renderable`|`partial`|`layout`.
  * @param  {Object} `options` Options or locals.
  * @return  {Object} Normalized template object.
- * @api public
+ * @api private
  */
 
 Template.prototype.lookupTemplate = function (key, type, options) {
@@ -812,7 +813,7 @@ Template.prototype.lookupTemplate = function (key, type, options) {
  * @param  {String} `ext` Delimiters to lookup.
  * @param  {String} `options` Check to see if `engine` is defined on the options.
  * @return  {Object} The delimiters to use.
- * @api public
+ * @api private
  */
 
 Template.prototype.lookupDelims = function(ext, file) {
@@ -847,7 +848,7 @@ Template.prototype.lookupDelims = function(ext, file) {
  * @param  {String} `ext` Engine to lookup.
  * @param  {String} `options` Check to see if `engine` is defined on the options.
  * @return  {Object} The engine to use.
- * @api public
+ * @api private
  */
 
 Template.prototype.lookupEngine = function(ext, opts) {
@@ -893,7 +894,7 @@ Template.prototype.buildContext = function(file, locals) {
  * Throw an error if `file` does not have `keys`.
  *
  * @param  {String} `file` The object to test.
- * @api public
+ * @api private
  */
 
 Template.prototype.assertProperties = function(file, props) {

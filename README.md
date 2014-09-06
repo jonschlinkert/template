@@ -18,7 +18,7 @@ var views = new Views();
 ```
 
 ## API
-### [Template](index.js#L39)
+### [Template](index.js#L44)
 
 Create a new instance of `Template`, optionally passing the default `context` and `options` to use.
 
@@ -32,7 +32,7 @@ var Template = require('template');
 var template = new Template();
 ```
 
-### [.parser](index.js#L216)
+### [.parser](index.js#L250)
 
 Register the given parser callback `fn` as `ext`. If `ext` is not given, the parser `fn` will be pushed into the default parser stack.
 
@@ -52,12 +52,14 @@ template.parser('hbs', require('parser-front-matter'));
 See [parser-cache] for the full range of options and documentation.
 
 
-### [.parse](index.js#L271)
+### [.parse](index.js#L300)
 
 * `file` **{Object|String}**: Either a string or an object.    
 * `stack` **{Array}**: Optionally pass an array of functions to use as parsers.    
 * `options` **{Object}**    
 * `returns` **{Object}**: Normalize `file` object.  
+
+**Examples:**
 
 ```js
 var str = fs.readFileSync('a/b/c.md', 'utf8');
@@ -84,7 +86,7 @@ an object with a `path` property, then the `extname` is used to
 get the parser stack. If a stack isn't found on the cache the
 default `noop` parser will be used.
 
-### [.parseSync](index.js#L290)
+### [.parseSync](index.js#L319)
 
 * `file` **{Object|String}**: Either a string or an object.    
 * `stack` **{Array}**: Optionally pass an array of functions to use as parsers.    
@@ -109,20 +111,21 @@ but synchronous. If `file` is an object with a `path` property,
 then the `extname` is used to get the parser stack. If a stack isn't
 found on the cache the default `noop` parser will be used.
 
-### [.getParsers](index.js#L303)
+### [.getParsers](index.js#L332)
 
 * `ext` **{String}**: The parser stack to get.    
 * `returns` **{Object}** `Template`: to enable chaining.  
 
 Get a cached parser stack for the given `ext`.
 
-### [.engine](index.js#L321)
+### [.engine](index.js#L350)
 
 * `ext` **{String}**    
 * `fn` **{Function|Object}**: or `options`    
 * `options` **{Object}**    
 * `returns` **{Object}** `Template`: to enable chaining  
 
+**Example:**
 
 ```js
 var consolidate = require('consolidate')
@@ -137,10 +140,12 @@ Register the given view engine callback `fn` as `ext`. If only `ext`
 is passed, the engine registered for `ext` is returned. If no `ext`
 is passed, the entire cache is returned.
 
-### [.getEngine](index.js#L343)
+### [.getEngine](index.js#L399)
 
 * `ext` **{String}**: The engine to get.    
 * `returns` **{Object}**: Object of methods for the specified engine.  
+
+**Example:**
 
 ```js
 var consolidate = require('consolidate')
@@ -152,7 +157,7 @@ template.getEngine('hbs');
 Get the engine registered for the given `ext`. If no
 `ext` is passed, the entire cache is returned.
 
-### [.helpers](index.js#L357)
+### [.helpers](index.js#L413)
 
 * `ext` **{String}**: The helper cache to get and set to.    
 * `returns` **{Object}**: Object of helpers for the specified engine.  
@@ -160,7 +165,7 @@ Get the engine registered for the given `ext`. If no
 Get and set helpers for the given `ext` (engine). If no
 `ext` is passed, the entire helper cache is returned.
 
-### [.addHelper](index.js#L374)
+### [.addHelper](index.js#L430)
 
 * `name` **{String}**: The helper to cache or get.    
 * `fn` **{Function}**: The helper function.    
@@ -171,21 +176,34 @@ Get and set helpers on `templates.cache.helpers.` Helpers registered
 using this method should be generic javascript functions, since they
 will be passed to every engine.
 
-### [.create](index.js#L392)
+### [.addHelperAsync](index.js#L447)
+
+* `name` **{String}**: The helper to cache or get.    
+* `fn` **{Function}**: The helper function.    
+* `thisArg` **{Object}**: Context to bind to the helper.    
+* `returns` **{Object}**: Object of helpers for the specified engine.  
+
+Get and set async helpers on `templates.cache.helpers.` Helpers registered
+using this method should be generic javascript functions, since they
+will be passed to every engine.
+
+### [.create](index.js#L528)
 
 * `type` **{String}**: Singular name of the type to create, e.g. `page`.    
 * `plural` **{String}**: Plural name of the template type, e.g. `pages`.    
 * `options` **{Object}**: Options for the template type.  
     - `renderable` **{Boolean}**: Is the template a partial view?
     - `layout` **{Boolean}**: Can the template be used as a layout?
+    - `partial` **{Boolean}**: Can the template be used as a partial?
       
 * `returns` **{Object}** `Template`: to enable chaining.  
 
 Add a new template `type`, along with associated get/set methods.
 You must specify both the singular and plural names for the type.
 
-### [.render](index.js#L551)
+### [.render](index.js#L685)
 
+* `file` **{Object|String}**: String or normalized template object.    
 * `options` **{Object}**: Options to pass to registered view engines.    
 * `returns`: {String}  
 
@@ -213,11 +231,12 @@ Released under the MIT license
 
 ***
 
-_This file was generated by [verb-cli](https://github.com/assemble/verb-cli) on September 01, 2014._
+_This file was generated by [verb-cli](https://github.com/assemble/verb-cli) on September 06, 2014._
 
 
 [engine-cache]: https://github.com/jonschlinkert/engine-cache
 [engine-noop]: https://github.com/jonschlinkert/engine-noop
+[js-beautify]: https://github.com/einars/js-beautify
 [parse-files]: https://github.com/jonschlinkert/parse-files
 [parser-cache]: https://github.com/jonschlinkert/parser-cache
 [parser-front-matter]: https://github.com/jonschlinkert/parser-front-matter

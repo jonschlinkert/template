@@ -31,6 +31,7 @@ describe('Template', function () {
       template.set('a', 1);
       template.set('b', 2);
       template.set('c', 3);
+
       template.keys().should.eql(['a', 'b', 'c']);
     });
   });

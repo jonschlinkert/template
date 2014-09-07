@@ -1,1 +1,4 @@
-hello <%= a %>
+---
+title: A
+---
+This is <%= a %>

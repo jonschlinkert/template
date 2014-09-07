@@ -10,11 +10,18 @@ template.engine('hbs', require('engine-handlebars'), {
   destExt: '.html'
 });
 
+
 template.set('extensions', ['hbs', 'md']);
 template.option('pretty', true);
 template.option('assets', 'dist/assets');
 template.option('rename', function (filepath) {
   return path.basename(filepath, path.extname(filepath));
+});
+template.option('parse', function (filepath) {
+  return {
+    foo: filepath,
+    bar: 'bar'
+  }
 });
 
 

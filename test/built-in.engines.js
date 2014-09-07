@@ -20,6 +20,6 @@ describe('default engines', function() {
     template.engines.should.have.property('.md');
     template.engines.should.have.property('.html');
     template.engines.should.have.property('.*');
-    Object.keys(template.engines).length.should.equal(3);
+    Object.keys(template.engines).length.should.equal(4);
   });
 });

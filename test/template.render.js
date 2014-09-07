@@ -39,7 +39,7 @@ describe('template render', function () {
 
   describe('when an un-cached string is passed to `.render()`:', function () {
     it('should render it with caching enabled:', function (done) {
-      template.render('<%= name %>', {name: 'Jon Schlinkert'}, function (err, content) {
+      template.render('<%= name %>', {name: 'Jon Schlinkert', ext: '.html'}, function (err, content) {
         if (err) console.log(err);
         content.should.equal('Jon Schlinkert');
         done();
@@ -49,7 +49,7 @@ describe('template render', function () {
     it('should render it with caching disabled:', function (done) {
       template.option('cache', false);
 
-      template.render('<%= name %>', {name: 'Jon Schlinkert'}, function (err, content) {
+      template.render('<%= name %>', {name: 'Jon Schlinkert', ext: '.html'}, function (err, content) {
         if (err) console.log(err);
         content.should.equal('Jon Schlinkert');
         done();

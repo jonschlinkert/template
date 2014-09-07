@@ -59,6 +59,7 @@ extend(Template.prototype, Delimiters.prototype);
  */
 
 Template.prototype.init = function() {
+  this.delims = {};
   this.engines = this.engines || {};
   this.parsers = this.parsers || {};
 
@@ -71,7 +72,6 @@ Template.prototype.init = function() {
     thisArg: this
   });
 
-  this.delims = {};
   this.viewType = {};
   this.viewType.engine = {};
   this.viewType.delims = {};
@@ -568,20 +568,48 @@ Template.prototype.create = function(type, plural, options) {
    * Singular template `type` (e.g. `page`)
    */
 
-  Template.prototype[type] = function (key, value, locals) {
-    var o = {};
+  Template.prototype[type] = function (key, value, locals, options) {
+    var args = [].slice.call(arguments);
 
-    if (arguments.length === 1 &&
-      typeof key === 'object' && key.hasOwnProperty('path')) {
-      o[key.path] = key;
-    } else {
-      o = key;
+    // Only assume 2 args when the first is an object.
+    if (typeOf(key) === 'object') {
+      if (args.length === 2) {
+        args[1]._opts = extend({}, this.options, value);
+      }
+      if (args.length === 1) {
+        if (Object.keys(key).length === 1) {
+          _.forOwn(key, function (value, key) {
+            value.path = value.path || key;
+            value._opts = extend({}, this.options, key);
+          }.bind(this));
+        }
+      }
     }
 
-    var root = _.omit(opts, ['renderable', 'layout', 'partial']);
-    var data = extend({}, root, locals);
+    if (typeOf(key) === 'string') {
+      if (typeOf(value) === 'string') {
+        if (args.length === 4) {
+          args[3] = extend({}, this.options, options);
+        }
+        if (args.length === 3) {
+          args[2]._opts = extend({}, this.options, locals);
+        }
+      }
+      if (typeOf(value) === 'object') {
+        if (args.length === 2) {
+          args[1]._opts = extend({}, this.options, value);
+        }
+        if (args.length === 1) {
+          args[1] = {};
+          args[1]._opts = extend({}, this.options);
+        }
+      }
+    }
 
-    var files = this._.loader.load(o, value, data);
+    // load templates. options are passed to loader in `.init()`
+    var load = this._.loader.load;
+    var files = load.apply(load, args);
+
     this._normalizeTemplates(type, plural, files, locals, opts);
     return this;
   };
@@ -591,22 +619,41 @@ Template.prototype.create = function(type, plural, options) {
    * Plural template `type` (e.g. `pages`)
    */
 
-  Template.prototype[plural] = function (key, value) {
+  Template.prototype[plural] = function (pattern, locals, options) {
     var args = [].slice.call(arguments);
 
     if (!args.length) {
       return this.cache[plural];
     }
 
-    var last = _.last(args);
-    if (args.length > 1 && typeOf(last) === 'object') {
-      opts = merge({}, opts, last);
+    // Only assume 2 args when the first is an object.
+    if (typeOf(pattern) === 'object') {
+      if (args.length === 2) {
+        args[1]._opts = extend({}, this.options, locals);
+      }
+      if (args.length === 1) {
+        args[0]._opts = extend({}, this.options, locals);
+      }
+    }
+
+    if (typeOf(pattern) === 'string' || Array.isArray(pattern)) {
+      if (args.length === 3) {
+        args[2] = extend({}, this.options, options);
+      }
+      if (args.length === 2) {
+        args[1]._opts = extend({}, this.options, locals);
+      }
+      if (args.length === 1) {
+        args[1] = {};
+        args[1]._opts = extend({}, this.options);
+      }
     }
 
     // load templates. options are passed to loader in `.init()`
-    var files = this._.loader.load(key, value, opts);
+    var load = this._.loader.load;
+    var files = load.apply(load, args);
 
-    this._normalizeTemplates(type, plural, files, value, opts);
+    this._normalizeTemplates(type, plural, files, locals, opts);
     return this;
   };
 
@@ -730,6 +777,7 @@ Template.prototype.render = function (file, options, cb) {
   opts = this._mergePartials(opts);
   merge(opts, this.lookupDelims(ext, file));
 
+
   var engine = this.lookupEngine(ext, opts);
 
   try {
@@ -847,14 +895,12 @@ Template.prototype.lookupTemplate = function (key, type, options) {
 
     // if it's not found, cache and normalize it before returning it
     id = _.uniqueId('__temp__') + '.html';
-    this.page(id, {content: str}, options);
+    this.page(id, {path: id, content: str}, options);
     key = this.cache.pages[id];
-
   } else {
     id = _.uniqueId('__temp__') + '.html';
     key = {path: id, content: str, data: options};
   }
-
   return key;
 };
 

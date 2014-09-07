@@ -41,22 +41,22 @@ describe('template layout', function () {
       template.cache.layouts['a.md'].orig.should.have.property('content');
     });
 
-    it('should add locals to the `data` property.', function () {
+    it('should add locals to the `locals` property.', function () {
       var template = new Template();
       template.layout('a.md', 'b', {c: 'c'});
-      template.cache.layouts['a.md'].data.should.have.property('c');
+      template.cache.layouts['a.md'].locals.should.have.property('c');
     });
 
-    it('should add locals to the `data` property.', function () {
+    it('should add locals to the `locals` property.', function () {
       var template = new Template();
       template.layout('a.md', 'b', {c: 'c'});
-      template.cache.layouts['a.md'].data.should.have.property('c');
+      template.cache.layouts['a.md'].locals.should.have.property('c');
     });
 
-    it('should add the third arg to the `data` property.', function () {
+    it('should add the third arg to the `locals` property.', function () {
       var template = new Template();
       template.layout('a.md', 'b', {title: 'c'});
-      template.cache.layouts['a.md'].data.should.eql({title: 'c'});
+      template.cache.layouts['a.md'].locals.should.have.property('title');
     });
   });
 

@@ -195,6 +195,21 @@ Template.prototype.defaultTemplates = function() {
 };
 
 
+
+/**
+ * Ensure file extensions are formatted properly for lookups.
+ *
+ * @api private
+ */
+
+Template.prototype.formatExt = function(ext) {
+  if (ext[0] !== '.') {
+    ext = '.' + ext;
+  }
+  return ext;
+};
+
+
 /**
  * Lazily add a `Layout` instance if it has not yet been added.
  * Also normalizes settings to pass to the `layouts` library.
@@ -233,6 +248,29 @@ Template.prototype.determineLayout = function (file) {
     return layout;
   }
   return this.option('layout');
+};
+
+
+/**
+ * If a layout is defined, apply it. Otherwise just return the content as-is.
+ *
+ * @param  {String} `ext` The layout settings to use.
+ * @param  {Object} `file` Template object, with `content` property.
+ * @return  {String} Either the string wrapped with a layout, or the original string if no layout was defined.
+ * @api private
+ */
+
+Template.prototype.applyLayout = function(ext, file) {
+  var layoutEngine = this.layoutSettings[ext];
+  var str = file.content;
+
+  if (!!layoutEngine) {
+    var layout = this.determineLayout(file);
+    var obj = layoutEngine.render(str, layout);
+    return obj.content;
+  }
+
+  return str;
 };
 
 
@@ -277,10 +315,7 @@ Template.prototype.detectExt = function(file, options) {
     ext = this.option('ext');
   }
 
-  if (ext[0] !== '.') {
-    ext = '.' + ext;
-  }
-  return ext;
+  return this.formatExt(ext);
 };
 
 
@@ -356,16 +391,14 @@ Template.prototype.lookupEngine = function(ext, opts) {
  */
 
 Template.prototype.lookupDelims = function(ext, file) {
-  if (ext[0] !== '.') {
-    ext = '.' + ext;
-  }
-
   var opts = extend({}, file._opts);
   var delims;
 
   if (opts.viewType) {
     delims = this.viewType.delims[opts.viewType];
   }
+
+  ext = this.formatExt(ext);
 
   if (!delims) {
     delims = this.getDelims(ext);
@@ -386,9 +419,11 @@ Template.prototype.lookupDelims = function(ext, file) {
  * @api private
  */
 
-Template.prototype.setEngineLayout = function (engine, cache, options) {
+Template.prototype.addLayout = function (ext, o, options) {
+  ext = this.formatExt(ext);
+
   if (options && options.layout) {
-    this.layoutSettings[engine].setLayout(cache);
+    this.layoutSettings[ext].setLayout(o);
   }
 };
 
@@ -720,37 +755,32 @@ Template.prototype.create = function(type, plural, options) {
   }
 
   this.cache[plural] = this.cache[plural] || {};
-  var opts = extend({}, options);
+  var opt = extend({}, options);
 
   // Add a `viewType` to the cache for `plural`
-  this._setTemplateType(plural, opts);
+  this._setTemplateType(plural, opt);
 
-  if (opts.delims) {
-    this.viewType.delims[type] = this.makeDelims(opts.delims);
+  if (opt.delims) {
+    this.viewType.delims[type] = this.makeDelims(opt.delims);
   }
 
-  if (opts.engine) {
-    this.viewType.engine[type] = opts.engine;
+  if (opt.engine) {
+    this.viewType.engine[type] = opt.engine;
   }
 
-  Template.prototype[type] = function (key, value, locals, options) {
-    this[plural](key, value, locals, options);
+  Template.prototype[type] = function (key, value, locals, opts) {
+    this[plural](key, value, locals, opts);
   };
 
-  Template.prototype[plural] = function (key, value, locals, options) {
-    var loaded = this.loadTemplate(key, value, locals, options);
+  Template.prototype[plural] = function (key, value, locals, opts) {
+    var loaded = this.loadTemplate(key, value, locals, opts);
+    // var ext = opts && opts.engine;
 
-    _.transform(loaded, function (acc, value, key) {
-      console.log(value)
-
-      value._normalized = true;
-      acc[key] = value;
-
-    }.bind(this), {});
-
-    this.setEngineLayout(engine, this.cache[plural], opts);
     extend(this.cache[plural], loaded);
 
+    if (type === 'layout') {
+      this.addLayout('.*', loaded, opts);
+    }
     return this;
   };
 
@@ -794,6 +824,7 @@ Template.prototype._mergePartials = function (options, shouldMerge) {
   return opts;
 };
 
+
 Template.prototype.renderFromObject = function(file, options) {
   file = this.loadTemplate(file, {options: options});
   var opts = extend({}, this.options, options);
@@ -824,6 +855,8 @@ Template.prototype.render = function (file, options, cb) {
     options = {};
   }
 
+  console.log(file)
+
   // If `file` is a string, look it up on the cache.
   if (typeof file === 'string') {
     file = this.lookupTemplate(file, 'renderable', options);
@@ -832,6 +865,9 @@ Template.prototype.render = function (file, options, cb) {
   // if (typeof file === 'object' && !file._normalized) {
   //   file = this.renderFromObject(file, options);
   // }
+  if (typeof file === 'object') {
+    file = this.renderFromObject(file, options);
+  }
 
   var opts = extend({}, options);
   var ext = this.detectExt(file, opts);
@@ -864,29 +900,6 @@ Template.prototype.render = function (file, options, cb) {
   } catch (err) {
     cb(err);
   }
-};
-
-
-/**
- * If a layout is defined, apply it. Otherwise just return the content as-is.
- *
- * @param  {String} `ext` The layout settings to use.
- * @param  {Object} `file` Template object, with `content` property.
- * @return  {String} Either the string wrapped with a layout, or the original string if no layout was defined.
- * @api private
- */
-
-Template.prototype.applyLayout = function(ext, file) {
-  var layoutEngine = this.layoutSettings[ext];
-  var str = file.content;
-
-  if (!!layoutEngine) {
-    var layout = this.determineLayout(file);
-    var obj = layoutEngine.render(str, layout);
-    return obj.content;
-  }
-
-  return str;
 };
 
 

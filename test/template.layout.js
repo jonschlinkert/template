@@ -34,11 +34,10 @@ describe('template layout', function () {
       template.cache.layouts['a.md'].content.should.equal('this is content.');
     });
 
-    it('should add original `content` to the `orig.content` property.', function () {
+    it('should add add the string to a `content` property.', function () {
       var template = new Template();
       template.layout('a.md', 'b');
-      template.cache.layouts['a.md'].content.should.equal('b');
-      template.cache.layouts['a.md'].orig.should.have.property('content');
+      template.cache.layouts['a.md'].should.have.property('content', 'b');
     });
 
     it('should add locals to the `locals` property.', function () {
@@ -73,17 +72,11 @@ describe('template layout', function () {
       template.cache.layouts['a.md'].content.should.equal('b');
     });
 
-    it('should add original `content` to the `orig.content` property.', function () {
-      var template = new Template();
-      template.layout({'a.md': {content: 'b', data: {c: 'c'}}});
-      template.cache.layouts['a.md'].content.should.equal('b');
-      template.cache.layouts['a.md'].orig.should.have.property('content');
-    });
-
     it('should add locals to the `data` property.', function () {
       var template = new Template();
       template.layout({'a.md': {content: 'b', data: {c: 'c'}}});
-      template.cache.layouts['a.md'].data.should.have.property('c');
+      template.cache.layouts['a.md'].should.have.property('data', {c: 'c'});
+      template.cache.layouts['a.md'].should.have.property('content', 'b');
     });
 
     it('should add locals to the `data` property.', function () {
@@ -108,12 +101,12 @@ describe('template layout', function () {
       template.cache.layouts.should.have.property('a.md');
     });
 
-    it('should merge locals and front-matter data.', function () {
+    it('should keep locals and front-matter data separate.', function () {
       var template = new Template();
-      template.layout({'a.md': {content: '---\nname: AAA\n---\nThis is content.', data: {c: 'c'}}});
+      template.layout({'a.md': {content: '---\nname: AAA\n---\nThis is content.', locals: {c: 'c'}}});
       template.cache.layouts.should.have.property('a.md');
-      template.cache.layouts['a.md'].data.should.have.property('c');
-      template.cache.layouts['a.md'].data.name.should.equal('AAA');
+      template.cache.layouts['a.md'].should.have.property('data', { name: 'AAA' });
+      template.cache.layouts['a.md'].should.have.property('locals', { c: 'c' });
     });
 
     it('should save both locals and front-matter data to the `file` object.', function () {

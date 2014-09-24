@@ -14,7 +14,7 @@ var chalk = require('chalk');
 var Delimiters = require('delimiters');
 var arrayify = require('arrayify-compact');
 var prettify = require('js-beautify').html;
-var loader = require('load-templates');
+var normalize = require('load-templates');
 var Engines = require('engine-cache');
 var Helpers = require('helper-cache');
 var Parsers = require('parser-cache');
@@ -64,7 +64,6 @@ Template.prototype.init = function() {
   this.parsers = this.parsers || {};
 
   this._ = {};
-  this._.loader = loader(this.options);
   this._.parsers = new Parsers(this.parsers);
   this._.engines = new Engines(this.engines);
   this._.helpers = new Helpers({
@@ -262,6 +261,7 @@ Template.prototype.parser = function (extensions, options, fn) {
   arrayify(extensions).forEach(function (ext) {
     this._.parsers.register.apply(this, [ext].concat(args));
   }.bind(this));
+
   return this;
 };
 
@@ -516,7 +516,7 @@ Template.prototype._addHelperAsync = function (type, plural, addHelper) {
  * @api private
  */
 
-Template.prototype._setType = function (plural, opts) {
+Template.prototype._setTemplateType = function (plural, opts) {
   var type = this.viewType;
 
   if (opts.renderable) {
@@ -526,6 +526,12 @@ Template.prototype._setType = function (plural, opts) {
   } else {
     type.partial.push(plural);
   }
+};
+
+
+Template.prototype.normalize = function () {
+  var opts = extend({}, this.options);
+  return normalize(opts).apply(null, arguments);
 };
 
 
@@ -548,7 +554,9 @@ Template.prototype.create = function(type, plural, options) {
     throw new Error('A plural form must be defined for: "' + type + '".');
   }
 
+  this.cache[plural] = this.cache[plural] || {};
   var opts = extend({}, options);
+
   if (!this.cache[plural]) {
     this.cache[plural] = {};
   }
@@ -562,98 +570,16 @@ Template.prototype.create = function(type, plural, options) {
   }
 
   // Add a `viewType` to the cache for `plural`
-  this._setType(plural, opts);
-
-  /**
-   * Singular template `type` (e.g. `page`)
-   */
+  this._setTemplateType(plural, opts);
 
   Template.prototype[type] = function (key, value, locals, options) {
-    var args = [].slice.call(arguments);
-
-    // Only assume 2 args when the first is an object.
-    if (typeOf(key) === 'object') {
-      if (args.length === 2) {
-        args[1]._opts = extend({}, this.options, value);
-      }
-      if (args.length === 1) {
-        if (Object.keys(key).length === 1) {
-          _.forOwn(key, function (value, key) {
-            value.path = value.path || key;
-            value._opts = extend({}, this.options, key);
-          }.bind(this));
-        }
-      }
-    }
-
-    if (typeOf(key) === 'string') {
-      if (typeOf(value) === 'string') {
-        if (args.length === 4) {
-          args[3] = extend({}, this.options, options);
-        }
-        if (args.length === 3) {
-          args[2]._opts = extend({}, this.options, locals);
-        }
-      }
-      if (typeOf(value) === 'object') {
-        if (args.length === 2) {
-          args[1]._opts = extend({}, this.options, value);
-        }
-        if (args.length === 1) {
-          args[1] = {};
-          args[1]._opts = extend({}, this.options);
-        }
-      }
-    }
-
-    // load templates. options are passed to loader in `.init()`
-    var load = this._.loader.load;
-    var files = load.apply(load, args);
-
-    this._normalizeTemplates(type, plural, files, locals, opts);
-    return this;
+    this[plural](key, value, locals, options);
   };
 
-
-  /**
-   * Plural template `type` (e.g. `pages`)
-   */
-
-  Template.prototype[plural] = function (pattern, locals, options) {
-    var args = [].slice.call(arguments);
-
-    if (!args.length) {
-      return this.cache[plural];
-    }
-
-    // Only assume 2 args when the first is an object.
-    if (typeOf(pattern) === 'object') {
-      if (args.length === 2) {
-        args[1]._opts = extend({}, this.options, locals);
-      }
-      if (args.length === 1) {
-        args[0]._opts = extend({}, this.options, locals);
-      }
-    }
-
-    if (typeOf(pattern) === 'string' || Array.isArray(pattern)) {
-      if (args.length === 3) {
-        args[2] = extend({}, this.options, options);
-      }
-      if (args.length === 2) {
-        args[1]._opts = extend({}, this.options, locals);
-      }
-      if (args.length === 1) {
-        args[1] = {};
-        args[1]._opts = extend({}, this.options);
-      }
-    }
-
-    // load templates. options are passed to loader in `.init()`
-    var load = this._.loader.load;
-    var files = load.apply(load, args);
-
-    this._normalizeTemplates(type, plural, files, locals, opts);
+  Template.prototype[plural] = function (key, value, locals, options) {
+    var files = this.normalize(key, value, locals, options);
+    // console.log(files)
+    extend(this.cache[plural], files);
     return this;
   };
 
@@ -872,35 +798,6 @@ Template.prototype.lookupTemplate = function (key, type, options) {
 
   type = type || 'renderable';
 
-  // If caching is enabled, lookup the template
-  if (this.option('cache')) {
-    var len = this.viewType[type].length;
-    var cached;
-
-    for (var i = 0; i < len; i++) {
-      var plural = this.viewType[type][i];
-      cached = this.cache[plural][key];
-      if (cached) {
-        break;
-      }
-      cached = _.find(this.cache[plural], {
-        path: key
-      });
-    }
-
-    if (cached) {
-      cached._opts = extend({}, cached._opts, options);
-      return cached;
-    }
-
-    // if it's not found, cache and normalize it before returning it
-    id = _.uniqueId('__temp__') + '.html';
-    this.page(id, {path: id, content: str}, options);
-    key = this.cache.pages[id];
-  } else {
-    id = _.uniqueId('__temp__') + '.html';
-    key = {path: id, content: str, data: options};
-  }
   return key;
 };
 

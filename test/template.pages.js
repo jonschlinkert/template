@@ -14,84 +14,70 @@ var _ = require('lodash');
 
 
 describe('template page', function () {
-  // describe('.page() strings', function () {
-  //   it('should add pages to the cache.', function () {
-  //     var template = new Template();
-  //     template.pages('a.md', 'b');
-  //     template.cache.pages.should.have.property('a.md');
-  //   });
+  describe('.page() strings', function () {
+    it('should add pages to the cache.', function () {
+      var template = new Template();
+      template.pages('a.md', 'b');
+      template.cache.pages.should.have.property('a.md');
+    });
 
-  //   it('should `.get()` pages from the cache.', function () {
-  //     var template = new Template();
-  //     template.pages('a.md', 'b');
-  //     // must be escaped for [getobject]
-  //     template.get('pages.a\\.md').content.should.equal('b');
-  //   });
+    it('should `.get()` pages from the cache.', function () {
+      var template = new Template();
+      template.pages('a.md', 'b');
+      // must be escaped for [getobject]
+      template.get('pages.a\\.md').content.should.equal('b');
+    });
 
-  //   it('should add the template string to the `content` property.', function () {
-  //     var template = new Template();
-  //     template.pages('a.md', 'this is content.');
-  //     template.cache.pages['a.md'].content.should.equal('this is content.');
-  //   });
+    it('should add the template string to the `content` property.', function () {
+      var template = new Template();
+      template.pages('a.md', 'this is content.');
+      template.cache.pages['a.md'].content.should.equal('this is content.');
+    });
 
-  //   it('should add original `content` to the `orig.content` property.', function () {
-  //     var template = new Template();
-  //     template.pages('a.md', 'b');
-  //     template.cache.pages['a.md'].content.should.equal('b');
-  //     template.cache.pages['a.md'].orig.should.have.property('content');
-  //   });
+    it('should add locals to the `locals` property.', function () {
+      var template = new Template();
+      template.pages('a.md', 'b', {c: 'c'});
+      template.cache.pages['a.md'].locals.should.have.property('c');
+    });
 
-  //   it('should add locals to the `locals` property.', function () {
-  //     var template = new Template();
-  //     template.pages('a.md', 'b', {c: 'c'});
-  //     template.cache.pages['a.md'].locals.should.have.property('c');
-  //   });
+    it('should add locals to the `locals` property.', function () {
+      var template = new Template();
+      template.pages('a.md', 'b', {c: 'c'});
+      template.cache.pages['a.md'].locals.should.have.property('c');
+    });
 
-  //   it('should add locals to the `locals` property.', function () {
-  //     var template = new Template();
-  //     template.pages('a.md', 'b', {c: 'c'});
-  //     template.cache.pages['a.md'].locals.should.have.property('c');
-  //   });
+    it('should add the third arg to the `locals` property.', function () {
+      var template = new Template();
+      template.pages('a.md', 'b', {title: 'c'});
+      template.cache.pages['a.md'].locals.should.have.property('title');
+    });
+  });
 
-  //   it('should add the third arg to the `locals` property.', function () {
-  //     var template = new Template();
-  //     template.pages('a.md', 'b', {title: 'c'});
-  //     template.cache.pages['a.md'].locals.should.have.property('title');
-  //   });
-  // });
+  describe('.pages() objects', function () {
+    it('should add pages to the cache.', function () {
+      var template = new Template();
+      template.pages({'a.md': {content: 'b', data: {c: 'c'}}});
+      template.cache.pages.should.have.property('a.md');
+    });
 
-  // describe('.pages() objects', function () {
-  //   it('should add pages to the cache.', function () {
-  //     var template = new Template();
-  //     template.pages({'a.md': {content: 'b', data: {c: 'c'}}});
-  //     template.cache.pages.should.have.property('a.md');
-  //   });
+    it('should add the template string to the `content` property.', function () {
+      var template = new Template();
+      template.pages({'a.md': {content: 'b', data: {c: 'c'}}});
+      template.cache.pages['a.md'].content.should.equal('b');
+    });
 
-  //   it('should add the template string to the `content` property.', function () {
-  //     var template = new Template();
-  //     template.pages({'a.md': {content: 'b', data: {c: 'c'}}});
-  //     template.cache.pages['a.md'].content.should.equal('b');
-  //   });
+    it('should add locals to the `data` property.', function () {
+      var template = new Template();
+      template.pages({'a.md': {content: 'b', data: {c: 'c'}}});
+      template.cache.pages['a.md'].data.should.have.property('c');
+    });
 
-  //   it('should add original `content` to the `orig.content` property.', function () {
-  //     var template = new Template();
-  //     template.pages({'a.md': {content: 'b', data: {c: 'c'}}});
-  //     template.cache.pages['a.md'].content.should.equal('b');
-  //     template.cache.pages['a.md'].orig.should.have.property('content');
-  //   });
-
-  //   it('should add locals to the `data` property.', function () {
-  //     var template = new Template();
-  //     template.pages({'a.md': {content: 'b', data: {c: 'c'}}});
-  //     template.cache.pages['a.md'].data.should.have.property('c');
-  //   });
-
-  //   it('should add locals to the `data` property.', function () {
-  //     var template = new Template();
-  //     template.pages({'a.md': {content: 'b', data: {c: 'c'}}});
-  //     template.cache.pages['a.md'].data.should.have.property('c');
-  //   });
-  // });
+    it('should add locals to the `data` property.', function () {
+      var template = new Template();
+      template.pages({'a.md': {content: 'b', data: {c: 'c'}}});
+      template.cache.pages['a.md'].data.should.have.property('c');
+    });
+  });
 
   describe('when pages has front matter', function () {
     // it('should parse the page.', function () {

@@ -13,7 +13,7 @@ var Template = require('..');
 
 describe('template layouts:', function () {
   describe('default engine:', function () {
-    it('should use layouts defined as objects', function (done) {
+    it.only('should use layouts defined as objects', function (done) {
       var template = new Template();
 
       template.layout({a: { layout: 'b', content: 'A above\n{% body %}\nA below' }});
@@ -24,6 +24,7 @@ describe('template layouts:', function () {
       template.layout({e: { layout: 'f', content: 'E above\n{% body %}\nE below' }});
       template.layout({f: { layout: 'last', content: 'F above\n{% body %}\nF below' }});
       template.layout({first: { layout: 'a', content: '{% body %}' }});
+      template.page('about', 'This is the about page.', {layout: 'first'});
 
       var expected = [
         'last!',
@@ -43,7 +44,8 @@ describe('template layouts:', function () {
         'last!'
       ].join('\n');
 
-      template.render({content: 'fooo', layout: 'first'}, function(err, content) {
+      template.render('about', function(err, content) {
+      // template.render({content: 'fooo', layout: 'first'}, function(err, content) {
         if (err) return done(err);
         content.should.equal(expected);
         done();

@@ -8,7 +8,7 @@
 'use strict';
 
 var should = require('should');
-var Template = require('..');
+var Template = require('../tmpl');
 var template = new Template();
 
 

@@ -11,7 +11,7 @@ var fs = require('fs');
 var path = require('path');
 var assert = require('assert');
 var should = require('should');
-var Template = require('..');
+var Template = require('../tmpl');
 var template = new Template();
 
 
@@ -23,3 +23,4 @@ describe('default engines', function() {
     Object.keys(template.engines).length.should.equal(4);
   });
 });
+

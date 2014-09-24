@@ -13,7 +13,7 @@ var matter = require('gray-matter');
 var utils = require('parser-utils');
 var _ = require('lodash');
 
-var Template = require('..');
+var Template = require('../tmpl');
 var template = new Template();
 
 

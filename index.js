@@ -117,7 +117,7 @@ Template.prototype.defaultOptions = function() {
   this.option('cwd', process.cwd());
   this.option('destExt', '.html');
   this.option('ext', '*');
-  this.option('extensions', ['md', 'html', 'hbs']);
+  this.option('defaultExtensions', ['md', 'html', 'hbs']);
 
   this.option('layoutTag', 'body');
   this.option('layoutDelims', ['{%', '%}']);
@@ -151,9 +151,8 @@ Template.prototype.defaultOptions = function() {
  */
 
 Template.prototype.defaultParsers = function() {
-  // get default extensions
-  var extensions = this.option('extensions');
-  this.parser(extensions, require('parser-front-matter'));
+  var ext = this.option('defaultExtensions');
+  this.parser(ext, require('parser-front-matter'));
   this.parser('*', require('parser-noop'));
 };
 
@@ -168,9 +167,9 @@ Template.prototype.defaultParsers = function() {
  */
 
 Template.prototype.defaultEngines = function() {
-  var extensions = this.option('extensions');
+  var ext = this.option('defaultExtensions');
 
-  this.engine(extensions, require('engine-lodash'), {
+  this.engine(ext, require('engine-lodash'), {
     layoutDelims: ['{%', '%}'],
     destExt: '.html'
   });
@@ -195,7 +194,6 @@ Template.prototype.defaultTemplates = function() {
 };
 
 
-
 /**
  * Ensure file extensions are formatted properly for lookups.
  *
@@ -203,12 +201,56 @@ Template.prototype.defaultTemplates = function() {
  */
 
 Template.prototype.formatExt = function(ext) {
-  if (ext[0] !== '.') {
+  if (ext && ext[0] !== '.') {
     ext = '.' + ext;
   }
   return ext;
 };
 
+
+/**
+ * Determine the correct file extension to use, taking the following
+ * into consideration, and in this order:
+ *
+ *   - `options.ext`
+ *   - `file.data.ext`
+ *   - `file.ext`
+ *   - `file._opts.ext`
+ *   - `path.extname(file.path)`
+ *
+ * The reasoning is that if an engine is explicitly defined, it should
+ * take precendence over an engine that is automatically calculated
+ * from `file.path`.
+ *
+ * @param  {String} `ext` The layout settings to use.
+ * @param  {Object} `file` Template file object.
+ * @param  {Object} `options` Object of options.
+ * @return  {String} The extension to use.
+ * @api private
+ */
+
+Template.prototype.detectExt = function(file, options) {
+  var ext = utils.pickFrom(file, 'ext', [
+    'options',
+    'locals',
+    'data',
+  ]);
+
+
+  if (!ext) {
+    ext = path.extname(file.path);
+  }
+
+  if (!ext) {
+    ext = utils.pickFrom(options, 'ext');
+  }
+
+  if (!ext) {
+    ext = this.option('ext');
+  }
+
+  return this.formatExt(ext);
+};
 
 /**
  * Lazily add a `Layout` instance if it has not yet been added.
@@ -271,51 +313,6 @@ Template.prototype.applyLayout = function(ext, file) {
   }
 
   return str;
-};
-
-
-/**
- * Determine the correct file extension to use, taking the following
- * into consideration, and in this order:
- *
- *   - `options.ext`
- *   - `file.data.ext`
- *   - `file.ext`
- *   - `file._opts.ext`
- *   - `path.extname(file.path)`
- *
- * The reasoning is that if an engine is explicitly defined, it should
- * take precendence over an engine that is automatically calculated
- * from `file.path`.
- *
- * @param  {String} `ext` The layout settings to use.
- * @param  {Object} `file` Template file object.
- * @param  {Object} `options` Object of options.
- * @return  {String} The extension to use.
- * @api private
- */
-
-Template.prototype.detectExt = function(file, options) {
-  var ext = utils.pickFrom(file, 'ext', [
-    'options',
-    'locals',
-    'data',
-  ]);
-
-
-  if (!ext) {
-    ext = path.extname(file.path);
-  }
-
-  if (!ext) {
-    ext = utils.pickFrom(options, 'ext');
-  }
-
-  if (!ext) {
-    ext = this.option('ext');
-  }
-
-  return this.formatExt(ext);
 };
 
 
@@ -774,13 +771,26 @@ Template.prototype.create = function(type, plural, options) {
 
   Template.prototype[plural] = function (key, value, locals, opts) {
     var loaded = this.loadTemplate(key, value, locals, opts);
-    // var ext = opts && opts.engine;
+    var ext = opts && opts.engine;
 
-    extend(this.cache[plural], loaded);
+    _.transform(loaded, function(acc, value, key) {
+      var o = extend({}, opts, value.options);
+
+      if (value.locals && value.locals.layout) {
+        value.layout = value.locals.layout;
+      }
+
+      ext = this.formatExt(ext || o.ext);
+
+      var stack = this.getParsers(ext);
+      acc[key] = this.parseSync(value, stack, value.options);
+
+    }.bind(this));
 
     if (type === 'layout') {
-      this.addLayout('.*', loaded, opts);
+      this.addLayout(ext, loaded, opts || {});
     }
+    extend(this.cache[plural], loaded);
     return this;
   };
 
@@ -849,53 +859,31 @@ Template.prototype.renderFromObject = function(file, options) {
  * @api public
  */
 
-Template.prototype.render = function (file, options, cb) {
-  if (typeof options === 'function') {
-    cb = options;
-    options = {};
+Template.prototype.render = function (name, locals, cb) {
+  if (typeof locals === 'function') {
+    cb = locals;
+    locals = {};
   }
 
-  console.log(file)
+  var file = this.cache['pages'][name];
+  var locs = extend({}, locals);
 
-  // If `file` is a string, look it up on the cache.
-  if (typeof file === 'string') {
-    file = this.lookupTemplate(file, 'renderable', options);
-  }
-
-  // if (typeof file === 'object' && !file._normalized) {
-  //   file = this.renderFromObject(file, options);
-  // }
-  if (typeof file === 'object') {
-    file = this.renderFromObject(file, options);
-  }
-
-  var opts = extend({}, options);
-  var ext = this.detectExt(file, opts);
-
-  // Ensure the correct properties are on the `file` object.
-  // this.assertProperties(file);
-
-  // Build up the context to pass to the engine.
-  // var opts = this.buildContext(file, opts);
-
-  // Get the correct file extenion to use
-  var engine = this.lookupEngine(ext, opts);
-
-  // If defined, wrap the file with a layout.
-  var content = this.applyLayout(ext, file);
+  var engine = this.lookupEngine('.*', locs);
+  var content = this.applyLayout('.*', file);
 
   // Extend generic helpers into engine-specific helpers.
-  // opts.helpers = merge({}, this._.helpers, opts.helpers);
-  // opts = this._mergePartials(opts);
-  // merge(opts, this.lookupDelims(ext, file));
+  locs.helpers = merge({}, this._.helpers, locs.helpers);
+  locs = this._mergePartials(locs);
+  merge(locs, this.lookupDelims('.*', file));
+
 
   try {
-    engine.render(content, opts, function (err, content) {
-      var opt = extend({}, this.options, opts);
+    engine.render(file.content, locs, function (err, res) {
+      var opt = extend({}, this.options, locs);
       if (opt.pretty) {
-        content = this.prettify(content, opt.pretty);
+        res = this.prettify(res, opt.pretty);
       }
-      return this._.helpers.resolve(content, cb.bind(this));
+      return this._.helpers.resolve(res, cb.bind(this));
     }.bind(this));
   } catch (err) {
     cb(err);

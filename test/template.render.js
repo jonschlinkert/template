@@ -12,7 +12,7 @@ var path = require('path');
 var should = require('should');
 var helpers = require('test-helpers')({dir: 'test'});
 var consolidate = require('consolidate');
-var Template = require('..');
+var Template = require('../tmpl');
 var template = new Template();
 
 
@@ -23,7 +23,7 @@ describe('template render', function () {
   });
 
 
-  describe('when an un-cached string is passed to `.render()`:', function () {
+  describe.skip('when an un-cached string is passed to `.render()`:', function () {
     it('should expose `this` to the .render() method:', function (done) {
       template.render('<%= name %>', {name: 'Jon Schlinkert'}, function (err, content) {
         if (err) console.log(err);

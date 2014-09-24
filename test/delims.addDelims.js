@@ -8,13 +8,14 @@
 'use strict';
 
 var should = require('should');
-var Template = require('..');
+var Template = require('../tmpl');
 var _ = require('lodash');
 
 
 describe('.addDelims():', function () {
   it('should addDelims template by `name` on `template`:', function () {
     var template = new Template();
+
     Object.keys(template.delims).should.have.length(1);
 
     template.addDelims('hbs', ['{{', '}}']);

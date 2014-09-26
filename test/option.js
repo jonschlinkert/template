@@ -8,7 +8,7 @@
 'use strict';
 
 var should = require('should');
-var Template = require('../tmpl');
+var Template = require('..');
 var template = new Template();
 var _ = require('lodash');
 
@@ -62,6 +62,28 @@ describe('template option', function() {
       template.options.foo.should.have.property('x');
       template.options.bar.should.have.property('a');
     });
+
   });
 
+  describe('option events', function () {
+    var template = new Template();
+
+    it('should emit `option` when a value is set', function () {
+      template.once('option', function (key, val) {
+        template.option('a', 'b');
+      });
+      template.option('foo', 'bar');
+      template.options.should.have.property('foo');
+      template.options.should.have.property('a');
+    });
+
+    it('should emit `option` when an object is set', function () {
+      template.once('option', function (key, val) {
+        template.option('a', 'b');
+      });
+      template.option({foo: 'bar'});
+      template.options.should.have.property('foo');
+      template.options.should.have.property('a');
+    });
+  });
 });

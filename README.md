@@ -13,12 +13,12 @@ npm i template --save-dev
 ## Usage
 
 ```js
-var Views = require('template');
-var views = new Views();
+var Template = require('template');
+var template = new Template();
 ```
 
 ## API
-### [Template](index.js#L47)
+### [Template](index.js#L43)
 
 Create a new instance of `Template`, optionally passing the default `context` and `options` to use.
 
@@ -28,11 +28,43 @@ Create a new instance of `Template`, optionally passing the default `context` an
 *Example:**
 
 ```js
-var Template = require('template');
-var template = new Template();
+var Template = require('engine');
+var engine = new Template();
 ```
 
-### [.parser](index.js#L444)
+### [.addDelims](index.js#L284)
+
+Cache delimiters by `name` with the given `options` for later use.
+
+* `name` **{String}**: The name to use for the stored delimiters.    
+* `delims` **{Array}**: Array of delimiter strings. See [delims] for details.    
+* `opts` **{Object}**: Options to pass to [delims]. You can also use the options to override any of the generated delimiters.    
+
+*Example:**
+
+```js
+template.addDelims('curly', ['']);
+template.addDelims('angle', ['<%', '%>']);
+template.addDelims('es6', ['${', '}'], {
+// override the generated regex
+interpolate: /\$\{([^\\}]*(?:\\.[^\\}]*)*)\}/g
+});
+```
+
+[delims]: https://github.com/jonschlinkert/delims "Generate regex for delimiters"
+
+### [.useDelims](index.js#L320)
+
+Specify by `ext` the delimiters to make active.
+
+* `ext` **{String}**    
+
+```js
+template.useDelims('curly');
+template.useDelims('angle');
+```
+
+### [.parser](index.js#L340)
 
 Define a parser.
 
@@ -40,10 +72,6 @@ Define a parser.
 * `fn` **{Function|Object}**: or `options`    
 * `fn` **{Function}**: Callback function.    
 * `returns` **{Object}** `Template`: to enable chaining.  
-
-Register the given parser callback `fn` as `ext`. If `ext`
-is not given, the parser `fn` will be pushed into the
-default parser stack.
 
 ```js
 // Default stack
@@ -56,14 +84,11 @@ template.parser('hbs', require('parser-front-matter'));
 See [parser-cache] for the full range of options and documentation.
 
 
-### [.getParsers](index.js#L463)
+Register the given parser callback `fn` as `ext`. If `ext`
+is not given, the parser `fn` will be pushed into the
+default parser stack.
 
-* `ext` **{String}**: The parser stack to get.    
-* `returns` **{Object}** `Template`: to enable chaining.  
-
-Get the parser stack for the given `ext`.
-
-### [.parse](index.js#L484)
+### [.parse](index.js#L367)
 
 Run a stack of async parsers.
 
@@ -99,7 +124,7 @@ an object with a `path` property, then the `extname` is used to
 get the parser stack. If a stack isn't found on the cache the
 default `noop` parser will be used.
 
-### [.parseSync](index.js#L505)
+### [.parseSync](index.js#L388)
 
 Run a stack of sync parsers.
 
@@ -126,7 +151,14 @@ an object with a `path` property, then the `extname` is used to
 get the parser stack. If a stack isn't found on the cache the
 default `noop` parser will be used.
 
-### [.engine](index.js#L553)
+### [.getParsers](index.js#L437)
+
+* `ext` **{String}**: The parser stack to get.    
+* `returns` **{Object}** `Template`: to enable chaining.  
+
+Get the parser stack for the given `ext`.
+
+### [.engine](index.js#L455)
 
 * `ext` **{String}**    
 * `fn` **{Function|Object}**: or `options`    
@@ -148,7 +180,9 @@ Register the given view engine callback `fn` as `ext`. If only `ext`
 is passed, the engine registered for `ext` is returned. If no `ext`
 is passed, the entire cache is returned.
 
-### [.getEngine](index.js#L577)
+### [.getEngine](index.js#L477)
+
+Get the engine registered for the given `ext`. If no `ext` is passed, the entire cache is returned.
 
 * `ext` **{String}**: The engine to get.    
 * `returns` **{Object}**: Object of methods for the specified engine.  
@@ -162,17 +196,35 @@ template.getEngine('hbs');
 // => {render: [function], renderFile: [function]}
 ```
 
-Get the engine registered for the given `ext`. If no
-`ext` is passed, the entire cache is returned.
+```js
+engine.getEngine('.html');
+```
 
-### [.helpers](index.js#L590)
+### [.helpers](index.js#L496)
+
+Register helpers for the given `ext` (engine).
 
 * `ext` **{String}**: The engine to register helpers with.    
 * `returns` **{Object}**: Object of helpers for the specified engine.  
 
-Register or get helpers for the given `ext` (engine).
+```js
+engine.helpers(require('handlebars-helpers'));
+```
 
-### [.addHelper](index.js#L637)
+### [.helper](index.js#L516)
+
+Register a helper for the given `ext` (engine).
+
+* `ext` **{String}**: The engine to register helpers with.    
+* `returns` **{Object}**: Object of helpers for the specified engine.  
+
+```js
+engine.helper('lower', function(str) {
+return str.toLowerCase();
+});
+```
+
+### [.addHelper](index.js#L561)
 
 * `name` **{String}**: The helper to cache or get.    
 * `fn` **{Function}**: The helper function.    
@@ -184,18 +236,16 @@ using this method will be passed to every engine, so be sure to use
 generic javascript functions - unless you want to see Lo-Dash
 blow up from `Handlebars.SafeString`.
 
-### [.addHelperAsync](index.js#L654)
+### [.addHelperAsync](index.js#L576)
 
 * `name` **{String}**: The helper to cache or get.    
 * `fn` **{Function}**: The helper function.    
 * `thisArg` **{Object}**: Context to bind to the helper.    
 * `returns` **{Object}**: Object of helpers for the specified engine.  
 
-Get and set _generic_ async helpers on the `cache`. Helpers registered
-using this method will be passed to every engine. As with the sync
-version of this method, be sure to use generic javascript functions.
+Async version of `.addHelper()`.
 
-### [.create](index.js#L749)
+### [.create](index.js#L731)
 
 * `type` **{String}**: Singular name of the type to create, e.g. `page`.    
 * `plural` **{String}**: Plural name of the template type, e.g. `pages`.    
@@ -209,7 +259,7 @@ version of this method, be sure to use generic javascript functions.
 Add a new template `type`, along with associated get/set methods.
 You must specify both the singular and plural names for the type.
 
-### [.render](index.js#L862)
+### [.render](index.js#L796)
 
 * `file` **{Object|String}**: String or normalized template object.    
 * `options` **{Object}**: Options to pass to registered view engines.    

@@ -8,7 +8,7 @@
 'use strict';
 
 var should = require('should');
-var Template = require('..');
+var Template = require('../tmpl');
 
 describe('Template', function () {
   describe('constructor:', function () {
@@ -31,6 +31,7 @@ describe('Template', function () {
       template.set('a', 1);
       template.set('b', 2);
       template.set('c', 3);
+
       template.keys().should.eql(['a', 'b', 'c']);
     });
   });

@@ -8,7 +8,7 @@
 'use strict';
 
 var should = require('should');
-var Template = require('..');
+var Template = require('../tmpl');
 var template = new Template();
 var _ = require('lodash');
 
@@ -41,8 +41,8 @@ describe('.addHelperAsync():', function () {
       content.should.equal('A: jon schlinkert\nB: JON SCHLINKERT');
       done();
     });
-
   });
+
 
   it('should register _un-bound_ template async helpers when `bindHelpers` is false:', function (done) {
     template.option('bindHelpers', false);

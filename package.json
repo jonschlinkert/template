@@ -1,23 +1,23 @@
 {
-  "name": "view-cache",
+  "name": "template",
   "description": "Templates.",
   "version": "0.1.0",
-  "homepage": "https://github.com/jonschlinkert/view-cache",
+  "homepage": "https://github.com/jonschlinkert/template",
   "author": {
     "name": "Jon Schlinkert",
     "url": "https://github.com/jonschlinkert"
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/jonschlinkert/view-cache.git"
+    "url": "git://github.com/jonschlinkert/template.git"
   },
   "bugs": {
-    "url": "https://github.com/jonschlinkert/view-cache/issues"
+    "url": "https://github.com/jonschlinkert/template/issues"
   },
   "licenses": [
     {
       "type": "MIT",
-      "url": "https://github.com/jonschlinkert/view-cache/blob/master/LICENSE-MIT"
+      "url": "https://github.com/jonschlinkert/template/blob/master/LICENSE-MIT"
     }
   ],
   "keywords": [
@@ -93,34 +93,49 @@
   },
   "devDependencies": {
     "async": "^0.9.0",
+    "calculate-assets": "^0.1.2",
     "consolidate": "^0.10.0",
     "engine-handlebars": "^0.2.0",
     "gray-matter": "^0.5.0",
+    "gulp": "^3.8.7",
+    "gulp-prettify": "^0.3.0",
+    "gulp-util": "^3.0.1",
     "handlebars": "^2.0.0-beta.1",
     "jade": "^1.5.0",
     "mocha": "*",
     "should": "^4.0.4",
     "swig": "^1.4.2",
     "test-helpers": "^0.1.4",
+    "through2": "^0.6.1",
     "verb": ">= 0.2.6",
     "verb-tag-jscomments": "^0.2.1"
   },
   "dependencies": {
+    "array-slice": "^0.2.0",
     "arrayify-compact": "^0.1.0",
     "chalk": "^0.5.1",
     "config-cache": "^0.2.2",
+    "deep-pick": "^0.1.0",
     "delimiters": "^0.1.1",
     "engine-cache": "^0.3.2",
     "engine-lodash": "^0.2.0",
     "engine-noop": "^0.1.0",
+    "for-own": "^0.1.1",
+    "has-any": "^0.1.0",
     "helper-cache": "^0.2.2",
+    "is-empty": "0.0.1",
     "js-beautify": "^1.5.1",
     "layouts": "^0.3.2",
     "load-templates": "^0.3.1",
     "lodash": "^2.4.1",
+    "mixin-deep": "^0.1.0",
+    "object-pick": "^0.1.0",
+    "omit-empty": "^0.2.0",
+    "omit-keys": "^0.1.0",
     "parser-cache": "^0.4.1",
     "parser-front-matter": "^0.2.2",
     "parser-noop": "^0.2.2",
-    "parser-utils": "^0.3.0"
+    "parser-utils": "^0.3.0",
+    "uniqueid": "^0.1.0"
   }
 }

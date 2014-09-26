@@ -1,1 +1,4 @@
-hello <%= d %>
+---
+title: D
+---
+This is <%= title %>

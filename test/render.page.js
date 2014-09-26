@@ -9,7 +9,7 @@
 
 var assert = require('assert');
 var should = require('should');
-var Template = require('..');
+var Template = require('../tmpl');
 var template = new Template();
 var consolidate = require('consolidate');
 var _ = require('lodash');
@@ -71,6 +71,7 @@ describe('render page:', function () {
       template.post('2014-08-31.md', '---\nauthor: Brian Woodward\n---\n<title><%= author %></title>\n<%= include("sidebar.md") %>', {
         author: 'Jon Schlinkert'
       });
+
 
       Object.keys(template.cache.posts).forEach(function(file) {
         var post = template.cache.posts[file];

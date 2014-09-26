@@ -11,7 +11,7 @@ var fs = require('fs');
 var path = require('path');
 var assert = require('assert');
 var should = require('should');
-var Template = require('..');
+var Template = require('../tmpl');
 var template = new Template();
 
 
@@ -40,7 +40,7 @@ describe('template engine', function() {
       template.engines.should.have.property('.b');
       template.engines.should.have.property('.c');
       template.engines.should.have.property('.d');
-      Object.keys(template.engines).length.should.equal(7);
+      Object.keys(template.engines).length.should.equal(8);
     });
 
     it('should normalize engine extensions to not have a dot.', function() {
@@ -61,7 +61,7 @@ describe('template engine', function() {
       template.engines.should.have.property('.b');
       template.engines.should.have.property('.c');
       template.engines.should.have.property('.d');
-      Object.keys(template.engines).length.should.equal(7);
+      Object.keys(template.engines).length.should.equal(8);
     });
 
     it('should be chainable.', function() {
@@ -91,7 +91,7 @@ describe('template engine', function() {
       template.engines.should.have.property('.b');
       template.engines.should.have.property('.c');
       template.engines.should.have.property('.d');
-      Object.keys(template.engines).length.should.equal(7);
+      Object.keys(template.engines).length.should.equal(8);
     });
   });
 });
@@ -164,7 +164,7 @@ describe('engines', function() {
       });
 
       // 4 + 2 built-in engines
-      Object.keys(template.engines).length.should.equal(7);
+      Object.keys(template.engines).length.should.equal(8);
 
       template.getEngine('a').should.have.property('render');
       template.getEngine('b').should.have.property('render');

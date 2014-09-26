@@ -10,7 +10,7 @@
 var fs = require('fs');
 var path = require('path');
 var should = require('should');
-var Template = require('..');
+var Template = require('../tmpl');
 var template = new Template();
 
 
@@ -18,7 +18,10 @@ describe('template delimiters:', function () {
   it('should use custom delimiters defined on a template type:', function (done) {
     var template = new Template();
     template.engine('*', require('engine-lodash'));
-    template.create('doc', 'docs', {renderable: true, delims: ['<<', '>>']});
+    template.create('doc', 'docs', {
+      delims: ['<<', '>>'],
+      renderable: true,
+    });
 
     template.doc('foo', {content: '<<= name >>', name: 'Halle'});
     template.docs('bar', {content: '<<= name >>', name: 'Brooke'});
@@ -39,10 +42,12 @@ describe('template delimiters:', function () {
     var template = new Template();
     template.engine('handlebars', require('engine-handlebars'));
     template.engine('lodash', require('engine-lodash'));
+
     template.create('apple', 'apples', {
       engine: 'lodash',
       renderable: true
     });
+
     template.create('orange', 'oranges', {
       engine: 'handlebars',
       renderable: true

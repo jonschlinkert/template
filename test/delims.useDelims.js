@@ -8,7 +8,7 @@
 'use strict';
 
 var should = require('should');
-var Template = require('..');
+var Template = require('../tmpl');
 var _ = require('lodash');
 
 
@@ -48,7 +48,7 @@ describe('template usage:', function () {
     d.should.equal('${ name }[[= name ]]____Jon Schlinkert____<%= name %>{%= name %}');
   });
 
-  it('should use the currently set delimiters with `template.render()`:', function () {
+  it.only('should use the currently set delimiters with `template.render()`:', function () {
     var template = new Template();
 
     template.engine('lodash', require('engine-lodash'));
@@ -61,7 +61,7 @@ describe('template usage:', function () {
     });
 
     var base = '${ name }<<= name >>{{= name }}<%= name %>{%= name %}';
-    var ctx = {name: '____Jon Schlinkert____'};
+    var ctx = {name: '____Jon Schlinkert____', engine: 'lodash'};
 
     template.page('test.html', base);
     template.page('test.foo', base, {engine: 'lodash'});
@@ -71,7 +71,7 @@ describe('template usage:', function () {
 
     // using default delimiters (should process both es6 and `<%= foo %>` delims)
 
-    template.render('${ name }<<= name >>{{= name }}<%= name %>{%= name %}', ctx, function (err, content) {
+    template.render(base, ctx, function (err, content) {
       if (err) console.log(err);
       content.should.equal('____Jon Schlinkert____<<= name >>{{= name }}____Jon Schlinkert____{%= name %}');
     });

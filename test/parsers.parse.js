@@ -7,12 +7,13 @@
 
 'use strict';
 
+var assert = require('assert');
 var should = require('should');
 var matter = require('gray-matter');
 var utils = require('parser-utils');
 var _ = require('lodash');
 
-var Template = require('..');
+var Template = require('../tmpl');
 var template = new Template();
 
 
@@ -47,8 +48,7 @@ describe('default template', function () {
           next(null, file);
         });
 
-      template.getParsers('*').length.should.equal(4);
-
+      assert.equal(template.getParsers('*').length > 3, true);
       template.parse({a: ''}, function (err, file) {
         file.a.should.equal('abc');
       });
@@ -162,6 +162,7 @@ describe('default template', function () {
     };
 
     var a = utils.extendFile(file, {title: 'ABC'});
+
     template.parse(a, function (err, file) {
       if (err)  console.log(err);
       file.orig.content.should.eql('Hooray!');

@@ -12,7 +12,7 @@ var path = require('path');
 var should = require('should');
 var helpers = require('test-helpers')({dir: 'test'});
 var consolidate = require('consolidate');
-var Template = require('..');
+var Template = require('../tmpl');
 var template = new Template();
 
 
@@ -39,7 +39,7 @@ describe('template render', function () {
 
   describe('when an un-cached string is passed to `.render()`:', function () {
     it('should render it with caching enabled:', function (done) {
-      template.render('<%= name %>', {name: 'Jon Schlinkert'}, function (err, content) {
+      template.render('<%= name %>', {name: 'Jon Schlinkert', ext: '.html'}, function (err, content) {
         if (err) console.log(err);
         content.should.equal('Jon Schlinkert');
         done();
@@ -49,7 +49,7 @@ describe('template render', function () {
     it('should render it with caching disabled:', function (done) {
       template.option('cache', false);
 
-      template.render('<%= name %>', {name: 'Jon Schlinkert'}, function (err, content) {
+      template.render('<%= name %>', {name: 'Jon Schlinkert', ext: '.html'}, function (err, content) {
         if (err) console.log(err);
         content.should.equal('Jon Schlinkert');
         done();
@@ -104,7 +104,7 @@ describe('template render', function () {
 
     it('should render content with an engine from [consolidate].', function (done) {
       template.engine('hbs', consolidate.handlebars);
-      var hbs = template.engine('hbs');
+      var hbs = template.getEngine('hbs');
 
       hbs.render('{{name}}', {name: 'Jon Schlinkert'}, function (err, content) {
         if (err) console.log(err);
@@ -146,6 +146,7 @@ describe('template render', function () {
       template.page('b.tmpl', '<title><%= author %></title>', {author: 'Jon Schlinkert'});
       template.page('c.jade', 'title= author', {author: 'Jon Schlinkert'});
       template.page('d.swig', '<title>{{author}}</title>', {author: 'Jon Schlinkert'});
+
 
       Object.keys(template.cache.pages).forEach(function(page) {
         template.render(page, function (err, content) {

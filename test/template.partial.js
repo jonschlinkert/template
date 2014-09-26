@@ -9,7 +9,7 @@
 
 var assert = require('assert');
 var should = require('should');
-var Template = require('../tmpl');
+var Template = require('..');
 var _ = require('lodash');
 
 

@@ -8,26 +8,17 @@
 'use strict';
 
 var should = require('should');
-var Template = require('../tmpl');
+var Template = require('..');
 var _ = require('lodash');
 
 
-describe('.useDelims():', function () {
+describe('.getDelims():', function () {
   it('should use default built-in template:', function () {
     var template = new Template();
 
     template.useDelims('*');
     template.getDelims().should.eql({
-      beginning: '',
-      matter: '([\\s\\S]+?)',
-      body: '',
-      end: '',
-      flags: 'g',
-      noncapture: false,
       escape: /\<\%-([\s\S]+?)\%\>/g,
-      open: '\\<\\%',
-      close: '\\%\\>',
-      delims: ['<%', '%>'],
       evaluate: /\<\%([\s\S]+?)\%\>/g,
       interpolate: /\<\%=([\s\S]+?)\%\>/g
     });
@@ -39,16 +30,7 @@ describe('.useDelims():', function () {
     template.addDelims('default', ['<<', '>>']);
     template.useDelims('default');
     template.getDelims().should.eql({
-      beginning: '',
-      matter: '([\\s\\S]+?)',
-      body: '',
-      end: '',
-      flags: 'g',
-      noncapture: false,
       escape: /\<\<-([\s\S]+?)\>\>/g,
-      open: '\\<\\<',
-      close: '\\>\\>',
-      delims: ['<<', '>>'],
       evaluate: /\<\<([\s\S]+?)\>\>/g,
       interpolate: /\<\<=([\s\S]+?)\>\>/g
     });
@@ -56,7 +38,6 @@ describe('.useDelims():', function () {
 
   it('should use the currently set template:', function () {
     var template = new Template();
-
     var ctx = {
       name: '____Jon Schlinkert____'
     };
@@ -67,48 +48,21 @@ describe('.useDelims():', function () {
 
     template.useDelims('lodash');
     template.getDelims().should.eql({
-      beginning: '',
-      matter: '([\\s\\S]+?)',
-      body: '',
-      end: '',
-      flags: 'g',
-      noncapture: false,
       escape: /\<\%-([\s\S]+?)\%\>/g,
-      open: '\\<\\%',
-      close: '\\%\\>',
-      delims: ['<%', '%>'],
       evaluate: /\<\%([\s\S]+?)\%\>/g,
       interpolate: /\<\%=([\s\S]+?)\%\>/g
     });
 
     template.useDelims('square');
     template.getDelims().should.eql({
-      beginning: '',
-      matter: '([\\s\\S]+?)',
-      body: '',
-      end: '',
-      flags: 'g',
-      noncapture: false,
       escape: /\[\[-([\s\S]+?)\]\]/g,
-      open: '\\[\\[',
-      close: '\\]\\]',
-      delims: ['[[', ']]'],
       evaluate: /\[\[([\s\S]+?)\]\]/g,
       interpolate: /\[\[=([\s\S]+?)\]\]/g
     });
 
     template.useDelims('hbs');
     template.getDelims().should.eql({
-      beginning: '',
-      matter: '([\\s\\S]+?)',
-      body: '',
-      end: '',
-      flags: 'g',
-      noncapture: false,
       escape: /\{\{-([\s\S]+?)\}\}/g,
-      open: '\\{\\{',
-      close: '\\}\\}',
-      delims: ['{{', '}}'],
       evaluate: /\{\{([\s\S]+?)\}\}/g,
       interpolate: /\{\{=([\s\S]+?)\}\}/g
     });

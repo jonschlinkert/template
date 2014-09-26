@@ -8,7 +8,7 @@
 'use strict';
 
 var should = require('should');
-var Template = require('../tmpl');
+var Template = require('..');
 var _ = require('lodash');
 
 
@@ -48,7 +48,7 @@ describe('template usage:', function () {
     d.should.equal('${ name }[[= name ]]____Jon Schlinkert____<%= name %>{%= name %}');
   });
 
-  it.only('should use the currently set delimiters with `template.render()`:', function () {
+  it('should use the currently set delimiters with `template.render()`:', function () {
     var template = new Template();
 
     template.engine('lodash', require('engine-lodash'));

@@ -8,7 +8,7 @@
 'use strict';
 
 var should = require('should');
-var Template = require('../tmpl');
+var Template = require('..');
 
 describe('Template', function () {
   describe('constructor:', function () {

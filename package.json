@@ -117,6 +117,7 @@
     "config-cache": "^0.2.2",
     "deep-pick": "^0.1.0",
     "delimiters": "^0.1.1",
+    "delims": "^0.4.0",
     "engine-cache": "^0.3.2",
     "engine-lodash": "^0.2.0",
     "engine-noop": "^0.1.0",

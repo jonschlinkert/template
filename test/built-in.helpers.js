@@ -9,7 +9,7 @@
 
 var fs = require('fs');
 var should = require('should');
-var Template = require('../tmpl');
+var Template = require('..');
 var template = new Template();
 var consolidate = require('consolidate');
 var async = require('async');

@@ -10,10 +10,8 @@
 var _ = require('lodash');
 var util = require('util');
 var path = require('path');
-var isEmpty = require('is-empty');
 var Delimiters = require('delimiters');
 var loader = require('load-templates');
-var flatten = require('arr-flatten');
 var Engines = require('engine-cache');
 var Helpers = require('helper-cache');
 var Parsers = require('parser-cache');
@@ -494,7 +492,7 @@ Template.prototype.addHelperAsync = function (name, fn, thisArg) {
  * @api private
  */
 
-Template.prototype._addHelperAsync = function (type, plural, addHelper) {
+Template.prototype._addHelperAsync = function (type, plural) {
   this.addHelperAsync(type, function (name, locals, next) {
     var last = _.last(arguments);
 
@@ -692,19 +690,15 @@ Template.prototype.mergePartials = function (options, shouldMerge) {
  */
 
 Template.prototype.render = function (template, options, cb) {
-  var args = [].slice.call(arguments);
-  var self = this;
-
   if (typeof options === 'function') {
     cb = options;
     options = {};
   }
 
-  var defaultExt = this.option('viewEngine');
-  var opts = merge({}, options);
-
+  var self = this;
   var tmpl;
   var key;
+  var opts = merge({}, options);
   var engine = opts.engine;
   var delims = opts.delims;
   var content = template;
@@ -727,16 +721,7 @@ Template.prototype.render = function (template, options, cb) {
     content = template.content;
 
     delims = template.options.delims || delims;
-    ext = template.ext;
-  console.log(template)
-
-    if (!ext) {
-      ext = utils.pickExt(template, opts);
-    }
-
-    if (!ext) {
-      ext = this.option('viewEngine');
-    }
+    ext = utils.pickExt(template, opts, this);
 
     if (delims) {
       this.addDelims(ext, delims);
@@ -748,7 +733,7 @@ Template.prototype.render = function (template, options, cb) {
   }
 
   var delimiters = this._getDelims(ext);
-  var engine = this.getEngine(ext);
+  engine = this.getEngine(ext);
 
   if (delimiters) {
     locals = merge({}, locals, delimiters);

@@ -111,6 +111,7 @@
     "verb-tag-jscomments": "^0.2.1"
   },
   "dependencies": {
+    "arr-flatten": "^0.1.0",
     "array-slice": "^0.2.0",
     "arrayify-compact": "^0.1.0",
     "chalk": "^0.5.1",
@@ -121,6 +122,7 @@
     "engine-lodash": "^0.2.0",
     "engine-noop": "^0.1.0",
     "for-own": "^0.1.1",
+    "get-property": "^0.1.1",
     "has-any": "^0.1.0",
     "has-any-deep": "^0.2.0",
     "helper-cache": "^0.2.2",

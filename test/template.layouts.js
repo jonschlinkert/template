@@ -29,7 +29,7 @@ describe('template layout', function () {
     it('should add layouts defined as glob patterns.', function () {
       var template = new Template();
       template.layouts(['test/fixtures/layouts/matter/*.md']);
-      template.cache.layouts.should.have.property('test/fixtures/layouts/matter/a.md');
+      template.cache.layouts.should.have.property('a.md');
     });
 
     it('should use a custom rename function on layout keys:', function () {

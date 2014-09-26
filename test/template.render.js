@@ -104,7 +104,7 @@ describe('template render', function () {
 
     it('should render content with an engine from [consolidate].', function (done) {
       template.engine('hbs', consolidate.handlebars);
-      var hbs = template.engine('hbs');
+      var hbs = template.getEngine('hbs');
 
       hbs.render('{{name}}', {name: 'Jon Schlinkert'}, function (err, content) {
         if (err) console.log(err);
@@ -146,6 +146,7 @@ describe('template render', function () {
       template.page('b.tmpl', '<title><%= author %></title>', {author: 'Jon Schlinkert'});
       template.page('c.jade', 'title= author', {author: 'Jon Schlinkert'});
       template.page('d.swig', '<title>{{author}}</title>', {author: 'Jon Schlinkert'});
+
 
       Object.keys(template.cache.pages).forEach(function(page) {
         template.render(page, function (err, content) {

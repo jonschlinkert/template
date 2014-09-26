@@ -15,34 +15,39 @@ var template = new Template();
 
 
 describe('template delimiters:', function () {
-  // it('should use custom delimiters defined on a template type:', function (done) {
-  //   var template = new Template();
-  //   template.engine('*', require('engine-lodash'));
-  //   template.create('doc', 'docs', {renderable: true, delims: ['<<', '>>']});
+  it('should use custom delimiters defined on a template type:', function (done) {
+    var template = new Template();
+    template.engine('*', require('engine-lodash'));
+    template.create('doc', 'docs', {
+      delims: ['<<', '>>'],
+      renderable: true,
+    });
 
-  //   template.doc('foo', {content: '<<= name >>', name: 'Halle'});
-  //   template.docs('bar', {content: '<<= name >>', name: 'Brooke'});
+    template.doc('foo', {content: '<<= name >>', name: 'Halle'});
+    template.docs('bar', {content: '<<= name >>', name: 'Brooke'});
 
-  //   template.render('foo', function (err, content) {
-  //     if (err) console.log(err);
-  //     content.should.equal('Halle');
-  //   });
+    template.render('foo', function (err, content) {
+      if (err) console.log(err);
+      content.should.equal('Halle');
+    });
 
-  //   template.render('bar', function (err, content) {
-  //     if (err) console.log(err);
-  //     content.should.equal('Brooke');
-  //   });
-  //   done();
-  // });
+    template.render('bar', function (err, content) {
+      if (err) console.log(err);
+      content.should.equal('Brooke');
+    });
+    done();
+  });
 
   it('should define the engine to use when creating a new template type:', function (done) {
     var template = new Template();
     template.engine('handlebars', require('engine-handlebars'));
     template.engine('lodash', require('engine-lodash'));
+
     template.create('apple', 'apples', {
       engine: 'lodash',
       renderable: true
     });
+
     template.create('orange', 'oranges', {
       engine: 'handlebars',
       renderable: true
@@ -63,30 +68,30 @@ describe('template delimiters:', function () {
     done();
   });
 
-  // it('should define the engine to use on templates:', function (done) {
-  //   var template = new Template();
-  //   template.engine('handlebars', require('engine-handlebars'));
-  //   template.engine('lodash', require('engine-lodash'));
-  //   template.create('apple', 'apples', {renderable: true })
-  //   template.create('orange', 'oranges', {renderable: true })
+  it('should define the engine to use on templates:', function (done) {
+    var template = new Template();
+    template.engine('handlebars', require('engine-handlebars'));
+    template.engine('lodash', require('engine-lodash'));
+    template.create('apple', 'apples', {renderable: true })
+    template.create('orange', 'oranges', {renderable: true })
 
-  //   template.apple('foo', {content: '<<= name >>{{ name }}<%= name %>', name: 'Halle'}, {
-  //     engine: 'lodash'
-  //   });
-  //   template.orange('bar', {content: '<<= name >>{{ name }}<%= name %>', name: 'Brooke'}, {
-  //     engine: 'handlebars'
-  //   });
+    template.apple('foo', {content: '<<= name >>{{ name }}<%= name %>', name: 'Halle'}, {
+      engine: 'lodash'
+    });
+    template.orange('bar', {content: '<<= name >>{{ name }}<%= name %>', name: 'Brooke'}, {
+      engine: 'handlebars'
+    });
 
-  //   template.render('foo', function (err, content) {
-  //     if (err) console.log(err);
-  //     content.should.equal('<<= name >>{{ name }}Halle');
-  //   });
+    template.render('foo', function (err, content) {
+      if (err) console.log(err);
+      content.should.equal('<<= name >>{{ name }}Halle');
+    });
 
-  //   template.render('bar', function (err, content) {
-  //     if (err) console.log(err);
-  //     content.should.equal('<<= name >>Brooke<%= name %>');
-  //   });
-  //   done();
-  // });
+    template.render('bar', function (err, content) {
+      if (err) console.log(err);
+      content.should.equal('<<= name >>Brooke<%= name %>');
+    });
+    done();
+  });
 
 });

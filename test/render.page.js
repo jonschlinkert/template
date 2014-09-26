@@ -72,6 +72,7 @@ describe('render page:', function () {
         author: 'Jon Schlinkert'
       });
 
+
       Object.keys(template.cache.posts).forEach(function(file) {
         var post = template.cache.posts[file];
 

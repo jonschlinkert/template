@@ -1,5 +1,5 @@
 /*!
- * view-cache <https://github.com/jonschlinkert/view-cache>
+ * template <https://github.com/jonschlinkert/template>
  *
  * Copyright (c) 2014 Jon Schlinkert, contributors.
  * Licensed under the MIT license.
@@ -17,7 +17,6 @@ var Helpers = require('helper-cache');
 var Parsers = require('parser-cache');
 var Storage = require('config-cache');
 var Layouts = require('layouts');
-
 var logger = require('./lib/logger');
 var utils = require('./lib/utils');
 var extend = _.extend;
@@ -31,8 +30,8 @@ var merge = _.merge;
  * **Example:**
  *
  * ```js
- * var Template = require('template');
- * var template = new Template();
+ * var Template = require('engine');
+ * var engine = new Template();
  * ```
  *
  * @class `Template`
@@ -203,9 +202,9 @@ Template.prototype.lazyLayouts = function(ext, options) {
     var opts = merge({}, this.options, options);
 
     this.layoutSettings[ext] = new Layouts({
-      locals: opts.locals,
-      layouts: opts.layouts,
       delims: opts.layoutDelims,
+      layouts: opts.layouts,
+      locals: opts.locals,
       tag: opts.layoutTag
     });
   }
@@ -391,6 +390,10 @@ Template.prototype.engine = function (extension, fn, options) {
  * Get the engine registered for the given `ext`. If no
  * `ext` is passed, the entire cache is returned.
  *
+ * ```js
+ * engine.getEngine('.html');
+ * ```
+ *
  * @doc api-getEngine
  * @param {String} `ext` The engine to get.
  * @return {Object} Object of methods for the specified engine.
@@ -399,15 +402,17 @@ Template.prototype.engine = function (extension, fn, options) {
 
 Template.prototype.getEngine = function (ext) {
   var engine = this._.engines.get(ext);
-  this.getDelims();
-
   engine.options = utils.omit(engine.options, 'thisArg');
   return engine;
 };
 
 
 /**
- * Register or get helpers for the given `ext` (engine).
+ * Register helpers for the given `ext` (engine).
+ *
+ * ```js
+ * engine.helpers(require('handlebars-helpers'));
+ * ```
  *
  * @param {String} `ext` The engine to register helpers with.
  * @return {Object} Object of helpers for the specified engine.
@@ -418,6 +423,26 @@ Template.prototype.helpers = function (ext) {
   var engine = this.getEngine(ext);
   return engine.helpers;
 };
+
+
+/**
+ * Register a helper for the given `ext` (engine).
+ *
+ * ```js
+ * engine.helper('lower', function(str) {
+ *   return str.toLowerCase();
+ * });
+ * ```
+ *
+ * @param {String} `ext` The engine to register helpers with.
+ * @return {Object} Object of helpers for the specified engine.
+ * @api public
+ */
+
+// Template.prototype.helper = function (ext) {
+//   var engine = this.getEngine(ext);
+//   return engine.helpers;
+// };
 
 
 /**
@@ -434,16 +459,13 @@ Template.prototype._registerEngine = function (ext, fn, options) {
   var opts = merge({thisArg: this, bindFunctions: true}, options);
   this._.engines.register(ext, fn, opts);
 
-  if (ext[0] !== '.') {
-    ext = '.' + ext;
-  }
+  ext = utils.formatExt(ext);
 
   if (opts.delims) {
     this.addDelims(ext, opts.delims);
     this.engines[ext].delims = this._getDelims(ext);
   }
 
-  // Initialize layouts
   this.lazyLayouts(ext, opts);
   return this;
 };
@@ -468,9 +490,7 @@ Template.prototype.addHelper = function (name, fn, thisArg) {
 
 
 /**
- * Get and set _generic_ async helpers on the `cache`. Helpers registered
- * using this method will be passed to every engine. As with the sync
- * version of this method, be sure to use generic javascript functions.
+ * Async version of `.addHelper()`.
  *
  * @param {String} `name` The helper to cache or get.
  * @param {Function} `fn` The helper function.
@@ -526,7 +546,10 @@ Template.prototype._addHelperAsync = function (type, plural) {
 
 
 /**
- * Load templates and normalize template objects.
+ * Load templates and normalize them to an object with consistent
+ * properties.
+ *
+ * See [load-templates] for more details.
  *
  * @param {String|Array|Object}
  * @return {Object}
@@ -538,22 +561,34 @@ Template.prototype.loadTemplate = function (plural, options) {
 
   return function(key, value, locals) {
     var loaded = load.apply(this, arguments);
-    var tmpl = this.normalize(plural, loaded, options);
+    var template = this.normalize(loaded, options);
 
-    merge(this.cache[plural], tmpl);
+    merge(this.cache[plural], template);
     return this;
   };
 };
 
 
-Template.prototype.normalize = function (plural, tmpl, options) {
+/**
+ * Normalize a template object to ensure it has the necessary
+ * properties to be rendered by the current renderer.
+ *
+ * @param  {Object} `template` The template object to normalize.
+ * @param  {Object} `options` Options to pass to the renderer.
+ *     @option {Function} `renameKey` Override the default function for renaming
+ *             the key of normalized template objects.
+ * @return {Object} Normalized template.
+ */
+
+Template.prototype.normalize = function (template, options) {
   if (this.option('normalize')) {
     return this.options.normalize.apply(this, arguments);
   }
 
-  var rename = this.option('renameKey');
+  var opts = extend({}, options);
+  var rename = opts.renameKey || this.option('renameKey');
 
-  return _.transform(tmpl, function(acc, val, key) {
+  return _.transform(template, function(acc, val, key) {
     val.options = merge({}, options, val.options);
 
     key = rename.call(this, key);
@@ -562,28 +597,23 @@ Template.prototype.normalize = function (plural, tmpl, options) {
 };
 
 
-Template.prototype.cacheTemplate = function (key, template, options) {
+/**
+ * Temporarily cache a template that was passed directly to the [render]
+ * method.
+ *
+ * See [load-templates] for details on template formatting.
+ *
+ * @param  {String|Object|Function} `key`
+ * @param  {Object} `value`
+ * @param  {Object} `locals`
+ * @return {Object} Normalized template object.
+ */
+
+Template.prototype.cacheTemplate = function (key, value, locals) {
   var load = this.loadTemplate('anonymous', {renderable: true});
   load.apply(this, arguments);
 
   return this.cache['anonymous'][key];
-};
-
-
-
-Template.prototype.mergeFn = function (template, locals) {
-  var locs = {};
-  if (this.option('mergeFn')) {
-    return this.option('mergeFn')(template, locals);
-  }
-
-  if (utils.isObject(template)) {
-    locs = merge({}, template.data, template.locals);
-  }
-
-  locs.helpers = merge({}, this._.helpers, locs.helpers);
-  locs = merge({}, locs, locals);
-  return locs;
 };
 
 
@@ -608,7 +638,6 @@ Template.prototype.setType = function (plural, options) {
     type.partial.push(plural);
   }
 };
-
 
 
 /**
@@ -650,11 +679,11 @@ Template.prototype.create = function(type, plural, options) {
 
 
 /**
- * Get partials from the cache. If `options.mergePartials` is `true`,
- * this object will keep custom partial types seperate - otherwise,
- * all templates with the type `partials` will be merged onto the
- * same object. This is useful when necessary for the engine being
- * used.
+ * Get partials from the cache. More specifically, all templates with
+ * a `viewType` of `partial` defined. If `options.mergePartials` is `true`,
+ * this object will keep custom partial types seperate - otherwise, all
+ * templates with the type `partials` will be merged onto the same object.
+ * This is useful when necessary for the engine being used.
  *
  * @api private
  */
@@ -666,8 +695,7 @@ Template.prototype.mergePartials = function (options, shouldMerge) {
   this.cache.partials  = extend({}, this.cache.partials, opts.partials);
 
   this.viewType['partial'].forEach(function (type) {
-    var partials = merge({}, this.cache[type]);
-    _.forOwn(partials, function (value, key) {
+    _.forOwn(this.cache[type], function (value, key) {
       if (shouldMerge) {
         opts.partials[key] = value.content;
       } else {
@@ -675,7 +703,9 @@ Template.prototype.mergePartials = function (options, shouldMerge) {
       }
       opts = merge({}, opts, value.data, value.locals);
     });
+
   }.bind(this));
+
   return opts;
 };
 
@@ -695,7 +725,6 @@ Template.prototype.render = function (template, options, cb) {
     options = {};
   }
 
-  var self = this;
   var tmpl;
   var key;
   var opts = merge({}, options);
@@ -728,7 +757,6 @@ Template.prototype.render = function (template, options, cb) {
     }
 
   } else {
-    // console.log(template)
     content = template;
   }
 
@@ -740,17 +768,66 @@ Template.prototype.render = function (template, options, cb) {
   }
 
   this.useDelims(ext);
-
-  // console.log(locals)
   locals = this.mergePartials(locals);
 
   try {
     engine.render(content, locals, function (err, res) {
-      return self._.helpers.resolve(res, cb.bind(self));
-    });
+      var opt = extend({}, this.options, locals);
+      if (opt.pretty) {
+        res = this.prettify(res, opt.pretty);
+      }
+      return this._.helpers.resolve(res, cb.bind(this));
+    }.bind(this));
   } catch (err) {
     cb(err);
   }
+};
+
+
+/**
+ * The default method used for merging data into the `locals` object
+ * as a last step before its passed to the current renderer.
+ *
+ * @param  {Object} `template`
+ * @param  {Object} `locals`
+ * @return {Object}
+ */
+
+Template.prototype.mergeFn = function (template, locals) {
+  var locs = {};
+
+  if (this.option('mergeFn')) {
+    return this.option('mergeFn').apply(this, arguments);
+  }
+
+  if (utils.isObject(template)) {
+    locs = merge({}, template.data, template.locals);
+  }
+
+  locs.helpers = merge({}, this._.helpers, locs.helpers);
+  locs = merge({}, locs, locals);
+  return locs;
+};
+
+
+/**
+ * Format HTML using [js-beautify].
+ *
+ * @param  {String} `html` The HTML to beautify.
+ * @param  {Object} `options` Options to pass to [js-beautify].
+ * @return {String} Formatted string of HTML.
+ */
+
+Template.prototype.prettify = function(html, options) {
+  return prettify(html, extend({
+    indent_handlebars: true,
+    indent_inner_html: true,
+    preserve_newlines: false,
+    max_preserve_newlines: 1,
+    brace_style: 'expand',
+    indent_char: ' ',
+    indent_size: 2,
+  }, options));
 };
 
 

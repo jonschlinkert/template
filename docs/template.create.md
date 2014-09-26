@@ -34,7 +34,7 @@ template.post('home', '---\nfoo: bar\n---\nABC', {
   loader: function(key, value) {
 
   },
-  rename: function(key, value) {
+  renameFn: function(key, value) {
 
   },
   normalize: function(key, value) {

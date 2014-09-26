@@ -1,23 +1,23 @@
 {
-  "name": "view-cache",
+  "name": "template",
   "description": "Templates.",
   "version": "0.1.0",
-  "homepage": "https://github.com/jonschlinkert/view-cache",
+  "homepage": "https://github.com/jonschlinkert/template",
   "author": {
     "name": "Jon Schlinkert",
     "url": "https://github.com/jonschlinkert"
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/jonschlinkert/view-cache.git"
+    "url": "git://github.com/jonschlinkert/template.git"
   },
   "bugs": {
-    "url": "https://github.com/jonschlinkert/view-cache/issues"
+    "url": "https://github.com/jonschlinkert/template/issues"
   },
   "licenses": [
     {
       "type": "MIT",
-      "url": "https://github.com/jonschlinkert/view-cache/blob/master/LICENSE-MIT"
+      "url": "https://github.com/jonschlinkert/template/blob/master/LICENSE-MIT"
     }
   ],
   "keywords": [
@@ -111,7 +111,6 @@
     "verb-tag-jscomments": "^0.2.1"
   },
   "dependencies": {
-    "arr-flatten": "^0.1.0",
     "array-slice": "^0.2.0",
     "arrayify-compact": "^0.1.0",
     "chalk": "^0.5.1",
@@ -122,9 +121,7 @@
     "engine-lodash": "^0.2.0",
     "engine-noop": "^0.1.0",
     "for-own": "^0.1.1",
-    "get-property": "^0.1.1",
     "has-any": "^0.1.0",
-    "has-any-deep": "^0.2.0",
     "helper-cache": "^0.2.2",
     "is-empty": "0.0.1",
     "js-beautify": "^1.5.1",
@@ -139,7 +136,6 @@
     "parser-front-matter": "^0.2.2",
     "parser-noop": "^0.2.2",
     "parser-utils": "^0.3.0",
-    "reduce-object": "^0.1.2",
     "uniqueid": "^0.1.0"
   }
 }

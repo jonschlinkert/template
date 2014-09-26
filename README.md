@@ -1,4 +1,4 @@
-# view-cache [![NPM version](https://badge.fury.io/js/view-cache.svg)](http://badge.fury.io/js/view-cache)
+# template [![NPM version](https://badge.fury.io/js/template.svg)](http://badge.fury.io/js/template)
 
 
 > Templates.
@@ -7,39 +7,43 @@
 #### Install with [npm](npmjs.org):
 
 ```bash
-npm i view-cache --save-dev
+npm i template --save-dev
 ```
 
 ## Usage
 
 ```js
-var Views = require('view-cache');
+var Views = require('template');
 var views = new Views();
 ```
 
 ## API
-### [Template](index.js#L44)
+### [Template](index.js#L47)
 
 Create a new instance of `Template`, optionally passing the default `context` and `options` to use.
 
 * `context` **{Object}**: Context object to start with.    
 * `options` **{Object}**: Options to use.    
 
-**Example:**
+*Example:**
 
 ```js
 var Template = require('template');
 var template = new Template();
 ```
 
-### [.parser](index.js#L250)
+### [.parser](index.js#L444)
 
-Register the given parser callback `fn` as `ext`. If `ext` is not given, the parser `fn` will be pushed into the default parser stack.
+Define a parser.
 
 * `ext` **{String}**    
 * `fn` **{Function|Object}**: or `options`    
 * `fn` **{Function}**: Callback function.    
 * `returns` **{Object}** `Template`: to enable chaining.  
+
+Register the given parser callback `fn` as `ext`. If `ext`
+is not given, the parser `fn` will be pushed into the
+default parser stack.
 
 ```js
 // Default stack
@@ -52,7 +56,16 @@ template.parser('hbs', require('parser-front-matter'));
 See [parser-cache] for the full range of options and documentation.
 
 
-### [.parse](index.js#L300)
+### [.getParsers](index.js#L463)
+
+* `ext` **{String}**: The parser stack to get.    
+* `returns` **{Object}** `Template`: to enable chaining.  
+
+Get the parser stack for the given `ext`.
+
+### [.parse](index.js#L484)
+
+Run a stack of async parsers.
 
 * `file` **{Object|String}**: Either a string or an object.    
 * `stack` **{Array}**: Optionally pass an array of functions to use as parsers.    
@@ -81,12 +94,14 @@ template.parse({path: 'a/b/c.md', content: str}, [a, b, c], function (err, file)
 See [parser-cache] for the full range of options and documentation.
 
 
-Run a `file` through the given `stack` of parsers. If `file` is
+Run a `stack` of parsers against the given `file`. If `file` is
 an object with a `path` property, then the `extname` is used to
 get the parser stack. If a stack isn't found on the cache the
 default `noop` parser will be used.
 
-### [.parseSync](index.js#L319)
+### [.parseSync](index.js#L505)
+
+Run a stack of sync parsers.
 
 * `file` **{Object|String}**: Either a string or an object.    
 * `stack` **{Array}**: Optionally pass an array of functions to use as parsers.    
@@ -106,19 +121,12 @@ template.parseSync({path: 'a/b/c.md', content: str}, [a, b, c]);
 
 See [parser-cache] for the full range of options and documentation.
 
-Run a `file` through the given `stack` of parsers; like `.parse()`,
-but synchronous. If `file` is an object with a `path` property,
-then the `extname` is used to get the parser stack. If a stack isn't
-found on the cache the default `noop` parser will be used.
+Run a `stack` of sync parsers against the given `file`. If `file` is
+an object with a `path` property, then the `extname` is used to
+get the parser stack. If a stack isn't found on the cache the
+default `noop` parser will be used.
 
-### [.getParsers](index.js#L332)
-
-* `ext` **{String}**: The parser stack to get.    
-* `returns` **{Object}** `Template`: to enable chaining.  
-
-Get a cached parser stack for the given `ext`.
-
-### [.engine](index.js#L350)
+### [.engine](index.js#L553)
 
 * `ext` **{String}**    
 * `fn` **{Function|Object}**: or `options`    
@@ -140,7 +148,7 @@ Register the given view engine callback `fn` as `ext`. If only `ext`
 is passed, the engine registered for `ext` is returned. If no `ext`
 is passed, the entire cache is returned.
 
-### [.getEngine](index.js#L399)
+### [.getEngine](index.js#L577)
 
 * `ext` **{String}**: The engine to get.    
 * `returns` **{Object}**: Object of methods for the specified engine.  
@@ -157,37 +165,37 @@ template.getEngine('hbs');
 Get the engine registered for the given `ext`. If no
 `ext` is passed, the entire cache is returned.
 
-### [.helpers](index.js#L413)
+### [.helpers](index.js#L590)
 
-* `ext` **{String}**: The helper cache to get and set to.    
+* `ext` **{String}**: The engine to register helpers with.    
 * `returns` **{Object}**: Object of helpers for the specified engine.  
 
-Get and set helpers for the given `ext` (engine). If no
-`ext` is passed, the entire helper cache is returned.
+Register or get helpers for the given `ext` (engine).
 
-### [.addHelper](index.js#L430)
+### [.addHelper](index.js#L637)
 
 * `name` **{String}**: The helper to cache or get.    
 * `fn` **{Function}**: The helper function.    
 * `thisArg` **{Object}**: Context to bind to the helper.    
 * `returns` **{Object}**: Object of helpers for the specified engine.  
 
-Get and set helpers on `templates.cache.helpers.` Helpers registered
-using this method should be generic javascript functions, since they
-will be passed to every engine.
+Get and set _generic_ helpers on the `cache`. Helpers registered
+using this method will be passed to every engine, so be sure to use
+generic javascript functions - unless you want to see Lo-Dash
+blow up from `Handlebars.SafeString`.
 
-### [.addHelperAsync](index.js#L447)
+### [.addHelperAsync](index.js#L654)
 
 * `name` **{String}**: The helper to cache or get.    
 * `fn` **{Function}**: The helper function.    
 * `thisArg` **{Object}**: Context to bind to the helper.    
 * `returns` **{Object}**: Object of helpers for the specified engine.  
 
-Get and set async helpers on `templates.cache.helpers.` Helpers registered
-using this method should be generic javascript functions, since they
-will be passed to every engine.
+Get and set _generic_ async helpers on the `cache`. Helpers registered
+using this method will be passed to every engine. As with the sync
+version of this method, be sure to use generic javascript functions.
 
-### [.create](index.js#L528)
+### [.create](index.js#L749)
 
 * `type` **{String}**: Singular name of the type to create, e.g. `page`.    
 * `plural` **{String}**: Plural name of the template type, e.g. `pages`.    
@@ -201,7 +209,7 @@ will be passed to every engine.
 Add a new template `type`, along with associated get/set methods.
 You must specify both the singular and plural names for the type.
 
-### [.render](index.js#L685)
+### [.render](index.js#L862)
 
 * `file` **{Object|String}**: String or normalized template object.    
 * `options` **{Object}**: Options to pass to registered view engines.    
@@ -231,7 +239,7 @@ Released under the MIT license
 
 ***
 
-_This file was generated by [verb-cli](https://github.com/assemble/verb-cli) on September 06, 2014._
+_This file was generated by [verb-cli](https://github.com/assemble/verb-cli) on September 26, 2014._
 
 
 [engine-cache]: https://github.com/jonschlinkert/engine-cache

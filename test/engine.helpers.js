@@ -90,9 +90,13 @@ describe('engine render:', function () {
       return fs.readFileSync(filepath, 'utf8');
     });
 
+    // just for fun :-)
+    var pkg = require(path.join(process.cwd(), 'package.json'));
+    var re = new RegExp('^#\\s*' + pkg.name);
+
     engine.render('{{include "README.md"}}', function (err, content) {
       if (err) console.log(err);
-      /^# view-cache/.test(content).should.be.true;
+      re.test(content).should.be.true;
     });
     done();
   });

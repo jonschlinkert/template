@@ -48,7 +48,7 @@ describe('template usage:', function () {
     d.should.equal('${ name }[[= name ]]____Jon Schlinkert____<%= name %>{%= name %}');
   });
 
-  it('should use the currently set delimiters with `template.render()`:', function () {
+  it('should use the currently set delimiters with `template.render()`:', function (done) {
     var template = new Template();
 
     template.engine('lodash', require('engine-lodash'));
@@ -73,6 +73,7 @@ describe('template usage:', function () {
 
     template.render(base, ctx, function (err, content) {
       if (err) console.log(err);
+
       content.should.equal('____Jon Schlinkert____<<= name >>{{= name }}____Jon Schlinkert____{%= name %}');
     });
 
@@ -106,5 +107,7 @@ describe('template usage:', function () {
       if (err) console.log(err);
       content.should.equal('____Jon Schlinkert____<<= name >>{{= name }}<%= name %>{%= name %}');
     });
+
+    done();
   });
 });

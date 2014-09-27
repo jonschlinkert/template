@@ -18,7 +18,7 @@ describe('template delimiters:', function () {
   it('should use custom delimiters defined on a template type:', function (done) {
     var template = new Template();
     template.engine('*', require('engine-lodash'));
-    template.create('doc', 'docs', {renderable: true, delims: ['<<', '>>']})
+    template.create('doc', 'docs', { isRenderable: true , delims: ['<<', '>>']})
 
     template.doc('foo', {content: '<<= name >>', name: 'Jon Schlinkert'});
     template.docs('bar', {content: '<<= name >>', name: 'Brian Woodward'});
@@ -38,7 +38,7 @@ describe('template delimiters:', function () {
   it('should use custom delimiters defined on an actual template:', function (done) {
     var template = new Template();
     template.engine('*', require('engine-lodash'));
-    template.create('doc', 'docs', {renderable: true})
+    template.create('doc', 'docs', { isRenderable: true })
 
     template.doc('foo', {content: '<<= name >>{{= name }}', name: 'Jon Schlinkert'}, {
       delims: ['<<', '>>']

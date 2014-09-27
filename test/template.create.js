@@ -36,27 +36,27 @@ describe('template create:', function () {
     });
   });
 
-  describe('when the `renderable` flag is set on the options:', function () {
-    it('should push the name of the type into the `renderable` array on the cache:', function () {
+  describe('when the `isRenderable` flag is set on the options:', function () {
+    it('should push the name of the type into the `isRenderable` array on the cache:', function () {
       var template = new Template();
-      template.create('apple', 'apples', {renderable: true});
+      template.create('apple', 'apples', { isRenderable: true });
 
-      _.contains(template.viewType.renderable, 'pages').should.be.true;
-      _.contains(template.viewType.renderable, 'apples').should.be.true;
+      _.contains(template.viewType.isRenderable, 'pages').should.be.true;
+      _.contains(template.viewType.isRenderable, 'apples').should.be.true;
     });
   });
 
   describe('when the `layout` flag is set on the options:', function () {
     it('should push the name of the type into the `layout` array on the cache:', function () {
       var template = new Template();
-      template.create('orange', 'oranges', {layout: true});
+      template.create('orange', 'oranges', { isLayout: true });
 
       _.contains(template.viewType.layout, 'layouts').should.be.true;
       _.contains(template.viewType.layout, 'oranges').should.be.true;
     });
   });
 
-  describe('when neither the `layout` flag, nor the `renderable` is set on the options:', function () {
+  describe('when neither the `layout` flag, nor the `isRenderable` is set on the options:', function () {
     it('should push the name of the type into the `partial` array on the cache:', function () {
       var template = new Template();
       template.create('banana', 'bananas');
@@ -70,7 +70,7 @@ describe('template create:', function () {
   describe('when the `partial` flag is set on the options:', function () {
     it('should push the name of the type into the `partial` array on the cache:', function () {
       var template = new Template();
-      template.create('banana', 'bananas', {partial: true});
+      template.create('banana', 'bananas', { isPartial: true });
 
       _.contains(template.viewType.partial, 'partials').should.be.true;
       _.contains(template.viewType.partial, 'bananas').should.be.true;

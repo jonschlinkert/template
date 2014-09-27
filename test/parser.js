@@ -57,10 +57,7 @@ describe('template parser', function() {
         .parser('c', function () {})
         .parser('d', function () {});
 
-
-      var a = template.getParsers('.a');
-      a.should.be.an.array;
-
+      template.getParsers('.a').should.be.an.array;
 
       template.parsers.should.have.property('.a');
       template.parsers.should.have.property('.b');

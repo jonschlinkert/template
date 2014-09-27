@@ -133,7 +133,7 @@
     "object-pick": "^0.1.0",
     "omit-empty": "^0.2.0",
     "omit-keys": "^0.1.0",
-    "parser-cache": "^0.4.1",
+    "parser-cache": "^0.4.2",
     "parser-front-matter": "^0.2.2",
     "parser-noop": "^0.2.2",
     "parser-utils": "^0.3.0",

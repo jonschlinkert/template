@@ -12,6 +12,7 @@ var util = require('util');
 var path = require('path');
 var chalk = require('chalk');
 var forOwn = require('for-own');
+var reduce = require('reduce-object');
 var loader = require('load-templates');
 var Engines = require('engine-cache');
 var Helpers = require('helper-cache');
@@ -216,7 +217,7 @@ Template.prototype.defaultHelpers = function(type, plural) {
  */
 
 Template.prototype.lazyLayouts = function(ext, options) {
-  if (!this.layoutSettings.hasOwnProperty(ext)) {
+  if (!hasOwn(this.layoutSettings, ext)) {
     var opts = _.merge({}, this.options, options);
 
     this.layoutSettings[ext] = new Layouts({
@@ -312,7 +313,7 @@ Template.prototype.addDelims = function (ext, arr, settings) {
  */
 
 Template.prototype.getDelims = function(ext) {
-  if(this.delims.hasOwnProperty(ext)) {
+  if(hasOwn(this.delims, ext)) {
     return this.delims[ext];
   }
   ext = this.currentDelims || 'default';
@@ -337,6 +338,37 @@ Template.prototype.useDelims = function(ext) {
 };
 
 
+Template.prototype.registerParser = function (ext, fn, sync) {
+  if (typeof ext !== 'string') {
+    fn = ext;
+    ext = '*';
+  }
+
+  if (ext[0] !== '.') {
+    ext = '.' + ext;
+  }
+
+  if (!this.parsers[ext]) {
+    this.parsers[ext] = [];
+  }
+
+  var parser = {};
+
+  if (typeof fn === 'function') {
+    if (sync) {
+      parser.parseSync = fn;
+    } else {
+      parser.parse = fn;
+    }
+  } else {
+    parser = fn;
+  }
+
+  this.parsers[ext].push(parser);
+  return this;
+};
+
+
 /**
  * Define a parser.
  *
@@ -352,14 +384,58 @@ Template.prototype.useDelims = function(ext) {
  * @api public
  */
 
-Template.prototype.parser = function (extensions, options, fn) {
-  var args = [].slice.call(arguments, 1);
+Template.prototype.parser = function (ext, fn) {
+  return this.registerParser(ext, fn);
+};
 
-  utils.arrayify(extensions).forEach(function (ext) {
-    this._.parsers.register.apply(this, [ext].concat(args));
-  }.bind(this));
 
-  return this;
+/**
+ * Define a synchronous parser.
+ *
+ * Register the given parser callback `fn` as `ext`. If `ext`
+ * is not given, the parser `fn` will be pushed into the
+ * default parser stack.
+ *
+ * @doc api-parser
+ * @param {String} `ext`
+ * @param {Function|Object} `fn` or `options`
+ * @param {Function} `fn` Callback function.
+ * @return {Object} `Template` to enable chaining.
+ * @api public
+ */
+
+
+Template.prototype.parserSync = function (ext, fn) {
+  return this.registerParser(ext, fn, true);
+};
+
+
+Template.prototype.parse = function (fn, template, stack) {
+  return reduce(template, function (acc, value, key) {
+    return fn.call(this, acc, value, key, stack);
+  }.bind(this), {});
+};
+
+
+/**
+ * Get the parser stack for the given `ext`.
+ *
+ * @param {String} `ext` The parser stack to get.
+ * @return {Object} `Template` to enable chaining.
+ * @api public
+ */
+
+Template.prototype.getStack = function (ext, sync) {
+  if (ext[0] !== '.') {
+    ext = '.' + ext;
+  }
+
+  return this.parsers[ext].map(function (parser) {
+    if (sync) {
+      return parser.parseSync;
+    }
+    return parser.parse;
+  });
 };
 
 
@@ -373,85 +449,35 @@ Template.prototype.parser = function (extensions, options, fn) {
  * @api private
  */
 
-Template.prototype._parse = function (method, file, stack, options) {
-  var ext = null;
-
-  if (typeof file === 'object') {
-    var o = _._.merge({}, options, file);
-    ext = o.ext;
-  }
-
-  if (Array.isArray(stack) && stack.length > 0) {
-    return this._.parsers[method](file, stack, options);
-  } else {
-    options = stack;
-    stack = null;
-  }
-
-  if (ext) {
-    stack = this.getParsers(ext);
-  }
-  if (!stack) {
-    stack = this.getParsers('*');
-  }
-
-  return this._.parsers[method](file, stack, options);
-};
-
-
 /**
- * Run a stack of async parsers.
+ * Run a stack of sync or async parsers.
  *
- * Run a `stack` of parsers against the given `file`. If `file` is
+ * Run a `stack` of parsers against the given `template`. If `template` is
  * an object with a `path` property, then the `extname` is used to
  * get the parser stack. If a stack isn't found on the cache the
  * default `noop` parser will be used.
  *
  * @doc api-parse
- * @param  {Object|String} `file` Either a string or an object.
+ * @param  {Object|String} `template` Either a string or an object.
  * @param  {Array} `stack` Optionally pass an array of functions to use as parsers.
  * @param  {Object} `options`
- * @return {Object} Normalize `file` object.
+ * @return {Object} Normalize `template` object.
  * @api public
  */
 
-Template.prototype.parse = function (file, stack, options) {
-  return this._parse('parse', file, stack, options);
+Template.prototype.runStack = function (stack, template) {
+  if (Array.isArray(stack) && stack.length > 0) {
+    for (var i = 0; i < stack.length; i++) {
+      try {
+        template = this.parse(stack[i], template, stack);
+      } catch (err) {
+        throw err;
+      }
+    }
+  }
+  return template;
 };
 
-
-/**
- * Run a stack of sync parsers.
- *
- * Run a `stack` of sync parsers against the given `file`. If `file` is
- * an object with a `path` property, then the `extname` is used to
- * get the parser stack. If a stack isn't found on the cache the
- * default `noop` parser will be used.
- *
- * @doc api-parseSync
- * @param  {Object|String} `file` Either a string or an object.
- * @param  {Array} `stack` Optionally pass an array of functions to use as parsers.
- * @param  {Object} `options`
- * @return {Object} Normalize `file` object.
- * @api public
- */
-
-Template.prototype.parseSync = function (file, stack, options) {
-  return this._parse('parseSync', file, stack, options);
-};
-
-
-/**
- * Get the parser stack for the given `ext`.
- *
- * @param {String} `ext` The parser stack to get.
- * @return {Object} `Template` to enable chaining.
- * @api public
- */
-
-Template.prototype.getParsers = function (ext) {
-  return this._.parsers.get.apply(this, arguments);
-};
 
 
 /**
@@ -702,10 +728,6 @@ Template.prototype.create = function(type, plural, options) {
   this.createType(plural, options);
 
   Template.prototype[type] = function (key, value, locals, opt) {
-    // if (utils.isString(key) && arguments.length === 1 && this.cache[plural].hasOwnProperty(key)) {
-    //   return this.cache[plural]
-    // }
-
     this[plural].apply(this, arguments);
   };
 
@@ -713,11 +735,11 @@ Template.prototype.create = function(type, plural, options) {
     this.load(plural, options).apply(this, arguments);
   };
 
-  if (!this._.helpers.hasOwnProperty(type)) {
+  if (!hasOwn(this._.helpers, type)) {
     this.defaultHelpers(type, plural);
   }
 
-  // if (!this._.helpers.hasOwnProperty(type)) {
+  // if (!hasOwn(this._.helpers, type)) {
   //   this.defaultAsyncHelpers(type, plural);
   // }
   return this;
@@ -785,25 +807,31 @@ Template.prototype.normalize = function (plural, template, options) {
   }
 
   var renameKey = this.option('renameKey');
-  var isLayout;
-  var ext;
+
 
   forOwn(template, function (value, key) {
     value.options = _.merge({}, options, value.options);
-    ext = utils.pickExt(value, value.options, this);
+    key = renameKey.call(this, key);
+
+    var ext = utils.pickExt(value, value.options, this);
     this.lazyLayouts(ext, value.options);
 
-    isLayout = utils.isLayout(value);
+    var isLayout = utils.isLayout(value);
     utils.pickLayout(value);
 
-    key = renameKey.call(this, key);
+    var stack = this.getStack(ext, true);
+
+    var parsed = this.runStack(stack, value);
+    if (parsed) {
+      value = parsed;
+    }
+
     template[key] = value;
 
     if (isLayout) {
       this.layoutSettings[ext].setLayout(template);
     }
   }, this);
-
 
   return template;
 };

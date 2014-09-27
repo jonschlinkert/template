@@ -48,10 +48,17 @@ describe('default template', function () {
           next(null, file);
         });
 
-      assert.equal(template.getParsers('*').length > 3, true);
+      var stack = template.getParsers('*');
+
+      stack.should.be.an.array;
+      stack[0].should.be.an.object;
+      stack[0].should.have.property('parse');
+      stack[0].should.have.property('parseSync');
+
       template.parse({a: ''}, function (err, file) {
         file.a.should.equal('abc');
       });
+
       done();
     });
   });

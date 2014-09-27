@@ -881,34 +881,33 @@ Template.prototype.render = function (template, options, cb) {
 
     locals = this.mergeFn(template, locals);
     engine = locals.engine;
-    delims = delims || (template.options && template.options.delims) || locals.delims;
+    delims = delims || utils.pickDelims(template, locals);
 
-    if (!ext) {
-      ext = utils.pickExt(template, opts, this);
-    }
+    ext = ext || utils.pickExt(template, opts, this);
   } else {
     content = template;
   }
 
+  // if a layout is defined, apply it now.
   content = this.applyLayout(ext, template, locals);
-  if (utils.isObject(content)) {
-    content = content.content;
-  }
 
   ext = utils.formatExt(ext);
   if (delims) {
     this.addDelims(ext, delims);
   }
 
-  var delimiters = this.getDelims(ext);
-
-  locals = _.merge({}, locals, delimiters);
+  locals = _.merge({}, locals, this.getDelims(ext));
   locals = this.mergePartials(locals);
 
   if (utils.isString(engine)) {
     engine = this.getEngine(utils.formatExt(engine));
   } else {
     engine = this.getEngine(ext);
+  }
+
+  // Ensure that `content` is a string.
+  if (utils.isObject(content)) {
+    content = content.content;
   }
 
   try {

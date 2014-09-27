@@ -356,9 +356,9 @@ Template.prototype.registerParser = function (ext, fn, sync) {
 
   if (typeof fn === 'function') {
     if (sync) {
-      parser.parseSync = fn;
+      parser.parseSync = _.bind(fn, this);
     } else {
-      parser.parse = fn;
+      parser.parse = _.bind(fn, this);
     }
   } else {
     parser = fn;
@@ -425,7 +425,7 @@ Template.prototype.parse = function (fn, template, stack) {
  * @api public
  */
 
-Template.prototype.getStack = function (ext, sync) {
+Template.prototype.getParsers = function (ext, sync) {
   if (ext[0] !== '.') {
     ext = '.' + ext;
   }
@@ -465,7 +465,7 @@ Template.prototype.getStack = function (ext, sync) {
  * @api public
  */
 
-Template.prototype.runStack = function (stack, template) {
+Template.prototype.runParsers = function (stack, template) {
   if (Array.isArray(stack) && stack.length > 0) {
     for (var i = 0; i < stack.length; i++) {
       try {
@@ -819,9 +819,9 @@ Template.prototype.normalize = function (plural, template, options) {
     var isLayout = utils.isLayout(value);
     utils.pickLayout(value);
 
-    var stack = this.getStack(ext, true);
+    var stack = this.getParsers(ext, true);
 
-    var parsed = this.runStack(stack, value);
+    var parsed = this.runParsers(stack, value);
     if (parsed) {
       value = parsed;
     }

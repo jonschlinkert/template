@@ -20,7 +20,7 @@ describe('template delimiters:', function () {
     template.engine('*', require('engine-lodash'));
     template.create('doc', 'docs', {
       delims: ['<<', '>>'],
-      renderable: true,
+      isRenderable: true,
     });
 
     template.doc('foo', {content: '<<= name >>', name: 'Halle'});
@@ -45,12 +45,12 @@ describe('template delimiters:', function () {
 
     template.create('apple', 'apples', {
       engine: 'lodash',
-      renderable: true
+      isRenderable: true
     });
 
     template.create('orange', 'oranges', {
       engine: 'handlebars',
-      renderable: true
+      isRenderable: true
     });
 
     template.apple('foo', {content: '<<= name >>{{ name }}<%= name %>', name: 'Halle'});
@@ -72,8 +72,8 @@ describe('template delimiters:', function () {
     var template = new Template();
     template.engine('handlebars', require('engine-handlebars'));
     template.engine('lodash', require('engine-lodash'));
-    template.create('apple', 'apples', {renderable: true })
-    template.create('orange', 'oranges', {renderable: true })
+    template.create('apple', 'apples', { isRenderable: true })
+    template.create('orange', 'oranges', { isRenderable: true })
 
     template.apple('foo', {content: '<<= name >>{{ name }}<%= name %>', name: 'Halle'}, {
       engine: 'lodash'

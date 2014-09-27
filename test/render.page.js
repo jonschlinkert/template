@@ -9,6 +9,7 @@
 
 var assert = require('assert');
 var should = require('should');
+var forOwn = require('for-own');
 var Template = require('..');
 var template = new Template();
 var consolidate = require('consolidate');
@@ -35,10 +36,8 @@ describe('render page:', function () {
     template.page('f.hbs', '<title>{{author}}</title>', {author: 'Jon Schlinkert'});
     template.page('g.md', '---\nauthor: Brian Woodward\n---\n<title>{{author}}</title>', {author: 'Jon Schlinkert'});
 
-    Object.keys(template.cache.pages).forEach(function(file) {
-      var page = template.cache.pages[file];
-
-      template.render(page, function (err, content) {
+    forOwn(template.cache.pages, function (value, key) {
+      template.render(key, function (err, content) {
         if (err) console.log(err);
         content.should.equal('<title>Jon Schlinkert</title>');
       });
@@ -52,9 +51,8 @@ describe('render page:', function () {
 
     template.page('fixture.md', '---\nauthor: Brian Woodward\n---\n<title>{{author}}</title>', {author: 'Jon Schlinkert'});
 
-    Object.keys(template.cache.pages).forEach(function(file) {
-      var page = template.cache.pages[file];
-      template.render(page, function (err, content) {
+    forOwn(template.cache.pages, function (value, key) {
+      template.render(key, function (err, content) {
         if (err) console.log(err);
         content.should.equal('<title>Jon Schlinkert</title>');
       });
@@ -62,9 +60,9 @@ describe('render page:', function () {
     done();
   });
 
-  describe('when custom template types are passed to a built-in engine:', function () {
+  describe.only('when custom template types are passed to a built-in engine:', function () {
     it('should render them with the `.render()` method:', function (done) {
-      template.create('post', 'posts', {renderable: true});
+      template.create('post', 'posts', { isRenderable: true });
       template.create('include', 'includes');
 
       template.include('sidebar.md', '<nav>sidebar stuff...</nav>');
@@ -72,15 +70,10 @@ describe('render page:', function () {
         author: 'Jon Schlinkert'
       });
 
-
-      Object.keys(template.cache.posts).forEach(function(file) {
-        var post = template.cache.posts[file];
-
-        template.render(post, function (err, content) {
-          if (err) console.log(err);
-          content.should.equal('<title>Jon Schlinkert</title>\n<nav>sidebar stuff...</nav>');
-          done();
-        });
+      template.render('2014-08-31.md', function (err, content) {
+        if (err) console.log(err);
+        content.should.equal('<title>Jon Schlinkert</title>\n<nav>sidebar stuff...</nav>');
+        done();
       });
     });
   });
@@ -90,7 +83,7 @@ describe('render page:', function () {
       template.engine('hbs', consolidate.handlebars);
       template.engine('md', consolidate.handlebars);
 
-      template.create('post', 'posts', {renderable: true});
+      template.create('post', 'posts', { isRenderable: true });
       template.create('include', 'includes');
 
       template.include('sidebar', '<nav>sidebar stuff...{{a}}foo</nav>', {a: 'b'});
@@ -98,10 +91,8 @@ describe('render page:', function () {
         author: 'Jon Schlinkert'
       });
 
-      Object.keys(template.cache.posts).forEach(function(file) {
-        var post = template.cache.posts[file];
-
-        template.render(post, function (err, content) {
+      forOwn(template.cache.posts, function(value, key) {
+        template.render(key, function (err, content) {
           if (err) console.log(err);
           content.should.equal('<title>Jon Schlinkert</title>\n<nav>sidebar stuff...bfoo</nav>');
         });

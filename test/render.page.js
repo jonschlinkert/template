@@ -60,7 +60,7 @@ describe('render page:', function () {
     done();
   });
 
-  describe.only('when custom template types are passed to a built-in engine:', function () {
+  describe('when custom template types are passed to a built-in engine:', function () {
     it('should render them with the `.render()` method:', function (done) {
       template.create('post', 'posts', { isRenderable: true });
       template.create('include', 'includes');

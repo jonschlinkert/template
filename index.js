@@ -191,6 +191,21 @@ Template.prototype.defaultTemplates = function() {
 
 
 /**
+ * Load default helpers.
+ *
+ * @api private
+ */
+
+Template.prototype.defaultHelpers = function(type, plural) {
+  this.addHelper(type, function (name, locals) {
+    var partial = this.cache[plural][name];
+    var ctx = _.extend({}, partial.data, partial.locals, locals);
+    return _.template(partial.content, ctx);
+  });
+};
+
+
+/**
  * Lazily add a `Layout` instance if it has not yet been added.
  * Also normalizes settings to pass to the `layouts` library.
  *
@@ -608,7 +623,7 @@ Template.prototype.addHelperAsync = function (name, fn, thisArg) {
  * @api private
  */
 
-Template.prototype._addHelperAsync = function (type, plural) {
+Template.prototype.defaultAsyncHelpers = function (type, plural) {
   this.addHelperAsync(type, function (name, locals, next) {
     var last = _.last(arguments);
 
@@ -699,12 +714,12 @@ Template.prototype.create = function(type, plural, options) {
   };
 
   if (!this._.helpers.hasOwnProperty(type)) {
-    this.addHelper(type, plural);
+    this.defaultHelpers(type, plural);
   }
 
-  if (!this._.helpers.hasOwnProperty(type)) {
-    this._addHelperAsync(type, plural);
-  }
+  // if (!this._.helpers.hasOwnProperty(type)) {
+  //   this.defaultAsyncHelpers(type, plural);
+  // }
   return this;
 };
 
@@ -850,11 +865,9 @@ Template.prototype.render = function (template, options, cb) {
   var tmpl;
   var key;
 
-
   if (this.option('cache')) {
     tmpl = utils.pickCached(template, opts, this);
   }
-
   if (tmpl) {
     template = tmpl;
   } else {
@@ -862,45 +875,48 @@ Template.prototype.render = function (template, options, cb) {
     template = this.format(key, template, options);
   }
 
-  // console.log(chalk.magenta('locals'), locals)
-
   if (utils.isObject(template)) {
-    locals = this.mergeFn(template, locals);
     content = template.content;
+    engine = template.ext;
 
-    delims = template.options.delims || delims;
-    ext = utils.pickExt(template, opts, this);
-    ext = locals.engine || ext;
+    locals = this.mergeFn(template, locals);
+    engine = locals.engine;
+    delims = delims || (template.options && template.options.delims) || locals.delims;
 
-    if (delims) {
-      this.addDelims(ext, delims);
+    if (!ext) {
+      ext = utils.pickExt(template, opts, this);
     }
   } else {
-    // template = {content: template};
     content = template;
   }
 
-  // console.log(chalk.green('delims'), delims)
-  // console.log(chalk.green('ext'), ext)
-
-  // console.log(chalk.yellow('this'), this)
-
-  // console.log(chalk.bold('locals'), locals)
   content = this.applyLayout(ext, template, locals);
+  if (utils.isObject(content)) {
+    content = content.content;
+  }
+
+  ext = utils.formatExt(ext);
+  if (delims) {
+    this.addDelims(ext, delims);
+  }
 
   var delimiters = this.getDelims(ext);
-  // console.log(chalk.cyan('delimiters'), delimiters)
 
   locals = _.merge({}, locals, delimiters);
   locals = this.mergePartials(locals);
-  engine = this.getEngine(ext);
+
+  if (utils.isString(engine)) {
+    engine = this.getEngine(utils.formatExt(engine));
+  } else {
+    engine = this.getEngine(ext);
+  }
 
   try {
     engine.render(content, locals, function (err, res) {
       var opt = _.extend({}, this.options, locals);
-      // if (opt.pretty) {
-      //   res = utils.prettify(res, opt.pretty);
-      // }
+      if (opt.pretty) {
+        res = utils.prettify(res, opt.pretty);
+      }
       return this._.helpers.resolve(res, cb.bind(this));
     }.bind(this));
   } catch (err) {

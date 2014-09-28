@@ -556,7 +556,7 @@ Template.prototype.parse = function (template, stack) {
     template = this.format(template, {content: template});
   }
 
-  var ext = utils.pickExt(template);
+  var ext = utils.pickExt(template, this);
 
   if (typeof last === 'function') {
     stack = [last];
@@ -777,9 +777,7 @@ Template.prototype.defaultAsyncHelpers = function (type, plural) {
     }
 
     partial.locals = _.merge({}, partial.locals, locals);
-
     debug.helper('#{async helper partial}:', partial);
-
 
     this.render(partial, {}, function (err, content) {
       debug.helper('#{async helper rendering}:', content);
@@ -1008,49 +1006,50 @@ Template.prototype.mergeHelpers = function (ext, options) {
  * @api public
  */
 
-Template.prototype.preprocess = function (template, options, cb) {
-  var opts = options || {};
-  var engine = opts.engine;
-  var delims = opts.delims;
-  var locals = opts;
+Template.prototype.preprocess = function (template, locals, cb) {
+  if (typeof locals === 'function') {
+    cb = locals;
+    locals = {};
+  }
+
+  locals = locals || {};
+
+  var engine = locals.engine;
+  var delims = locals.delims;
   var content = template;
-  var ext = locals.ext;
+  // var ext = locals.ext;
   var layout;
   var tmpl;
   var key;
 
   if (this.option('cache')) {
-    tmpl = utils.pickCached(template, opts, this);
+    tmpl = utils.pickCached(template, locals, this);
   }
+
   if (tmpl) {
     template = tmpl;
   } else {
     key = utils.generateId();
-    template = this.format(key, template, options);
+    template = this.format(key, template, locals);
   }
 
   if (utils.isObject(template)) {
     content = template.content;
-    engine = template.ext;
-
     locals = this.mergeFn(template, locals);
-    engine = locals.engine;
     delims = delims || utils.pickDelims(template, locals);
 
-    ext = ext || utils.pickExt(template, opts, this);
   } else {
     content = template;
   }
 
+  var ext = utils.pickExt(template, locals, this);
+
   // if a layout is defined, apply it now.
   content = this.applyLayout(ext, template, locals);
 
-  ext = utils.formatExt(ext);
   if (delims) {
     this.addDelims(ext, delims);
   }
-
-
 
   if (utils.isString(engine)) {
     engine = this.getEngine(utils.formatExt(engine));
@@ -1060,6 +1059,7 @@ Template.prototype.preprocess = function (template, options, cb) {
 
   locals = _.merge({}, locals, this.getDelims(ext));
   locals = this.mergePartials(locals);
+
   // locals = this.mergeHelpers(ext, locals);
 
   // Ensure that `content` is a string.

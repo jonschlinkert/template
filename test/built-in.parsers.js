@@ -17,150 +17,70 @@ var _ = require('lodash');
 
 describe('default parsers', function () {
   before(function () {
-    template.init();
+    template = new Template();
+  });
 
-    template.parser('md', function md (file, next) {
-      file = utils.extendFile(file);
-      _.merge(file, matter(file.content));
-      next(null, file);
+  describe('file extension:', function () {
+    describe('when no file extension is provided:', function () {
+      it('should add un-named parsers to the default stack:', function () {
+        template
+          .parserSync(function a(file, value, key) {
+            file.a = file.a || 'a';
+          })
+          .parserSync(function b(file, value, key) {
+            file.a += 'b';
+          })
+          .parserSync(function c(file, value, key) {
+            file.a += 'c';
+          });
+
+        template.getParsers('*').length.should.equal(4);
+
+        var result = template.parse({a: ''});
+        result.should.have.property('a', 'abc');
+      });
     });
   });
 
 
-  describe('.parse()', function() {
-    it('should normalize content with noop parser.', function (done) {
+  describe('when the noop parser is used on a string:', function() {
+    it('should return it on the `content` property.', function () {
       var noop = template.getParsers('*');
-
-      template.parse('<%= name %>', noop, function (err, file) {
-        if (err) {
-          console.log(err);
-        }
-        file.content.should.equal('<%= name %>');
-        done();
-      });
+      template.parse('<%= name %>', noop).should.have.property('content', '<%= name %>');
     });
-  });
-
-  describe('when no file extension is provided:', function () {
-    var template = new Template();
-
-    it('should add parsers to the default stack:', function (done) {
-
-      template
-        .parser(function (file, next) {
-          file.a = file.a || 'a';
-          next(null, file);
-        })
-        .parser(function (file, next) {
-          file.a = file.a + 'b';
-          next(null, file);
-        })
-        .parser(function (file, next) {
-          file.a = file.a + 'c';
-          next(null, file);
-        });
-
-      template.getParsers('*').length.should.equal(4);
-
-      template.parse({a: ''}, function (err, file) {
-        file.a.should.equal('abc');
-      });
-      done();
-    });
-  });
-
-  it('should parse content with the default parser.', function (done) {
-    template.parse('str', function (err, file) {
-      if (err) {
-        console.log(err);
-      }
-
-      file.should.be.an.object;
-      file.should.have.property('path');
-      file.should.have.property('data');
-      file.should.have.property('content');
-      file.should.have.property('orig');
-    });
-
-    done();
   });
 
   it('should run a parser stack passed as a second param:', function () {
     var template = new Template();
 
-    template
-      .parser('a', function (file, next) {
-        file.content = 'abc-' + file.content;
-        next(null, file);
-      })
-      .parser('a', function (file, next) {
-        file.content = file.content.toUpperCase();
-        next(null, file);
-      })
-      .parser('a', function (file, next) {
-        file.content = file.content.replace(/(.)/g, '$1 ')
-        next(null, file);
-      });
-
-    var stack = template.getParsers('a');
-
-    template.parse({content: 'xyz'}, stack, function (err, file) {
-      file.content.should.equal('A B C - X Y Z ');
+    var res = template.parse('abc', function (file, value, key, i) {
+      if (i === 0) file.content += '-xyz';
     });
+
+    res.should.have.property('content', 'abc-xyz');
   });
 
-  it('should run a parser stack based on file extension:', function () {
-    var template = new Template();
-
-    template
-      .parser('a', function (file, next) {
-        file.content = 'abc-' + file.content;
-        next(null, file);
-      })
-      .parser('a', function (file, next) {
-        file.content = file.content.toUpperCase();
-        next(null, file);
-      })
-      .parser('a', function (file, next) {
-        file.content = file.content.replace(/(.)/g, '$1 ')
-        next(null, file);
-      });
-
-    template.parse({ext: 'a', content: 'xyz'}, function (err, file) {
-      file.content.should.equal('A B C - X Y Z ');
-    });
-  });
-
-  it('should parse content with the given parser.', function (done) {
+  it('should parse content with the given parser.', function () {
+    var fixture = '---\ntitle: Front Matter\n---\nThis is content.';
     var matter = template.getParsers('md');
 
-    var fixture = '---\ntitle: Front Matter\n---\nThis is content.';
-    template.parse(fixture, matter, function (err, file) {
-      if (err) {
-        console.log(err);
-      }
-
+    template.parse(fixture, matter, function (file, value, key) {
       file.should.be.an.object;
       file.should.have.property('path');
       file.should.have.property('data');
       file.should.have.property('content');
       file.should.have.property('orig');
-
       file.data.should.eql({title: 'Front Matter'});
       file.content.should.eql('This is content.');
     });
-
-    done();
   });
 
-  it('should parse content with the default parser.', function (done) {
+  it('should parse content with the default parser.', function () {
     var matter = template.getParsers('md');
 
-    template.parse('str', matter, function (err, file) {
-      if (err) {console.log(err); }
+    template.parse('str', matter, function (file, value) {
       file.content.should.eql('str');
     });
-    done();
   });
 
   it('should retain the original `orig.content` value.', function (done) {
@@ -175,19 +95,19 @@ describe('default parsers', function () {
     };
 
     var a = utils.extendFile(file, {title: 'ABC'});
-    template.parse(a, function (err, file) {
-      if (err)  console.log(err);
+
+    template.parse(a, function (file) {
       file.orig.content.should.eql('Hooray!');
     });
 
     a.orig.content = 'fosososoos';
+    a.foo = 'fosososoos';
 
-    template.parse(a, function (err, file) {
-      if (err)  console.log(err);
+    template.parse(a, function (file) {
+      file.foo.should.eql('fosososoos');
       file.orig.content.should.eql('Hooray!');
     });
 
     done();
   });
-
 });

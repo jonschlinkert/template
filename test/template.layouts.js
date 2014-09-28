@@ -68,4 +68,44 @@ describe('template layout', function () {
       template.cache.layouts.should.have.property('c.md:string');
     });
   });
+
+
+  describe('when a layout has front matter', function () {
+    it('should parse the layout.', function () {
+      var template = new Template();
+      template.layouts('a.md', '---\nname: AAA\n---\nThis is content.');
+      template.cache.layouts.should.have.property('a.md');
+      template.cache.layouts['a.md'].should.have.property.content;
+      template.cache.layouts['a.md'].content.should.equal('This is content.');
+    });
+
+    it('should parse the `content` value.', function () {
+      var template = new Template();
+      template.layouts({'a.md': {path: 'a.md', content: '---\nname: AAA\n---\nThis is content.'}});
+      template.cache.layouts.should.have.property('a.md');
+    });
+
+    it('should merge locals and front-matter data.', function () {
+      var template = new Template();
+      template.layouts({'a.md': {content: '---\nname: AAA\n---\nThis is content.', data: {c: 'c'}}});
+      template.cache.layouts.should.have.property('a.md');
+      template.cache.layouts['a.md'].data.should.have.property('c');
+      template.cache.layouts['a.md'].data.name.should.equal('AAA');
+    });
+
+    it('should save both locals and front-matter data to the `file` object.', function () {
+      var template = new Template();
+      template.layouts({'a.md': {content: '---\nname: AAA\n---\nThis is content.', name: 'BBB'}});
+      template.cache.layouts.should.have.property('a.md');
+      template.cache.layouts['a.md'].data.name.should.equal('AAA');
+      template.cache.layouts['a.md'].locals.name.should.equal('BBB');
+    });
+
+    it('should use the key as `file.path` if one does not exist.', function () {
+      var template = new Template();
+      template.layouts({'a.md': {content: '---\nname: AAA\n---\nThis is content.', data: {c: 'c'}}});
+      template.cache.layouts.should.have.property('a.md');
+      template.cache.layouts['a.md'].path.should.equal('a.md');
+    });
+  });
 });

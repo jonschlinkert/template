@@ -79,7 +79,7 @@ describe('template partial', function () {
     });
   });
 
-  describe('when partials has front matter', function () {
+  describe('when a partial has front matter', function () {
     it('should parse the partial.', function () {
       var template = new Template();
       template.partials('a.md', '---\nname: AAA\n---\nThis is content.');

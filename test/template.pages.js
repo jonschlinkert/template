@@ -79,28 +79,28 @@ describe('template page', function () {
     });
   });
 
-  describe('when pages has front matter', function () {
-    // it('should parse the page.', function () {
-    //   var template = new Template();
-    //   template.pages('a.md', '---\nname: AAA\n---\nThis is content.');
-    //   template.cache.pages.should.have.property('a.md');
-    //   template.cache.pages['a.md'].should.have.property.content;
-    //   template.cache.pages['a.md'].content.should.equal('This is content.');
-    // });
+  describe('when a page has front matter', function () {
+    it('should parse the page.', function () {
+      var template = new Template();
+      template.pages('a.md', '---\nname: AAA\n---\nThis is content.');
+      template.cache.pages.should.have.property('a.md');
+      template.cache.pages['a.md'].should.have.property.content;
+      template.cache.pages['a.md'].content.should.equal('This is content.');
+    });
 
-    // it('should parse the `content` value.', function () {
-    //   var template = new Template();
-    //   template.pages({'a.md': {path: 'a.md', content: '---\nname: AAA\n---\nThis is content.'}});
-    //   template.cache.pages.should.have.property('a.md');
-    // });
+    it('should parse the `content` value.', function () {
+      var template = new Template();
+      template.pages({'a.md': {path: 'a.md', content: '---\nname: AAA\n---\nThis is content.'}});
+      template.cache.pages.should.have.property('a.md');
+    });
 
-    // it('should merge locals and front-matter data.', function () {
-    //   var template = new Template();
-    //   template.pages({'a.md': {content: '---\nname: AAA\n---\nThis is content.', data: {c: 'c'}}});
-    //   template.cache.pages.should.have.property('a.md');
-    //   template.cache.pages['a.md'].data.should.have.property('c');
-    //   template.cache.pages['a.md'].data.name.should.equal('AAA');
-    // });
+    it('should merge locals and front-matter data.', function () {
+      var template = new Template();
+      template.pages({'a.md': {content: '---\nname: AAA\n---\nThis is content.', data: {c: 'c'}}});
+      template.cache.pages.should.have.property('a.md');
+      template.cache.pages['a.md'].data.should.have.property('c');
+      template.cache.pages['a.md'].data.name.should.equal('AAA');
+    });
 
     it('should save both locals and front-matter data to the `file` object.', function () {
       var template = new Template();
@@ -110,11 +110,11 @@ describe('template page', function () {
       template.cache.pages['a.md'].locals.name.should.equal('BBB');
     });
 
-    // it('should use the key as `file.path` if one does not exist.', function () {
-    //   var template = new Template();
-    //   template.pages({'a.md': {content: '---\nname: AAA\n---\nThis is content.', data: {c: 'c'}}});
-    //   template.cache.pages.should.have.property('a.md');
-    //   template.cache.pages['a.md'].path.should.equal('a.md');
-    // });
+    it('should use the key as `file.path` if one does not exist.', function () {
+      var template = new Template();
+      template.pages({'a.md': {content: '---\nname: AAA\n---\nThis is content.', data: {c: 'c'}}});
+      template.cache.pages.should.have.property('a.md');
+      template.cache.pages['a.md'].path.should.equal('a.md');
+    });
   });
 });

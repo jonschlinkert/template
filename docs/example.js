@@ -2,6 +2,7 @@
 
 var Template = require('..');
 var template = new Template();
+var debug = require('debug')('template');
 var matter = require('gray-matter');
 var utils = require('parser-utils');
 var _ = require('lodash');

@@ -1132,6 +1132,10 @@ Template.prototype.renderSync = function (content, locals) {
     engine = pre.engine;
   }
 
+  if (!hasOwn(engine, 'renderSync')) {
+    throw new Error('`.renderSync()` method not found on engine: "' + engine + '".');
+  }
+
   try {
     return engine.renderSync(content, locals);
   } catch (err) {
@@ -1150,6 +1154,7 @@ Template.prototype.renderSync = function (content, locals) {
  */
 
 Template.prototype.mergeFn = function (template, locals) {
+  var data = this.get('data');
   var o = {};
 
   if (this.option('mergeFn')) {
@@ -1161,7 +1166,7 @@ Template.prototype.mergeFn = function (template, locals) {
   }
 
   o.helpers = _.merge({}, this._.helpers, o.helpers);
-  return _.merge({}, o, locals);
+  return _.merge({}, data, o, locals);
 };
 
 

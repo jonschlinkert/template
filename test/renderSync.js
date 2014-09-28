@@ -11,7 +11,7 @@ var fs = require('fs');
 var path = require('path');
 var should = require('should');
 var helpers = require('test-helpers')({dir: 'test'});
-var consolidate = require('consolidate');
+var engines = require('engines');
 var Template = require('..');
 var template = new Template();
 
@@ -23,122 +23,98 @@ describe('template render', function () {
 
   describe('when an un-cached string is passed to `.renderSync()`:', function () {
     it('should expose `this` to the .renderSync() method:', function () {
-      template.renderSync('<%= name %>', {name: 'Jon Schlinkert'}).should.equal('<%= name %>');
+      var content = template.renderSync('<%= name %>', {name: 'Jon Schlinkert'}).should.equal('<%= name %>');
     });
   });
 
   describe('when an un-cached string is passed to `.renderSync()`:', function () {
     it('should render it with caching enabled:', function () {
-      var res = template.renderSync('<%= name %>', {name: 'Jon Schlinkert', ext: '.html'});
-      res.should.equal('Jon Schlinkert');
+      var content = template.renderSync('<%= name %>', {name: 'Jon Schlinkert', ext: '.html'});
+      content.should.equal('Jon Schlinkert');
     });
 
     it('should render it with caching disabled:', function () {
       template.option('cache', false);
 
-      var res = template.renderSync('<%= name %>', {name: 'Jon Schlinkert', ext: '.html'});
-      res.should.equal('Jon Schlinkert');
+      var content = template.renderSync('<%= name %>', {name: 'Jon Schlinkert', ext: '.html'});
+      content.should.equal('Jon Schlinkert');
     });
   });
 
-  // describe('when the name of a cached template is passed to `.renderSync()`:', function () {
-  //   it('should get the template and render it:', function (done) {
-  //     template.page('aaa.md', '<%= name %>', {name: 'Jon Schlinkert'});
+  describe('when the name of a cached template is passed to `.renderSync()`:', function () {
+    it('should get the template and render it:', function () {
+      template.page('aaa.md', '<%= name %>', {name: 'Jon Schlinkert'});
 
-  //     template.renderSync('aaa.md', function (err, content) {
-  //       if (err) console.log(err);
-  //       content.should.equal('Jon Schlinkert');
-  //       done();
-  //     });
-  //   });
+      var content = template.renderSync('aaa.md');
+      content.should.equal('Jon Schlinkert');
+    });
 
-  //   it('should render the first matching template is dupes are found:', function (done) {
-  //     template.page('aaa.md', '<%= name %>', {name: 'Brian Woodward'});
-  //     template.create('post', 'posts', { isRenderable: true });
-  //     template.post('aaa.md', '<%= name %>', {name: 'Jon Schlinkert'});
+    it('should render the first matching template is dupes are found:', function () {
+      template.page('aaa.md', '<%= name %>', {name: 'Brian Woodward'});
+      template.create('post', 'posts', { isRenderable: true });
+      template.post('aaa.md', '<%= name %>', {name: 'Jon Schlinkert'});
 
-  //     template.renderSync('aaa.md', function (err, content) {
-  //       if (err) console.log(err);
-  //       content.should.equal('Brian Woodward');
-  //       done();
-  //     });
-  //   });
-  // });
+      var content = template.renderSync('aaa.md');
+      content.should.equal('Brian Woodward');
+    });
+  });
 
-  // describe('template render:', function () {
-  //   it('should determine the engine from the `path` on the given object:', function (done) {
-  //     var file = {path: 'a/b/c.md', content: '<%= name %>', name: 'Jon Schlinkert'};
+  describe('template render:', function () {
+    it('should determine the engine from the `path` on the given object:', function () {
+      var file = {path: 'a/b/c.md', content: '<%= name %>', name: 'Jon Schlinkert'};
 
-  //     template.renderSync(file, function (err, content) {
-  //       if (err) console.log(err);
-  //       content.should.equal('Jon Schlinkert');
-  //       done();
-  //     });
-  //   });
+      var content = template.renderSync(file);
+      content.should.equal('Jon Schlinkert');
+    });
 
-  //   it('should determine the engine from the `path` on the given object:', function (done) {
-  //     var file = {path: 'a/b/c.md', content: '<%= name %>'};
+    it('should determine the engine from the `path` on the given object:', function () {
+      var file = {path: 'a/b/c.md', content: '<%= name %>'};
 
-  //     template.renderSync(file, {name: 'Jon Schlinkert'}, function (err, content) {
-  //       if (err) console.log(err);
-  //       content.should.equal('Jon Schlinkert');
-  //       done();
-  //     });
-  //   });
+      var content = template.renderSync(file, {name: 'Jon Schlinkert'});
+      content.should.equal('Jon Schlinkert');
+    });
+  });
 
-  //   it('should render content with an engine from [consolidate].', function (done) {
-  //     template.engine('hbs', consolidate.handlebars);
-  //     var hbs = template.getEngine('hbs');
+  describe('engine render:', function () {
+    // it.only('should render content with an engine from [engines].', function () {
+    //   template.engine('hbs', engines.handlebars);
+    //   var hbs = template.getEngine('hbs');
 
-  //     hbs.renderSync('{{name}}', {name: 'Jon Schlinkert'}, function (err, content) {
-  //       if (err) console.log(err);
-  //       content.should.equal('Jon Schlinkert');
-  //       done();
-  //     });
-  //   });
+    //   hbs.renderSync('{{name}}', {name: 'Jon Schlinkert'}).should.equal('Jon Schlinkert');
+    // });
 
-  //   it('should use `file.path` to determine the correct consolidate engine to render content:', function (done) {
-  //     template.engine('hbs', consolidate.handlebars);
-  //     template.engine('jade', consolidate.jade);
-  //     template.engine('swig', consolidate.swig);
-  //     template.engine('tmpl', consolidate.lodash);
+    // it('should use `file.path` to determine the correct engines engine to render content:', function () {
+    //   template.engine('hbs', engines.handlebars);
+    //   template.engine('jade', engines.jade);
+    //   template.engine('swig', engines.swig);
+    //   template.engine('tmpl', engines.lodash);
 
-  //     var files = [
-  //       {path: 'fixture.hbs', content: '<title>{{author}}</title>', author: 'Jon Schlinkert'},
-  //       {path: 'fixture.tmpl', content: '<title><%= author %></title>', author: 'Jon Schlinkert'},
-  //       {path: 'fixture.jade', content: 'title= author', author: 'Jon Schlinkert'},
-  //       {path: 'fixture.swig', content: '<title>{{author}}</title>', author: 'Jon Schlinkert'}
-  //     ];
+    //   var files = [
+    //     {path: 'fixture.hbs', content: '<title>{{author}}</title>', author: 'Jon Schlinkert'},
+    //     {path: 'fixture.tmpl', content: '<title><%= author %></title>', author: 'Jon Schlinkert'},
+    //     {path: 'fixture.jade', content: 'title= author', author: 'Jon Schlinkert'},
+    //     {path: 'fixture.swig', content: '<title>{{author}}</title>', author: 'Jon Schlinkert'}
+    //   ];
 
-  //     files.forEach(function(file) {
-  //       template.renderSync(file, function (err, content) {
-  //         if (err) console.log(err);
-  //         content.should.equal('<title>Jon Schlinkert</title>');
-  //       });
-  //     });
+    //   files.forEach(function(file) {
+    //     template.renderSync(file).should.equal('<title>Jon Schlinkert</title>');
+    //   });
+    // });
 
-  //     done();
-  //   });
+    // it('should use the key of a cached template to determine the engines engine to use:', function () {
+    //   template.engine('hbs', engines.handlebars);
+    //   template.engine('jade', engines.jade);
+    //   template.engine('swig', engines.swig);
+    //   template.engine('tmpl', engines.lodash);
 
-  //   it('should use the key of a cached template to determine the consolidate engine to use:', function (done) {
-  //     template.engine('hbs', consolidate.handlebars);
-  //     template.engine('jade', consolidate.jade);
-  //     template.engine('swig', consolidate.swig);
-  //     template.engine('tmpl', consolidate.lodash);
+    //   template.page('a.hbs', '<title>{{author}}</title>', {author: 'Jon Schlinkert'});
+    //   template.page('b.tmpl', '<title><%= author %></title>', {author: 'Jon Schlinkert'});
+    //   template.page('c.jade', 'title= author', {author: 'Jon Schlinkert'});
+    //   template.page('d.swig', '<title>{{author}}</title>', {author: 'Jon Schlinkert'});
 
-  //     template.page('a.hbs', '<title>{{author}}</title>', {author: 'Jon Schlinkert'});
-  //     template.page('b.tmpl', '<title><%= author %></title>', {author: 'Jon Schlinkert'});
-  //     template.page('c.jade', 'title= author', {author: 'Jon Schlinkert'});
-  //     template.page('d.swig', '<title>{{author}}</title>', {author: 'Jon Schlinkert'});
-
-
-  //     Object.keys(template.cache.pages).forEach(function(page) {
-  //       template.renderSync(page, function (err, content) {
-  //         if (err) console.log(err);
-  //         content.should.equal('<title>Jon Schlinkert</title>');
-  //       });
-  //     });
-  //     done();
-  //   });
-  // });
+    //   Object.keys(template.cache.pages).forEach(function(page) {
+    //     template.renderSync(page).should.equal('<title>Jon Schlinkert</title>');
+    //   });
+    // });
+  });
 });

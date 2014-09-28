@@ -66,7 +66,6 @@ describe.skip('default helpers:', function () {
       content.should.equal('<title>Jon Schlinkert</title>');
     });
 
-
     template.render('with-partial.hbs', {custom: {locals: {name: 'Jon Schlinkert' }}}, function (err, content) {
       if (err) console.log(err);
       content.should.equal('<title>Jon Schlinkert</title>');

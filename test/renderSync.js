@@ -27,25 +27,19 @@ describe('template render', function () {
     });
   });
 
-  // describe('when an un-cached string is passed to `.renderSync()`:', function () {
-  //   it('should render it with caching enabled:', function (done) {
-  //     template.renderSync('<%= name %>', {name: 'Jon Schlinkert', ext: '.html'}, function (err, content) {
-  //       if (err) console.log(err);
-  //       content.should.equal('Jon Schlinkert');
-  //       done();
-  //     });
-  //   });
+  describe('when an un-cached string is passed to `.renderSync()`:', function () {
+    it('should render it with caching enabled:', function () {
+      var res = template.renderSync('<%= name %>', {name: 'Jon Schlinkert', ext: '.html'});
+      res.should.equal('Jon Schlinkert');
+    });
 
-  //   it('should render it with caching disabled:', function (done) {
-  //     template.option('cache', false);
+    it('should render it with caching disabled:', function () {
+      template.option('cache', false);
 
-  //     template.renderSync('<%= name %>', {name: 'Jon Schlinkert', ext: '.html'}, function (err, content) {
-  //       if (err) console.log(err);
-  //       content.should.equal('Jon Schlinkert');
-  //       done();
-  //     });
-  //   });
-  // });
+      var res = template.renderSync('<%= name %>', {name: 'Jon Schlinkert', ext: '.html'});
+      res.should.equal('Jon Schlinkert');
+    });
+  });
 
   // describe('when the name of a cached template is passed to `.renderSync()`:', function () {
   //   it('should get the template and render it:', function (done) {

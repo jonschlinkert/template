@@ -22,7 +22,6 @@ var Parsers = require('parser-cache');
 var loader = require('load-templates');
 var Layouts = require('layouts');
 var Delims = require('delims');
-var logger = require('./lib/logger');
 var utils = require('./lib/utils');
 var debug = require('./lib/debug');
 var hasOwn = utils.hasOwn;
@@ -117,13 +116,9 @@ Template.prototype.defaultOptions = function() {
   this.option('pretty', false);
 
   this.option('cwd', process.cwd());
+  this.option('ext', '*');
   this.option('defaultExts', ['md', 'html', 'hbs']);
   this.option('destExt', '.html');
-  this.option('ext', '*');
-
-  this.option('defaultParsers', true);
-
-  // Delimiters
   this.option('delims', {});
   this.option('viewEngine', '.*');
   this.option('engineDelims', null);
@@ -136,6 +131,10 @@ Template.prototype.defaultOptions = function() {
   this.option('mergePartials', true);
   this.option('mergeFunction', _.merge);
   this.option('bindHelpers', true);
+
+  this.option('defaultParsers', true);
+  this.option('defaultEngines', true);
+  this.option('defaultHelpers', true);
 
   // loader options
   this.option('renameKey', function (filepath) {
@@ -776,7 +775,8 @@ Template.prototype.defaultAsyncHelpers = function (type, plural) {
 
     var partial = this.cache[plural][name];
     if (!partial) {
-      logger.notify(type, name);
+      // TODO: should this error _here_?
+      console.log(chalk.red('helper {{' + type + ' "' + name + '"}} not found.'));
       next(null, '');
       return;
     }
@@ -859,9 +859,10 @@ Template.prototype.create = function(type, plural, options) {
     this.defaultHelpers(type, plural);
   }
 
-  // if (!hasOwn(this._.helpers, type)) {
-  //   this.defaultAsyncHelpers(type, plural);
-  // }
+  if (!hasOwn(this._.helpers, type)) {
+    this.defaultAsyncHelpers(type, plural);
+  }
+
   return this;
 };
 

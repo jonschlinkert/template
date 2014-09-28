@@ -22,7 +22,6 @@ var Parsers = require('parser-cache');
 var loader = require('load-templates');
 var Layouts = require('layouts');
 var Delims = require('delims');
-var logger = require('./lib/logger');
 var utils = require('./lib/utils');
 var debug = require('./lib/debug');
 var hasOwn = utils.hasOwn;
@@ -117,13 +116,9 @@ Template.prototype.defaultOptions = function() {
   this.option('pretty', false);
 
   this.option('cwd', process.cwd());
+  this.option('ext', '*');
   this.option('defaultExts', ['md', 'html', 'hbs']);
   this.option('destExt', '.html');
-  this.option('ext', '*');
-
-  this.option('defaultParsers', true);
-
-  // Delimiters
   this.option('delims', {});
   this.option('viewEngine', '.*');
   this.option('engineDelims', null);
@@ -136,6 +131,10 @@ Template.prototype.defaultOptions = function() {
   this.option('mergePartials', true);
   this.option('mergeFunction', _.merge);
   this.option('bindHelpers', true);
+
+  this.option('defaultParsers', true);
+  this.option('defaultEngines', true);
+  this.option('defaultHelpers', true);
 
   // loader options
   this.option('renameKey', function (filepath) {
@@ -556,12 +555,11 @@ Template.prototype.parse = function (template, stack) {
     template = this.format(template, {content: template});
   }
 
-  var ext = utils.pickExt(template, this);
-
   if (typeof last === 'function') {
     stack = [last];
   }
 
+  var ext = utils.pickExt(template, this);
   if (!Array.isArray(stack)) {
     if (ext) {
       stack = this.getParsers(ext);
@@ -569,6 +567,8 @@ Template.prototype.parse = function (template, stack) {
       stack = this.getParsers('*');
     }
   }
+
+  debug.parser('#{found parser stack}: %j', stack);
 
   stack.forEach(function (fn) {
     this.runParser(template, fn.bind(this));
@@ -613,7 +613,10 @@ Template.prototype.engine = function (extension, fn, options) {
 
 Template.prototype._registerEngine = function (ext, fn, options) {
   var opts = _.merge({thisArg: this, bindFunctions: true}, options);
-  ext = utils.formatExt(ext);
+
+  if (ext[0] !== '.') {
+    ext = '.' + ext;
+  }
 
   debug.engine('#{register} args:', arguments);
   debug.engine('#{register} ext: %s', ext);
@@ -623,6 +626,7 @@ Template.prototype._registerEngine = function (ext, fn, options) {
     this.addDelims(ext, opts.delims);
     this.engines[ext].delims = this.getDelims(ext);
   }
+
   this.lazyLayouts(ext, opts);
   return this;
 };
@@ -771,7 +775,8 @@ Template.prototype.defaultAsyncHelpers = function (type, plural) {
 
     var partial = this.cache[plural][name];
     if (!partial) {
-      logger.notify(type, name);
+      // TODO: should this error _here_?
+      console.log(chalk.red('helper {{' + type + ' "' + name + '"}} not found.'));
       next(null, '');
       return;
     }
@@ -854,9 +859,10 @@ Template.prototype.create = function(type, plural, options) {
     this.defaultHelpers(type, plural);
   }
 
-  // if (!hasOwn(this._.helpers, type)) {
-  //   this.defaultAsyncHelpers(type, plural);
-  // }
+  if (!hasOwn(this._.helpers, type)) {
+    this.defaultAsyncHelpers(type, plural);
+  }
+
   return this;
 };
 
@@ -940,7 +946,6 @@ Template.prototype.normalize = function (plural, template, options) {
     utils.pickLayout(value);
 
     var stack = this.getParsers(ext, true);
-
     if (stack) {
       var parsed = this.parse(value, stack);
       if (parsed) {
@@ -1017,7 +1022,6 @@ Template.prototype.preprocess = function (template, locals, cb) {
   var engine = locals.engine;
   var delims = locals.delims;
   var content = template;
-  // var ext = locals.ext;
   var layout;
   var tmpl;
   var key;
@@ -1052,7 +1056,10 @@ Template.prototype.preprocess = function (template, locals, cb) {
   }
 
   if (utils.isString(engine)) {
-    engine = this.getEngine(utils.formatExt(engine));
+    if (engine[0] !== '.') {
+      engine = '.' + engine;
+    }
+    engine = this.getEngine(engine);
   } else {
     engine = this.getEngine(ext);
   }

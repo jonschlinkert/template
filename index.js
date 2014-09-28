@@ -556,12 +556,11 @@ Template.prototype.parse = function (template, stack) {
     template = this.format(template, {content: template});
   }
 
-  var ext = utils.pickExt(template, this);
-
   if (typeof last === 'function') {
     stack = [last];
   }
 
+  var ext = utils.pickExt(template, this);
   if (!Array.isArray(stack)) {
     if (ext) {
       stack = this.getParsers(ext);
@@ -569,6 +568,8 @@ Template.prototype.parse = function (template, stack) {
       stack = this.getParsers('*');
     }
   }
+
+  debug.parser('#{found parser stack}: %j', stack);
 
   stack.forEach(function (fn) {
     this.runParser(template, fn.bind(this));
@@ -613,7 +614,10 @@ Template.prototype.engine = function (extension, fn, options) {
 
 Template.prototype._registerEngine = function (ext, fn, options) {
   var opts = _.merge({thisArg: this, bindFunctions: true}, options);
-  ext = utils.formatExt(ext);
+
+  if (ext[0] !== '.') {
+    ext = '.' + ext;
+  }
 
   debug.engine('#{register} args:', arguments);
   debug.engine('#{register} ext: %s', ext);
@@ -623,6 +627,7 @@ Template.prototype._registerEngine = function (ext, fn, options) {
     this.addDelims(ext, opts.delims);
     this.engines[ext].delims = this.getDelims(ext);
   }
+
   this.lazyLayouts(ext, opts);
   return this;
 };
@@ -940,7 +945,6 @@ Template.prototype.normalize = function (plural, template, options) {
     utils.pickLayout(value);
 
     var stack = this.getParsers(ext, true);
-
     if (stack) {
       var parsed = this.parse(value, stack);
       if (parsed) {
@@ -1017,7 +1021,6 @@ Template.prototype.preprocess = function (template, locals, cb) {
   var engine = locals.engine;
   var delims = locals.delims;
   var content = template;
-  // var ext = locals.ext;
   var layout;
   var tmpl;
   var key;
@@ -1052,7 +1055,10 @@ Template.prototype.preprocess = function (template, locals, cb) {
   }
 
   if (utils.isString(engine)) {
-    engine = this.getEngine(utils.formatExt(engine));
+    if (engine[0] !== '.') {
+      engine = '.' + engine;
+    }
+    engine = this.getEngine(engine);
   } else {
     engine = this.getEngine(ext);
   }

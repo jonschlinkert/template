@@ -1051,15 +1051,15 @@ Template.prototype.preprocess = function (template, locals, cb) {
   var key;
 
   if (this.option('cache')) {
-    tmpl = utils.pickRenderable(template, locals, this);
-  } else {
-    key = utils.generateId();
-    template = this.format(key, template, locals);
+    tmpl = utils.pickCached(template, locals, this);
   }
 
   if (tmpl) {
     template = tmpl;
     template = this.extendLocals('render', template, locals);
+  } else {
+    key = utils.generateId();
+    template = this.format(key, template, locals);
   }
 
   if (utils.isObject(template)) {

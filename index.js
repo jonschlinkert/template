@@ -211,7 +211,7 @@ Template.prototype.defaultTemplates = function() {
 Template.prototype.defaultHelpers = function(type, plural) {
   this.addHelper(type, function (key, locals) {
     var partial = this.cache[plural][key];
-    partial.locals = _.merge({}, partial.locals, locals);
+    partial = this.extendLocals('partial', partial, locals);
     return this.renderSync(partial);
   });
 };
@@ -886,9 +886,9 @@ Template.prototype.create = function(type, plural, options) {
     this.defaultHelpers(type, plural);
   }
 
-  if (!hasOwn(this._.helpers, type)) {
-    this.defaultAsyncHelpers(type, plural);
-  }
+  // if (!hasOwn(this._.helpers, type)) {
+  //   this.defaultAsyncHelpers(type, plural);
+  // }
 
   return this;
 };
@@ -911,18 +911,8 @@ Template.prototype.load = function (plural, options) {
   var load = loader(opts);
 
   return function (key, value, locals) {
-    // var args = [].slice.call(arguments);
-    // var fn = args[args.length - 1];
-
     var loaded = load.apply(this, arguments);
     var template = this.normalize(plural, loaded, options);
-
-    // if (utils.isFunction(fn)) {
-    //   _.transform(template, function (acc, value, key) {
-    //     fn.call(this, acc, value, key);
-    //   });
-    // }
-
     _.merge(this.cache[plural], template);
     return this;
   };
@@ -947,7 +937,8 @@ Template.prototype.format = function (key, value, locals) {
   var load = this.load('anonymous', { isRenderable: true });
   load.apply(this, arguments);
 
-  return this.cache['anonymous'][key];
+  var template = this.cache['anonymous'][key];
+  return this.extendLocals('render', template, locals);
 };
 
 
@@ -1036,7 +1027,8 @@ Template.prototype.mergePartials = function (ext, options, combine) {
 
 
 /**
- * Preprocess `str` with the given `options` and `callback`.
+ * Preprocess `str` with the given `options` and `callback`. A few
+ * things to note.
  *
  * @param  {Object|String} `file` String or normalized template object.
  * @param  {Object} `options` Options to pass to registered view engines.
@@ -1051,7 +1043,6 @@ Template.prototype.preprocess = function (template, locals, cb) {
   }
 
   locals = locals || {};
-
   var engine = locals.engine;
   var delims = locals.delims;
   var content = template;
@@ -1060,14 +1051,15 @@ Template.prototype.preprocess = function (template, locals, cb) {
   var key;
 
   if (this.option('cache')) {
-    tmpl = utils.pickCached(template, locals, this);
+    tmpl = utils.pickRenderable(template, locals, this);
+  } else {
+    key = utils.generateId();
+    template = this.format(key, template, locals);
   }
 
   if (tmpl) {
     template = tmpl;
-  } else {
-    key = utils.generateId();
-    template = this.format(key, template, locals);
+    template = this.extendLocals('render', template, locals);
   }
 
   if (utils.isObject(template)) {
@@ -1170,6 +1162,12 @@ Template.prototype.renderSync = function (content, locals) {
   }
 };
 
+
+Template.prototype.extendLocals = function (key, template, locals) {
+  template = _.merge({_locals: {}}, template);
+  template._locals[key] = _.merge({}, template._locals[key], locals);
+  return template;
+};
 
 /**
  * The default method used for merging data into the `locals` object

@@ -308,9 +308,6 @@ Template.prototype.applyLayout = function(ext, template, locals) {
 
   if (layoutEngine) {
     debug.layout('#{applying layout} settings: ', layoutEngine);
-    var isPartial = utils.isPartial(template, locals);
-    console.log(isPartial);
-
     var layout = utils.pickLayout(template, locals, true);
     var result = layoutEngine.render(obj.content, layout);
     return result.content;

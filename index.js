@@ -98,7 +98,7 @@ Template.prototype.defaultConfig = function() {
   this.set('imports', {});
   this.set('layouts', {});
   this.set('partials', {});
-  this.set('unknowns', {});
+  this.set('anonymous', {});
   this.set('pages', {});
 };
 
@@ -308,6 +308,9 @@ Template.prototype.applyLayout = function(ext, template, locals) {
 
   if (layoutEngine) {
     debug.layout('#{applying layout} settings: ', layoutEngine);
+    var isPartial = utils.isPartial(template, locals);
+    console.log(isPartial);
+
     var layout = utils.pickLayout(template, locals, true);
     var result = layoutEngine.render(obj.content, layout);
     return result.content;
@@ -867,7 +870,7 @@ Template.prototype.create = function(type, plural, options) {
 
   Template.prototype[plural] = function (key, value, locals, opt) {
     debug.template('#{creating template plural}:', plural);
-    this.load(type, plural, options).apply(this, arguments);
+    this.load(plural, options).apply(this, arguments);
   };
 
   // Create `get` method => e.g. `template.getPartial()`
@@ -898,7 +901,7 @@ Template.prototype.create = function(type, plural, options) {
  * @return {Object}
  */
 
-Template.prototype.load = function (type, plural, options) {
+Template.prototype.load = function (plural, options) {
   debug.template('#{load} args:', arguments);
 
   var opts = _.merge({}, this.options, options);
@@ -909,7 +912,7 @@ Template.prototype.load = function (type, plural, options) {
     // var fn = args[args.length - 1];
 
     var loaded = load.apply(this, arguments);
-    var template = this.normalize(type, plural, loaded, options);
+    var template = this.normalize(plural, loaded, options);
 
     // if (utils.isFunction(fn)) {
     //   _.transform(template, function (acc, value, key) {
@@ -938,10 +941,10 @@ Template.prototype.load = function (type, plural, options) {
 Template.prototype.format = function (key, value, locals) {
   debug.template('#{format} args:', arguments);
 
-  var load = this.load('unknown', 'unknowns', { isRenderable: true });
+  var load = this.load('anonymous', { isRenderable: true });
   load.apply(this, arguments);
 
-  return this.cache['unknowns'][key];
+  return this.cache['anonymous'][key];
 };
 
 
@@ -956,7 +959,7 @@ Template.prototype.format = function (key, value, locals) {
  * @return {Object} Normalized template.
  */
 
-Template.prototype.normalize = function (type, plural, template, options) {
+Template.prototype.normalize = function (plural, template, options) {
   debug.template('#{normalize} args:', arguments);
 
   if (this.option('normalize')) {
@@ -967,8 +970,6 @@ Template.prototype.normalize = function (type, plural, template, options) {
 
   forOwn(template, function (value, key) {
     value.options = _.merge({}, options, value.options);
-    value.options.type = type;
-
     key = renameKey.call(this, key);
 
     var ext = utils.pickExt(value, value.options, this);

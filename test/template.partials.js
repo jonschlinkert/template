@@ -115,4 +115,23 @@ describe('template partial', function () {
       template.cache.partials['a.md'].path.should.equal('a.md');
     });
   });
+
+  describe('when a partial has a layout defined:', function () {
+    it('should parse the partial.', function () {
+      var template = new Template();
+      template.layout('default.md', 'bbb{% body %}bbb');
+      template.layout('href.md', '<a href="{% body %}"><%= text %></a>');
+      template.partials('link.md', '---\nlayout: href\n---\nhttps://github.com/jonschlinkert');
+      template.page('home.md', '---\nname: Home Page\nlayout: default\n---\nThis is home page content.\n<%= partial("link") %>');
+
+      // console.log(template.getLayout('b'))
+      // console.log(template.getPartial('a.md'))
+
+      var content = template.renderSync('home.md');
+
+      console.log('content:', content)
+      // template.cache.partials.should.have.property('a.md');
+      // template.cache.partials['a.md'].should.have.property('content', 'This is content.');
+    });
+  });
 });

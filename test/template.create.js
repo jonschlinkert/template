@@ -41,8 +41,8 @@ describe('template create:', function () {
       var template = new Template();
       template.create('apple', 'apples', { isRenderable: true });
 
-      _.contains(template.viewType.isRenderable, 'pages').should.be.true;
-      _.contains(template.viewType.isRenderable, 'apples').should.be.true;
+      _.contains(template.templateType.isRenderable, 'pages').should.be.true;
+      _.contains(template.templateType.isRenderable, 'apples').should.be.true;
     });
   });
 
@@ -51,8 +51,8 @@ describe('template create:', function () {
       var template = new Template();
       template.create('orange', 'oranges', { isLayout: true });
 
-      _.contains(template.viewType.layout, 'layouts').should.be.true;
-      _.contains(template.viewType.layout, 'oranges').should.be.true;
+      _.contains(template.templateType.layout, 'layouts').should.be.true;
+      _.contains(template.templateType.layout, 'oranges').should.be.true;
     });
   });
 
@@ -61,8 +61,8 @@ describe('template create:', function () {
       var template = new Template();
       template.create('banana', 'bananas');
 
-      _.contains(template.viewType.partial, 'partials').should.be.true;
-      _.contains(template.viewType.partial, 'bananas').should.be.true;
+      _.contains(template.templateType.partial, 'partials').should.be.true;
+      _.contains(template.templateType.partial, 'bananas').should.be.true;
     });
   });
 
@@ -72,8 +72,8 @@ describe('template create:', function () {
       var template = new Template();
       template.create('banana', 'bananas', { isPartial: true });
 
-      _.contains(template.viewType.partial, 'partials').should.be.true;
-      _.contains(template.viewType.partial, 'bananas').should.be.true;
+      _.contains(template.templateType.partial, 'partials').should.be.true;
+      _.contains(template.templateType.partial, 'bananas').should.be.true;
     });
   });
 });

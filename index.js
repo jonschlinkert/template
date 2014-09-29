@@ -64,10 +64,10 @@ Template.prototype.init = function() {
   this.delims = this.delims || {};
 
   this._ = {};
-  this.viewType = {};
-  this.viewType.partial = [];
-  this.viewType.isRenderable = [];
-  this.viewType.layout = [];
+  this.templateType = {};
+  this.templateType.partial = [];
+  this.templateType.isRenderable = [];
+  this.templateType.layout = [];
   this.layoutSettings = {};
 
   this.defaultConfig();
@@ -810,7 +810,33 @@ Template.prototype.defaultAsyncHelpers = function (type, plural) {
 
 Template.prototype.createType = function (plural, options) {
   var opts = _.merge({}, options);
-  var type = this.viewType;
+  var type = this.templateType;
+
+  if (opts.isRenderable) {
+    type.isRenderable.push(plural);
+  } else if (opts.isLayout) {
+    type.layout.push(plural);
+  } else {
+    type.partial.push(plural);
+  }
+};
+
+
+/**
+ * Keeps track of custom view types, so we can pass them properly to
+ * registered engines.
+ *
+ * @param {String} `plural`
+ * @param {Object} `opts`
+ * @api private
+ */
+
+Template.prototype.getType = function (plural, options) {
+  if (typeof plural === 'object') {
+    return
+  }
+  var opts = _.merge({}, options);
+  var type = this.templateType;
 
   if (opts.isRenderable) {
     type.isRenderable.push(plural);
@@ -966,7 +992,7 @@ Template.prototype.normalize = function (plural, template, options) {
 
 /**
  * Get partials from the cache. More specifically, all templates with
- * a `viewType` of `partial` defined. If `options.mergePartials` is `true`,
+ * a `templateType` of `partial` defined. If `options.mergePartials` is `true`,
  * this object will keep custom partial types seperate - otherwise, all
  * templates with the type `partials` will be merged onto the same object.
  * This is useful when necessary for the engine being used.
@@ -982,7 +1008,7 @@ Template.prototype.mergePartials = function (options, combine) {
 
   this.cache.partials  = _.merge({}, this.cache.partials, opts.partials);
 
-  this.viewType['partial'].forEach(function (type) {
+  this.templateType['partial'].forEach(function (type) {
     forOwn(this.cache[type], function (value, key) {
       if (combine) {
         opts.partials[key] = value.content;
@@ -994,12 +1020,6 @@ Template.prototype.mergePartials = function (options, combine) {
   }.bind(this));
 
   return opts;
-};
-
-Template.prototype.mergeHelpers = function (ext, options) {
-  debug.template('#{mergine helpers} for:', ext);
-
-  return options;
 };
 
 
@@ -1061,14 +1081,13 @@ Template.prototype.preprocess = function (template, locals, cb) {
       engine = '.' + engine;
     }
     engine = this.getEngine(engine);
+    delims = this.getDelims(engine);
   } else {
     engine = this.getEngine(ext);
+    delims = this.getDelims(ext);
   }
 
-  locals = _.merge({}, locals, this.getDelims(ext));
-  locals = this.mergePartials(locals);
-
-  // locals = this.mergeHelpers(ext, locals);
+  _.merge(locals, this.mergePartials(locals), delims);
 
   // Ensure that `content` is a string.
   if (utils.isObject(content)) {
@@ -1114,7 +1133,7 @@ Template.prototype.render = function (content, locals, cb) {
 
 
 /**
- * Render `content` with the given `options` and `callback`.
+ * Render `content` with the given `locals`.
  *
  * @param  {Object|String} `file` String or normalized template object.
  * @param  {Object} `options` Options to pass to registered view engines.
@@ -1165,14 +1184,16 @@ Template.prototype.mergeFn = function (template, locals) {
   if (utils.isObject(template)) {
     var preference = this.option('preferLocals');
     if (preference === true) {
-      o = _.merge({}, template.data, template.locals);
+      _.defaults(o, template.locals);
+      _.defaults(o, template.data);
     } else {
-      o = _.merge({}, template.locals, template.data);
+      _.defaults(o, template.data);
+      _.defaults(o, template.locals);
     }
   }
 
   o.helpers = _.merge({}, this._.helpers, o.helpers);
-  return _.merge({}, data, o, locals);
+  return _.merge(data, o, locals);
 };
 
 

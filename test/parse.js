@@ -24,12 +24,13 @@ describe('template parser', function() {
 
   describe('.parser()', function() {
     template.parser('md', function md (file) {
-      file = _.merge(utils.extendFile(file), matter(file.content));
+      _.merge(file, utils.extendFile(file));
+      _.merge(file, matter(file.content));
     });
   });
 
-  describe('when parsers are defined:', function () {
-    it('should add sync parsers to the stack for an extension:', function () {
+  describe('when sync parsers are defined:', function () {
+    it('should add the parsers to the stack for the given extension:', function () {
       template
         .parserSync('abc', function() {})
         .parserSync('abc', function() {})
@@ -39,8 +40,18 @@ describe('template parser', function() {
     });
   });
 
-  describe('when the `.render()` method is called:', function () {
+  describe.skip('when async parsers are defined:', function () {
+    it('should add the parsers to the stack for the given extension:', function () {
+      template
+        .parser('abc', function() {})
+        .parser('abc', function() {})
+        .parser('abc', function() {})
 
+      template.getParsers('abc').length.should.equal(3);
+    });
+  });
+
+  describe('when the `.render()` method is called:', function () {
     it('should run the parser stack for the given template before passing it to render:', function () {
       template.engine('md', consolidate.handlebars);
 

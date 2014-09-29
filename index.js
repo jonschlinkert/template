@@ -260,7 +260,7 @@ Template.prototype.applyLayout = function(ext, template, locals) {
   var obj = utils.pickContent(template);
 
   if (layoutEngine) {
-    debug.layout('#{applying layout} settings: %j', layoutEngine);
+    debug.layout('#{applying layout} settings: ', layoutEngine);
     var layout = utils.pickLayout(template, locals, true);
     var result = layoutEngine.render(obj.content, layout);
     return result.content;
@@ -288,7 +288,7 @@ Template.prototype.makeDelims = function (arr, options) {
   var settings = _.merge({}, options, {escape: true});
   var delims = this._.delims.templates(arr, settings);
 
-  debug.delims('#{making delims}: %j', delims);
+  debug.delims('#{making delims}: ', delims);
   return _.merge(delims, options);
 };
 
@@ -375,7 +375,7 @@ Template.prototype.useDelims = function(ext) {
  */
 
 Template.prototype.getParsers = function (ext, sync) {
-  debug.parser('#{getting parser stack} args: %j', arguments);
+  debug.parser('#{getting parser stack} args: ', arguments);
   if (ext[0] !== '.') {
     ext = '.' + ext;
   }
@@ -409,7 +409,7 @@ Template.prototype.getParsers = function (ext, sync) {
  */
 
 Template.prototype.registerParser = function (ext, fn, opts, sync) {
-  debug.parser('#{registering parser} args: %j', arguments);
+  debug.parser('#{registering parser} args: ', arguments);
 
   var args = [].slice.call(arguments);
   var last = args[args.length - 1];
@@ -463,7 +463,7 @@ Template.prototype.registerParser = function (ext, fn, opts, sync) {
  */
 
 Template.prototype.parser = function (exts, fn) {
-  debug.parser('#{parser} args: %j', arguments);
+  debug.parser('#{parser} args: ', arguments);
   utils.arrayify(exts).forEach(function (ext) {
     this.registerParser.call(this, ext, fn);
   }.bind(this));
@@ -487,7 +487,7 @@ Template.prototype.parser = function (exts, fn) {
  */
 
 Template.prototype.parserSync = function (exts, fn) {
-  debug.parser('#{parserSync} args: %j', arguments);
+  debug.parser('#{parserSync} args: ', arguments);
   utils.arrayify(exts).forEach(function (ext) {
     this.registerParser.call(this, ext, fn, true);
   }.bind(this));
@@ -537,7 +537,7 @@ Template.prototype.runParser = function (template, fn) {
  */
 
 Template.prototype.parse = function (template, stack) {
-  debug.parser('#{parse called} args: %j', arguments);
+  debug.parser('#{parse called} args: ', arguments);
 
   var args = [].slice.call(arguments);
   var last = args[args.length - 1];
@@ -556,13 +556,13 @@ Template.prototype.parse = function (template, stack) {
     }
   }
 
-  debug.parser('#{found parser stack}: %j', stack);
+  debug.parser('#{found parser stack}: ', stack);
 
   stack.forEach(function (fn) {
     this.runParser(template, fn.bind(this));
   }.bind(this));
 
-  debug.parser('#{parsed} template: %j', template);
+  debug.parser('#{parsed} template: ', template);
   return template;
 };
 
@@ -581,7 +581,7 @@ Template.prototype.parse = function (template, stack) {
  */
 
 Template.prototype.engine = function (extension, fn, options) {
-  debug.engine('#{engine} args: %j', arguments);
+  debug.engine('#{engine} args: ', arguments);
   utils.arrayify(extension).forEach(function (ext) {
     this._registerEngine(ext, fn, options);
   }.bind(this));

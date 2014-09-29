@@ -127,6 +127,7 @@ Template.prototype.defaultOptions = function() {
   this.option('layout', null);
 
   this.option('preprocess', true);
+  this.option('preferLocals', false);
   this.option('partialLayout', null);
   this.option('mergePartials', true);
   this.option('mergeFunction', _.merge);
@@ -1162,7 +1163,12 @@ Template.prototype.mergeFn = function (template, locals) {
   }
 
   if (utils.isObject(template)) {
-    o = _.merge({}, template.data, template.locals);
+    var preference = this.option('preferLocals');
+    if (preference === true) {
+      o = _.merge({}, template.data, template.locals);
+    } else {
+      o = _.merge({}, template.locals, template.data);
+    }
   }
 
   o.helpers = _.merge({}, this._.helpers, o.helpers);

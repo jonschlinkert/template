@@ -211,8 +211,8 @@ Template.prototype.defaultTemplates = function() {
 Template.prototype.defaultHelpers = function(type, plural) {
   this.addHelper(type, function (key, locals) {
     var partial = this.cache[plural][key];
-    var ctx = _.merge({}, partial.data, partial.locals, locals);
-    return this.renderSync(partial.content, ctx);
+    partial.locals = _.merge({}, partial.locals, locals);
+    return this.renderSync(partial);
   });
 };
 
@@ -561,7 +561,7 @@ Template.prototype.runParser = function (template, fn) {
     if (!called) {
       called = true;
       debug.parser('#{parsing}', acc);
-      return fn.call(this, acc, value, key, i++);
+      fn.call(this, acc, value, key, i++);
     }
   }.bind(this), template);
 };

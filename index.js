@@ -9,7 +9,6 @@
 
 // process.env.DEBUG = 'template:*';
 
-
 var _ = require('lodash');
 var util = require('util');
 var path = require('path');
@@ -99,7 +98,7 @@ Template.prototype.defaultConfig = function() {
   this.set('imports', {});
   this.set('layouts', {});
   this.set('partials', {});
-  this.set('anonymous', {});
+  this.set('unknowns', {});
   this.set('pages', {});
 };
 
@@ -210,11 +209,59 @@ Template.prototype.defaultTemplates = function() {
  */
 
 Template.prototype.defaultHelpers = function(type, plural) {
-  this.addHelper(type, function (name, locals) {
-    var partial = this.cache[plural][name];
-    var ctx = _.extend({}, partial.data, partial.locals, locals);
-    return _.template(partial.content, ctx);
+  this.addHelper(type, function (key, locals) {
+    var partial = this.cache[plural][key];
+    var ctx = _.merge({}, partial.data, partial.locals, locals);
+    return this.renderSync(partial.content, ctx);
   });
+};
+
+
+/**
+ * Automatically adds an async helper for each template type.
+ *
+ * @param {String} `type` The type of template.
+ * @param {String} `plural` Plural form of `type`.
+ * @api private
+ */
+
+Template.prototype.defaultAsyncHelpers = function (type, plural) {
+  this.addHelperAsync(type, function (name, locals, next) {
+    var last = _.last(arguments);
+
+    debug.helper('#{async helper name}:', name);
+
+    if (typeof locals === 'function') {
+      next = locals;
+      locals = {};
+    }
+
+    if (typeof next !== 'function') {
+      next = last;
+    }
+
+    var partial = this.cache[plural][name];
+    if (!partial) {
+      // TODO: should this throw an error _here_?
+      console.log(chalk.red('helper {{' + type + ' "' + name + '"}} not found.'));
+      next(null, '');
+      return;
+    }
+
+    partial.locals = _.merge({}, partial.locals, locals);
+    debug.helper('#{async helper partial}:', partial);
+
+    this.render(partial, {}, function (err, content) {
+      debug.helper('#{async helper rendering}:', content);
+
+      if (err) {
+        next(err);
+        return;
+      }
+      next(null, content);
+      return;
+    });
+  }.bind(this));
 };
 
 
@@ -740,55 +787,6 @@ Template.prototype.addHelperAsync = function (name, fn, thisArg) {
 
 
 /**
- * Automatically adds an async helper for each template type.
- *
- * @param {String} `type` The type of template.
- * @param {String} `plural` Plural form of `type`.
- * @api private
- */
-
-Template.prototype.defaultAsyncHelpers = function (type, plural) {
-  this.addHelperAsync(type, function (name, locals, next) {
-    var last = _.last(arguments);
-
-    debug.helper('#{async helper name}:', name);
-
-    if (typeof locals === 'function') {
-      next = locals;
-      locals = {};
-    }
-
-    if (typeof next !== 'function') {
-      next = last;
-    }
-
-    var partial = this.cache[plural][name];
-
-    if (!partial) {
-      // TODO: should this throw an error _here_?
-      console.log(chalk.red('helper {{' + type + ' "' + name + '"}} not found.'));
-      next(null, '');
-      return;
-    }
-
-    partial.locals = _.merge({}, partial.locals, locals);
-    debug.helper('#{async helper partial}:', partial);
-
-    this.render(partial, {}, function (err, content) {
-      debug.helper('#{async helper rendering}:', content);
-
-      if (err) {
-        next(err);
-        return;
-      }
-      next(null, content);
-      return;
-    });
-  }.bind(this));
-};
-
-
-/**
  * Keeps track of custom view types, so we can pass them properly to
  * registered engines.
  *
@@ -869,7 +867,7 @@ Template.prototype.create = function(type, plural, options) {
 
   Template.prototype[plural] = function (key, value, locals, opt) {
     debug.template('#{creating template plural}:', plural);
-    this.load(plural, options).apply(this, arguments);
+    this.load(type, plural, options).apply(this, arguments);
   };
 
   // Create `get` method => e.g. `template.getPartial()`
@@ -900,7 +898,7 @@ Template.prototype.create = function(type, plural, options) {
  * @return {Object}
  */
 
-Template.prototype.load = function (plural, options) {
+Template.prototype.load = function (type, plural, options) {
   debug.template('#{load} args:', arguments);
 
   var opts = _.merge({}, this.options, options);
@@ -911,7 +909,7 @@ Template.prototype.load = function (plural, options) {
     // var fn = args[args.length - 1];
 
     var loaded = load.apply(this, arguments);
-    var template = this.normalize(plural, loaded, options);
+    var template = this.normalize(type, plural, loaded, options);
 
     // if (utils.isFunction(fn)) {
     //   _.transform(template, function (acc, value, key) {
@@ -940,10 +938,10 @@ Template.prototype.load = function (plural, options) {
 Template.prototype.format = function (key, value, locals) {
   debug.template('#{format} args:', arguments);
 
-  var load = this.load('anonymous', { isRenderable: true });
+  var load = this.load('unknown', 'unknowns', { isRenderable: true });
   load.apply(this, arguments);
 
-  return this.cache['anonymous'][key];
+  return this.cache['unknowns'][key];
 };
 
 
@@ -958,7 +956,7 @@ Template.prototype.format = function (key, value, locals) {
  * @return {Object} Normalized template.
  */
 
-Template.prototype.normalize = function (plural, template, options) {
+Template.prototype.normalize = function (type, plural, template, options) {
   debug.template('#{normalize} args:', arguments);
 
   if (this.option('normalize')) {
@@ -969,6 +967,8 @@ Template.prototype.normalize = function (plural, template, options) {
 
   forOwn(template, function (value, key) {
     value.options = _.merge({}, options, value.options);
+    value.options.type = type;
+
     key = renameKey.call(this, key);
 
     var ext = utils.pickExt(value, value.options, this);

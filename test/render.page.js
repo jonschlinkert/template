@@ -19,6 +19,7 @@ var _ = require('lodash');
 describe('render page:', function () {
   beforeEach(function () {
     template = new Template();
+    template.option('preferLocals', true);
   });
 
   it('should use `file.path` to determine the correct consolidate engine to render content:', function (done) {

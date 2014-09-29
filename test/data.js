@@ -99,17 +99,34 @@ describe('template data', function () {
     });
 
     it('should pass data to templates in the `.renderSync()` method:', function () {
-      template.data({ abc: 'xyz'});
-      template.page('aaa.md', '<%= abc %>');
+      template.data({ letter: 'b'});
+      template.page('aaa.md', 'a<%= letter %>c');
 
-      var content = template.renderSync('aaa.md');
-      content.should.equal('xyz');
+      template.renderSync('aaa.md').should.equal('abc');
     });
 
-    it.skip('should give preference to locals over "global" data:', function () {
+    it('should give preference to locals over "global" data:', function () {
+      template.data({ letter: 'b'});
+
+      template.page('aaa.md', 'a<%= letter %>c', { letter: 'bbb'});
+      template.renderSync('aaa.md').should.equal('abbbc');
     });
 
-    it.skip('should give preference to front matter over locals:', function () {
+    it('should give preference to front matter over locals:', function () {
+      template.data({ letter: 'b'});
+
+      template.page('aaa.md', '---\nletter: zzz\n---\na<%= letter %>c', { letter: 'bbb'});
+      template.renderSync('aaa.md').should.equal('azzzc');
+    });
+
+    describe('when `options.preferLocals` is defined:', function () {
+      it('should give preference to locals over front matter:', function () {
+        template.option('preferLocals', true);
+        template.data({ letter: 'b'});
+
+        template.page('aaa.md', '---\nletter: zzz\n---\na<%= letter %>c', { letter: 'bbb'});
+        template.renderSync('aaa.md').should.equal('abbbc');
+      });
     });
   });
 });

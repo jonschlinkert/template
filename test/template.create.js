@@ -41,8 +41,8 @@ describe('template create:', function () {
       var template = new Template();
       template.create('apple', 'apples', { isRenderable: true });
 
-      _.contains(template.templateType.isRenderable, 'pages').should.be.true;
-      _.contains(template.templateType.isRenderable, 'apples').should.be.true;
+      _.contains(template.templateType.renderable, 'pages').should.be.true;
+      _.contains(template.templateType.renderable, 'apples').should.be.true;
     });
   });
 

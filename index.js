@@ -66,7 +66,7 @@ Template.prototype.init = function() {
   this._ = {};
   this.templateType = {};
   this.templateType.partial = [];
-  this.templateType.isRenderable = [];
+  this.templateType.renderable = [];
   this.templateType.layout = [];
   this.layoutSettings = {};
 
@@ -808,12 +808,14 @@ Template.prototype.defaultAsyncHelpers = function (type, plural) {
  * @api private
  */
 
-Template.prototype.createType = function (plural, options) {
+Template.prototype.recordType = function (plural, options) {
+  debug.template('#{creating type}: %s, %s', plural);
+
   var opts = _.merge({}, options);
   var type = this.templateType;
 
   if (opts.isRenderable) {
-    type.isRenderable.push(plural);
+    type.renderable.push(plural);
   } else if (opts.isLayout) {
     type.layout.push(plural);
   } else {
@@ -823,28 +825,27 @@ Template.prototype.createType = function (plural, options) {
 
 
 /**
- * Keeps track of custom view types, so we can pass them properly to
- * registered engines.
+ * Get all cached templates of the given `plural` type.
+ *
+ * ```js
+ * var pages = template.getType('renderable');
+ * //=> { pages: { 'home.hbs': { ... }, 'about.hbs': { ... }}, posts: { ... }}
+ *
+ * var partials = template.getType('partial');
+ * ```
  *
  * @param {String} `plural`
  * @param {Object} `opts`
  * @api private
  */
 
-Template.prototype.getType = function (plural, options) {
-  if (typeof plural === 'object') {
-    return
-  }
-  var opts = _.merge({}, options);
-  var type = this.templateType;
+Template.prototype.getType = function (type) {
+  var arr = this.templateType[type];
 
-  if (opts.isRenderable) {
-    type.isRenderable.push(plural);
-  } else if (opts.isLayout) {
-    type.layout.push(plural);
-  } else {
-    type.partial.push(plural);
-  }
+  return arr.reduce(function (acc, key) {
+    acc[key] = this.cache[key];
+    return acc;
+  }.bind(this), {});
 };
 
 
@@ -870,7 +871,7 @@ Template.prototype.create = function(type, plural, options) {
   }
 
   this.cache[plural] = this.cache[plural] || {};
-  this.createType(plural, options);
+  this.recordType(plural, options);
 
   Template.prototype[type] = function (key, value, locals, opt) {
     debug.template('#{creating template type}:', type);
@@ -911,7 +912,10 @@ Template.prototype.load = function (plural, options) {
   var load = loader(opts);
 
   return function (key, value, locals) {
-    var loaded = load.apply(this, arguments);
+    var args = [].slice.call(arguments);
+
+
+    var loaded = load.apply(this, args);
     var template = this.normalize(plural, loaded, options);
 
     _.merge(this.cache[plural], template);

@@ -1051,7 +1051,10 @@ Template.prototype.preprocess = function (template, locals, cb) {
   var key;
 
   if (this.option('cache')) {
-    tmpl = utils.pickCached(template, locals, this);
+    tmpl = utils.pickCached(template, this);
+    if (!tmpl) {
+      tmpl = utils.pickPartial(template, this);
+    }
   }
 
   if (tmpl) {

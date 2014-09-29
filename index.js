@@ -907,7 +907,6 @@ Template.prototype.load = function (plural, options) {
   return function (key, value, locals) {
     var loaded = load.apply(this, arguments);
     var template = this.normalize(plural, loaded, options);
-    console.log(template)
     _.merge(this.cache[plural], template);
     return this;
   };
@@ -1042,16 +1041,16 @@ Template.prototype.preprocess = function (template, locals, cb) {
   var key;
 
   if (this.option('cache')) {
-    tmpl = utils.pickCached(template, locals, this);
-    if (tmpl) {
-      template = tmpl;
-      template = this.extendLocals('render', template, locals);
-    }
+    tmpl = utils.pickRenderable(template, locals, this);
   } else {
     key = utils.generateId();
-    tmpl = this.format(key, template, locals);
+    template = this.format(key, template, locals);
   }
 
+  if (tmpl) {
+    template = tmpl;
+    template = this.extendLocals('render', template, locals);
+  }
 
   if (utils.isObject(template)) {
     content = template.content;

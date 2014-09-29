@@ -1,9 +1,12 @@
 var path = require('path');
 var gulp = require('gulp');
 var pretty = require('gulp-prettify');
+
 var Template = require('./');
 var template = new Template();
 var engine = require('./docs/engine')(template);
+// var pretty = require('./docs/pretty');
+
 // var resolve = require('resolve-dep');
 
 template.engine('hbs', require('engine-handlebars'), {

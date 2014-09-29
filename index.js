@@ -256,13 +256,13 @@ Template.prototype.lazyLayouts = function(ext, options) {
 Template.prototype.applyLayout = function(ext, template, locals) {
   debug.layout('#{lazyLayouts} ext: %s', ext);
 
-  var engine = this.layoutSettings[ext];
+  var layoutEngine = this.layoutSettings[ext];
   var obj = utils.pickContent(template);
 
-  if (engine) {
-    debug.layout('#{applying layout} settings: %j', engine);
+  if (layoutEngine) {
+    debug.layout('#{applying layout} settings: %j', layoutEngine);
     var layout = utils.pickLayout(template, locals, true);
-    var result = engine.render(obj.content, layout);
+    var result = layoutEngine.render(obj.content, layout);
     return result.content;
   }
   return obj;
@@ -326,7 +326,6 @@ Template.prototype.addDelims = function (ext, arr, layoutDelims, settings) {
     layoutDelims = this.option('layoutDelims');
   }
 
-
   var delims = _.merge({}, this.makeDelims(arr, settings), settings);
   this.delims[ext] = delims;
   return this;
@@ -343,9 +342,7 @@ Template.prototype.addDelims = function (ext, arr, layoutDelims, settings) {
 
 Template.prototype.getDelims = function(ext) {
   debug.delims('#{getting delims} ext: %s', ext);
-  if(hasOwn(this.delims, ext)) {
-    return this.delims[ext];
-  }
+  if(hasOwn(this.delims, ext)) return this.delims[ext];
   ext = this.currentDelims || 'default';
   return this.delims[ext];
 };
@@ -379,15 +376,11 @@ Template.prototype.useDelims = function(ext) {
 
 Template.prototype.getParsers = function (ext, sync) {
   debug.parser('#{getting parser stack} args: %j', arguments);
-
   if (ext[0] !== '.') {
     ext = '.' + ext;
   }
 
-  if (!utils.hasOwn(this.parsers, ext)) {
-    return [];
-  }
-
+  if (!utils.hasOwn(this.parsers, ext)) return [];
   sync = true; // temporary
 
   return this.parsers[ext].map(function (parser) {
@@ -432,10 +425,7 @@ Template.prototype.registerParser = function (ext, fn, opts, sync) {
     ext = '.' + ext;
   }
 
-  if (!this.parsers[ext]) {
-    this.parsers[ext] = [];
-  }
-
+  if (!this.parsers[ext]) this.parsers[ext] = [];
   var parser = {};
 
   if (typeof fn === 'function') {
@@ -556,10 +546,7 @@ Template.prototype.parse = function (template, stack) {
     template = this.format(template, {content: template});
   }
 
-  if (typeof last === 'function') {
-    stack = [last];
-  }
-
+  if (typeof last === 'function') stack = [last];
   var ext = utils.pickExt(template, this);
   if (!Array.isArray(stack)) {
     if (ext) {
@@ -770,13 +757,15 @@ Template.prototype.defaultAsyncHelpers = function (type, plural) {
       next = locals;
       locals = {};
     }
+
     if (typeof next !== 'function') {
       next = last;
     }
 
     var partial = this.cache[plural][name];
+
     if (!partial) {
-      // TODO: should this error _here_?
+      // TODO: should this throw an error _here_?
       console.log(chalk.red('helper {{' + type + ' "' + name + '"}} not found.'));
       next(null, '');
       return;
@@ -808,8 +797,8 @@ Template.prototype.defaultAsyncHelpers = function (type, plural) {
  * @api private
  */
 
-Template.prototype.recordType = function (plural, options) {
-  debug.template('#{creating type}: %s, %s', plural);
+Template.prototype.trackType = function (plural, options) {
+  debug.template('#{tracking type}: %s, %s', plural);
 
   var opts = _.merge({}, options);
   var type = this.templateType;
@@ -871,7 +860,7 @@ Template.prototype.create = function(type, plural, options) {
   }
 
   this.cache[plural] = this.cache[plural] || {};
-  this.recordType(plural, options);
+  this.trackType(plural, options);
 
   Template.prototype[type] = function (key, value, locals, opt) {
     debug.template('#{creating template type}:', type);
@@ -881,6 +870,12 @@ Template.prototype.create = function(type, plural, options) {
   Template.prototype[plural] = function (key, value, locals, opt) {
     debug.template('#{creating template plural}:', plural);
     this.load(plural, options).apply(this, arguments);
+  };
+
+  // Create `get` method => e.g. `template.getPartial()`
+  var name = type[0].toUpperCase() + type.slice(1);
+  Template.prototype['get' + name] = function (key) {
+    return this.cache[plural][key];
   };
 
   if (!hasOwn(this._.helpers, type)) {
@@ -912,11 +907,17 @@ Template.prototype.load = function (plural, options) {
   var load = loader(opts);
 
   return function (key, value, locals) {
-    var args = [].slice.call(arguments);
+    // var args = [].slice.call(arguments);
+    // var fn = args[args.length - 1];
 
-
-    var loaded = load.apply(this, args);
+    var loaded = load.apply(this, arguments);
     var template = this.normalize(plural, loaded, options);
+
+    // if (utils.isFunction(fn)) {
+    //   _.transform(template, function (acc, value, key) {
+    //     fn.call(this, acc, value, key);
+    //   });
+    // }
 
     _.merge(this.cache[plural], template);
     return this;
@@ -1014,15 +1015,14 @@ Template.prototype.mergePartials = function (options, combine) {
 
   this.templateType['partial'].forEach(function (type) {
     forOwn(this.cache[type], function (value, key) {
+      opts = _.merge({}, opts, value.data, value.locals);
       if (combine) {
         opts.partials[key] = value.content;
       } else {
         opts[type][key] = value.content;
       }
-      opts = _.merge({}, opts, value.data, value.locals);
-    });
+    }.bind(this));
   }.bind(this));
-
   return opts;
 };
 
@@ -1076,10 +1076,7 @@ Template.prototype.preprocess = function (template, locals, cb) {
   // if a layout is defined, apply it now.
   content = this.applyLayout(ext, template, locals);
 
-  if (delims) {
-    this.addDelims(ext, delims);
-  }
-
+  if (delims) this.addDelims(ext, delims);
   if (utils.isString(engine)) {
     if (engine[0] !== '.') {
       engine = '.' + engine;
@@ -1094,9 +1091,7 @@ Template.prototype.preprocess = function (template, locals, cb) {
   _.merge(locals, this.mergePartials(locals), delims);
 
   // Ensure that `content` is a string.
-  if (utils.isObject(content)) {
-    content = content.content;
-  }
+  if (utils.isObject(content)) content = content.content;
   return { content: content, engine: engine, locals: locals };
 };
 
@@ -1188,11 +1183,9 @@ Template.prototype.mergeFn = function (template, locals) {
   if (utils.isObject(template)) {
     var preference = this.option('preferLocals');
     if (preference === true) {
-      _.defaults(o, template.locals);
-      _.defaults(o, template.data);
+      o = _.defaults({}, o, template.locals, template.data);
     } else {
-      _.defaults(o, template.data);
-      _.defaults(o, template.locals);
+      o = _.defaults({}, o, template.data, template.locals);
     }
   }
 

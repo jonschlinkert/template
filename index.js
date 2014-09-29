@@ -308,8 +308,14 @@ Template.prototype.applyLayout = function(ext, template, locals) {
 
   if (layoutEngine) {
     debug.layout('#{applying layout} settings: ', layoutEngine);
+
+    var opts = {};
+    if (utils.isPartial(template)) {
+      opts.defaultLayout = false;
+    }
+
     var layout = utils.pickLayout(template, locals, true);
-    var result = layoutEngine.render(obj.content, layout);
+    var result = layoutEngine.render(obj.content, layout, opts);
     return result.content;
   }
   return obj;
@@ -1003,7 +1009,7 @@ Template.prototype.normalize = function (plural, template, options) {
  * @api private
  */
 
-Template.prototype.mergePartials = function (options, combine) {
+Template.prototype.mergePartials = function (ext, options, combine) {
   debug.template('#{merging partials} args:', arguments);
 
   combine = combine || this.option('mergePartials');
@@ -1013,6 +1019,10 @@ Template.prototype.mergePartials = function (options, combine) {
 
   this.templateType['partial'].forEach(function (type) {
     forOwn(this.cache[type], function (value, key) {
+      if (!value.hasLayout) {
+        value.content = this.applyLayout(ext, value, value.locals);
+        value.hasLayout = true;
+      }
       opts = _.merge({}, opts, value.data, value.locals);
       if (combine) {
         opts.partials[key] = value.content;
@@ -1086,7 +1096,7 @@ Template.prototype.preprocess = function (template, locals, cb) {
     delims = this.getDelims(ext);
   }
 
-  _.merge(locals, this.mergePartials(locals), delims);
+  _.merge(locals, this.mergePartials(ext, locals), delims);
 
   // Ensure that `content` is a string.
   if (utils.isObject(content)) content = content.content;

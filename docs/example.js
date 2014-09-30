@@ -30,6 +30,24 @@ template.data({
 
 
 template.create('snippet', 'snippets', { isPartial: true });
+
+template.create('file', 'files', {
+  isRenderable: true,
+  loadFn: function (vinyl) {
+    var file = _.merge({}, vinyl);
+    Object.defineProperty(file, 'content', {
+      enumerable: true,
+      get: function () {
+        return vinyl.contents.toString();
+      },
+      set: function (value) {
+        vinyl.contents = new Buffer(value);
+      }
+    });
+    return file;
+  }
+});
+
 template.create('post', 'posts', { isRenderable: true });
 
 template.post('home.md', 'this is content.', {layout: 'base.md'});

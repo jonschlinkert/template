@@ -1081,7 +1081,7 @@ Template.prototype.preprocess = function (template, locals, cb) {
     delims = this.getDelims(ext);
   }
 
-  _.merge(locals, this.mergePartials(locals), delims);
+  locals = _.merge({}, locals, this.mergePartials(locals), delims);
 
   // Ensure that `content` is a string.
   if (utils.isObject(content)) content = content.content;

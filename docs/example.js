@@ -18,9 +18,8 @@ var _ = require('lodash');
 template.engine('md', require('engine-handlebars'));
 var helpers = template.helpers('md');
 
-template.parserSync('zen', function (acc, value, key) {
-  value = emmet.expandAbbreviation(value);
-  acc[key] = value;
+helpers.helper('zen', function (value) {
+  return emmet.expandAbbreviation(value);
 });
 
 template.data({
@@ -29,7 +28,7 @@ template.data({
 });
 
 
-template.create('snippet', 'snippets', { isPartial: true });
+template.create('snippet', 'snippets', { isPartial: true, engine: 'zen' });
 template.create('post', 'posts', { isRenderable: true });
 
 template.post('home.md', 'this is content.', {layout: 'base.md'});

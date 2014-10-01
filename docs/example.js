@@ -18,8 +18,9 @@ var _ = require('lodash');
 template.engine('md', require('engine-handlebars'));
 var helpers = template.helpers('md');
 
-helpers.helper('zen', function (value) {
-  return emmet.expandAbbreviation(value);
+template.parserSync('zen', function (acc, value, key) {
+  value = emmet.expandAbbreviation(value);
+  acc[key] = value;
 });
 
 template.data({
@@ -28,7 +29,25 @@ template.data({
 });
 
 
-template.create('snippet', 'snippets', { isPartial: true, engine: 'zen' });
+template.create('snippet', 'snippets', { isPartial: true });
+
+template.create('file', 'files', {
+  isRenderable: true,
+  loadFn: function (vinyl) {
+    var file = _.merge({}, vinyl);
+    Object.defineProperty(file, 'content', {
+      enumerable: true,
+      get: function () {
+        return vinyl.contents.toString();
+      },
+      set: function (value) {
+        vinyl.contents = new Buffer(value);
+      }
+    });
+    return file;
+  }
+});
+
 template.create('post', 'posts', { isRenderable: true });
 
 template.post('home.md', 'this is content.', {layout: 'base.md'});

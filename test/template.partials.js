@@ -139,23 +139,32 @@ describe('template partial', function () {
   //   // });
   // });
 
-
-
   describe('when a partial has a layout defined:', function () {
-    it('should parse the partial.', function () {
+    it('should parse the partial sync.', function () {
       var template = new Template();
       template.layout('default.md', 'bbb{% body %}bbb');
       template.layout('href.md', '<a href="{% body %}"><%= text %></a>');
-      template.partials('link.md', '---\nlayout: href\n---\nhttps://github.com/jonschlinkert', {a: 'b'});
-      template.page('home.md', '---\nname: Home Page\nlayout: default\n---\nThis is home page content.\n<%= partial("link.md", {c: "d"}) %>');
-
-      // console.log(template.getLayout('b'))
-      // console.log(template.getPartial('a.md'))
+      template.partials('link.md', '---\nlayout: href.md\ntext: Jon Schlinkert\n---\nhttps://github.com/jonschlinkert', {a: 'b'});
+      template.page('home.md', '---\nname: Home Page\nlayout: default.md\n---\nThis is home page content.\n<%= partial("link.md", {c: "d"}) %>');
 
       var content = template.renderSync('home.md');
-      console.log('content:', content)
-      // template.cache.partials.should.have.property('a.md');
-      // template.cache.partials['a.md'].should.have.property('content', 'This is content.');
+      content.should.equal('bbbThis is home page content.\n<a href="https://github.com/jonschlinkert">Jon Schlinkert</a>bbb');
     });
+
+    it('should parse the partial.', function (done) {
+      var template = new Template();
+      template.layout('default.md', 'bbb{% body %}bbb');
+      template.layout('href.md', '<a href="{% body %}"><%= text %></a>');
+      template.partials('link.md', '---\nlayout: href.md\ntext: Jon Schlinkert\n---\nhttps://github.com/jonschlinkert', {a: 'b'});
+      template.page('home.md', '---\nname: Home Page\nlayout: default.md\n---\nThis is home page content.\n<%= partial("link.md", {c: "d"}) %>');
+
+      template.render('home.md', function (err, content) {
+        if (err) return done(err);
+        content.should.equal('bbbThis is home page content.\n<a href="https://github.com/jonschlinkert">Jon Schlinkert</a>bbb');
+        done();
+      });
+    });
+
   });
+
 });

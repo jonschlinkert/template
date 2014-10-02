@@ -691,7 +691,7 @@ Template.prototype._registerEngine = function (ext, fn, options) {
 Template.prototype.getEngine = function (ext) {
   debug.engine('#{getEngine} ext: %s', ext);
   var engine = this._.engines.get(ext);
-  engine.options = utils.omit(engine.options, 'thisArg');
+  engine.options.thisArg = null;
   return engine;
 };
 
@@ -1089,7 +1089,8 @@ Template.prototype.preprocess = function (template, locals, cb) {
     delims = this.getDelims(ext);
   }
 
-  _.merge(locals, this.mergePartials(ext, locals), delims);
+  locals = _.merge({}, locals, this.mergePartials(locals), delims);
+
 
   // Ensure that `content` is a string.
   if (utils.isObject(content)) content = content.content;

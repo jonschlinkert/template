@@ -10,7 +10,6 @@
 // process.env.DEBUG = 'template:*';
 
 var _ = require('lodash');
-var util = require('util');
 var path = require('path');
 var chalk = require('chalk');
 var forOwn = require('for-own');
@@ -43,13 +42,14 @@ var hasOwn = utils.hasOwn;
  * @api public
  */
 
-function Template(options) {
-  Cache.call(this, options);
-  this.init();
-}
+var Template = Cache.extend({
+  constructor: function (options) {
+    Template.__super__.constructor.call(this, options);
+    this.init();
+  }
+});
 
-util.inherits(Template, Cache);
-
+Template.extend = Cache.extend;
 
 /**
  * Initialize defaults.

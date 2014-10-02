@@ -116,6 +116,7 @@
     "array-slice": "^0.2.0",
     "arrayify-compact": "^0.1.0",
     "chalk": "^0.5.1",
+    "class-extend": "^0.1.1",
     "config-cache": "^0.2.2",
     "debug": "^2.0.0",
     "deep-pick": "^0.1.0",

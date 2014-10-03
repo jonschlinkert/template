@@ -11,6 +11,7 @@
 
 var _ = require('lodash');
 var path = require('path');
+var util = require('util');
 var chalk = require('chalk');
 var forOwn = require('for-own');
 var Cache = require('config-cache');
@@ -22,8 +23,8 @@ var Layouts = require('layouts');
 var Delims = require('delims');
 var utils = require('./lib/utils');
 var debug = require('./lib/debug');
+var extend = utils.extend;
 var hasOwn = utils.hasOwn;
-
 
 /**
  * Create a new instance of `Template`, optionally passing the default
@@ -42,7 +43,7 @@ var hasOwn = utils.hasOwn;
  * @api public
  */
 
-var Template = Cache.extend({
+var Template = module.exports = Cache.extend({
   constructor: function (options) {
     Template.__super__.constructor.call(this, options);
     this.init();
@@ -50,6 +51,7 @@ var Template = Cache.extend({
 });
 
 Template.extend = Cache.extend;
+
 
 /**
  * Initialize defaults.
@@ -129,7 +131,7 @@ Template.prototype.defaultOptions = function() {
   this.option('preferLocals', false);
   this.option('partialLayout', null);
   this.option('mergePartials', true);
-  this.option('mergeFunction', _.merge);
+  this.option('mergeFunction', extend);
   this.option('bindHelpers', true);
 
   this.option('defaultParsers', true);
@@ -248,7 +250,7 @@ Template.prototype.defaultAsyncHelpers = function (type, plural) {
       return;
     }
 
-    partial.locals = _.merge({}, partial.locals, locals);
+    partial.locals = extend({}, partial.locals, locals);
     debug.helper('#{async helper partial}:', partial);
 
     this.render(partial, {}, function (err, content) {
@@ -277,7 +279,7 @@ Template.prototype.defaultAsyncHelpers = function (type, plural) {
 
 Template.prototype.lazyLayouts = function(ext, options) {
   if (!hasOwn(this.layoutSettings, ext)) {
-    var opts = _.merge({}, this.options, options);
+    var opts = extend({}, this.options, options);
 
     debug.layout('#{lazyLayouts} ext: %s', ext);
 
@@ -339,11 +341,11 @@ Template.prototype.applyLayout = function(ext, template, locals) {
  */
 
 Template.prototype.makeDelims = function (arr, options) {
-  var settings = _.merge({}, options, {escape: true});
+  var settings = extend({}, options, {escape: true});
   var delims = this._.delims.templates(arr, settings);
 
   debug.delims('#{making delims}: ', delims);
-  return _.merge(delims, options);
+  return extend(delims, options);
 };
 
 
@@ -380,7 +382,7 @@ Template.prototype.addDelims = function (ext, arr, layoutDelims, settings) {
     layoutDelims = this.option('layoutDelims');
   }
 
-  var delims = _.merge({}, this.makeDelims(arr, settings), settings);
+  var delims = extend({}, this.makeDelims(arr, settings), settings);
   this.delims[ext] = delims;
   return this;
 };
@@ -654,7 +656,7 @@ Template.prototype.engine = function (extension, fn, options) {
  */
 
 Template.prototype._registerEngine = function (ext, fn, options) {
-  var opts = _.merge({thisArg: this, bindFunctions: true}, options);
+  var opts = extend({thisArg: this, bindFunctions: true}, options);
 
   if (ext[0] !== '.') {
     ext = '.' + ext;
@@ -805,7 +807,7 @@ Template.prototype.addHelperAsync = function (name, fn, thisArg) {
 Template.prototype.trackType = function (plural, options) {
   debug.template('#{tracking type}: %s, %s', plural);
 
-  var opts = _.merge({}, options);
+  var opts = extend({}, options);
   var type = this.templateType;
 
   if (opts.isRenderable) {
@@ -908,13 +910,13 @@ Template.prototype.create = function(type, plural, options) {
 Template.prototype.load = function (plural, options) {
   debug.template('#{load} args:', arguments);
 
-  var opts = _.merge({}, this.options, options);
+  var opts = extend({}, this.options, options);
   var load = loader(opts);
 
   return function (key, value, locals) {
     var loaded = load.apply(this, arguments);
     var template = this.normalize(plural, loaded, options);
-    _.merge(this.cache[plural], template);
+    extend(this.cache[plural], template);
     return this;
   };
 };
@@ -964,7 +966,7 @@ Template.prototype.normalize = function (plural, template, options) {
   var renameKey = this.option('renameKey');
 
   forOwn(template, function (value, key) {
-    value.options = _.merge({}, options, value.options);
+    value.options = extend({}, options, value.options);
     key = renameKey.call(this, key);
 
     var ext = utils.pickExt(value, value.options, this);
@@ -1005,14 +1007,14 @@ Template.prototype.mergePartials = function (ext, locals, combine) {
   debug.template('#{merging partials} args:', arguments);
 
   combine = combine || this.option('mergePartials');
-  var opts = _.merge({partials: {}}, locals);
+  var opts = extend({partials: {}}, locals);
 
-  // this.cache.partials  = _.merge({}, this.cache.partials, opts.partials);
+  // this.cache.partials  = extend({}, this.cache.partials, opts.partials);
 
   this.templateType['partial'].forEach(function (type) {
     forOwn(this.cache[type], function (value, key) {
       value.content = this.applyLayout(ext, value, value.locals);
-      opts = _.merge({}, opts, value.data, value.locals);
+      opts = extend({}, opts, value.data, value.locals);
       if (combine) {
         opts.partials[key] = value.content;
       } else {
@@ -1089,7 +1091,7 @@ Template.prototype.preprocess = function (template, locals, cb) {
     delims = this.getDelims(ext);
   }
 
-  locals = _.merge({}, locals, this.mergePartials(locals), delims);
+  locals = extend({}, locals, this.mergePartials(locals), delims);
 
 
   // Ensure that `content` is a string.
@@ -1166,8 +1168,8 @@ Template.prototype.renderSync = function (content, locals) {
 
 
 Template.prototype.extendLocals = function (key, template, locals) {
-  template = _.merge({_locals: {}}, template);
-  template._locals[key] = _.merge({}, template._locals[key], locals);
+  template = extend({_locals: {}}, template);
+  template._locals[key] = extend({}, template._locals[key], locals);
   return template;
 };
 
@@ -1197,13 +1199,6 @@ Template.prototype.mergeFn = function (template, locals) {
     }
   }
 
-  o.helpers = _.merge({}, this._.helpers, o.helpers);
-  return _.merge(data, o, locals);
+  o.helpers = extend({}, this._.helpers, o.helpers);
+  return extend(data, o, locals);
 };
-
-
-/**
- * Expose `Template`
- */
-
-module.exports = Template;

@@ -810,13 +810,16 @@ Template.prototype.trackType = function (plural, options) {
   var opts = extend({}, options);
   var type = this.templateType;
 
-  if (opts.isRenderable) {
+  if (opts.isRenderable)
     type.renderable.push(plural);
-  } else if (opts.isLayout) {
+  }
+  if (opts.isLayout) {
     type.layout.push(plural);
-  } else {
+  }
+  if (opts.isPartial || (!opts.isRenderable && !opts.isLayout)) {
     type.partial.push(plural);
   }
+  return type;
 };
 
 

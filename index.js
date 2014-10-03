@@ -806,11 +806,10 @@ Template.prototype.addHelperAsync = function (name, fn, thisArg) {
 
 Template.prototype.trackType = function (plural, options) {
   debug.template('#{tracking type}: %s, %s', plural);
-
   var opts = extend({}, options);
   var type = this.templateType;
 
-  if (opts.isRenderable)
+  if (opts.isRenderable) {
     type.renderable.push(plural);
   }
   if (opts.isLayout) {

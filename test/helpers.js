@@ -18,7 +18,6 @@ describe('.addHelper():', function () {
     template.init();
   });
 
-
   it('should register _bound_ template helper functions by default:', function () {
     var helpers = template.helpers('*');
 

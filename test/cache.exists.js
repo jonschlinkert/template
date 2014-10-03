@@ -39,13 +39,13 @@ describe('Template', function () {
       template.exists('a.b.g\\.h\\.i').should.be.ok;
     });
     it('nonexistent property should not exist.', function() {
-      template.exists('x').should.eql(false);
+      template.exists('x').should.be.false;
     });
     it('nonexistent property should not exist.', function() {
-      template.exists('a.x').should.eql(false);
+      template.exists('a.x').should.be.false;
     });
     it('nonexistent property should not exist.', function() {
-      template.exists('a.b.x').should.eql(false);
+      template.exists('a.b.x').should.be.false;
     });
   })
 });

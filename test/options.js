@@ -29,8 +29,7 @@ describe('template render', function () {
 
       template.render('before.html', {name: 'Jon Schlinkert'}, function (err, content) {
         if (err) console.log(err);
-        console.log(content)
-        // content.should.equal(helpers.readActual('after.html'));
+        content.should.equal('<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Jon Schlinkert</title></head><body> This is content. </body></html>');
         done();
       });
     });

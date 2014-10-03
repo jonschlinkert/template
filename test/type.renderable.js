@@ -16,7 +16,7 @@ var consolidate = require('consolidate');
 var _ = require('lodash');
 
 
-describe('render page:', function () {
+describe('custom `renderable` types:', function () {
   beforeEach(function () {
     template = new Template();
     template.option('preferLocals', true);

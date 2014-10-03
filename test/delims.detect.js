@@ -14,7 +14,7 @@ var Template = require('..');
 var template = new Template();
 
 
-describe('template delimiters:', function () {
+describe('custom delimiters:', function () {
   it('should use custom delimiters defined on a template type:', function (done) {
     var template = new Template();
     template.engine('*', require('engine-lodash'));
@@ -55,6 +55,25 @@ describe('template delimiters:', function () {
     template.render('bar', function (err, content) {
       if (err) console.log(err);
       content.should.equal('<<= name >>Brian Woodward');
+    });
+    done();
+  });
+
+  it('should use custom delimiters defined on partials:', function (done) {
+    var template = new Template();
+    template.engine('*', require('engine-lodash'));
+    template.create('doc', 'docs', { isRenderable: true });
+
+    template.partial('xyz.md', 'Yeah! It worked!');
+    template.doc('abc', {
+      delims: ['<<', '>>'],
+      content: '<<= name >> <<= partial("xyz.md") >>',
+      name: 'Jon Schlinkert',
+    });
+
+    template.render('abc', function (err, content) {
+      if (err) console.log(err);
+      content.should.equal('Jon Schlinkert Yeah! It worked!');
     });
     done();
   });

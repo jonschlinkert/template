@@ -15,18 +15,26 @@ var matter = require('gray-matter');
 var utils = require('parser-utils');
 var _ = require('lodash');
 
-
-describe('template parser', function() {
+describe('.parserSync()', function() {
   beforeEach(function() {
     template = new Template();
   });
 
-  describe('.parser()', function() {
+  describe('when sync parsers are defined:', function () {
+    it('should stack parsers for the given ext.', function() {
+      template.parserSync('a', function () {});
+      template.parserSync('a', function () {});
+      template.parserSync('a', function () {});
+
+      template.getParsers('a').should.be.an.array;
+      template.getParsers('a').length.should.equal(3);
+    });
+
     it('should add a parser to the `parsers` object.', function() {
-      template.parser('a', function () {});
-      template.parser('b', function () {});
-      template.parser('c', function () {});
-      template.parser('d', function () {});
+      template.parserSync('a', function () {});
+      template.parserSync('b', function () {});
+      template.parserSync('c', function () {});
+      template.parserSync('d', function () {});
 
       template.parsers.should.have.property('.a');
       template.parsers.should.have.property('.b');
@@ -35,10 +43,10 @@ describe('template parser', function() {
     });
 
     it('should normalize parser extensions to not have a dot.', function() {
-      template.parser('.a', function () {});
-      template.parser('.b', function () {});
-      template.parser('.c', function () {});
-      template.parser('.d', function () {});
+      template.parserSync('.a', function () {});
+      template.parserSync('.b', function () {});
+      template.parserSync('.c', function () {});
+      template.parserSync('.d', function () {});
 
       template.parsers.should.have.property('.a');
       template.parsers.should.have.property('.b');
@@ -48,18 +56,25 @@ describe('template parser', function() {
 
     it('should be chainable.', function() {
       template
-        .parser('a', function () {})
-        .parser('b', function () {})
-        .parser('c', function () {})
-        .parser('d', function () {});
-
-      template.getParsers('.a').should.be.an.array;
+        .parserSync('a', function () {})
+        .parserSync('b', function () {})
+        .parserSync('c', function () {})
+        .parserSync('d', function () {});
 
       template.parsers.should.have.property('.a');
       template.parsers.should.have.property('.b');
       template.parsers.should.have.property('.c');
       template.parsers.should.have.property('.d');
     });
-  });
 
+    it('should add multiple parsers to the same stack:', function () {
+      template
+        .parserSync('abc', function() {})
+        .parserSync('abc', function() {})
+        .parserSync('abc', function() {})
+
+      template.getParsers('abc').length.should.equal(3);
+    });
+
+  });
 });

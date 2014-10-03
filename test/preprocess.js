@@ -20,7 +20,6 @@ describe('template preprocess', function () {
     template = new Template();
   });
 
-
   describe('when `options.preprocess` is `false`:', function () {
     it('should render the given string directly:', function (done) {
       template.option('preprocess', false);

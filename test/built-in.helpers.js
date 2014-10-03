@@ -71,15 +71,15 @@ describe.skip('default helpers:', function () {
       content.should.equal('<title>Jon Schlinkert</title>');
     });
 
-    // async.each(template.cache.pages, function (file, next) {
-    //   var page = template.cache.pages[file];
+    async.each(template.cache.pages, function (file, next) {
+      var page = template.cache.pages[file];
 
-    //   template.render(page, {custom: {locals: {name: 'Jon Schlinkert' }}}, function (err, content) {
-    //     if (err) return next(err);
-    //     content.should.equal('<title>Jon Schlinkert</title>');
-    //     next(null);
-    //   });
-    // }, done);
+      template.render(page, {custom: {locals: {name: 'Jon Schlinkert' }}}, function (err, content) {
+        if (err) return next(err);
+        content.should.equal('<title>Jon Schlinkert</title>');
+        next(null);
+      });
+    }, done);
     done();
   });
 });

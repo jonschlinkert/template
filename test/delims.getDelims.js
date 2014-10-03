@@ -46,6 +46,7 @@ describe('.getDelims():', function () {
     template.addDelims('hbs', ['{{', '}}']);
     template.addDelims('square', ['[[', ']]']);
 
+    // use `lodash`
     template.useDelims('lodash');
     template.getDelims().should.eql({
       escape: /\<\%-([\s\S]+?)\%\>/g,
@@ -53,6 +54,7 @@ describe('.getDelims():', function () {
       interpolate: /\<\%=([\s\S]+?)\%\>/g
     });
 
+    // use `square`
     template.useDelims('square');
     template.getDelims().should.eql({
       escape: /\[\[-([\s\S]+?)\]\]/g,
@@ -60,6 +62,7 @@ describe('.getDelims():', function () {
       interpolate: /\[\[=([\s\S]+?)\]\]/g
     });
 
+    // use `hbs`
     template.useDelims('hbs');
     template.getDelims().should.eql({
       escape: /\{\{-([\s\S]+?)\}\}/g,

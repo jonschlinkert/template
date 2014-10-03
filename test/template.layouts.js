@@ -69,7 +69,6 @@ describe('template layout', function () {
     });
   });
 
-
   describe('when a layout has front matter', function () {
     it('should parse the layout.', function () {
       var template = new Template();

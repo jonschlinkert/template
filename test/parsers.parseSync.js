@@ -64,9 +64,9 @@ describe('.parse()', function () {
               file.content = file.content.replace(/(.)/g, '$1 ')
             });
 
-          template.getParsers('a').length.should.equal(3);
+          template.getParsers('a', true).length.should.equal(3);
 
-          var result = template.parse({ext: 'a', content: 'xyz'});
+          var result = template.parseSync({ext: 'a', content: 'xyz'});
           result.should.have.property('content', 'A B C - X Y Z ');
         });
       });

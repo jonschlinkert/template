@@ -421,30 +421,6 @@ Template.prototype.useDelims = function(ext) {
   return this.currentDelims = ext;
 };
 
-
-/**
- * Get the parser stack for the given `ext`.
- *
- * @param {String} `ext` The parser stack to get.
- * @return {Object} `Template` to enable chaining.
- * @api public
- */
-
-Template.prototype.getParsers = function (ext, sync) {
-  debug.parser('#{getting parser stack} args: ', arguments);
-  if (ext[0] !== '.') {
-    ext = '.' + ext;
-  }
-
-  if (!utils.hasOwn(this.parsers, ext)) return [];
-  sync = true; // temporary
-
-  return this.parsers[ext].map(function (parser) {
-    return sync ? parser.parseSync : parser.parse;
-  }).filter(Boolean);
-};
-
-
 /**
  * Register the given parser callback `fn` as `ext`. If `ext`
  * is not given, the parser `fn` will be pushed into the
@@ -504,6 +480,42 @@ Template.prototype.registerParser = function (ext, fn, opts, sync) {
 
 
 /**
+ * Returns an array of parser functions (stack) registered to the
+ * given extension. If none exist an empty array is returned. By
+ * default the method returns async parsers, pass `true` as a
+ * second argument to return sync parsers.
+ *
+ * **Example:**
+ *
+ * ```js
+ * var stack = template.getParsers('foo');
+ * //=> [ [Function], [Function], [Function] ]
+ *
+ * var syncStack = template.getParsers('bar', true);
+ * //=> [ [Function], [Function], [Function] ]
+ * ```
+ *
+ * @param {String} `ext` The parser stack to get.
+ * @param {String} `sync`
+ * @return {Array} Parser stack for the given extension.
+ * @api public
+ */
+
+Template.prototype.getParsers = function (ext, sync) {
+  debug.parser('#{getting parser stack} args: ', arguments);
+  if (ext[0] !== '.') {
+    ext = '.' + ext;
+  }
+
+  if (!utils.hasOwn(this.parsers, ext)) return [];
+
+  return this.parsers[ext].map(function (parser) {
+    return sync ? parser.parseSync : parser.parse;
+  }).filter(Boolean);
+};
+
+
+/**
  * Define an async parser.
  *
  * Register the given parser callback `fn` as `ext`. If `ext`
@@ -528,11 +540,9 @@ Template.prototype.parser = function (exts, fn) {
 
 
 /**
- * Define a synchronous parser.
- *
- * Register the given parser callback `fn` as `ext`. If `ext`
+ * Register a synchronous parser `fn` as `ext`. If `ext`
  * is not given, the parser `fn` will be pushed into the
- * default parser stack.
+ * default '*' parser stack.
  *
  * @doc api-parser
  * @param {String} `ext`
@@ -552,12 +562,12 @@ Template.prototype.parserSync = function (exts, fn) {
 
 
 /**
- * Private method for normalizing args passed to parsers.
+ * Private method for running a parser function on a normalized
+ * template.
  *
- * @param  {Object|String} `file` Either a string or an object.
- * @param  {Array} `stack` Optionally pass an array of functions to use as parsers.
- * @param  {Object} `options`
- * @return {Object} Normalize `file` object.
+ * @param  {Object|String} `template` Template string or object.
+ * @param  {Array} `fn` The parser function to call.
+ * @return {Object} Parsed `template` object.
  * @api private
  */
 
@@ -567,9 +577,11 @@ Template.prototype.runParser = function (template, fn) {
   var i = 0;
 
   return _.transform(template, function (acc, value, key) {
+    debug.parser('#{runParser:parsing}', acc);
+
     if (!called) {
+      debug.parser('#{runParser:called}', acc);
       called = true;
-      debug.parser('#{parsing}', acc);
       fn.call(this, acc, value, key, i++);
     }
   }.bind(this), template);
@@ -577,22 +589,23 @@ Template.prototype.runParser = function (template, fn) {
 
 
 /**
- * Run a stack of sync or async parsers.
+ * Returns a function that runs a `stack` of async parsers on the
+ * given `template`. See [parsers] for more about what they can do.
  *
- * Run a `stack` of parsers against the given `template`. If `template` is
- * an object with a `path` property, then the `extname` is used to
- * get the parser stack. If a stack isn't found on the cache the
- * default `noop` parser will be used.
+ * If no stack is explictly passed, and if `template` is an object with
+ * `path` or `ext` properties, the method will attempt to guess the stack
+ * by looking on the cache for a parser stack registered to `ext`, (or
+ * `extname` of `path`). If no stack is found the default `noop` parser stack
+ * will be used.
  *
  * @doc api-parse
- * @param  {Object|String} `template` Either a string or an object.
- * @param  {Array} `stack` Optionally pass an array of functions to use as parsers.
- * @param  {Object} `options`
- * @return {Object} Normalize `template` object.
+ * @param  {Object|String} `template` May be a string or an object.
+ * @param  {Array} `stack` Optionally pass a function or array of functions to use as parsers.
+ * @return {Object} Parsed `template` object.
  * @api public
  */
 
-Template.prototype.parse = function (template, stack) {
+Template.prototype.parse = function (template, stack, sync) {
   debug.parser('#{parse called} args: ', arguments);
 
   var args = [].slice.call(arguments);
@@ -603,15 +616,16 @@ Template.prototype.parse = function (template, stack) {
   }
 
   if (typeof last === 'function') stack = [last];
+  if (typeof last === 'boolean') sync = last;
+
   var ext = utils.pickExt(template, this);
   if (!Array.isArray(stack)) {
     if (ext) {
-      stack = this.getParsers(ext);
+      stack = this.getParsers(ext, sync);
     } else {
-      stack = this.getParsers('*');
+      stack = this.getParsers('*', sync);
     }
   }
-
   debug.parser('#{found parser stack}: ', stack);
 
   stack.forEach(function (fn) {
@@ -624,24 +638,18 @@ Template.prototype.parse = function (template, stack) {
 
 
 /**
- * Register the given view engine callback `fn` as `ext`. If only `ext`
- * is passed, the engine registered for `ext` is returned. If no `ext`
- * is passed, the entire cache is returned.
+ * Proxy for `parse`, returns a function that runs a
+ * `stack` of **sync parsers** on the given `template`.
  *
- * @doc api-engine
- * @param {String} `ext`
- * @param {Function|Object} `fn` or `options`
- * @param {Object} `options`
- * @return {Object} `Template` to enable chaining
+ * @param  {Object|String} `template` Either a string or an object.
+ * @param  {Array} `stack` Optionally pass an array of functions to use as parsers.
+ * @param  {Object} `options`
+ * @return {Function} Normalize `template` object.
  * @api public
  */
 
-Template.prototype.engine = function (extension, fn, options) {
-  debug.engine('#{engine} args: ', arguments);
-  utils.arrayify(extension).forEach(function (ext) {
-    this._registerEngine(ext, fn, options);
-  }.bind(this));
-  return this;
+Template.prototype.parseSync = function (template, stack) {
+  return this.parse(template, stack, true);
 };
 
 
@@ -672,6 +680,28 @@ Template.prototype._registerEngine = function (ext, fn, options) {
   }
 
   this.lazyLayouts(ext, opts);
+  return this;
+};
+
+
+/**
+ * Register the given view engine callback `fn` as `ext`. If only `ext`
+ * is passed, the engine registered for `ext` is returned. If no `ext`
+ * is passed, the entire cache is returned.
+ *
+ * @doc api-engine
+ * @param {String} `ext`
+ * @param {Function|Object} `fn` or `options`
+ * @param {Object} `options`
+ * @return {Object} `Template` to enable chaining
+ * @api public
+ */
+
+Template.prototype.engine = function (extension, fn, options) {
+  debug.engine('#{engine} args: ', arguments);
+  utils.arrayify(extension).forEach(function (ext) {
+    this._registerEngine(ext, fn, options);
+  }.bind(this));
   return this;
 };
 

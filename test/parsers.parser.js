@@ -11,7 +11,6 @@ var assert = require('assert');
 var should = require('should');
 var Template = require('..');
 var template = new Template();
-var matter = require('gray-matter');
 var utils = require('parser-utils');
 var _ = require('lodash');
 

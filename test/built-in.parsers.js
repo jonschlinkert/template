@@ -34,9 +34,9 @@ describe('default parsers', function () {
             file.a += 'c';
           });
 
-        template.getParsers('*').length.should.equal(4);
+        template.getParsers('*', true).length.should.equal(4);
 
-        var result = template.parse({a: ''});
+        var result = template.parseSync({a: ''});
         result.should.have.property('a', 'abc');
       });
     });
@@ -45,7 +45,7 @@ describe('default parsers', function () {
 
   describe('when the noop parser is used on a string:', function() {
     it('should return it on the `content` property.', function () {
-      var noop = template.getParsers('*');
+      var noop = template.getParsers('*', true);
       template.parse('<%= name %>', noop).should.have.property('content', '<%= name %>');
     });
   });

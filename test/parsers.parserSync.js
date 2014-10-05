@@ -15,6 +15,7 @@ var matter = require('gray-matter');
 var utils = require('parser-utils');
 var _ = require('lodash');
 
+
 describe('.parserSync()', function() {
   beforeEach(function() {
     template = new Template();
@@ -26,8 +27,8 @@ describe('.parserSync()', function() {
       template.parserSync('a', function () {});
       template.parserSync('a', function () {});
 
-      template.getParsers('a').should.be.an.array;
-      template.getParsers('a').length.should.equal(3);
+      template.getParsers('a', true).should.be.an.array;
+      template.getParsers('a', true).length.should.equal(3);
     });
 
     it('should add a parser to the `parsers` object.', function() {
@@ -73,8 +74,7 @@ describe('.parserSync()', function() {
         .parserSync('abc', function() {})
         .parserSync('abc', function() {})
 
-      template.getParsers('abc').length.should.equal(3);
+      template.getParsers('abc', true).length.should.equal(3);
     });
-
   });
 });

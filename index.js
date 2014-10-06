@@ -810,7 +810,7 @@ Template.prototype.trackType = function (plural, options) {
   var opts = extend({}, options);
   var type = this.templateType;
 
-  if (opts.isRenderable)
+  if (opts.isRenderable) {
     type.renderable.push(plural);
   }
   if (opts.isLayout) {

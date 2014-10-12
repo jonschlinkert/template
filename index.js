@@ -24,7 +24,7 @@ var Layouts = require('layouts');
 var Delims = require('delims');
 var utils = require('./lib/utils');
 var debug = require('./lib/debug');
-var extend = utils.extend;
+var extend = _.extend;
 var hasOwn = utils.hasOwn;
 
 
@@ -1143,7 +1143,6 @@ Template.prototype.preprocess = function (template, locals, cb) {
   }
 
   locals = extend({}, locals, this.mergePartials(locals), delims);
-
 
   // Ensure that `content` is a string.
   if (utils.isObject(content)) content = content.content;

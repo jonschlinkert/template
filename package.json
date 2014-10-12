@@ -20,6 +20,59 @@
       "url": "https://github.com/jonschlinkert/template/blob/master/LICENSE-MIT"
     }
   ],
+  "main": "index.js",
+  "engines": {
+    "node": ">=0.10.0"
+  },
+  "scripts": {
+    "test": "mocha -R spec"
+  },
+  "devDependencies": {
+    "async": "^0.9.0",
+    "consolidate": "^0.10.0",
+    "engine-handlebars": "^0.2.0",
+    "engines": "^0.4.0",
+    "gray-matter": "^0.5.0",
+    "gulp": "^3.8.7",
+    "gulp-prettify": "^0.3.0",
+    "handlebars": "^2.0.0",
+    "mocha": "*",
+    "should": "^4.0.4",
+    "swig": "^1.4.2",
+    "test-helpers": "^0.1.4",
+    "then-jade": "^2.1.0",
+    "verb": ">= 0.2.6",
+    "verb-tag-jscomments": "^0.2.1"
+  },
+  "dependencies": {
+    "ansi-styles": "^1.1.0",
+    "array-slice": "^0.2.0",
+    "arrayify-compact": "^0.1.0",
+    "chalk": "^0.5.1",
+    "config-cache": "^0.2.3",
+    "debug": "^2.0.0",
+    "deep-pick": "^0.1.0",
+    "delims": "^0.4.0",
+    "engine-cache": "^0.4.0",
+    "engine-lodash": "^0.2.0",
+    "engine-noop": "^0.1.0",
+    "for-own": "^0.1.1",
+    "has-any": "^0.1.0",
+    "helper-cache": "^0.2.3",
+    "is-empty": "0.0.1",
+    "kind-of": "^0.1.0",
+    "layouts": "^0.5.0",
+    "load-templates": "^0.4.3",
+    "lodash": "^2.4.1",
+    "object.omit": "^0.2.0",
+    "object.pick": "^0.1.1",
+    "omit-empty": "^0.2.0",
+    "parser-cache": "^0.4.4",
+    "parser-front-matter": "^0.2.2",
+    "parser-noop": "^0.2.2",
+    "parser-utils": "^0.3.0",
+    "uniqueid": "^0.1.0"
+  },
   "keywords": [
     "assemble",
     "atpl",
@@ -83,58 +136,5 @@
     "walrus",
     "whiskers",
     "yaml"
-  ],
-  "main": "index.js",
-  "engines": {
-    "node": ">=0.10.0"
-  },
-  "scripts": {
-    "test": "mocha -R spec"
-  },
-  "devDependencies": {
-    "async": "^0.9.0",
-    "consolidate": "^0.10.0",
-    "engine-handlebars": "^0.2.0",
-    "engines": "^0.4.0",
-    "gray-matter": "^0.5.0",
-    "gulp": "^3.8.7",
-    "gulp-prettify": "^0.3.0",
-    "gulp-util": "^3.0.1",
-    "mocha": "*",
-    "should": "^4.0.4",
-    "test-helpers": "^0.1.4",
-    "through2": "^0.6.1",
-    "verb": ">= 0.2.6",
-    "verb-tag-jscomments": "^0.2.1"
-  },
-  "dependencies": {
-    "ansi-styles": "^1.1.0",
-    "array-slice": "^0.2.0",
-    "arrayify-compact": "^0.1.0",
-    "chalk": "^0.5.1",
-    "config-cache": "^0.2.3",
-    "debug": "^2.0.0",
-    "deep-pick": "^0.1.0",
-    "delims": "^0.4.0",
-    "engine-cache": "^0.4.0",
-    "engine-lodash": "^0.2.0",
-    "engine-noop": "^0.1.0",
-    "for-own": "^0.1.1",
-    "has-any": "^0.1.0",
-    "helper-cache": "^0.2.3",
-    "is-empty": "0.0.1",
-    "js-beautify": "^1.5.1",
-    "kind-of": "^0.1.0",
-    "layouts": "^0.5.0",
-    "lodash": "^2.4.1",
-    "object-pick": "^0.1.0",
-    "omit-empty": "^0.2.0",
-    "omit-keys": "^0.1.0",
-    "parser-cache": "^0.4.4",
-    "parser-front-matter": "^0.2.2",
-    "parser-noop": "^0.2.2",
-    "parser-utils": "^0.3.0",
-    "uniqueid": "^0.1.0",
-    "vinyl-fs": "^0.3.7"
-  }
+  ]
 }

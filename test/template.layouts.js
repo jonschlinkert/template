@@ -84,7 +84,7 @@ describe('template layout', function () {
       template.cache.layouts.should.have.property('a.md');
     });
 
-    it('should merge locals and front-matter data.', function () {
+    it('should merge `data` with front-matter data.', function () {
       var template = new Template();
       template.layouts({'a.md': {content: '---\nname: AAA\n---\nThis is content.', data: {c: 'c'}}});
       template.cache.layouts.should.have.property('a.md');

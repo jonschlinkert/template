@@ -60,7 +60,7 @@ describe('default parsers', function () {
     res.should.have.property('content', 'abc-xyz');
   });
 
-  it('should parse content with the given parser.', function () {
+  it.skip('should parse content with the given parser.', function () {
     var fixture = '---\ntitle: Front Matter\n---\nThis is content.';
     var matter = template.getParsers('md');
 
@@ -77,7 +77,6 @@ describe('default parsers', function () {
 
   it('should parse content with the default parser.', function () {
     var matter = template.getParsers('md');
-
     template.parse('str', matter, function (file, value) {
       file.content.should.eql('str');
     });

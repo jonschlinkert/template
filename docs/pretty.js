@@ -1,8 +1,6 @@
 'use strict';
 
 var prettify = require('js-beautify').html;
-var merge = require('mixin-deep');
-
 
 /**
  * Format HTML using [js-beautify].
@@ -13,7 +11,7 @@ var merge = require('mixin-deep');
  */
 
 module.exports = function(html, options) {
-  return prettify(html, merge({
+  return prettify(html, extend({
     indent_handlebars: true,
     indent_inner_html: true,
     preserve_newlines: false,
@@ -23,3 +21,13 @@ module.exports = function(html, options) {
     indent_size: 2,
   }, options));
 };
+
+
+function extend(a, b) {
+  for (var key in b) {
+    if (b.hasOwnProperty(key)) {
+      a[key] = b[key];
+    }
+  }
+  return a;
+}

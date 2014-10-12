@@ -7,24 +7,26 @@
 
 'use strict';
 
-// process.env.DEBUG = 'template:*';
+// process.env.DEBUG = 'template:template';
 
 var _ = require('lodash');
 var path = require('path');
 var util = require('util');
 var chalk = require('chalk');
 var forOwn = require('for-own');
+var id = require('uniqueid');
 var Cache = require('config-cache');
 var Engines = require('engine-cache');
 var Helpers = require('helper-cache');
 var Parsers = require('parser-cache');
-var loader = require('load-templates');
+var Loader = require('load-templates');
 var Layouts = require('layouts');
 var Delims = require('delims');
 var utils = require('./lib/utils');
 var debug = require('./lib/debug');
 var extend = utils.extend;
 var hasOwn = utils.hasOwn;
+
 
 /**
  * Create a new instance of `Template`, optionally passing the default
@@ -442,9 +444,9 @@ Template.prototype.useDelims = function(ext) {
 
 Template.prototype.registerParser = function (ext, fn, opts, sync) {
   debug.parser('#{registering parser} args: ', arguments);
-
   var args = [].slice.call(arguments);
   var last = args[args.length - 1];
+  var parser = {};
 
   if (typeof args[0] !== 'string') {
     sync = opts;
@@ -457,8 +459,9 @@ Template.prototype.registerParser = function (ext, fn, opts, sync) {
     ext = '.' + ext;
   }
 
-  if (!this.parsers[ext]) this.parsers[ext] = [];
-  var parser = {};
+  if (!this.parsers[ext]) {
+    this.parsers[ext] = [];
+  }
 
   if (typeof fn === 'function') {
     if (last === true) {
@@ -610,9 +613,14 @@ Template.prototype.parse = function (template, stack, sync) {
 
   var args = [].slice.call(arguments);
   var last = args[args.length - 1];
+  var opts = { _hasPath: true };
 
   if (typeof template === 'string') {
-    template = this.format(template, {content: template});
+    opts = {_hasPath: false, id: this.id()};
+    template = this.format(template, {
+      content: template,
+      options: opts
+    });
   }
 
   if (typeof last === 'function') stack = [last];
@@ -626,6 +634,7 @@ Template.prototype.parse = function (template, stack, sync) {
       stack = this.getParsers('*', sync);
     }
   }
+
   debug.parser('#{found parser stack}: ', stack);
 
   stack.forEach(function (fn) {
@@ -634,6 +643,15 @@ Template.prototype.parse = function (template, stack, sync) {
 
   debug.parser('#{parsed} template: ', template);
   return template;
+};
+
+
+/**
+ * Generate a temporary id for an unknown template.
+ */
+
+Template.prototype.id = function () {
+  return id({prefix: '__id', suffix: '__'});
 };
 
 
@@ -924,7 +942,6 @@ Template.prototype.create = function(type, plural, options) {
   // if (!hasOwn(this._.helpers, type)) {
   //   this.defaultAsyncHelpers(type, plural);
   // }
-
   return this;
 };
 
@@ -943,37 +960,14 @@ Template.prototype.load = function (plural, options) {
   debug.template('#{load} args:', arguments);
 
   var opts = extend({}, this.options, options);
-  var load = loader(opts);
+  var loader = new Loader(opts);
 
   return function (key, value, locals) {
-    var loaded = load.apply(this, arguments);
-    var template = this.normalize(plural, loaded, options);
+    var loaded = loader.load.apply(loader, arguments);
+    var template = this.normalize(loaded, options);
     extend(this.cache[plural], template);
     return this;
   };
-};
-
-
-/**
- * Temporarily cache a template that was passed directly to the [render]
- * method.
- *
- * See [load-templates] for details on template formatting.
- *
- * @param  {String|Object|Function} `key`
- * @param  {Object} `value`
- * @param  {Object} `locals`
- * @return {Object} Normalized template object.
- */
-
-Template.prototype.format = function (key, value, locals) {
-  debug.template('#{format} args:', arguments);
-
-  var load = this.load('anonymous', { isRenderable: true });
-  load.apply(this, arguments);
-
-  var template = this.cache['anonymous'][key];
-  return this.extendLocals('render', template, locals);
 };
 
 
@@ -988,7 +982,7 @@ Template.prototype.format = function (key, value, locals) {
  * @return {Object} Normalized template.
  */
 
-Template.prototype.normalize = function (plural, template, options) {
+Template.prototype.normalize = function (template, options) {
   debug.template('#{normalize} args:', arguments);
 
   if (this.option('normalize')) {
@@ -1022,6 +1016,31 @@ Template.prototype.normalize = function (plural, template, options) {
     }
   }, this);
   return template;
+};
+
+
+/**
+ * Temporarily cache a template that was passed directly to the [render]
+ * method.
+ *
+ * See [load-templates] for details on template formatting.
+ *
+ * @param  {String|Object|Function} `key`
+ * @param  {Object} `value`
+ * @param  {Object} `locals`
+ * @return {Object} Normalized template object.
+ */
+
+Template.prototype.format = function (key, value, locals) {
+  debug.template('#{format} args:', arguments);
+
+  // Temporarily load a template onto the cache to normalize it.
+  var load = this.load('anonymous', { isRenderable: true });
+  load.apply(this, arguments);
+
+  // Get the normalized template and return it.
+  var template = this.cache['anonymous'][key];
+  return this.extendLocals('render', template, locals);
 };
 
 

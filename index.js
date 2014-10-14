@@ -425,7 +425,7 @@ Template.prototype.defaultHelpers = function(type, plural) {
  */
 
 Template.prototype.defaultAsyncHelpers = function (type, plural) {
-  this.helperAsync(type, function (name, locals, next) {
+  this.addHelperAsync(type, function (name, locals, next) {
     var last = _.last(arguments);
 
     debug.helper('#{async helper name}:', name);
@@ -734,9 +734,9 @@ Template.prototype.addHelper = function (name, fn, thisArg) {
  * @api public
  */
 
-Template.prototype.helperAsync = function (name, fn, thisArg) {
+Template.prototype.addHelperAsync = function (name, fn, thisArg) {
   debug.helper('#{adding async helper} name: %s', name);
-  return this._.helpers.helperAsync(name, fn, thisArg);
+  return this._.helpers.addHelperAsync(name, fn, thisArg);
 };
 
 

@@ -16,20 +16,13 @@ var _ = require('lodash');
 
 
 template.engine('md', require('engine-handlebars'));
-var helpers = template.helpers('md');
-
-template.parserSync('zen', function (acc, value, key) {
-  value = emmet.expandAbbreviation(value);
-  acc[key] = value;
+template.engine('tmpl', require('engine-lodash'));
+template.create('snippet', 'snippets', { isPartial: true , engine: 'tmpl' });
+template.addHelper('zen', function (value) {
+  return emmet.expandAbbreviation(value);
 });
 
-template.data({
-  title: 'Site!',
-  section: 'foo'
-});
-
-
-template.create('snippet', 'snippets', { isPartial: true });
+template.data({title: 'Site!', section: 'foo'});
 
 template.create('file', 'files', {
   isRenderable: true,
@@ -54,9 +47,10 @@ template.post('home.md', 'this is content.', {layout: 'base.md'});
 template.page('home.md', 'this is content.', {layout: 'base.md'});
 
 template.page('about.md','{{name}}', {name: 'Jon Schlinkert', layout: 'default.md'});
-// template.partial('sidebar.md', '<section>Sidebar</section>\n');
 template.partial('navbar.md', '<nav><ul><li>link</li></ul></nav>', {pretty: true});
-template.snippet('sidebar', 'ul>li*5>a[href=$]{Item $}');
+template.partial('sidebar.md', '<section>Sidebar</section>\n');
+// template.snippet('sidebar', '<%= zen("ul>li*5>a[href=$]{Item $}") %>');
+template.snippet('link', '<link rel="stylesheet" href="bootstrap.css">\n');
 
 
 template.layout('base.md', [
@@ -75,7 +69,7 @@ template.layout('default.md', [
   '  <head>',
   '    <meta charset="UTF-8">',
   '    <title>{{title}}</title>',
-  '    {{{snippet (zen "sidebar")}}}',
+  '    {{{snippet "link"}}}',
   '  </head>',
   '  <body>',
   '    {% body %}',
@@ -89,10 +83,10 @@ template.layout('default.md', [
 // console.log(pages);
 
 
-template.render('about.md', function (err, content) {
-  if (err) console.log(err);
-  console.log(content);
-});
+// template.render('about.md', function (err, content) {
+//   if (err) console.log(err);
+//   console.log(content);
+// });
 
 template.render('home.md', function (err, content) {
   if (err) console.log(err);

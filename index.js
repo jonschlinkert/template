@@ -16,6 +16,7 @@ var chalk = require('chalk');
 var forOwn = require('for-own');
 var id = require('uniqueid');
 var Cache = require('config-cache');
+var Router = require('en-route');
 var Engines = require('engine-cache');
 var Helpers = require('helper-cache');
 var Parsers = require('parser-cache');
@@ -26,6 +27,8 @@ var utils = require('./lib/utils');
 var debug = require('./lib/debug');
 var extend = _.extend;
 var hasOwn = utils.hasOwn;
+
+var Router = require('./router');
 
 
 /**
@@ -65,6 +68,7 @@ Template.prototype.init = function() {
   this.engines = this.engines || {};
   this.parsers = this.parsers || {};
   this.delims = this.delims || {};
+  this._stack = [];
 
   this._ = {};
   this.templateType = {};
@@ -95,6 +99,11 @@ Template.prototype.defaultConfig = function() {
   this._.helpers = new Helpers({
     bindFunctions: true,
     thisArg: this
+  });
+
+  this.__defineGetter__('router', function() {
+    this._usedRouter = true;
+    return this._router.middleware;
   });
 
   this.set('mixins', {});
@@ -207,6 +216,202 @@ Template.prototype.defaultTemplates = function() {
 
 
 /**
+ * Utilize the given middleware `fn` to the given `filepath`, defaulting to `_/_`.
+ *
+ * **Examples:**
+ *
+ * ```js
+ * site.use(template.prettyURLs());
+ * ```
+ *
+ * @param {String|Function} `filepath`
+ * @param {Function} fn
+ * @return {Object} `Template` for chaining
+ * @api public
+ */
+
+Template.prototype.use = function(filepath, fn) {
+  // default route to '/'
+  if (typeof filepath !== 'string') {
+    fn = filepath;
+    filepath = '/';
+  }
+
+  // strip trailing slash
+  if (filepath[filepath.length - 1] === '/') {
+    filepath = filepath.slice(0, -1);
+  }
+
+  // add the middleware
+  debug.plugin('use %s %s', filepath || '/', fn.name || 'anonymous');
+  this._stack.push({ path: filepath, handle: fn });
+  return this;
+};
+
+
+/**
+ * Lazily initalize router, to allow options to
+ * be passed in after init.
+ *
+ * @api private
+ */
+
+Template.prototype.lazyRouter = function() {
+  if (!this._router) {
+    this._router = new Router({
+      caseSensitive: this.enabled('case sensitive routing'),
+      strict: this.enabled('strict routing')
+    });
+  }
+};
+
+
+/**
+ * Set a router to be called.
+ *
+ * @param  {Object} `options`
+ * @return {Object} `Template` to enable chaining.
+ * @api private
+ */
+
+Template.prototype.route = function () {
+  debug.routes('#route', arguments);
+  this.lazyRouter();
+  this._router.route.apply(this._router, arguments);
+  return this;
+};
+
+
+/**
+ * **Example:**
+ *
+ * ```js
+ * var routes = assemble.router();
+ * routes.route(':basename.hbs', function (file, params, next) {
+ *   // do something with the file
+ *   next();
+ * });
+ *
+ * assemble.src('')
+ *   .pipe(routes())
+ *   .pipe(assemble.dest())
+ * ```
+ *
+ * @param  {Object} `options`
+ * @return {Function}
+ */
+
+Template.prototype.router = function(options) {
+  var self = this;
+
+  var opts = _.defaults({}, options, this.options, {
+    caseSensitive: this.enabled('case sensitive routing'),
+    strict: this.enabled('strict routing')
+  });
+
+  var router = new Router(opts);
+
+  // make a new function that gets returned for later use
+  var rte = function() {
+    opts.router = router;
+    return routes.call(self, opts);
+  };
+
+  // add new routes to the specific router
+  rte.route = function(route, fn) {
+    router.route(route, fn);
+  };
+
+  // return the new function
+  return rte;
+};
+
+
+/**
+ * Proxy to `Router#param()` with one added api feature. The _name_ parameter
+ * can be an array of names.
+ *
+ * @param {String|Array} `name`
+ * @param {Function} `fn`
+ * @return {Object} `Template` to enable chaining
+ * @api public
+ */
+
+Template.prototype.param = function(name, fn){
+  var self = this;
+  this.lazyRouter();
+
+  if (Array.isArray(name)) {
+    name.forEach(function(key) {
+      self.param(key, fn);
+    });
+    return this;
+  }
+
+  this._router.param(name, fn);
+  return this;
+};
+
+
+/**
+ * Lazily add a `Layout` instance if it has not yet been added.
+ * Also normalizes settings to pass to the `layouts` library.
+ *
+ * We can't instantiate `Layout` in the defaultConfig because
+ * it reads settings which might not be set until after init.
+ *
+ * @api private
+ */
+
+Template.prototype.lazyLayouts = function(ext, options) {
+  if (!hasOwn(this.layoutSettings, ext)) {
+    var opts = extend({}, this.options, options);
+
+    debug.layout('#{lazyLayouts} ext: %s', ext);
+
+    this.layoutSettings[ext] = new Layouts({
+      delims: opts.layoutDelims,
+      layouts: opts.layouts,
+      locals: opts.locals,
+      tag: opts.layoutTag,
+    });
+  }
+};
+
+
+/**
+ * If a layout is defined, apply it. Otherwise just return the content as-is.
+ *
+ * @param  {String} `ext` The layout settings to use.
+ * @param  {Object} `file` Template object, with `content` property.
+ * @return  {String} Either the string wrapped with a layout, or the original string if no layout was defined.
+ * @api private
+ */
+
+Template.prototype.applyLayout = function(ext, template, locals) {
+  debug.layout('#{lazyLayouts} ext: %s', ext);
+
+  var layoutEngine = this.layoutSettings[ext];
+  var obj = utils.pickContent(template);
+
+  if (layoutEngine && !template.options.hasLayout) {
+    debug.layout('#{applying layout} settings: ', layoutEngine);
+    template.options.hasLayout = true;
+
+    var opts = {};
+    if (utils.isPartial(template)) {
+      opts.defaultLayout = false;
+    }
+
+    var layout = utils.pickLayout(template, locals, true);
+    var result = layoutEngine.render(obj.content, layout, opts);
+    return result.content;
+  }
+  return obj.content;
+};
+
+
+/**
  * Load default helpers.
  *
  * @api private
@@ -266,64 +471,6 @@ Template.prototype.defaultAsyncHelpers = function (type, plural) {
       return;
     });
   }.bind(this));
-};
-
-
-/**
- * Lazily add a `Layout` instance if it has not yet been added.
- * Also normalizes settings to pass to the `layouts` library.
- *
- * We can't instantiate `Layout` in the defaultConfig because
- * it reads settings which might not be set until after init.
- *
- * @api private
- */
-
-Template.prototype.lazyLayouts = function(ext, options) {
-  if (!hasOwn(this.layoutSettings, ext)) {
-    var opts = extend({}, this.options, options);
-
-    debug.layout('#{lazyLayouts} ext: %s', ext);
-
-    this.layoutSettings[ext] = new Layouts({
-      delims: opts.layoutDelims,
-      layouts: opts.layouts,
-      locals: opts.locals,
-      tag: opts.layoutTag,
-    });
-  }
-};
-
-
-/**
- * If a layout is defined, apply it. Otherwise just return the content as-is.
- *
- * @param  {String} `ext` The layout settings to use.
- * @param  {Object} `file` Template object, with `content` property.
- * @return  {String} Either the string wrapped with a layout, or the original string if no layout was defined.
- * @api private
- */
-
-Template.prototype.applyLayout = function(ext, template, locals) {
-  debug.layout('#{lazyLayouts} ext: %s', ext);
-
-  var layoutEngine = this.layoutSettings[ext];
-  var obj = utils.pickContent(template);
-
-  if (layoutEngine && !template.options.hasLayout) {
-    debug.layout('#{applying layout} settings: ', layoutEngine);
-    template.options.hasLayout = true;
-
-    var opts = {};
-    if (utils.isPartial(template)) {
-      opts.defaultLayout = false;
-    }
-
-    var layout = utils.pickLayout(template, locals, true);
-    var result = layoutEngine.render(obj.content, layout, opts);
-    return result.content;
-  }
-  return obj.content;
 };
 
 
@@ -965,6 +1112,10 @@ Template.prototype.load = function (plural, options) {
   return function (key, value, locals) {
     var loaded = loader.load.apply(loader, arguments);
     var template = this.normalize(loaded, options);
+
+    if (!this._usedRouter) this.use(this.router);
+    var type = this._router.route.apply(this._router, arguments);
+
     extend(this.cache[plural], template);
     return this;
   };
@@ -992,11 +1143,13 @@ Template.prototype.normalize = function (template, options) {
   var renameKey = this.option('renameKey');
 
   forOwn(template, function (value, key) {
+    this.lazyRouter();
     value.options = extend({}, options, value.options);
     key = renameKey.call(this, key);
 
     var ext = utils.pickExt(value, value.options, this);
     this.lazyLayouts(ext, value.options);
+    // this.lazyRouter();
 
     var isLayout = utils.isLayout(value);
     utils.pickLayout(value);
@@ -1008,6 +1161,14 @@ Template.prototype.normalize = function (template, options) {
         value = parsed;
       }
     }
+
+    // Dispatch routes
+    // var results = this._router.dispatchSync(value);
+    // if (results.err) {
+    //   throw new Error(results.err);
+    // }
+    // console.log('results:', results);
+    // console.log('value:', value);
 
     template[key] = value;
 
@@ -1145,8 +1306,15 @@ Template.prototype.preprocess = function (template, locals, cb) {
   locals = extend({}, locals, this.mergePartials(locals), delims);
 
   // Ensure that `content` is a string.
-  if (utils.isObject(content)) content = content.content;
-  return { content: content, engine: engine, locals: locals };
+  if (utils.isObject(content)) {
+    content = content.content;
+  }
+
+  return {
+    content: content,
+    engine: engine,
+    locals: locals
+  };
 };
 
 
@@ -1177,6 +1345,16 @@ Template.prototype.render = function (content, locals, cb) {
 
   try {
     engine.render(content, locals, function (err, res) {
+
+      // this._router.dispatch(res, function (err) {
+      //   if (err) {
+      //     cb(err);
+      //     return;
+      //   } else {
+      //     console.log(arguments)
+      //   }
+      // }.bind(this));
+
       return this._.helpers.resolve(res, cb.bind(this));
     }.bind(this));
   } catch (err) {

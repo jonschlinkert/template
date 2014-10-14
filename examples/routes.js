@@ -4,19 +4,13 @@
  * Module dependencies
  */
 
-var emmet = require('emmet');
 var inspect = require('util').inspect;
 var Template = require('..');
 var template = new Template();
-var debug = require('debug')('template');
-var matter = require('gray-matter');
-var utils = require('parser-utils');
 var pretty = require('./pretty');
-var _ = require('lodash');
 
 
 template.engine('md', require('engine-handlebars'));
-template.engine('tmpl', require('engine-lodash'));
 
 template.page('about.md','{{name}}', {name: 'Jon Schlinkert', layout: 'base.md'});
 template.partial('navbar.md', '<nav><ul><li>link</li></ul></nav>');
@@ -24,23 +18,22 @@ template.data({title: 'Site!', section: 'Section Title'});
 
 
 template.route(/\.md/, function (params, next) {
-  return params;
   next();
 });
 
 template.create('foo', {isRenderable: true },
   function(foo, bar) {
-    return foo
+    return foo;
   },
   function(foo, bar) {
-    return foo
-  }
-  );
-
-template.create('bar', {isLayout: true },
-  function (foo, bar) {
-    return foo
+    return foo;
   });
+
+template.create('bar', {isLayout: true }, [
+  function (foo, bar) {
+    return foo;
+  }
+]);
 
 
 // template.create('partial', 'partials');

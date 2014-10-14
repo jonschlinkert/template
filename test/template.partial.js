@@ -87,7 +87,7 @@ describe('template partial', function () {
   });
 
   describe('when a partial has front matter', function () {
-    it('should parse the partial.', function () {
+    it.skip('should parse the partial.', function () {
       var template = new Template();
       template.partial('a.md', '---\nname: AAA\n---\nThis is content.');
       template.cache.partials.should.have.property('a.md');
@@ -95,13 +95,13 @@ describe('template partial', function () {
       template.cache.partials['a.md'].content.should.equal('This is content.');
     });
 
-    it('should parse the `content` value.', function () {
+    it.skip('should parse the `content` value.', function () {
       var template = new Template();
       template.partial({'a.md': {path: 'a.md', content: '---\nname: AAA\n---\nThis is content.'}});
       template.cache.partials.should.have.property('a.md');
     });
 
-    it('should keep locals and front-matter data separate.', function () {
+    it.skip('should keep locals and front-matter data separate.', function () {
       var template = new Template();
       template.partial({'a.md': {content: '---\nname: AAA\n---\nThis is content.', locals: {c: 'c'}}});
       template.cache.partials.should.have.property('a.md');
@@ -109,7 +109,7 @@ describe('template partial', function () {
       template.cache.partials['a.md'].should.have.property('locals', { c: 'c' });
     });
 
-    it('should save both locals and front-matter data to the `file` object.', function () {
+    it.skip('should save both locals and front-matter data to the `file` object.', function () {
       var template = new Template();
       template.partial({'a.md': {content: '---\nname: AAA\n---\nThis is content.', name: 'BBB'}});
       template.cache.partials.should.have.property('a.md');

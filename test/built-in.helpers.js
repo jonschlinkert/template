@@ -40,8 +40,8 @@ describe.skip('default helpers:', function () {
     });
   });
 
-  it('should use the `partial` helper with any engine.', function (done) {
-    template.parser('hbs', require('parser-front-matter'));
+  it.skip('should use the `partial` helper with any engine.', function (done) {
+    // template.parser('hbs', require('parser-front-matter'));
 
     template.engine('hbs', consolidate.handlebars);
     template.engine('md', consolidate.handlebars);

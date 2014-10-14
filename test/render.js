@@ -29,7 +29,6 @@ describe('template render', function () {
         if (err) console.log(err);
         this.should.have.property('cache');
         this.should.have.property('engines');
-        this.should.have.property('parsers');
         this.should.have.property('delims');
         this.should.have.property('options');
         done();

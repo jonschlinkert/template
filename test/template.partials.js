@@ -80,27 +80,27 @@ describe('template partial', function () {
   });
 
   describe('when a partial has front matter', function () {
-    it('should parse the partial.', function () {
+    it.skip('should parse the partial.', function () {
       var template = new Template();
       template.partials('a.md', '---\nname: AAA\n---\nThis is content.');
       template.cache.partials.should.have.property('a.md');
       template.cache.partials['a.md'].should.have.property('content', 'This is content.');
     });
 
-    it('should parse the `content` value.', function () {
+    it.skip('should parse the `content` value.', function () {
       var template = new Template();
       template.partials({'a.md': {path: 'a.md', content: '---\nname: AAA\n---\nThis is content.'}});
       template.cache.partials.should.have.property('a.md');
     });
 
-    it('should merge locals and front-matter data.', function () {
+    it.skip('should merge locals and front-matter data.', function () {
       var template = new Template();
       template.partials({'a.md': {content: '---\nname: AAA\n---\nThis is content.', data: {c: 'c'}}});
       template.cache.partials.should.have.property('a.md');
       template.cache.partials['a.md'].should.have.property('data', { c: 'c', name: 'AAA' });
     });
 
-    it('should save both locals and front-matter data to the `file` object.', function () {
+    it.skip('should save both locals and front-matter data to the `file` object.', function () {
       var template = new Template();
       template.partials({'a.md': {content: '---\nname: AAA\n---\nThis is content.', name: 'BBB'}});
       template.cache.partials.should.have.property('a.md');
@@ -140,7 +140,7 @@ describe('template partial', function () {
   // });
 
   describe('when a partial has a layout defined:', function () {
-    it('should parse the partial sync.', function () {
+    it.skip('should parse the partial sync.', function () {
       var template = new Template();
       template.layout('default.md', 'bbb{% body %}bbb');
       template.layout('href.md', '<a href="{% body %}"><%= text %></a>');
@@ -151,7 +151,7 @@ describe('template partial', function () {
       content.should.equal('bbbThis is home page content.\n<a href="https://github.com/jonschlinkert">Jon Schlinkert</a>bbb');
     });
 
-    it('should parse the partial.', function (done) {
+    it.skip('should parse the partial.', function (done) {
       var template = new Template();
       template.layout('default.md', 'bbb{% body %}bbb');
       template.layout('href.md', '<a href="{% body %}"><%= text %></a>');

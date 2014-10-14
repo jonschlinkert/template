@@ -13,7 +13,7 @@ var template = new Template();
 var _ = require('lodash');
 
 
-describe('.addHelperAsync():', function () {
+describe('.helperAsync():', function () {
   beforeEach(function () {
     template.init();
   });
@@ -22,11 +22,11 @@ describe('.addHelperAsync():', function () {
   it('should register _bound_ template async helper functions by default:', function (done) {
     var helpers = template.helpers('md');
 
-    helpers.addHelperAsync('a', function (str, callback) {
+    helpers.helperAsync('a', function (str, callback) {
       callback(null, str.toLowerCase());
     });
 
-    helpers.addHelperAsync('b', function (str, callback) {
+    helpers.helperAsync('b', function (str, callback) {
       callback(null, str.toUpperCase());
     });
 
@@ -49,10 +49,10 @@ describe('.addHelperAsync():', function () {
     var helpers = template.helpers('md');
 
     helpers
-      .addHelperAsync('a', function (str, callback) {
+      .helperAsync('a', function (str, callback) {
         callback(null, str.toLowerCase());
       })
-      .addHelperAsync('b', function (str, callback) {
+      .helperAsync('b', function (str, callback) {
         callback(null, str.toUpperCase());
       });
 
@@ -72,10 +72,10 @@ describe('.addHelperAsync():', function () {
 
   it('should use helpers registered for all engines:', function (done) {
     template
-      .addHelperAsync('a', function (str, callback) {
+      .helperAsync('a', function (str, callback) {
         callback(null, str.toLowerCase());
       })
-      .addHelperAsync('b', function (str, callback) {
+      .helperAsync('b', function (str, callback) {
         callback(null, str.toUpperCase());
       });
 

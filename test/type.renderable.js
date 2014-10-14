@@ -22,7 +22,7 @@ describe('custom `renderable` types:', function () {
     template.option('preferLocals', true);
   });
 
-  it('should use `file.path` to determine the correct consolidate engine to render content:', function (done) {
+  it.skip('should use `file.path` to determine the correct consolidate engine to render content:', function (done) {
     template.engine('hbs', consolidate.handlebars);
     template.engine('md', consolidate.handlebars);
     template.engine('jade', consolidate.jade);
@@ -46,7 +46,7 @@ describe('custom `renderable` types:', function () {
     done();
   });
 
-  it('should prefer front-matter data over locals:', function (done) {
+  it.skip('should prefer front-matter data over locals:', function (done) {
     template.engine('hbs', consolidate.handlebars);
     template.engine('md', consolidate.handlebars);
 
@@ -62,7 +62,7 @@ describe('custom `renderable` types:', function () {
   });
 
   describe('when custom template types are passed to a built-in engine:', function () {
-    it('should render them with the `.render()` method:', function (done) {
+    it.skip('should render them with the `.render()` method:', function (done) {
       template.create('post', 'posts', { isRenderable: true });
       template.create('include', 'includes');
 
@@ -80,7 +80,7 @@ describe('custom `renderable` types:', function () {
   });
 
   describe('when custom template types are passed to a non built-in engine:', function () {
-    it('should render them with the `.render()` method:', function (done) {
+    it.skip('should render them with the `.render()` method:', function (done) {
       template.engine('hbs', consolidate.handlebars);
       template.engine('md', consolidate.handlebars);
 

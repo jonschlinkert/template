@@ -11,7 +11,6 @@
 
 var _ = require('lodash');
 var path = require('path');
-var util = require('util');
 var chalk = require('chalk');
 var forOwn = require('for-own');
 var id = require('uniqueid');
@@ -19,7 +18,6 @@ var Cache = require('config-cache');
 var Router = require('en-route');
 var Engines = require('engine-cache');
 var Helpers = require('helper-cache');
-var Parsers = require('parser-cache');
 var Loader = require('load-templates');
 var Layouts = require('layouts');
 var Delims = require('delims');
@@ -64,7 +62,6 @@ Template.extend = Cache.extend;
 
 Template.prototype.init = function() {
   this.engines = this.engines || {};
-  this.parsers = this.parsers || {};
   this.delims = this.delims || {};
   this._stack = [];
 
@@ -78,8 +75,8 @@ Template.prototype.init = function() {
   this.defaultConfig();
   this.defaultOptions();
   this.defaultDelimiters();
+  // this.defaultMiddleware();
   this.defaultTemplates();
-  this.defaultParsers();
   this.defaultEngines();
 };
 
@@ -92,17 +89,16 @@ Template.prototype.init = function() {
 
 Template.prototype.defaultConfig = function() {
   this._.delims = new Delims(this.options);
-  this._.parsers = new Parsers(this.parsers);
   this._.engines = new Engines(this.engines);
   this._.helpers = new Helpers({
     bindFunctions: true,
     thisArg: this
   });
 
-  this.__defineGetter__('router', function() {
-    this._usedRouter = true;
-    return this._router.middleware;
-  });
+  // this.__defineGetter__('router', function() {
+  //   this._usedRouter = true;
+  //   return this._router.middleware;
+  // });
 
   this.set('mixins', {});
   this.set('locals', {});
@@ -143,10 +139,6 @@ Template.prototype.defaultOptions = function() {
   this.option('mergeFunction', extend);
   this.option('bindHelpers', true);
 
-  this.option('defaultParsers', true);
-  this.option('defaultEngines', true);
-  this.option('defaultHelpers', true);
-
   // loader options
   this.option('renameKey', function (filepath) {
     return path.basename(filepath);
@@ -155,15 +147,15 @@ Template.prototype.defaultOptions = function() {
 
 
 /**
- * Load default parsers
+ * Load default middleware
  *
  * @api private
  */
 
-Template.prototype.defaultParsers = function() {
+Template.prototype.defaultMiddleware = function() {
   var exts = this.option('defaultExts');
-  this.parser(exts, require('parser-front-matter'));
-  this.parser('*', require('parser-noop'));
+  this.use('*.{md,hbs}', require('parser-front-matter'));
+  this.use('*', require('parser-noop'));
 };
 
 
@@ -228,23 +220,23 @@ Template.prototype.defaultTemplates = function() {
  * @api public
  */
 
-Template.prototype.use = function(filepath, fn) {
-  // default route to '/'
-  if (typeof filepath !== 'string') {
-    fn = filepath;
-    filepath = '/';
-  }
+// Template.prototype.use = function(filepath, fn) {
+//   // default route to '/'
+//   if (typeof filepath !== 'string') {
+//     fn = filepath;
+//     filepath = '/';
+//   }
 
-  // strip trailing slash
-  if (filepath[filepath.length - 1] === '/') {
-    filepath = filepath.slice(0, -1);
-  }
+//   // strip trailing slash
+//   if (filepath[filepath.length - 1] === '/') {
+//     filepath = filepath.slice(0, -1);
+//   }
 
-  // add the middleware
-  debug.plugin('use %s %s', filepath || '/', fn.name || 'anonymous');
-  this._stack.push({ path: filepath, handle: fn });
-  return this;
-};
+//   // add the middleware
+//   debug.plugin('use %s %s', filepath || '/', fn.name || 'anonymous');
+//   this._stack.push({ path: filepath, handle: fn });
+//   return this;
+// };
 
 
 /**
@@ -254,14 +246,14 @@ Template.prototype.use = function(filepath, fn) {
  * @api private
  */
 
-Template.prototype.lazyRouter = function() {
-  if (!this._router) {
-    this._router = new Router({
-      caseSensitive: this.enabled('case sensitive routing'),
-      strict: this.enabled('strict routing')
-    });
-  }
-};
+// Template.prototype.lazyrouter = function() {
+//   if (!this._router) {
+//     this._router = new Router({
+//       caseSensitive: this.enabled('case sensitive routing'),
+//       strict: this.enabled('strict routing')
+//     });
+//   }
+// };
 
 
 /**
@@ -272,12 +264,12 @@ Template.prototype.lazyRouter = function() {
  * @api private
  */
 
-Template.prototype.route = function () {
-  debug.routes('#route', arguments);
-  this.lazyRouter();
-  this._router.route.apply(this._router, arguments);
-  return this;
-};
+// Template.prototype.route = function () {
+//   debug.routes('#route', arguments);
+//   this.lazyrouter();
+//   this._router.route.apply(this._router, arguments);
+//   return this;
+// };
 
 
 /**
@@ -299,30 +291,30 @@ Template.prototype.route = function () {
  * @return {Function}
  */
 
-Template.prototype.router = function(options) {
-  var self = this;
+// Template.prototype.router = function(options) {
+//   var self = this;
 
-  var opts = _.defaults({}, options, this.options, {
-    caseSensitive: this.enabled('case sensitive routing'),
-    strict: this.enabled('strict routing')
-  });
+//   var opts = _.defaults({}, options, this.options, {
+//     caseSensitive: this.enabled('case sensitive routing'),
+//     strict: this.enabled('strict routing')
+//   });
 
-  var router = new Router(opts);
+//   var router = new Router(opts);
 
-  // make a new function that gets returned for later use
-  var rte = function() {
-    opts.router = router;
-    return routes.call(self, opts);
-  };
+//   // make a new function that gets returned for later use
+//   var rte = function() {
+//     opts.router = router;
+//     return routes.call(self, opts);
+//   };
 
-  // add new routes to the specific router
-  rte.route = function(route, fn) {
-    router.route(route, fn);
-  };
+//   // add new routes to the specific router
+//   rte.route = function(route, fn) {
+//     router.route(route, fn);
+//   };
 
-  // return the new function
-  return rte;
-};
+//   // return the new function
+//   return rte;
+// };
 
 
 /**
@@ -335,20 +327,20 @@ Template.prototype.router = function(options) {
  * @api public
  */
 
-Template.prototype.param = function(name, fn){
-  var self = this;
-  this.lazyRouter();
+// Template.prototype.param = function(name, fn){
+//   var self = this;
+//   this.lazyrouter();
 
-  if (Array.isArray(name)) {
-    name.forEach(function(key) {
-      self.param(key, fn);
-    });
-    return this;
-  }
+//   if (Array.isArray(name)) {
+//     name.forEach(function(key) {
+//       self.param(key, fn);
+//     });
+//     return this;
+//   }
 
-  this._router.param(name, fn);
-  return this;
-};
+//   this._router.param(name, fn);
+//   return this;
+// };
 
 
 /**
@@ -433,7 +425,7 @@ Template.prototype.defaultHelpers = function(type, plural) {
  */
 
 Template.prototype.defaultAsyncHelpers = function (type, plural) {
-  this.addHelperAsync(type, function (name, locals, next) {
+  this.helperAsync(type, function (name, locals, next) {
     var last = _.last(arguments);
 
     debug.helper('#{async helper name}:', name);
@@ -568,228 +560,6 @@ Template.prototype.useDelims = function(ext) {
   return this.currentDelims = ext;
 };
 
-/**
- * Register the given parser callback `fn` as `ext`. If `ext`
- * is not given, the parser `fn` will be pushed into the
- * default parser stack.
- *
- * ```js
- * // Push the parser into the default stack
- * template.registerParser(require('parser-front-matter'));
- *
- * // Or push the parser into the `foo` stack
- * template.registerParser('foo', require('parser-front-matter'));
- * ```
- *
- * @param {String} `ext`
- * @param {Function|Object} `fn` or `options`
- * @return {Object} `parsers` to enable chaining.
- * @api public
- */
-
-Template.prototype.registerParser = function (ext, fn, opts, sync) {
-  debug.parser('#{registering parser} args: ', arguments);
-  var args = [].slice.call(arguments);
-  var last = args[args.length - 1];
-  var parser = {};
-
-  if (typeof args[0] !== 'string') {
-    sync = opts;
-    opts = fn;
-    fn = ext;
-    ext = '*';
-  }
-
-  if (ext[0] !== '.') {
-    ext = '.' + ext;
-  }
-
-  if (!this.parsers[ext]) {
-    this.parsers[ext] = [];
-  }
-
-  if (typeof fn === 'function') {
-    if (last === true) {
-      parser.parseSync = fn;
-    } else {
-      parser.parse = fn;
-    }
-  } else {
-    parser = fn;
-  }
-
-  if (opts && utils.isObject(opts)) {
-    parser.options = opts;
-  }
-
-  this.parsers[ext].push(parser);
-  return this;
-};
-
-
-/**
- * Returns an array of parser functions (stack) registered to the
- * given extension. If none exist an empty array is returned. By
- * default the method returns async parsers, pass `true` as a
- * second argument to return sync parsers.
- *
- * **Example:**
- *
- * ```js
- * var stack = template.getParsers('foo');
- * //=> [ [Function], [Function], [Function] ]
- *
- * var syncStack = template.getParsers('bar', true);
- * //=> [ [Function], [Function], [Function] ]
- * ```
- *
- * @param {String} `ext` The parser stack to get.
- * @param {String} `sync`
- * @return {Array} Parser stack for the given extension.
- * @api public
- */
-
-Template.prototype.getParsers = function (ext, sync) {
-  debug.parser('#{getting parser stack} args: ', arguments);
-  if (ext[0] !== '.') {
-    ext = '.' + ext;
-  }
-
-  if (!utils.hasOwn(this.parsers, ext)) return [];
-
-  return this.parsers[ext].map(function (parser) {
-    return sync ? parser.parseSync : parser.parse;
-  }).filter(Boolean);
-};
-
-
-/**
- * Define an async parser.
- *
- * Register the given parser callback `fn` as `ext`. If `ext`
- * is not given, the parser `fn` will be pushed into the
- * default parser stack.
- *
- * @doc api-parser
- * @param {String} `ext`
- * @param {Function|Object} `fn` or `options`
- * @param {Function} `fn` Callback function.
- * @return {Object} `Template` to enable chaining.
- * @api public
- */
-
-Template.prototype.parser = function (exts, fn) {
-  debug.parser('#{parser} args: ', arguments);
-  utils.arrayify(exts).forEach(function (ext) {
-    this.registerParser.call(this, ext, fn);
-  }.bind(this));
-  return this;
-};
-
-
-/**
- * Register a synchronous parser `fn` as `ext`. If `ext`
- * is not given, the parser `fn` will be pushed into the
- * default '*' parser stack.
- *
- * @doc api-parser
- * @param {String} `ext`
- * @param {Function|Object} `fn` or `options`
- * @param {Function} `fn` Callback function.
- * @return {Object} `Template` to enable chaining.
- * @api public
- */
-
-Template.prototype.parserSync = function (exts, fn) {
-  debug.parser('#{parserSync} args: ', arguments);
-  utils.arrayify(exts).forEach(function (ext) {
-    this.registerParser.call(this, ext, fn, true);
-  }.bind(this));
-  return this;
-};
-
-
-/**
- * Private method for running a parser function on a normalized
- * template.
- *
- * @param  {Object|String} `template` Template string or object.
- * @param  {Array} `fn` The parser function to call.
- * @return {Object} Parsed `template` object.
- * @api private
- */
-
-Template.prototype.runParser = function (template, fn) {
-  debug.parser('#{running parser}', template);
-  var called = false;
-  var i = 0;
-
-  return _.transform(template, function (acc, value, key) {
-    debug.parser('#{runParser:parsing}', acc);
-
-    if (!called) {
-      debug.parser('#{runParser:called}', acc);
-      called = true;
-      fn.call(this, acc, value, key, i++);
-    }
-  }.bind(this), template);
-};
-
-
-/**
- * Returns a function that runs a `stack` of async parsers on the
- * given `template`. See [parsers] for more about what they can do.
- *
- * If no stack is explictly passed, and if `template` is an object with
- * `path` or `ext` properties, the method will attempt to guess the stack
- * by looking on the cache for a parser stack registered to `ext`, (or
- * `extname` of `path`). If no stack is found the default `noop` parser stack
- * will be used.
- *
- * @doc api-parse
- * @param  {Object|String} `template` May be a string or an object.
- * @param  {Array} `stack` Optionally pass a function or array of functions to use as parsers.
- * @return {Object} Parsed `template` object.
- * @api public
- */
-
-Template.prototype.parse = function (template, stack, sync) {
-  debug.parser('#{parse called} args: ', arguments);
-
-  var args = [].slice.call(arguments);
-  var last = args[args.length - 1];
-  var opts = { _hasPath: true };
-
-  if (typeof template === 'string') {
-    opts = {_hasPath: false, id: this.id()};
-    template = this.format(template, {
-      content: template,
-      options: opts
-    });
-  }
-
-  if (typeof last === 'function') stack = [last];
-  if (typeof last === 'boolean') sync = last;
-
-  var ext = utils.pickExt(template, this);
-  if (!Array.isArray(stack)) {
-    if (ext) {
-      stack = this.getParsers(ext, sync);
-    } else {
-      stack = this.getParsers('*', sync);
-    }
-  }
-
-  debug.parser('#{found parser stack}: ', stack);
-
-  stack.forEach(function (fn) {
-    this.runParser(template, fn.bind(this));
-  }.bind(this));
-
-  debug.parser('#{parsed} template: ', template);
-  return template;
-};
-
 
 /**
  * Generate a temporary id for an unknown template.
@@ -797,22 +567,6 @@ Template.prototype.parse = function (template, stack, sync) {
 
 Template.prototype.id = function () {
   return id({prefix: '__id', suffix: '__'});
-};
-
-
-/**
- * Proxy for `parse`, returns a function that runs a
- * `stack` of **sync parsers** on the given `template`.
- *
- * @param  {Object|String} `template` Either a string or an object.
- * @param  {Array} `stack` Optionally pass an array of functions to use as parsers.
- * @param  {Object} `options`
- * @return {Function} Normalize `template` object.
- * @api public
- */
-
-Template.prototype.parseSync = function (template, stack) {
-  return this.parse(template, stack, true);
 };
 
 
@@ -929,8 +683,7 @@ Template.prototype.addMixin = function (name, fn) {
 
 Template.prototype.helper = function (ext) {
   debug.helper('#{helper} ext: %s', ext);
-  var engine = this.getEngine(ext);
-  return engine.helpers;
+  return this.getEngine(ext).helpers;
 };
 
 
@@ -948,8 +701,7 @@ Template.prototype.helper = function (ext) {
 
 Template.prototype.helpers = function (ext) {
   debug.helper('#{helpers} ext: %s', ext);
-  var engine = this.getEngine(ext);
-  return engine.helpers;
+  return this.getEngine(ext).helpers;
 };
 
 
@@ -982,9 +734,9 @@ Template.prototype.addHelper = function (name, fn, thisArg) {
  * @api public
  */
 
-Template.prototype.addHelperAsync = function (name, fn, thisArg) {
+Template.prototype.helperAsync = function (name, fn, thisArg) {
   debug.helper('#{adding async helper} name: %s', name);
-  return this._.helpers.addHelperAsync(name, fn, thisArg);
+  return this._.helpers.helperAsync(name, fn, thisArg);
 };
 
 
@@ -1136,6 +888,7 @@ Template.prototype.load = function (plural, options) {
 
 Template.prototype.normalize = function (template, options) {
   debug.template('#{normalize} args:', arguments);
+  // this.lazyrouter();
 
   if (this.option('normalize')) {
     return this.options.normalize.apply(this, arguments);
@@ -1144,31 +897,22 @@ Template.prototype.normalize = function (template, options) {
   var renameKey = this.option('renameKey');
 
   forOwn(template, function (value, key) {
-    this.lazyRouter();
     value.options = extend({}, options, value.options);
     key = renameKey.call(this, key);
 
     var ext = utils.pickExt(value, value.options, this);
     this.lazyLayouts(ext, value.options);
-    this.lazyRouter();
 
     var isLayout = utils.isLayout(value);
     utils.pickLayout(value);
 
-    var stack = this.getParsers(ext, true);
-    if (stack) {
-      var parsed = this.parse(value, stack);
-      if (parsed) {
-        value = parsed;
-      }
-    }
 
     // Dispatch routes
-    var results = this._router.dispatchSync(value);
-    if (results.err) {
-      throw new Error(results.err);
-    }
-    console.log('results:', results);
+    // var results = this._router.dispatchSync(value);
+    // if (results.err) {
+    //   throw new Error(results.err);
+    // }
+    // console.log('results:', results);
     // console.log('value:', value);
 
     template[key] = value;
@@ -1259,7 +1003,6 @@ Template.prototype.preprocess = function (template, locals, cb) {
   var engine = locals.engine;
   var delims = locals.delims;
   var content = template;
-  var layout;
   var tmpl;
   var key;
 
@@ -1329,16 +1072,18 @@ Template.prototype.preprocess = function (template, locals, cb) {
  */
 
 Template.prototype.render = function (content, locals, cb) {
+  var self = this;
+
   if (typeof locals === 'function') {
     cb = locals;
     locals = {};
   }
 
-  var ext = this.option('viewEngine');
-  var engine = this.getEngine(ext);
+  var ext = self.option('viewEngine');
+  var engine = self.getEngine(ext);
 
-  if (this.option('preprocess')) {
-    var pre = this.preprocess(content, locals);
+  if (self.option('preprocess')) {
+    var pre = self.preprocess(content, locals);
     content = pre.content;
     locals = pre.locals;
     engine = pre.engine;
@@ -1347,17 +1092,17 @@ Template.prototype.render = function (content, locals, cb) {
   try {
     engine.render(content, locals, function (err, res) {
 
-      // this._router.dispatch(res, function (err) {
+      // self._router.dispatch(res, function (err) {
       //   if (err) {
       //     cb(err);
       //     return;
       //   } else {
       //     console.log(arguments)
       //   }
-      // }.bind(this));
+      // }.bind(self));
 
-      return this._.helpers.resolve(res, cb.bind(this));
-    }.bind(this));
+      return self._.helpers.resolve(res, cb.bind(self));
+    });
   } catch (err) {
     cb(err);
   }

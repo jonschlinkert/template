@@ -70,7 +70,7 @@ describe('template layout', function () {
   });
 
   describe('when a layout has front matter', function () {
-    it('should parse the layout.', function () {
+    it.skip('should parse the layout.', function () {
       var template = new Template();
       template.layouts('a.md', '---\nname: AAA\n---\nThis is content.');
       template.cache.layouts.should.have.property('a.md');
@@ -78,13 +78,13 @@ describe('template layout', function () {
       template.cache.layouts['a.md'].content.should.equal('This is content.');
     });
 
-    it('should parse the `content` value.', function () {
+    it.skip('should parse the `content` value.', function () {
       var template = new Template();
       template.layouts({'a.md': {path: 'a.md', content: '---\nname: AAA\n---\nThis is content.'}});
       template.cache.layouts.should.have.property('a.md');
     });
 
-    it('should merge `data` with front-matter data.', function () {
+    it.skip('should merge `data` with front-matter data.', function () {
       var template = new Template();
       template.layouts({'a.md': {content: '---\nname: AAA\n---\nThis is content.', data: {c: 'c'}}});
       template.cache.layouts.should.have.property('a.md');
@@ -92,7 +92,7 @@ describe('template layout', function () {
       template.cache.layouts['a.md'].data.name.should.equal('AAA');
     });
 
-    it('should save both locals and front-matter data to the `file` object.', function () {
+    it.skip('should save both locals and front-matter data to the `file` object.', function () {
       var template = new Template();
       template.layouts({'a.md': {content: '---\nname: AAA\n---\nThis is content.', name: 'BBB'}});
       template.cache.layouts.should.have.property('a.md');

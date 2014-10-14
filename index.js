@@ -11,6 +11,7 @@
 
 var _ = require('lodash');
 var path = require('path');
+var async = require('async');
 var chalk = require('chalk');
 var forOwn = require('for-own');
 var id = require('uniqueid');
@@ -75,7 +76,7 @@ Template.prototype.init = function() {
   this.defaultConfig();
   this.defaultOptions();
   this.defaultDelimiters();
-  // this.defaultMiddleware();
+  this.defaultMiddleware();
   this.defaultTemplates();
   this.defaultEngines();
 };
@@ -95,10 +96,10 @@ Template.prototype.defaultConfig = function() {
     thisArg: this
   });
 
-  // this.__defineGetter__('router', function() {
-  //   this._usedRouter = true;
-  //   return this._router.middleware;
-  // });
+  this.__defineGetter__('router', function() {
+    this._usedRouter = true;
+    return this._router.middleware;
+  });
 
   this.set('mixins', {});
   this.set('locals', {});
@@ -153,9 +154,9 @@ Template.prototype.defaultOptions = function() {
  */
 
 Template.prototype.defaultMiddleware = function() {
-  var exts = this.option('defaultExts');
-  this.use('*.{md,hbs}', require('parser-front-matter'));
-  this.use('*', require('parser-noop'));
+  // var exts = this.option('defaultExts');
+  // this.use('*.{md,hbs}', require('parser-front-matter'));
+  // this.use('*', require('parser-noop'));
 };
 
 
@@ -220,23 +221,23 @@ Template.prototype.defaultTemplates = function() {
  * @api public
  */
 
-// Template.prototype.use = function(filepath, fn) {
-//   // default route to '/'
-//   if (typeof filepath !== 'string') {
-//     fn = filepath;
-//     filepath = '/';
-//   }
+Template.prototype.use = function(filepath, fn) {
+  // default route to '/'
+  if (typeof filepath !== 'string') {
+    fn = filepath;
+    filepath = '/';
+  }
 
-//   // strip trailing slash
-//   if (filepath[filepath.length - 1] === '/') {
-//     filepath = filepath.slice(0, -1);
-//   }
+  // strip trailing slash
+  if (filepath[filepath.length - 1] === '/') {
+    filepath = filepath.slice(0, -1);
+  }
 
-//   // add the middleware
-//   debug.plugin('use %s %s', filepath || '/', fn.name || 'anonymous');
-//   this._stack.push({ path: filepath, handle: fn });
-//   return this;
-// };
+  // add the middleware
+  debug.plugin('use %s %s', filepath || '/', fn.name || 'anonymous');
+  this._stack.push({ path: filepath, handle: fn });
+  return this;
+};
 
 
 /**
@@ -246,14 +247,14 @@ Template.prototype.defaultTemplates = function() {
  * @api private
  */
 
-// Template.prototype.lazyrouter = function() {
-//   if (!this._router) {
-//     this._router = new Router({
-//       caseSensitive: this.enabled('case sensitive routing'),
-//       strict: this.enabled('strict routing')
-//     });
-//   }
-// };
+Template.prototype.lazyrouter = function() {
+  if (!this._router) {
+    this._router = new Router({
+      caseSensitive: this.enabled('case sensitive routing'),
+      strict: this.enabled('strict routing')
+    });
+  }
+};
 
 
 /**
@@ -264,57 +265,76 @@ Template.prototype.defaultTemplates = function() {
  * @api private
  */
 
-// Template.prototype.route = function () {
-//   debug.routes('#route', arguments);
-//   this.lazyrouter();
-//   this._router.route.apply(this._router, arguments);
-//   return this;
-// };
+Template.prototype.dispatch = function (done) {
+  debug.routes('#routes:dispatch', arguments);
+  this.lazyrouter();
+
+  this._router.dispatch.apply(this._router, arguments);
+
+
+  return this;
+};
+
+
+/**
+ * Set a router to be called.
+ *
+ * @param  {Object} `options`
+ * @return {Object} `Template` to enable chaining.
+ * @api private
+ */
+
+Template.prototype.route = function () {
+  debug.routes('#route', arguments);
+  this.lazyrouter();
+  this._router.route.apply(this._router, arguments);
+  return this;
+};
 
 
 /**
  * **Example:**
  *
  * ```js
- * var routes = assemble.router();
+ * var routes = template.router();
  * routes.route(':basename.hbs', function (file, params, next) {
  *   // do something with the file
  *   next();
  * });
  *
- * assemble.src('')
+ * template.src('')
  *   .pipe(routes())
- *   .pipe(assemble.dest())
+ *   .pipe(template.dest())
  * ```
  *
  * @param  {Object} `options`
  * @return {Function}
  */
 
-// Template.prototype.router = function(options) {
-//   var self = this;
+Template.prototype.router = function(options) {
+  var self = this;
 
-//   var opts = _.defaults({}, options, this.options, {
-//     caseSensitive: this.enabled('case sensitive routing'),
-//     strict: this.enabled('strict routing')
-//   });
+  var opts = _.defaults({}, options, this.options, {
+    caseSensitive: this.enabled('case sensitive routing'),
+    strict: this.enabled('strict routing')
+  });
 
-//   var router = new Router(opts);
+  var router = new Router(opts);
 
-//   // make a new function that gets returned for later use
-//   var rte = function() {
-//     opts.router = router;
-//     return routes.call(self, opts);
-//   };
+  // make a new function that gets returned for later use
+  var rte = function() {
+    opts.router = router;
+    return routes.call(self, opts);
+  };
 
-//   // add new routes to the specific router
-//   rte.route = function(route, fn) {
-//     router.route(route, fn);
-//   };
+  // add new routes to the specific router
+  rte.route = function(route, fn) {
+    router.route(route, fn);
+  };
 
-//   // return the new function
-//   return rte;
-// };
+  // return the new function
+  return rte;
+};
 
 
 /**
@@ -327,20 +347,20 @@ Template.prototype.defaultTemplates = function() {
  * @api public
  */
 
-// Template.prototype.param = function(name, fn){
-//   var self = this;
-//   this.lazyrouter();
+Template.prototype.param = function(name, fn){
+  var self = this;
+  this.lazyrouter();
 
-//   if (Array.isArray(name)) {
-//     name.forEach(function(key) {
-//       self.param(key, fn);
-//     });
-//     return this;
-//   }
+  if (Array.isArray(name)) {
+    name.forEach(function(key) {
+      self.param(key, fn);
+    });
+    return this;
+  }
 
-//   this._router.param(name, fn);
-//   return this;
-// };
+  this._router.param(name, fn);
+  return this;
+};
 
 
 /**
@@ -816,6 +836,16 @@ Template.prototype.create = function(type, plural, options, fns) {
     plural = type + 's';
   }
 
+  var middleware = [];
+
+  if (Array.isArray(fns)) {
+    middleware = middleware.concat(fns);
+  }
+
+  middleware = middleware.concat(_.filter(args, function (arg) {
+    return typeof arg === 'function';
+  }));
+
   this.cache[plural] = this.cache[plural] || {};
   this.trackType(plural, options);
 
@@ -864,7 +894,7 @@ Template.prototype.load = function (plural, options) {
 
   return function (key, value, locals) {
     var loaded = loader.load.apply(loader, arguments);
-    var template = this.normalize(loaded, options);
+    var template = this.normalize(plural, loaded, options);
 
     // if (!this._usedRouter) this.use(this.router);
     // var type = this._router.route.apply(this._router, arguments);
@@ -886,7 +916,7 @@ Template.prototype.load = function (plural, options) {
  * @return {Object} Normalized template.
  */
 
-Template.prototype.normalize = function (template, options) {
+Template.prototype.normalize = function (plural, template, options) {
   debug.template('#{normalize} args:', arguments);
   // this.lazyrouter();
 
@@ -897,7 +927,7 @@ Template.prototype.normalize = function (template, options) {
   var renameKey = this.option('renameKey');
 
   forOwn(template, function (value, key) {
-    value.options = extend({}, options, value.options);
+    value.options = extend({type: plural}, options, value.options);
     key = renameKey.call(this, key);
 
     var ext = utils.pickExt(value, value.options, this);
@@ -1000,6 +1030,7 @@ Template.prototype.preprocess = function (template, locals, cb) {
   }
 
   locals = locals || {};
+  var value = {};
   var engine = locals.engine;
   var delims = locals.delims;
   var content = template;
@@ -1034,6 +1065,7 @@ Template.prototype.preprocess = function (template, locals, cb) {
 
   // if a layout is defined, apply it now.
   content = this.applyLayout(ext, template, locals);
+  value.content = content;
 
   if (delims) this.addDelims(ext, delims);
   if (utils.isString(engine)) {
@@ -1048,6 +1080,10 @@ Template.prototype.preprocess = function (template, locals, cb) {
   }
 
   locals = extend({}, locals, this.mergePartials(locals), delims);
+  value.engine = engine;
+  value.delims = delims;
+  value.locals = locals;
+  value.ext = ext;
 
   // Ensure that `content` is a string.
   if (utils.isObject(content)) {
@@ -1088,6 +1124,8 @@ Template.prototype.render = function (content, locals, cb) {
     locals = pre.locals;
     engine = pre.engine;
   }
+
+  // console.log(pre)
 
   try {
     engine.render(content, locals, function (err, res) {

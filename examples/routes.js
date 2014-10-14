@@ -17,21 +17,36 @@ template.partial('navbar.md', '<nav><ul><li>link</li></ul></nav>');
 template.data({title: 'Site!', section: 'Section Title'});
 
 
-template.route(/\.md/, function (params, next) {
-  next();
+template.route(/\.md/, function (value, key, next) {
+  // {path: 'a/b/c.md', content: 'this is content', locals: {}, options: {}}
+  // foo
+
+  next(null, value, key);
 });
 
-template.create('foo', {isRenderable: true },
-  function(foo, bar) {
-    return foo;
+
+
+// template.route(
+//   function (value, key, orig) {
+//     if (key === 'content') {
+
+//     }
+//   },
+//   function (params, next) {
+//   next();
+// });
+
+template.create('post', {isRenderable: true },
+  function(value, key, next) {
+    next(null, value, key)
   },
-  function(foo, bar) {
-    return foo;
+  function(value, key) {
+    next(null, value, key)
   });
 
-template.create('bar', {isLayout: true }, [
-  function (foo, bar) {
-    return foo;
+template.create('doc', {isLayout: true }, [
+  function(value, key) {
+    next(null, value, key)
   }
 ]);
 

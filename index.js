@@ -28,8 +28,6 @@ var debug = require('./lib/debug');
 var extend = _.extend;
 var hasOwn = utils.hasOwn;
 
-var Router = require('./router');
-
 
 /**
  * Create a new instance of `Template`, optionally passing the default
@@ -1056,11 +1054,14 @@ Template.prototype.getType = function (type) {
  * @api public
  */
 
-Template.prototype.create = function(type, plural, options) {
-  debug.template('#{creating template}: %s, %s', type, plural);
+Template.prototype.create = function(type, plural, options, fns) {
+  debug.template('#{creating template}: %s', type);
 
+  var args = [].slice.call(arguments);
   if (typeof plural !== 'string') {
-    throw new Error('A plural form must be defined for: "' + type + '".');
+    fns = options;
+    options = plural;
+    plural = type + 's';
   }
 
   this.cache[plural] = this.cache[plural] || {};
@@ -1113,8 +1114,8 @@ Template.prototype.load = function (plural, options) {
     var loaded = loader.load.apply(loader, arguments);
     var template = this.normalize(loaded, options);
 
-    if (!this._usedRouter) this.use(this.router);
-    var type = this._router.route.apply(this._router, arguments);
+    // if (!this._usedRouter) this.use(this.router);
+    // var type = this._router.route.apply(this._router, arguments);
 
     extend(this.cache[plural], template);
     return this;
@@ -1149,7 +1150,7 @@ Template.prototype.normalize = function (template, options) {
 
     var ext = utils.pickExt(value, value.options, this);
     this.lazyLayouts(ext, value.options);
-    // this.lazyRouter();
+    this.lazyRouter();
 
     var isLayout = utils.isLayout(value);
     utils.pickLayout(value);
@@ -1163,11 +1164,11 @@ Template.prototype.normalize = function (template, options) {
     }
 
     // Dispatch routes
-    // var results = this._router.dispatchSync(value);
-    // if (results.err) {
-    //   throw new Error(results.err);
-    // }
-    // console.log('results:', results);
+    var results = this._router.dispatchSync(value);
+    if (results.err) {
+      throw new Error(results.err);
+    }
+    console.log('results:', results);
     // console.log('value:', value);
 
     template[key] = value;

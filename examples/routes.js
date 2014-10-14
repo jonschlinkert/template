@@ -24,10 +24,26 @@ template.data({title: 'Site!', section: 'Section Title'});
 
 
 template.route(/\.md/, function (params, next) {
-  console.log(arguments);
+  return params;
   next();
 });
 
+template.create('foo', {isRenderable: true },
+  function(foo, bar) {
+    return foo
+  },
+  function(foo, bar) {
+    return foo
+  }
+  );
+
+template.create('bar', {isLayout: true },
+  function (foo, bar) {
+    return foo
+  });
+
+
+// template.create('partial', 'partials');
 
 template.layout('base.md', [
   '---',

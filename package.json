@@ -57,7 +57,7 @@
     "debug": "^2.0.0",
     "deep-pick": "^0.1.0",
     "delims": "^0.4.0",
-    "en-route": "^0.1.3",
+    "en-route": "git://github.com/jonschlinkert/en-route#argument-refactor",
     "engine-cache": "^0.4.0",
     "engine-lodash": "^0.2.0",
     "engine-noop": "^0.1.0",

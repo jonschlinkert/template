@@ -96,11 +96,6 @@ Template.prototype.defaultConfig = function() {
     thisArg: this
   });
 
-  this.__defineGetter__('router', function() {
-    this._usedRouter = true;
-    return this._router.middleware;
-  });
-
   this.set('mixins', {});
   this.set('locals', {});
   this.set('imports', {});
@@ -154,9 +149,9 @@ Template.prototype.defaultOptions = function() {
  */
 
 Template.prototype.defaultMiddleware = function() {
-  // var exts = this.option('defaultExts');
-  // this.use('*.{md,hbs}', require('parser-front-matter'));
-  // this.use('*', require('parser-noop'));
+  var exts = this.option('defaultExts');
+  this.route('*.{md,hbs}', utils.makeMiddleware(require('parser-front-matter')));
+  this.route('*', utils.makeMiddleware(require('parser-noop')));
 };
 
 
@@ -221,23 +216,23 @@ Template.prototype.defaultTemplates = function() {
  * @api public
  */
 
-Template.prototype.use = function(filepath, fn) {
-  // default route to '/'
-  if (typeof filepath !== 'string') {
-    fn = filepath;
-    filepath = '/';
-  }
+// Template.prototype.use = function(filepath, fn) {
+//   // default route to '/'
+//   if (typeof filepath !== 'string') {
+//     fn = filepath;
+//     filepath = '/';
+//   }
 
-  // strip trailing slash
-  if (filepath[filepath.length - 1] === '/') {
-    filepath = filepath.slice(0, -1);
-  }
+//   // strip trailing slash
+//   if (filepath[filepath.length - 1] === '/') {
+//     filepath = filepath.slice(0, -1);
+//   }
 
-  // add the middleware
-  debug.plugin('use %s %s', filepath || '/', fn.name || 'anonymous');
-  this._stack.push({ path: filepath, handle: fn });
-  return this;
-};
+//   // add the middleware
+//   debug.plugin('use %s %s', filepath || '/', fn.name || 'anonymous');
+//   this._stack.push({ path: filepath, handle: fn });
+//   return this;
+// };
 
 
 /**
@@ -258,36 +253,43 @@ Template.prototype.lazyrouter = function() {
 
 
 /**
- * Set a router to be called.
+ * Dispatch a template through a middleware stack
  *
- * @param  {Object} `options`
- * @return {Object} `Template` to enable chaining.
+ * @param  {arguments} `arguments` Any arguments that should be passed through the middleware stack
  * @api private
  */
 
-Template.prototype.dispatch = function (done) {
-  debug.routes('#routes:dispatch', arguments);
+Template.prototype.middleware = function () {
+  debug.routes('#routes:middleware', arguments);
   this.lazyrouter();
-
-  this._router.dispatch.apply(this._router, arguments);
-
-
-  return this;
+  this._router.middleware.apply(this._router, arguments);
 };
 
 
 /**
  * Set a router to be called.
  *
- * @param  {Object} `options`
+ * @param  {Function|String} `filter` Either string or filter function used to determine which middleware stack to run.
+ * @param  {Function|Array}  `middleware` Middleware stack to run for this filter.
  * @return {Object} `Template` to enable chaining.
  * @api private
  */
 
-Template.prototype.route = function () {
+Template.prototype.route = function (filter) {
   debug.routes('#route', arguments);
   this.lazyrouter();
-  this._router.route.apply(this._router, arguments);
+
+  // if the filter is a string, turn it into a filter that
+  // we expect for view-cache
+  if (typeof filter === 'string') {
+    var str = filter;
+    filter = function (value, key) {
+      this.createPathRegex(str);
+      return this.matchStr(key);
+    };
+  }
+  var args = [filter].concat([].slice.call(arguments, 1));
+  this._router.route.apply(this._router, args);
   return this;
 };
 
@@ -311,30 +313,30 @@ Template.prototype.route = function () {
  * @return {Function}
  */
 
-Template.prototype.router = function(options) {
-  var self = this;
+// Template.prototype.router = function(options) {
+//   var self = this;
 
-  var opts = _.defaults({}, options, this.options, {
-    caseSensitive: this.enabled('case sensitive routing'),
-    strict: this.enabled('strict routing')
-  });
+//   var opts = _.defaults({}, options, this.options, {
+//     caseSensitive: this.enabled('case sensitive routing'),
+//     strict: this.enabled('strict routing')
+//   });
 
-  var router = new Router(opts);
+//   var router = new Router(opts);
 
-  // make a new function that gets returned for later use
-  var rte = function() {
-    opts.router = router;
-    return routes.call(self, opts);
-  };
+//   // make a new function that gets returned for later use
+//   var rte = function() {
+//     opts.router = router;
+//     return routes.call(self, opts);
+//   };
 
-  // add new routes to the specific router
-  rte.route = function(route, fn) {
-    router.route(route, fn);
-  };
+//   // add new routes to the specific router
+//   rte.route = function(route, fn) {
+//     router.route(route, fn);
+//   };
 
-  // return the new function
-  return rte;
-};
+//   // return the new function
+//   return rte;
+// };
 
 
 /**
@@ -347,20 +349,20 @@ Template.prototype.router = function(options) {
  * @api public
  */
 
-Template.prototype.param = function(name, fn){
-  var self = this;
-  this.lazyrouter();
+// Template.prototype.param = function(name, fn){
+//   var self = this;
+//   this.lazyrouter();
 
-  if (Array.isArray(name)) {
-    name.forEach(function(key) {
-      self.param(key, fn);
-    });
-    return this;
-  }
+//   if (Array.isArray(name)) {
+//     name.forEach(function(key) {
+//       self.param(key, fn);
+//     });
+//     return this;
+//   }
 
-  this._router.param(name, fn);
-  return this;
-};
+//   this._router.param(name, fn);
+//   return this;
+// };
 
 
 /**
@@ -835,19 +837,11 @@ Template.prototype.create = function(type, plural, options, fns) {
     options = plural;
     plural = type + 's';
   }
-
-  var middleware = [];
-
-  if (Array.isArray(fns)) {
-    middleware = middleware.concat(fns);
-  }
-
-  middleware = middleware.concat(_.filter(args, function (arg) {
-    return typeof arg === 'function';
-  }));
+  var middleware = utils.pickMiddleware(fns, args);
 
   this.cache[plural] = this.cache[plural] || {};
   this.trackType(plural, options);
+  this.typeMiddleware(plural, middleware);
 
   Template.prototype[type] = function (key, value, locals, opt) {
     debug.template('#{creating template type}:', type);
@@ -877,6 +871,19 @@ Template.prototype.create = function(type, plural, options, fns) {
 
 
 /**
+ * Add type middleware to the router for the specific type.
+ * 
+ * @param  {String} `type` Template type used for this middleware.
+ * @param  {Function|Array} `middleware` Stack of middleware to run for this type.
+ */
+Template.prototype.typeMiddleware = function(type, middleware) {
+  var filter = function (value, key) {
+    return value.options.type === type;
+  };
+  this.route(filter, middleware);
+};
+
+/**
  * Load templates and normalize them to an object with consistent
  * properties.
  *
@@ -895,9 +902,6 @@ Template.prototype.load = function (plural, options) {
   return function (key, value, locals) {
     var loaded = loader.load.apply(loader, arguments);
     var template = this.normalize(plural, loaded, options);
-
-    // if (!this._usedRouter) this.use(this.router);
-    // var type = this._router.route.apply(this._router, arguments);
 
     extend(this.cache[plural], template);
     return this;
@@ -918,7 +922,7 @@ Template.prototype.load = function (plural, options) {
 
 Template.prototype.normalize = function (plural, template, options) {
   debug.template('#{normalize} args:', arguments);
-  // this.lazyrouter();
+  this.lazyrouter();
 
   if (this.option('normalize')) {
     return this.options.normalize.apply(this, arguments);
@@ -938,7 +942,7 @@ Template.prototype.normalize = function (plural, template, options) {
 
 
     // Dispatch routes
-    // var results = this._router.dispatchSync(value);
+    // var results = this._router.middlewareSync(value);
     // if (results.err) {
     //   throw new Error(results.err);
     // }
@@ -1130,7 +1134,7 @@ Template.prototype.render = function (content, locals, cb) {
   try {
     engine.render(content, locals, function (err, res) {
 
-      // self._router.dispatch(res, function (err) {
+      // self._router.middleware(res, function (err) {
       //   if (err) {
       //     cb(err);
       //     return;

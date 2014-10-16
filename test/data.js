@@ -91,7 +91,9 @@ describe('template data', function () {
       template.data({ abc: 'xyz'});
       template.page('aaa.md', '<%= abc %>');
 
+      console.log('before render');
       template.render('aaa.md', function (err, content) {
+        console.log('here');
         if (err) console.log(err);
         content.should.equal('xyz');
         done();

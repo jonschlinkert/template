@@ -150,8 +150,8 @@ Template.prototype.defaultOptions = function() {
 
 Template.prototype.defaultMiddleware = function() {
   var exts = this.option('defaultExts');
-  this.route('*.{md,hbs}', utils.makeMiddleware(require('parser-front-matter')));
-  this.route('*', utils.makeMiddleware(require('parser-noop')));
+  this.route('(.*\.[md|hbs])', utils.makeMiddleware(require('parser-front-matter')));
+  this.route('(.*)', utils.makeMiddleware(require('parser-noop')));
 };
 
 
@@ -195,9 +195,13 @@ Template.prototype.defaultDelimiters = function() {
  */
 
 Template.prototype.defaultTemplates = function() {
-  this.create('page', 'pages', { isRenderable: true });
-  this.create('layout', 'layouts', { isLayout: true });
-  this.create('partial', 'partials');
+  var middleware = function (value, key, next) {
+    debug.middleware('#default type middleware', key, value);
+    next();
+  };
+  this.create('page', 'pages', { isRenderable: true }, middleware);
+  this.create('layout', 'layouts', { isLayout: true }, middleware);
+  this.create('partial', 'partials', middleware);
 };
 
 
@@ -837,6 +841,10 @@ Template.prototype.create = function(type, plural, options, fns) {
     options = plural;
     plural = type + 's';
   }
+  if (typeof options === 'function') {
+    fns = options;
+    options = {};
+  }
   var middleware = utils.pickMiddleware(fns, args);
 
   this.cache[plural] = this.cache[plural] || {};
@@ -902,6 +910,9 @@ Template.prototype.load = function (plural, options) {
   return function (key, value, locals) {
     var loaded = loader.load.apply(loader, arguments);
     var template = this.normalize(plural, loaded, options);
+    forOwn(template, function (value, key) {
+      this.middleware(value, key, function (err) {});
+    }.bind(this));
 
     extend(this.cache[plural], template);
     return this;
@@ -1034,7 +1045,7 @@ Template.prototype.preprocess = function (template, locals, cb) {
   }
 
   locals = locals || {};
-  var value = {};
+  var state = {};
   var engine = locals.engine;
   var delims = locals.delims;
   var content = template;
@@ -1069,7 +1080,10 @@ Template.prototype.preprocess = function (template, locals, cb) {
 
   // if a layout is defined, apply it now.
   content = this.applyLayout(ext, template, locals);
-  value.content = content;
+  // Ensure that `content` is a string.
+  if (utils.isObject(content)) {
+    content = content.content;
+  }
 
   if (delims) this.addDelims(ext, delims);
   if (utils.isString(engine)) {
@@ -1084,21 +1098,15 @@ Template.prototype.preprocess = function (template, locals, cb) {
   }
 
   locals = extend({}, locals, this.mergePartials(locals), delims);
-  value.engine = engine;
-  value.delims = delims;
-  value.locals = locals;
-  value.ext = ext;
 
-  // Ensure that `content` is a string.
-  if (utils.isObject(content)) {
-    content = content.content;
-  }
+  // populate the state to pass back
+  state.content = content;
+  state.engine = engine;
+  state.delims = delims;
+  state.locals = locals;
+  state.locals.path = template.path;
 
-  return {
-    content: content,
-    engine: engine,
-    locals: locals
-  };
+  return state;
 };
 
 
@@ -1113,37 +1121,34 @@ Template.prototype.preprocess = function (template, locals, cb) {
 
 Template.prototype.render = function (content, locals, cb) {
   var self = this;
+  var state = {};
 
   if (typeof locals === 'function') {
     cb = locals;
     locals = {};
   }
 
+
   var ext = self.option('viewEngine');
-  var engine = self.getEngine(ext);
+  state.content = content;
+  state.locals = locals;
+  state.engine = self.getEngine(ext);
 
   if (self.option('preprocess')) {
-    var pre = self.preprocess(content, locals);
-    content = pre.content;
-    locals = pre.locals;
-    engine = pre.engine;
+    state = self.preprocess(state.content, state.locals);
   }
 
-  // console.log(pre)
-
   try {
-    engine.render(content, locals, function (err, res) {
-
-      // self._router.middleware(res, function (err) {
-      //   if (err) {
-      //     cb(err);
-      //     return;
-      //   } else {
-      //     console.log(arguments)
-      //   }
-      // }.bind(self));
-
-      return self._.helpers.resolve(res, cb.bind(self));
+    state.engine.render(state.content, state.locals, function (err, res) {
+      if (err) console.log(err);
+      return self._.helpers.resolve(res, function (err, res) {
+        if (err) console.log(err);
+        return cb.call(self, err, res);
+        // return self.middleware(state, state.locals.path, function (err) {
+        //   if (err) console.log(err);
+        //   cb.call(self, err, state.content);
+        // });
+      });
     });
   } catch (err) {
     cb(err);

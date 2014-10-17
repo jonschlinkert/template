@@ -23,7 +23,7 @@ describe('template route', function () {
       template = new Template();
     });
 
-    it('should run default middleware', function (done) {
+    it('should run default routes', function (done) {
       template.engine('hbs', consolidate.handlebars);
       template.engine('md', consolidate.handlebars);
       // template.engine('jade', consolidate.jade);

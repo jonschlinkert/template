@@ -22,6 +22,8 @@ var Helpers = require('helper-cache');
 var Loader = require('load-templates');
 var Layouts = require('layouts');
 var Delims = require('delims');
+var matter = require('parser-front-matter');
+var noop = require('parser-noop');
 var utils = require('./lib/utils');
 var debug = require('./lib/debug');
 var extend = _.extend;
@@ -76,7 +78,7 @@ Template.prototype.init = function() {
   this.defaultConfig();
   this.defaultOptions();
   this.defaultDelimiters();
-  this.defaultMiddleware();
+  this.defaultRoutes();
   this.defaultTemplates();
   this.defaultEngines();
 };
@@ -148,10 +150,20 @@ Template.prototype.defaultOptions = function() {
  * @api private
  */
 
-Template.prototype.defaultMiddleware = function() {
-  var exts = this.option('defaultExts');
-  this.route(/\.(?:md|hbs)$/, utils.makeMiddleware(require('parser-front-matter')));
-  this.route('*', utils.makeMiddleware(require('parser-noop')));
+Template.prototype.defaultRoutes = function() {
+  this.route(/\.(?:md|hbs)$/, function (value, key, next) {
+    matter.parse(value, function (err) {
+      if (err) return next(err);
+      next();
+    });
+  });
+
+  this.route('*', function (value, key, next) {
+    noop.parse(value, function (err) {
+      if (err) return next(err);
+      next();
+    });
+  });
 };
 
 
@@ -196,12 +208,13 @@ Template.prototype.defaultDelimiters = function() {
 
 Template.prototype.defaultTemplates = function() {
   var middleware = function (value, key, next) {
-    debug.middleware('#default type middleware', key, value);
+    debug.middleware('#default templates', key, value);
     next();
   };
-  this.create('page', 'pages', { isRenderable: true }, middleware);
-  this.create('layout', 'layouts', { isLayout: true }, middleware);
-  this.create('partial', 'partials', middleware);
+
+  this.create('page', { isRenderable: true }, middleware);
+  this.create('layout', { isLayout: true }, middleware);
+  this.create('partial', middleware);
 };
 
 
@@ -840,16 +853,19 @@ Template.prototype.create = function(type, plural, options, fns) {
   debug.template('#{creating template}: %s', type);
 
   var args = [].slice.call(arguments);
+
   if (typeof plural !== 'string') {
     fns = options;
     options = plural;
     plural = type + 's';
   }
+
   if (typeof options === 'function') {
     fns = options;
     options = {};
   }
-  var middleware = utils.pickMiddleware(fns, args);
+
+  var middleware = utils.filterMiddleware(fns, args);
 
   this.cache[plural] = this.cache[plural] || {};
   this.trackType(plural, options);

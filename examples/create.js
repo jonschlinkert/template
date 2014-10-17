@@ -14,9 +14,9 @@ var template = new Template();
  * `.includes()` methods.
  */
 
-template.create('include', function (value, key, next) {
+template.create('include', { isPartial: true, isLayout: true }, function (value, key, next) {
   console.log(arguments);
-  next();
+  next(null, value, key);
 });
 
 
@@ -24,8 +24,13 @@ template.create('include', function (value, key, next) {
  * Example usage
  */
 
-
+template.include('block', {content: '<bar>{% body %}</bar>'}); // useless example wrapper
+template.include('alert', {content: '<baz class="alert">Heads up!</baz>', layout: 'block'});
 template.include('sidebar', {content: '<nav>This is a lame sidebar!</nav>'});
-template.include('alert', {content: '<nav>This is a lame sidebar!</nav>'});
+// console.log(template.get('includes'));
 
-console.log(template.get('includes'))
+
+template.page('home.md', {content: '<foo><%= include("alert") %></foo>'});
+template.render('home.md', function (err, res) {
+  console.log(res)
+})

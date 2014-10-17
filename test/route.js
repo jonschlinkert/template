@@ -38,17 +38,48 @@ describe('template route', function () {
       template.page('f.hbs', '<title>{{author}}</title>', {author: 'Jon Schlinkert'});
       template.page('g.md', '---\nauthor: Brian Woodward\n---\n<title>{{author}}</title>', {author: 'Jon Schlinkert'});
 
+      var doneCalled = false;
       forOwn(template.cache.pages, function (value, key) {
-        console.log('before', key);
-        console.log(value);
-        console.log();
         template.middleware(value, key, function (err) {
-          console.log('after', key);
-          console.log(value);
-          console.log();
+          if (err) {
+            doneCalled = true;
+            return done(err);
+          }
+          switch (key) {
+            case 'a.hbs':
+              value.path.should.eql('a.hbs');
+              value.data.should.eql({});
+              value.locals.should.eql({author: 'Jon Schlinkert'});
+              break;
+            case 'b.tmpl':
+              value.path.should.eql('b.tmpl');
+              value.data.should.eql({});
+              value.locals.should.eql({author: 'Jon Schlinkert'});
+              break;
+            case 'd.swig':
+              value.path.should.eql('d.swig');
+              value.data.should.eql({});
+              value.locals.should.eql({author: 'Jon Schlinkert'});
+              break;
+            case 'e.swig':
+              value.path.should.eql('e.swig');
+              value.data.should.eql({});
+              value.locals.should.eql({author: 'Jon Schlinkert'});
+              break;
+            case 'f.hbs':
+              value.path.should.eql('f.hbs');
+              value.data.should.eql({});
+              value.locals.should.eql({author: 'Jon Schlinkert'});
+              break;
+            case 'g.md':
+              value.path.should.eql('g.md');
+              value.data.should.eql({author: 'Brian Woodward'});
+              value.locals.should.eql({author: 'Jon Schlinkert'});
+              break;
+          }
         });
       });
-      done();
+      if (!doneCalled) done();
     });
   });
 

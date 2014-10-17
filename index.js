@@ -158,7 +158,7 @@ Template.prototype.defaultRoutes = function() {
     });
   });
 
-  this.route('*', function (value, key, next) {
+  this.route(/.*/, function (value, key, next) {
     noop.parse(value, function (err) {
       if (err) return next(err);
       next();

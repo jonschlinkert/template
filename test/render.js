@@ -114,14 +114,14 @@ describe('template render', function () {
 
     it('should use `file.path` to determine the correct consolidate engine to render content:', function (done) {
       template.engine('hbs', consolidate.handlebars);
-      template.engine('jade', consolidate.jade);
+      // template.engine('jade', consolidate.jade);
       template.engine('swig', consolidate.swig);
       template.engine('tmpl', consolidate.lodash);
 
       var files = [
         {path: 'fixture.hbs', content: '<title>{{author}}</title>', author: 'Jon Schlinkert'},
         {path: 'fixture.tmpl', content: '<title><%= author %></title>', author: 'Jon Schlinkert'},
-        {path: 'fixture.jade', content: 'title= author', author: 'Jon Schlinkert'},
+        // {path: 'fixture.jade', content: 'title= author', author: 'Jon Schlinkert'},
         {path: 'fixture.swig', content: '<title>{{author}}</title>', author: 'Jon Schlinkert'}
       ];
 
@@ -137,13 +137,13 @@ describe('template render', function () {
 
     it('should use the key of a cached template to determine the consolidate engine to use:', function (done) {
       template.engine('hbs', consolidate.handlebars);
-      template.engine('jade', consolidate.jade);
+      // template.engine('jade', consolidate.jade);
       template.engine('swig', consolidate.swig);
       template.engine('tmpl', consolidate.lodash);
 
       template.page('a.hbs', '<title>{{author}}</title>', {author: 'Jon Schlinkert'});
       template.page('b.tmpl', '<title><%= author %></title>', {author: 'Jon Schlinkert'});
-      template.page('c.jade', 'title= author', {author: 'Jon Schlinkert'});
+      // template.page('c.jade', 'title= author', {author: 'Jon Schlinkert'});
       template.page('d.swig', '<title>{{author}}</title>', {author: 'Jon Schlinkert'});
 
 

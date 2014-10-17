@@ -26,13 +26,13 @@ describe('template route', function () {
     it('should run default middleware', function (done) {
       template.engine('hbs', consolidate.handlebars);
       template.engine('md', consolidate.handlebars);
-      template.engine('jade', consolidate.jade);
+      // template.engine('jade', consolidate.jade);
       template.engine('swig', consolidate.swig);
       template.engine('tmpl', consolidate.lodash);
 
       template.page({path: 'a.hbs', content: '<title>{{author}}</title>', author: 'Jon Schlinkert'});
       template.page({path: 'b.tmpl', content: '<title><%= author %></title>', author: 'Jon Schlinkert'});
-      template.page({path: 'c.jade', content: 'title= author', author: 'Jon Schlinkert'});
+      // template.page({path: 'c.jade', content: 'title= author', author: 'Jon Schlinkert'});
       template.page({path: 'd.swig', content: '<title>{{author}}</title>', author: 'Jon Schlinkert'});
       template.page({'e.swig': {content: '<title>{{author}}</title>', author: 'Jon Schlinkert'}});
       template.page('f.hbs', '<title>{{author}}</title>', {author: 'Jon Schlinkert'});

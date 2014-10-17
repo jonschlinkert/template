@@ -285,14 +285,18 @@ Template.prototype.route = function (filter) {
 
   // if the filter is a string, turn it into a filter that
   // we expect for view-cache
-  if (typeof filter === 'string') {
+  if (typeof filter === 'string' || filter instanceof RegExp) {
     var str = filter;
-    filter = function (value, key) {
+    filter = function routeFilter (value, key) {
+      debug.middleware('#route:filter', str, arguments);
       this.createPathRegex(str);
-      return this.matchStr(key);
+      var match = this.matchStr(key);
+      debug.middleware('#route:filter', match);
+      return match;
     };
   }
   var args = [filter].concat([].slice.call(arguments, 1));
+  debug.routes('#route', args);
   this._router.route.apply(this._router, args);
   return this;
 };
@@ -886,6 +890,9 @@ Template.prototype.create = function(type, plural, options, fns) {
  */
 Template.prototype.typeMiddleware = function(type, middleware) {
   var filter = function (value, key) {
+    if (!value || !value.options) {
+      return false;
+    }
     return value.options.type === type;
   };
   this.route(filter, middleware);
@@ -911,7 +918,9 @@ Template.prototype.load = function (plural, options) {
     var loaded = loader.load.apply(loader, arguments);
     var template = this.normalize(plural, loaded, options);
     forOwn(template, function (value, key) {
-      this.middleware(value, key, function (err) {});
+      this.middleware(value, key, function (err) {
+        if (err) console.log(err);
+      });
     }.bind(this));
 
     extend(this.cache[plural], template);
@@ -1140,7 +1149,10 @@ Template.prototype.render = function (content, locals, cb) {
 
   try {
     state.engine.render(state.content, state.locals, function (err, res) {
-      if (err) console.log(err);
+      if (err) {
+        console.log(err);
+        return cb.call(self, err, res);
+      }
       return self._.helpers.resolve(res, function (err, res) {
         if (err) console.log(err);
         return cb.call(self, err, res);

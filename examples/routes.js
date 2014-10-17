@@ -12,17 +12,18 @@ var pretty = require('./pretty');
 
 template.engine('md', require('engine-handlebars'));
 
-template.page('about.md','{{name}}', {name: 'Jon Schlinkert', layout: 'base.md'});
-template.partial('navbar.md', '<nav><ul><li>link</li></ul></nav>');
-template.data({title: 'Site!', section: 'Section Title'});
-
-
 template.route(/\.md/, function (value, key, next) {
   // {path: 'a/b/c.md', content: 'this is content', locals: {}, options: {}}
   // foo
 
+  console.log(arguments)
   next(null, value, key);
 });
+
+template.page('about.md','{{name}}', {name: 'Jon Schlinkert', layout: 'base.md'});
+template.partial('navbar.md', '<nav><ul><li>link</li></ul></nav>');
+template.data({title: 'Site!', section: 'Section Title'});
+
 
 
 

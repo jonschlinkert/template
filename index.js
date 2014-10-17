@@ -150,8 +150,8 @@ Template.prototype.defaultOptions = function() {
 
 Template.prototype.defaultMiddleware = function() {
   var exts = this.option('defaultExts');
-  this.route('(.*\.[md|hbs])', utils.makeMiddleware(require('parser-front-matter')));
-  this.route('(.*)', utils.makeMiddleware(require('parser-noop')));
+  this.route(/\.(?:md|hbs)$/, utils.makeMiddleware(require('parser-front-matter')));
+  this.route('*', utils.makeMiddleware(require('parser-noop')));
 };
 
 
@@ -884,7 +884,7 @@ Template.prototype.create = function(type, plural, options, fns) {
 
 /**
  * Add type middleware to the router for the specific type.
- * 
+ *
  * @param  {String} `type` Template type used for this middleware.
  * @param  {Function|Array} `middleware` Stack of middleware to run for this type.
  */

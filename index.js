@@ -207,14 +207,9 @@ Template.prototype.defaultDelimiters = function() {
  */
 
 Template.prototype.defaultTemplates = function() {
-  var middleware = function (value, key, next) {
-    debug.middleware('#default templates', key, value);
-    next();
-  };
-
-  this.create('page', { isRenderable: true }, middleware);
-  this.create('layout', { isLayout: true }, middleware);
-  this.create('partial', middleware);
+  this.create('page', { isRenderable: true });
+  this.create('layout', { isLayout: true });
+  this.create('partial');
 };
 
 

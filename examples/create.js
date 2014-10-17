@@ -10,12 +10,12 @@ var template = new Template();
  * templates as _includes_.
  *
  * Also note the callback function, this is a middleware that will be
- * executed every time a template is loaded using the `.doc()` and
- * `.docs()` methods.
+ * executed every time a template is loaded using the `.include()` and
+ * `.includes()` methods.
  */
 
 template.create('include', function (value, key, next) {
-  // do stuff
+  console.log(arguments);
   next();
 });
 
@@ -26,4 +26,6 @@ template.create('include', function (value, key, next) {
 
 
 template.include('sidebar', {content: '<nav>This is a lame sidebar!</nav>'});
+template.include('alert', {content: '<nav>This is a lame sidebar!</nav>'});
+
 console.log(template.get('includes'))

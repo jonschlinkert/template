@@ -24,9 +24,6 @@ template.page('about.md','{{name}}', {name: 'Jon Schlinkert', layout: 'base.md'}
 template.partial('navbar.md', '<nav><ul><li>link</li></ul></nav>');
 template.data({title: 'Site!', section: 'Section Title'});
 
-
-
-
 // template.route(
 //   function (value, key, orig) {
 //     if (key === 'content') {

@@ -192,6 +192,9 @@ Template.prototype.defaultEngines = function() {
 /**
  * Register default template delimiters.
  *
+ *    - engine delimiters
+ *    - layout delimiters
+ *
  * @api private
  */
 
@@ -419,7 +422,12 @@ Template.prototype.lazyLayouts = function(ext, options) {
 Template.prototype.applyLayout = function(ext, template, locals) {
   debug.layout('#{lazyLayouts} ext: %s', ext);
 
-  var layoutEngine = this.layoutSettings[ext];
+  var layout = utils.pickLayout(template, locals, true);
+  var layoutEngine = this.layoutSettings[path.extname(layout)];
+  if (!layoutEngine) {
+    layoutEngine = this.layoutSettings[ext];
+  }
+
   var obj = utils.pickContent(template);
 
   if (layoutEngine && !template.options.hasLayout) {
@@ -431,7 +439,6 @@ Template.prototype.applyLayout = function(ext, template, locals) {
       opts.defaultLayout = false;
     }
 
-    var layout = utils.pickLayout(template, locals, true);
     var result = layoutEngine.render(obj.content, layout, opts);
     return result.content;
   }

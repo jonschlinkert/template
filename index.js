@@ -7,8 +7,6 @@
 
 'use strict';
 
-// process.env.DEBUG = 'engine:engine';
-
 var _ = require('lodash');
 var path = require('path');
 var chalk = require('chalk');
@@ -26,12 +24,11 @@ var noop = require('parser-noop');
 var utils = require('./lib/utils');
 var debug = require('./lib/debug');
 var extend = _.extend;
-var hasOwn = utils.hasOwn;
 
 
 /**
- * Create a new instance of `Engine`, optionally passing the default
- * `context` and `options` to use.
+ * Create a new instance of `Engine`, optionally passing
+ * default `options` to initialize with.
  *
  * **Example:**
  *
@@ -41,8 +38,7 @@ var hasOwn = utils.hasOwn;
  * ```
  *
  * @class `Engine`
- * @param {Object} `context` Context object to start with.
- * @param {Object} `options` Options to use.
+ * @param {Object} `options` Options to initialize with.
  * @api public
  */
 
@@ -151,6 +147,12 @@ Engine.prototype.defaultOptions = function() {
 /**
  * Load default middleware
  *
+ *     - `.md`: parse front matter in markdown files
+ *     - `.hbs`: parse front matter in handlebars templates
+ *     - `.*`: use the noop engine for any unclaimed extensions. This just
+ *             passes files through but adds expected properties to the
+ *             template object if they don't already exist.
+ *
  * @api private
  */
 
@@ -175,7 +177,9 @@ Engine.prototype.defaultRoutes = function() {
  * Load default engines.
  *
  *   - `*` The noop engine is used as a pass-through when no other engine matches.
- *   - `md` Used to process Lo-Dash templates in markdown files.
+ *   - `md|html|hbs`. [engine-lodash] will process templates  in any files with these
+ *                    extensions. To change or negate these extensions, just do
+ *                    `engine.option('defaultExts', ['foo', 'bar', 'baz'])`.
  *
  * @api private
  */
@@ -196,8 +200,8 @@ Engine.prototype.defaultEngines = function() {
 /**
  * Register default template delimiters.
  *
- *    - engine delimiters
- *    - layout delimiters
+ *    - engine delimiters: Delimiters used in templates process by [engine-lodash], the default engine.
+ *    - layout delimiters: Delimiters used in layouts.
  *
  * @api private
  */
@@ -221,6 +225,69 @@ Engine.prototype.defaultTemplates = function() {
 
 
 /**
+ * Create helpers for each default template `type`.
+ *
+ * @api private
+ */
+
+Engine.prototype.typeHelpers = function(type, plural) {
+  this.addHelper(type, function (key, locals) {
+    this.extendLocals('partial', locals);
+    var partial = this.cache[plural][key];
+    return this.renderSync(partial, locals);
+  });
+};
+
+
+/**
+ * Create async helpers for each default template `type`.
+ *
+ * @param {String} `type` The type of template.
+ * @param {String} `plural` Plural form of `type`.
+ * @api private
+ */
+
+Engine.prototype.asyncTypeHelpers = function (type, plural) {
+  this.addHelperAsync(type, function (name, locals, next) {
+    var last = _.last(arguments);
+
+    debug.helper('#{async helper name}:', name);
+
+    if (typeof locals === 'function') {
+      next = locals;
+      locals = {};
+    }
+
+    if (typeof next !== 'function') {
+      next = last;
+    }
+
+    var partial = this.cache[plural][name];
+    if (!partial) {
+      // TODO: should this throw an error _here_?
+      console.log(chalk.red('helper {{' + type + ' "' + name + '"}} not found.'));
+      next(null, '');
+      return;
+    }
+
+    partial.locals = extend({}, partial.locals, locals);
+    debug.helper('#{async helper partial}:', partial);
+
+    this.render(partial, {}, function (err, content) {
+      debug.helper('#{async helper rendering}:', content);
+
+      if (err) {
+        next(err);
+        return;
+      }
+      next(null, content);
+      return;
+    });
+  }.bind(this));
+};
+
+
+/**
  * Utilize the given middleware `fn` to the given `filepath`, defaulting to `_/_`.
  *
  * **Examples:**
@@ -235,23 +302,23 @@ Engine.prototype.defaultTemplates = function() {
  * @api public
  */
 
-// Engine.prototype.use = function(filepath, fn) {
-//   // default route to '/'
-//   if (typeof filepath !== 'string') {
-//     fn = filepath;
-//     filepath = '/';
-//   }
+Engine.prototype.use = function(filepath, fn) {
+  // default route to '/'
+  if (typeof filepath !== 'string') {
+    fn = filepath;
+    filepath = '/';
+  }
 
-//   // strip trailing slash
-//   if (filepath[filepath.length - 1] === '/') {
-//     filepath = filepath.slice(0, -1);
-//   }
+  // strip trailing slash
+  if (filepath[filepath.length - 1] === '/') {
+    filepath = filepath.slice(0, -1);
+  }
 
-//   // add the middleware
-//   debug.plugin('use %s %s', filepath || '/', fn.name || 'anonymous');
-//   this._stack.push({ path: filepath, handle: fn });
-//   return this;
-// };
+  // add the middleware
+  debug.plugin('use %s %s', filepath || '/', fn.name || 'anonymous');
+  this._stack.push({ path: filepath, handle: fn });
+  return this;
+};
 
 
 /**
@@ -300,7 +367,6 @@ Engine.prototype.route = function (filter) {
 
   /* if the filter is a string, turn it into a filter that
    * we expect for view-cache */
-
   if (typeof filter === 'string' || filter instanceof RegExp) {
     var str = filter;
     filter = function routeFilter(value, key) {
@@ -457,69 +523,6 @@ Engine.prototype.applyLayout = function(ext, template, locals) {
     return result.content;
   }
   return obj.content;
-};
-
-
-/**
- * Load default helpers.
- *
- * @api private
- */
-
-Engine.prototype.defaultHeleprs = function(type, plural) {
-  this.addHelper(type, function (key, locals) {
-    var partial = this.cache[plural][key];
-    partial = this.extendLocals('partial', partial, locals);
-    return this.renderSync(partial);
-  });
-};
-
-
-/**
- * Automatically adds an async helper for each template type.
- *
- * @param {String} `type` The type of template.
- * @param {String} `plural` Plural form of `type`.
- * @api private
- */
-
-Engine.prototype.defaultAsyncHelpers = function (type, plural) {
-  this.addHelperAsync(type, function (name, locals, next) {
-    var last = _.last(arguments);
-
-    debug.helper('#{async helper name}:', name);
-
-    if (typeof locals === 'function') {
-      next = locals;
-      locals = {};
-    }
-
-    if (typeof next !== 'function') {
-      next = last;
-    }
-
-    var partial = this.cache[plural][name];
-    if (!partial) {
-      // TODO: should this throw an error _here_?
-      console.log(chalk.red('helper {{' + type + ' "' + name + '"}} not found.'));
-      next(null, '');
-      return;
-    }
-
-    partial.locals = extend({}, partial.locals, locals);
-    debug.helper('#{async helper partial}:', partial);
-
-    this.render(partial, {}, function (err, content) {
-      debug.helper('#{async helper rendering}:', content);
-
-      if (err) {
-        next(err);
-        return;
-      }
-      next(null, content);
-      return;
-    });
-  }.bind(this));
 };
 
 
@@ -904,15 +907,11 @@ Engine.prototype.create = function(type, plural, options, fns) {
   };
 
   if (!hasOwn(this._.helpers, type)) {
-    this.addHelper(type, function (key, locals, hash) {
-      this.extendLocals('partial', locals);
-      var partial = this.cache[plural][key];
-      return this.renderSync(partial, locals);
-    });
+    this.typeHelpers(type, plural);
   }
 
   if (!hasOwn(this._.helpers, type)) {
-    this.defaultAsyncHelpers(type, plural);
+    this.asyncTypeHelpers(type, plural);
   }
   return this;
 };
@@ -1253,6 +1252,7 @@ Engine.prototype.extendLocals = function (key, template, locals) {
   return template;
 };
 
+
 /**
  * The default method used for merging data into the `locals` object
  * as a last step before its passed to the current renderer.
@@ -1282,3 +1282,17 @@ Engine.prototype.mergeFn = function (template, locals) {
   o.helpers = extend({}, this._.helpers, o.helpers);
   return extend(data, o, locals);
 };
+
+
+/**
+ * Utility for getting an own property from an object.
+ *
+ * @param  {Object} `o`
+ * @param  {Object} `prop`
+ * @return {Boolean}
+ * @api true
+ */
+
+function hasOwn(o, prop) {
+  return {}.hasOwnProperty.call(o, prop);
+}

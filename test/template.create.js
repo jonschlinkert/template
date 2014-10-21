@@ -116,4 +116,22 @@ describe('template create:', function () {
       _.contains(template.templateType.renderable, 'bananas').should.be.true;
     });
   });
+
+  describe('when a custom loader function is set:', function () {
+    it('should load using the custom loader', function () {
+      var template = new Template();
+      var loader = require('./lib/load-npm');
+      template.create('npm', { loadFn: loader });
+      template.npm(__dirname + '/fixtures/loaders/npm-load.json');
+      template.npm(__dirname + '/fixtures/loaders/npm-load.js');
+      template.npm(__dirname + '/fixtures/loaders/npm-load.css');
+
+      var keys = Object.keys(template.cache.npms);
+      keys.length.should.equal(3);
+      _.contains(keys, 'npm-load.json').should.be.true;
+      _.contains(keys, 'npm-load.js').should.be.true;
+      _.contains(keys, 'npm-load.css').should.be.true;
+
+    });
+  });
 });

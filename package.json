@@ -39,6 +39,7 @@
     "gulp-util": "^3.0.1",
     "handlebars": "^2.0.0",
     "js-beautify": "^1.5.4",
+    "lookup-path": "^0.3.0",
     "mocha": "*",
     "should": "^4.0.4",
     "swig": "^1.4.2",

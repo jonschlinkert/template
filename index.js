@@ -933,7 +933,12 @@ Template.prototype.load = function (plural, options) {
   var loader = new Loader(opts);
 
   return function (key, value, locals) {
-    var loaded = loader.load.apply(loader, arguments);
+    var loaded = null;
+    if (opts.loadFn) {
+      loaded = opts.loadFn.apply(this, arguments);
+    } else {
+      loaded = loader.load.apply(loader, arguments);
+    }
     var template = this.normalize(plural, loaded, options);
     forOwn(template, function (value, key) {
       this.middleware(value, key, function (err) {

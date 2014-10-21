@@ -73,7 +73,6 @@ describe('template usage:', function () {
 
     template.render(base, ctx, function (err, content) {
       if (err) console.log(err);
-
       content.should.equal('____Jon Schlinkert____<<= name >>{{= name }}____Jon Schlinkert____{%= name %}');
     });
 

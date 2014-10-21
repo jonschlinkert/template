@@ -10,7 +10,6 @@
 var assert = require('assert');
 var should = require('should');
 var Template = require('..');
-var _ = require('lodash');
 
 
 describe('template partial', function () {

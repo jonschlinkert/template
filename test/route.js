@@ -10,7 +10,6 @@
 var consolidate = require('consolidate');
 var forOwn = require('for-own');
 var should = require('should');
-var _ = require('lodash');
 
 var Template = require('..');
 var template = null;

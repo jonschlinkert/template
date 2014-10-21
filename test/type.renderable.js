@@ -13,7 +13,6 @@ var forOwn = require('for-own');
 var Template = require('..');
 var template = new Template();
 var consolidate = require('consolidate');
-var _ = require('lodash');
 
 
 describe('custom `renderable` types:', function () {

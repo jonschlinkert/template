@@ -10,7 +10,7 @@
 var should = require('should');
 var Template = require('..');
 var template = new Template();
-var _ = require('lodash');
+
 
 describe('template option', function() {
   describe('.option()', function() {

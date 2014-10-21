@@ -11,7 +11,6 @@
 
 var _ = require('lodash');
 var path = require('path');
-var async = require('async');
 var chalk = require('chalk');
 var forOwn = require('for-own');
 var id = require('uniqueid');
@@ -294,11 +293,12 @@ Template.prototype.route = function (filter) {
   debug.routes('#route', arguments);
   this.lazyrouter();
 
-  // if the filter is a string, turn it into a filter that
-  // we expect for view-cache
+  /* if the filter is a string, turn it into a filter that
+   * we expect for view-cache */
+
   if (typeof filter === 'string' || filter instanceof RegExp) {
     var str = filter;
-    filter = function routeFilter (value, key) {
+    filter = function routeFilter(value, key) {
       debug.middleware('#route:filter', str, arguments);
       this.createPathRegex(str);
       var match = this.matchStr(key);
@@ -306,8 +306,10 @@ Template.prototype.route = function (filter) {
       return match;
     };
   }
+
   var args = [filter].concat([].slice.call(arguments, 1));
   debug.routes('#route', args);
+
   this._router.route.apply(this._router, args);
   return this;
 };
@@ -900,6 +902,7 @@ Template.prototype.create = function(type, plural, options, fns) {
   // if (!hasOwn(this._.helpers, type)) {
   //   this.defaultAsyncHelpers(type, plural);
   // }
+
   return this;
 };
 
@@ -919,6 +922,7 @@ Template.prototype.typeMiddleware = function(type, middleware) {
   };
   this.route(filter, middleware);
 };
+
 
 /**
  * Load templates and normalize them to an object with consistent

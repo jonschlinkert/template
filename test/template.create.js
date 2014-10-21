@@ -9,7 +9,6 @@
 
 var should = require('should');
 var Template = require('..');
-var _ = require('lodash');
 
 
 describe('template create:', function () {
@@ -41,8 +40,9 @@ describe('template create:', function () {
       var template = new Template();
       template.create('apple', 'apples', { isRenderable: true });
 
-      _.contains(template.templateType.renderable, 'pages').should.be.true;
-      _.contains(template.templateType.renderable, 'apples').should.be.true;
+      template.templateType.renderable.should.containEql('pages');
+      template.templateType.renderable.should.containEql('apples');
+      template.templateType.renderable.should.containEql('apples');
     });
   });
 
@@ -51,8 +51,8 @@ describe('template create:', function () {
       var template = new Template();
       template.create('orange', 'oranges', { isLayout: true });
 
-      _.contains(template.templateType.layout, 'layouts').should.be.true;
-      _.contains(template.templateType.layout, 'oranges').should.be.true;
+      template.templateType.layout.should.containEql('layouts');
+      template.templateType.layout.should.containEql('oranges');
     });
   });
 
@@ -61,8 +61,8 @@ describe('template create:', function () {
       var template = new Template();
       template.create('banana', 'bananas');
 
-      _.contains(template.templateType.partial, 'partials').should.be.true;
-      _.contains(template.templateType.partial, 'bananas').should.be.true;
+      template.templateType.partial.should.containEql('partials');
+      template.templateType.partial.should.containEql('bananas');
     });
   });
 
@@ -71,8 +71,8 @@ describe('template create:', function () {
       var template = new Template();
       template.create('banana', 'bananas', { isPartial: true });
 
-      _.contains(template.templateType.partial, 'partials').should.be.true;
-      _.contains(template.templateType.partial, 'bananas').should.be.true;
+      template.templateType.partial.should.containEql('partials');
+      template.templateType.partial.should.containEql('bananas');
     });
   });
 
@@ -81,8 +81,8 @@ describe('template create:', function () {
       var template = new Template();
       template.create('banana', 'bananas', { isPartial: true, isLayout: true });
 
-      _.contains(template.templateType.partial, 'bananas').should.be.true;
-      _.contains(template.templateType.layout, 'bananas').should.be.true;
+      template.templateType.partial.should.containEql('bananas');
+      template.templateType.layout.should.containEql('bananas');
     });
   });
 
@@ -91,8 +91,8 @@ describe('template create:', function () {
       var template = new Template();
       template.create('banana', 'bananas', { isPartial: true, isRenderable: true });
 
-      _.contains(template.templateType.partial, 'bananas').should.be.true;
-      _.contains(template.templateType.renderable, 'bananas').should.be.true;
+      template.templateType.partial.should.containEql('bananas');
+      template.templateType.renderable.should.containEql('bananas');
     });
   });
 
@@ -101,8 +101,8 @@ describe('template create:', function () {
       var template = new Template();
       template.create('banana', 'bananas', { isLayout: true, isRenderable: true });
 
-      _.contains(template.templateType.layout, 'bananas').should.be.true;
-      _.contains(template.templateType.renderable, 'bananas').should.be.true;
+      template.templateType.layout.should.containEql('bananas');
+      template.templateType.renderable.should.containEql('bananas');
     });
   });
 
@@ -111,27 +111,9 @@ describe('template create:', function () {
       var template = new Template();
       template.create('banana', 'bananas', { isPartial: true, isLayout: true, isRenderable: true });
 
-      _.contains(template.templateType.layout, 'bananas').should.be.true;
-      _.contains(template.templateType.partial, 'bananas').should.be.true;
-      _.contains(template.templateType.renderable, 'bananas').should.be.true;
-    });
-  });
-
-  describe('when a custom loader function is set:', function () {
-    it('should load using the custom loader', function () {
-      var template = new Template();
-      var loader = require('./lib/load-npm');
-      template.create('npm', { loadFn: loader });
-      template.npm(__dirname + '/fixtures/loaders/npm-load.json');
-      template.npm(__dirname + '/fixtures/loaders/npm-load.js');
-      template.npm(__dirname + '/fixtures/loaders/npm-load.css');
-
-      var keys = Object.keys(template.cache.npms);
-      keys.length.should.equal(3);
-      _.contains(keys, 'npm-load.json').should.be.true;
-      _.contains(keys, 'npm-load.js').should.be.true;
-      _.contains(keys, 'npm-load.css').should.be.true;
-
+      template.templateType.layout.should.containEql('bananas');
+      template.templateType.partial.should.containEql('bananas');
+      template.templateType.renderable.should.containEql('bananas');
     });
   });
 });

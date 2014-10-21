@@ -127,6 +127,7 @@ Template.prototype.defaultOptions = function() {
   this.option('engineDelims', null);
   this.option('layoutTag', 'body');
   this.option('layoutDelims', ['{%', '%}']);
+  this.option('layoutExt', null);
   this.option('layout', null);
 
   this.option('preprocess', true);
@@ -137,8 +138,12 @@ Template.prototype.defaultOptions = function() {
   this.option('bindHelpers', true);
 
   // loader options
-  this.option('renameKey', function (filepath) {
-    return path.basename(filepath);
+  this.option('renameKey', function (fp) {
+    return path.basename(fp);
+  });
+
+  this.option('partialsKey', function (fp) {
+    return path.basename(fp, path.extname(fp));
   });
 };
 
@@ -404,6 +409,7 @@ Template.prototype.lazyLayouts = function(ext, options) {
       delims: opts.layoutDelims,
       layouts: opts.layouts,
       locals: opts.locals,
+      ext: opts.layoutExt,
       tag: opts.layoutTag,
     });
   }
@@ -426,6 +432,14 @@ Template.prototype.applyLayout = function(ext, template, locals) {
   var layoutEngine = this.layoutSettings[path.extname(layout)];
   if (!layoutEngine) {
     layoutEngine = this.layoutSettings[ext];
+  }
+
+  if (this.option('layoutExt')) {
+    var ext = this.option('layoutExt');
+    if (ext[0] !== '.') {
+      ext = '.' + ext;
+    }
+    layout = layout + ext;
   }
 
   var obj = utils.pickContent(template);
@@ -1057,6 +1071,9 @@ Template.prototype.mergePartials = function (ext, locals, combine) {
       value.content = this.applyLayout(ext, value, value.locals);
       opts = extend({}, opts, value.data, value.locals);
       if (combine) {
+        var fn = this.option('partialsKey');
+        key = fn(key);
+
         opts.partials[key] = value.content;
       } else {
         opts[type][key] = value.content;

@@ -25,15 +25,12 @@ describe('template locals', function () {
       var loader = require('./lib/load-npm');
 
       template.create('npm', { loadFn: loader });
+
       template.npm(__dirname + '/fixtures/loaders/npm-load.json');
       template.npm(__dirname + '/fixtures/loaders/npm-load.js');
       template.npm(__dirname + '/fixtures/loaders/npm-load.css');
 
-      var keys = Object.keys(template.cache.npms);
-      keys.length.should.equal(3);
-      keys.should.containEql('npm-load.js');
-      keys.should.containEql('npm-load.json');
-      keys.should.containEql('npm-load.css');
+      template.cache.npms.should.have.properties(['npm-load.js', 'npm-load.json', 'npm-load.css']);
     });
   });
 });

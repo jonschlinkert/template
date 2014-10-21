@@ -1,3 +1,4 @@
+'use strict';
 
 var lookup = require('lookup-path');
 var path = require('path');

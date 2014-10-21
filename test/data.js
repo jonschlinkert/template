@@ -91,9 +91,7 @@ describe('template data', function () {
       template.data({ abc: 'xyz'});
       template.page('aaa.md', '<%= abc %>');
 
-      console.log('before render');
       template.render('aaa.md', function (err, content) {
-        console.log('here');
         if (err) console.log(err);
         content.should.equal('xyz');
         done();
@@ -114,7 +112,7 @@ describe('template data', function () {
       template.renderSync('aaa.md').should.equal('abbbc');
     });
 
-    it.skip('should give preference to front matter over locals:', function () {
+    it('should give preference to front matter over locals:', function () {
       template.data({ letter: 'b'});
 
       template.page('aaa.md', '---\nletter: zzz\n---\na<%= letter %>c', { letter: 'bbb'});
@@ -122,7 +120,7 @@ describe('template data', function () {
     });
 
     describe('when `options.preferLocals` is defined:', function () {
-      it.skip('should give preference to locals over front matter:', function () {
+      it('should give preference to locals over front matter:', function () {
         template.option('preferLocals', true);
         template.data({ letter: 'b'});
 

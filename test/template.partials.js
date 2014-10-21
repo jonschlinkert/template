@@ -23,8 +23,7 @@ describe('template partial', function () {
     it('should `.get()` partials from the cache.', function () {
       var template = new Template();
       template.partials('a.md', 'b');
-      // must be escaped for [getobject]
-      template.get('partials.a\\.md').content.should.equal('b');
+      template.get('partials.a\\.md').content.should.equal('b'); // escaped for [getobject]
     });
 
     it('should add the template string to the `content` property.', function () {
@@ -79,27 +78,27 @@ describe('template partial', function () {
   });
 
   describe('when a partial has front matter', function () {
-    it.skip('should parse the partial.', function () {
+    it('should parse the partial.', function () {
       var template = new Template();
       template.partials('a.md', '---\nname: AAA\n---\nThis is content.');
       template.cache.partials.should.have.property('a.md');
       template.cache.partials['a.md'].should.have.property('content', 'This is content.');
     });
 
-    it.skip('should parse the `content` value.', function () {
+    it('should parse the `content` value.', function () {
       var template = new Template();
       template.partials({'a.md': {path: 'a.md', content: '---\nname: AAA\n---\nThis is content.'}});
       template.cache.partials.should.have.property('a.md');
     });
 
-    it.skip('should merge locals and front-matter data.', function () {
+    it('should merge locals and front-matter data.', function () {
       var template = new Template();
       template.partials({'a.md': {content: '---\nname: AAA\n---\nThis is content.', data: {c: 'c'}}});
       template.cache.partials.should.have.property('a.md');
       template.cache.partials['a.md'].should.have.property('data', { c: 'c', name: 'AAA' });
     });
 
-    it.skip('should save both locals and front-matter data to the `file` object.', function () {
+    it('should save both locals and front-matter data to the `file` object.', function () {
       var template = new Template();
       template.partials({'a.md': {content: '---\nname: AAA\n---\nThis is content.', name: 'BBB'}});
       template.cache.partials.should.have.property('a.md');
@@ -115,31 +114,33 @@ describe('template partial', function () {
     });
   });
 
-  // describe('context', function () {
-  //   it.only('should prefer helper locals over method locals.', function () {
-  //     var template = new Template();
-  //     template.partials('alert.md', '---\nlayout: href\ntitle: partial yfm data\n---\n<%= title %>.', {title: 'partial locals'});
-  //     template.page('home.md', '---\ntitle: Baz\nlayout: page yfm data\n---\n<%= title %>.\n<%= partial("alert.md", {title: "helper locals"}) %>', {title: 'page locals'});
+  describe('context', function () {
+    it('should prefer helper locals over template locals.', function () {
+      var template = new Template();
+      template.partials('alert.md', '---\nlayout: href\ntitle: partial yfm data\n---\n<%= title %>.', {title: 'partial locals'});
+      template.page('home.md', '---\ntitle: Baz\nlayout: page yfm data\n---\n<%= title %>.\n<%= partial("alert.md", {title: "helper locals"}) %>', {title: 'page locals'});
 
-  //     template.renderSync('home.md', {title: 'render locals'}).should.equal('foo');
-  //   });
+      template.renderSync('home.md').should.equal('partial locals.\nhelper locals.');
+    });
 
-  //   // it('should prefer helper locals over method locals.', function () {
-  //   //   var template = new Template();
-  //   //   template.partials('alert.md', '---\nlayout: href\ntitle: Foo\n---\nThis is <%= title %>.');
-  //   //   template.page('home.md', '---\ntitle: Baz\nlayout: default\n---\nThis is <%= title %>.\n<%= partial("alert.md", {title: "Fez"}) %>');
+    it('should prefer `.render()` locals over template locals.', function () {
+      var template = new Template();
+      template.partials('alert.md', '---\nlayout: href\ntitle: partial yfm data\n---\n<%= title %>.', {title: 'partial locals'});
+      template.page('home.md', '---\ntitle: Baz\nlayout: page yfm data\n---\n<%= title %>.\n<%= partial("alert.md", {title: "helper locals"}) %>', {title: 'page locals'});
 
-  //   //   console.log(template.getPartial('link.md'));
-  //   //   var content = template.renderSync('home.md');
-  //   //   console.log('content:', content);
+      template.renderSync('home.md', {title: 'render locals'}).should.equal('render locals.\nhelper locals.');
+    });
 
-  //   //   // template.cache.partials.should.have.property('a.md');
-  //   //   // template.cache.partials['a.md'].should.have.property('content', 'This is content.');
-  //   // });
-  // });
+    it('should prefer helper locals over template locals.', function () {
+      var template = new Template();
+      template.partials('alert.md', '---\nlayout: href\ntitle: Foo\n---\nThis is <%= title %>.');
+      template.page('home.md', '---\ntitle: Baz\nlayout: default\n---\nThis is <%= title %>.\n<%= partial("alert.md", {title: "Fez"}) %>');
+      template.renderSync('home.md').should.equal('This is Foo.\nThis is Fez.');
+    });
+  });
 
   describe('when a partial has a layout defined:', function () {
-    it.skip('should parse the partial sync.', function () {
+    it('should parse the partial sync.', function () {
       var template = new Template();
       template.layout('default.md', 'bbb{% body %}bbb');
       template.layout('href.md', '<a href="{% body %}"><%= text %></a>');
@@ -150,7 +151,7 @@ describe('template partial', function () {
       content.should.equal('bbbThis is home page content.\n<a href="https://github.com/jonschlinkert">Jon Schlinkert</a>bbb');
     });
 
-    it.skip('should parse the partial.', function (done) {
+    it('should parse the partial.', function (done) {
       var template = new Template();
       template.layout('default.md', 'bbb{% body %}bbb');
       template.layout('href.md', '<a href="{% body %}"><%= text %></a>');
@@ -163,7 +164,5 @@ describe('template partial', function () {
         done();
       });
     });
-
   });
-
 });

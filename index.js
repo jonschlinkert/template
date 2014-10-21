@@ -301,9 +301,7 @@ Template.prototype.route = function (filter) {
     filter = function routeFilter(value, key) {
       debug.middleware('#route:filter', str, arguments);
       this.createPathRegex(str);
-      var match = this.matchStr(key);
-      debug.middleware('#route:filter', match);
-      return match;
+      return this.matchStr(key);
     };
   }
 
@@ -454,7 +452,7 @@ Template.prototype.applyLayout = function(ext, template, locals) {
  * @api private
  */
 
-Template.prototype.defaultTypeHelpers = function(type, plural) {
+Template.prototype.defaultHeleprs = function(type, plural) {
   this.addHelper(type, function (key, locals) {
     var partial = this.cache[plural][key];
     partial = this.extendLocals('partial', partial, locals);
@@ -899,10 +897,9 @@ Template.prototype.create = function(type, plural, options, fns) {
     });
   }
 
-  // if (!hasOwn(this._.helpers, type)) {
-  //   this.defaultAsyncHelpers(type, plural);
-  // }
-
+  if (!hasOwn(this._.helpers, type)) {
+    this.defaultAsyncHelpers(type, plural);
+  }
   return this;
 };
 
@@ -947,7 +944,9 @@ Template.prototype.load = function (plural, options) {
     } else {
       loaded = loader.load.apply(loader, arguments);
     }
+
     var template = this.normalize(plural, loaded, options);
+
     forOwn(template, function (value, key) {
       this.middleware(value, key, function (err) {
         if (err) console.log(err);
@@ -1215,7 +1214,7 @@ Template.prototype.renderSync = function (content, locals) {
   if (this.option('preprocess')) {
     var pre = this.preprocess(content, locals);
     content = pre.content;
-    locals = pre.locals;
+    locals = _.extend({}, pre.locals, locals);
     engine = pre.engine;
   }
 

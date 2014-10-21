@@ -23,8 +23,7 @@ describe('template layout', function () {
     it('should `.get()` a layout from the cache.', function () {
       var template = new Template();
       template.layout('a.md', 'b');
-      // must be escaped for [getobject]
-      template.get('layouts.a\\.md').content.should.equal('b');
+      template.get('layouts.a\\.md').content.should.equal('b'); // escaped for [getobject]
     });
 
     it('should add the template string to the `content` property.', function () {
@@ -86,7 +85,7 @@ describe('template layout', function () {
   });
 
   describe('when a layout has front matter', function () {
-    it.skip('should parse the layout.', function () {
+    it('should parse the layout.', function () {
       var template = new Template();
       template.layout('a.md', '---\nname: AAA\n---\nThis is content.');
       template.cache.layouts.should.have.property('a.md');
@@ -94,13 +93,13 @@ describe('template layout', function () {
       template.cache.layouts['a.md'].content.should.equal('This is content.');
     });
 
-    it.skip('should parse the `content` value.', function () {
+    it('should parse the `content` value.', function () {
       var template = new Template();
       template.layout({'a.md': {path: 'a.md', content: '---\nname: AAA\n---\nThis is content.'}});
       template.cache.layouts.should.have.property('a.md');
     });
 
-    it.skip('should keep locals and front-matter data separate.', function () {
+    it('should keep locals and front-matter data separate.', function () {
       var template = new Template();
       template.layout({'a.md': {content: '---\nname: AAA\n---\nThis is content.', locals: {c: 'c'}}});
       template.cache.layouts.should.have.property('a.md');
@@ -108,7 +107,7 @@ describe('template layout', function () {
       template.cache.layouts['a.md'].should.have.property('locals', { c: 'c' });
     });
 
-    it.skip('should save both locals and front-matter data to the `file` object.', function () {
+    it('should save both locals and front-matter data to the `file` object.', function () {
       var template = new Template();
       template.layout({'a.md': {content: '---\nname: AAA\n---\nThis is content.', name: 'BBB'}});
       template.cache.layouts.should.have.property('a.md');

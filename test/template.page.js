@@ -23,8 +23,7 @@ describe('template page', function () {
     it('should `.get()` a page from the cache.', function () {
       var template = new Template();
       template.page('a.md', 'b');
-      // must be escaped for [getobject]
-      template.get('pages.a\\.md').content.should.equal('b');
+      template.get('pages.a\\.md').content.should.equal('b'); // escaped for [getobject]
     });
 
     it('should add the template string to the `content` property.', function () {
@@ -86,7 +85,7 @@ describe('template page', function () {
   });
 
   describe('when a page has front matter', function () {
-    it.skip('should parse the page.', function () {
+    it('should parse the page.', function () {
       var template = new Template();
       template.page('a.md', '---\nname: AAA\n---\nThis is content.');
       template.cache.pages.should.have.property('a.md');
@@ -94,13 +93,13 @@ describe('template page', function () {
       template.cache.pages['a.md'].content.should.equal('This is content.');
     });
 
-    it.skip('should parse the `content` value.', function () {
+    it('should parse the `content` value.', function () {
       var template = new Template();
       template.page({'a.md': {path: 'a.md', content: '---\nname: AAA\n---\nThis is content.'}});
       template.cache.pages.should.have.property('a.md');
     });
 
-    it.skip('should keep locals and front-matter data separate.', function () {
+    it('should keep locals and front-matter data separate.', function () {
       var template = new Template();
       template.page({'a.md': {content: '---\nname: AAA\n---\nThis is content.', locals: {c: 'c'}}});
       template.cache.pages.should.have.property('a.md');
@@ -108,7 +107,7 @@ describe('template page', function () {
       template.cache.pages['a.md'].should.have.property('locals', { c: 'c' });
     });
 
-    it.skip('should save both locals and front-matter data to the `file` object.', function () {
+    it('should save both locals and front-matter data to the `file` object.', function () {
       var template = new Template();
       template.page({'a.md': {content: '---\nname: AAA\n---\nThis is content.', name: 'BBB'}});
       template.cache.pages.should.have.property('a.md');

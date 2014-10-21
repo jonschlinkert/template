@@ -21,16 +21,14 @@ describe('custom `renderable` types:', function () {
     template.option('preferLocals', true);
   });
 
-  it.skip('should use `file.path` to determine the correct consolidate engine to render content:', function (done) {
+  it('should use `file.path` to determine the correct consolidate engine to render content:', function (done) {
     template.engine('hbs', consolidate.handlebars);
     template.engine('md', consolidate.handlebars);
-    template.engine('jade', consolidate.jade);
     template.engine('swig', consolidate.swig);
     template.engine('tmpl', consolidate.lodash);
 
     template.page({path: 'a.hbs', content: '<title>{{author}}</title>', author: 'Jon Schlinkert'});
     template.page({path: 'b.tmpl', content: '<title><%= author %></title>', author: 'Jon Schlinkert'});
-    template.page({path: 'c.jade', content: 'title= author', author: 'Jon Schlinkert'});
     template.page({path: 'd.swig', content: '<title>{{author}}</title>', author: 'Jon Schlinkert'});
     template.page({'e.swig': {content: '<title>{{author}}</title>', author: 'Jon Schlinkert'}});
     template.page('f.hbs', '<title>{{author}}</title>', {author: 'Jon Schlinkert'});
@@ -45,10 +43,9 @@ describe('custom `renderable` types:', function () {
     done();
   });
 
-  it.skip('should prefer front-matter data over locals:', function (done) {
+  it('should prefer template locals over front-matter data:', function (done) {
     template.engine('hbs', consolidate.handlebars);
     template.engine('md', consolidate.handlebars);
-
     template.page('fixture.md', '---\nauthor: Brian Woodward\n---\n<title>{{author}}</title>', {author: 'Jon Schlinkert'});
 
     forOwn(template.cache.pages, function (value, key) {
@@ -61,7 +58,7 @@ describe('custom `renderable` types:', function () {
   });
 
   describe('when custom template types are passed to a built-in engine:', function () {
-    it.skip('should render them with the `.render()` method:', function (done) {
+    it('should render them with the `.render()` method:', function (done) {
       template.create('post', 'posts', { isRenderable: true });
       template.create('include', 'includes');
 
@@ -79,7 +76,7 @@ describe('custom `renderable` types:', function () {
   });
 
   describe('when custom template types are passed to a non built-in engine:', function () {
-    it.skip('should render them with the `.render()` method:', function (done) {
+    it('should render them with the `.render()` method:', function (done) {
       template.engine('hbs', consolidate.handlebars);
       template.engine('md', consolidate.handlebars);
 

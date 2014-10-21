@@ -29,6 +29,7 @@ node_modules
 /temp/
 /tmp/
 /vendor/
+/staging/
 _gh_pages
 
 # OS or Editor folders

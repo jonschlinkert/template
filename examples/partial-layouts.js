@@ -3,7 +3,7 @@ var site = new Site();
 
 
 /**
- * Use the `.create()` method to create new template type.
+ * Create new template type.
  *
  * Example:
  *
@@ -29,9 +29,8 @@ site.create('include', 'includes', { isPartial: true });
  * Step #2: Usage
  */
 
-site.include('block', {content: '<bar>{% body %}</bar>'}); // useless example
-site.include('alert', {content: '<baz class="alert">Heads up!</baz>', layout: 'block'});
-site.include('sidebar', {content: '<nav>This is a lame sidebar!</nav>'});
+site.include('alert', {content: '<div class="alert">Heads up!</div>'});
+site.include('sidebar', {content: '<div>This is a lame sidebar!</div>'});
 // console.log(site.get('includes'));
 
 

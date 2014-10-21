@@ -1,5 +1,5 @@
 /*!
- * template <https://github.com/jonschlinkert/template>
+ * engine <https://github.com/jonschlinkert/engine>
  *
  * Copyright (c) 2014 Jon Schlinkert, contributors.
  * Licensed under the MIT license.
@@ -7,7 +7,7 @@
 
 'use strict';
 
-// process.env.DEBUG = 'template:template';
+// process.env.DEBUG = 'engine:engine';
 
 var _ = require('lodash');
 var path = require('path');
@@ -30,30 +30,30 @@ var hasOwn = utils.hasOwn;
 
 
 /**
- * Create a new instance of `Template`, optionally passing the default
+ * Create a new instance of `Engine`, optionally passing the default
  * `context` and `options` to use.
  *
  * **Example:**
  *
  * ```js
- * var Template = require('template');
- * var template = new Template();
+ * var Engine = require('engine');
+ * var engine = new Engine();
  * ```
  *
- * @class `Template`
+ * @class `Engine`
  * @param {Object} `context` Context object to start with.
  * @param {Object} `options` Options to use.
  * @api public
  */
 
-var Template = module.exports = Cache.extend({
+var Engine = module.exports = Cache.extend({
   constructor: function (options) {
-    Template.__super__.constructor.call(this, options);
+    Engine.__super__.constructor.call(this, options);
     this.init();
   }
 });
 
-Template.extend = Cache.extend;
+Engine.extend = Cache.extend;
 
 
 /**
@@ -62,7 +62,7 @@ Template.extend = Cache.extend;
  * @api private
  */
 
-Template.prototype.init = function() {
+Engine.prototype.init = function() {
   this.engines = this.engines || {};
   this.delims = this.delims || {};
   this._stack = [];
@@ -89,7 +89,7 @@ Template.prototype.init = function() {
  * @api private
  */
 
-Template.prototype.defaultConfig = function() {
+Engine.prototype.defaultConfig = function() {
   this._.delims = new Delims(this.options);
   this._.engines = new Engines(this.engines);
   this._.helpers = new Helpers({
@@ -113,7 +113,7 @@ Template.prototype.defaultConfig = function() {
  * @api private
  */
 
-Template.prototype.defaultOptions = function() {
+Engine.prototype.defaultOptions = function() {
   this.option('cache', true);
   this.option('strictErrors', true);
   this.option('pretty', false);
@@ -154,7 +154,7 @@ Template.prototype.defaultOptions = function() {
  * @api private
  */
 
-Template.prototype.defaultRoutes = function() {
+Engine.prototype.defaultRoutes = function() {
   this.route(/\.(?:md|hbs)$/, function (value, key, next) {
     matter.parse(value, function (err) {
       if (err) return next(err);
@@ -180,7 +180,7 @@ Template.prototype.defaultRoutes = function() {
  * @api private
  */
 
-Template.prototype.defaultEngines = function() {
+Engine.prototype.defaultEngines = function() {
   var exts = this.option('defaultExts');
   this.engine(exts, require('engine-lodash'), {
     layoutDelims: ['{%', '%}'],
@@ -202,7 +202,7 @@ Template.prototype.defaultEngines = function() {
  * @api private
  */
 
-Template.prototype.defaultDelimiters = function() {
+Engine.prototype.defaultDelimiters = function() {
   this.addDelims('*', ['<%', '%>'], ['{%', '%}']);
 };
 
@@ -213,7 +213,7 @@ Template.prototype.defaultDelimiters = function() {
  * @api private
  */
 
-Template.prototype.defaultTemplates = function() {
+Engine.prototype.defaultTemplates = function() {
   this.create('page', { isRenderable: true });
   this.create('layout', { isLayout: true });
   this.create('partial');
@@ -235,7 +235,7 @@ Template.prototype.defaultTemplates = function() {
  * @api public
  */
 
-// Template.prototype.use = function(filepath, fn) {
+// Engine.prototype.use = function(filepath, fn) {
 //   // default route to '/'
 //   if (typeof filepath !== 'string') {
 //     fn = filepath;
@@ -261,7 +261,7 @@ Template.prototype.defaultTemplates = function() {
  * @api private
  */
 
-Template.prototype.lazyrouter = function() {
+Engine.prototype.lazyrouter = function() {
   if (!this._router) {
     this._router = new Router({
       caseSensitive: this.enabled('case sensitive routing'),
@@ -278,7 +278,7 @@ Template.prototype.lazyrouter = function() {
  * @api private
  */
 
-Template.prototype.middleware = function () {
+Engine.prototype.middleware = function () {
   debug.routes('#routes:middleware', arguments);
   this.lazyrouter();
   this._router.middleware.apply(this._router, arguments);
@@ -294,7 +294,7 @@ Template.prototype.middleware = function () {
  * @api private
  */
 
-Template.prototype.route = function (filter) {
+Engine.prototype.route = function (filter) {
   debug.routes('#route', arguments);
   this.lazyrouter();
 
@@ -337,7 +337,7 @@ Template.prototype.route = function (filter) {
  * @return {Function}
  */
 
-// Template.prototype.router = function(options) {
+// Engine.prototype.router = function(options) {
 //   var self = this;
 
 //   var opts = _.defaults({}, options, this.options, {
@@ -373,7 +373,7 @@ Template.prototype.route = function (filter) {
  * @api public
  */
 
-// Template.prototype.param = function(name, fn){
+// Engine.prototype.param = function(name, fn){
 //   var self = this;
 //   this.lazyrouter();
 
@@ -399,7 +399,7 @@ Template.prototype.route = function (filter) {
  * @api private
  */
 
-Template.prototype.lazyLayouts = function(ext, options) {
+Engine.prototype.lazyLayouts = function(ext, options) {
   if (!hasOwn(this.layoutSettings, ext)) {
     var opts = extend({}, this.options, options);
 
@@ -425,7 +425,7 @@ Template.prototype.lazyLayouts = function(ext, options) {
  * @api private
  */
 
-Template.prototype.applyLayout = function(ext, template, locals) {
+Engine.prototype.applyLayout = function(ext, template, locals) {
   debug.layout('#{lazyLayouts} ext: %s', ext);
 
   var layout = utils.pickLayout(template, locals, true);
@@ -466,7 +466,7 @@ Template.prototype.applyLayout = function(ext, template, locals) {
  * @api private
  */
 
-Template.prototype.defaultHeleprs = function(type, plural) {
+Engine.prototype.defaultHeleprs = function(type, plural) {
   this.addHelper(type, function (key, locals) {
     var partial = this.cache[plural][key];
     partial = this.extendLocals('partial', partial, locals);
@@ -483,7 +483,7 @@ Template.prototype.defaultHeleprs = function(type, plural) {
  * @api private
  */
 
-Template.prototype.defaultAsyncHelpers = function (type, plural) {
+Engine.prototype.defaultAsyncHelpers = function (type, plural) {
   this.addHelperAsync(type, function (name, locals, next) {
     var last = _.last(arguments);
 
@@ -538,7 +538,7 @@ Template.prototype.defaultAsyncHelpers = function (type, plural) {
  * @api private
  */
 
-Template.prototype.makeDelims = function (arr, options) {
+Engine.prototype.makeDelims = function (arr, options) {
   var settings = extend({}, options, {escape: true});
   var delims = this._.delims.templates(arr, settings);
 
@@ -570,7 +570,7 @@ Template.prototype.makeDelims = function (arr, options) {
  * @api public
  */
 
-Template.prototype.addDelims = function (ext, arr, layoutDelims, settings) {
+Engine.prototype.addDelims = function (ext, arr, layoutDelims, settings) {
   debug.delims('#{adding delims} ext: %s, delims:', ext, arr);
 
   if (Array.isArray(layoutDelims)) {
@@ -594,7 +594,7 @@ Template.prototype.addDelims = function (ext, arr, layoutDelims, settings) {
  * @api private
  */
 
-Template.prototype.getDelims = function(ext) {
+Engine.prototype.getDelims = function(ext) {
   debug.delims('#{getting delims} ext: %s', ext);
   if(hasOwn(this.delims, ext)) return this.delims[ext];
   ext = this.currentDelims || 'default';
@@ -614,7 +614,7 @@ Template.prototype.getDelims = function(ext) {
  * @api public
  */
 
-Template.prototype.useDelims = function(ext) {
+Engine.prototype.useDelims = function(ext) {
   debug.delims('#{using delims} ext: %s', ext);
   return this.currentDelims = ext;
 };
@@ -624,7 +624,7 @@ Template.prototype.useDelims = function(ext) {
  * Generate a temporary id for an unknown template.
  */
 
-Template.prototype.id = function () {
+Engine.prototype.id = function () {
   return id({prefix: '__id', suffix: '__'});
 };
 
@@ -639,7 +639,7 @@ Template.prototype.id = function () {
  * @api private
  */
 
-Template.prototype._registerEngine = function (ext, fn, options) {
+Engine.prototype._registerEngine = function (ext, fn, options) {
   var opts = extend({thisArg: this, bindFunctions: true}, options);
 
   if (ext[0] !== '.') {
@@ -673,7 +673,7 @@ Template.prototype._registerEngine = function (ext, fn, options) {
  * @api public
  */
 
-Template.prototype.engine = function (extension, fn, options) {
+Engine.prototype.engine = function (extension, fn, options) {
   debug.engine('#{engine} args: ', arguments);
   utils.arrayify(extension).forEach(function (ext) {
     this._registerEngine(ext, fn, options);
@@ -696,7 +696,7 @@ Template.prototype.engine = function (extension, fn, options) {
  * @api public
  */
 
-Template.prototype.getEngine = function (ext) {
+Engine.prototype.getEngine = function (ext) {
   debug.engine('#{getEngine} ext: %s', ext);
   var engine = this._.engines.get(ext);
   engine.options.thisArg = null;
@@ -717,7 +717,7 @@ Template.prototype.getEngine = function (ext) {
  * @api public
  */
 
-Template.prototype.addMixin = function (name, fn) {
+Engine.prototype.addMixin = function (name, fn) {
   if (arguments.length === 1) {
     return this.cache.mixins[name];
   }
@@ -740,7 +740,7 @@ Template.prototype.addMixin = function (name, fn) {
  * @api public
  */
 
-Template.prototype.helper = function (ext) {
+Engine.prototype.helper = function (ext) {
   debug.helper('#{helper} ext: %s', ext);
   return this.getEngine(ext).helpers;
 };
@@ -758,7 +758,7 @@ Template.prototype.helper = function (ext) {
  * @api public
  */
 
-Template.prototype.helpers = function (ext) {
+Engine.prototype.helpers = function (ext) {
   debug.helper('#{helpers} ext: %s', ext);
   return this.getEngine(ext).helpers;
 };
@@ -777,7 +777,7 @@ Template.prototype.helpers = function (ext) {
  * @api public
  */
 
-Template.prototype.addHelper = function (name, fn, thisArg) {
+Engine.prototype.addHelper = function (name, fn, thisArg) {
   debug.helper('#{adding helper} name: %s', name);
   return this._.helpers.addHelper(name, fn, thisArg);
 };
@@ -793,7 +793,7 @@ Template.prototype.addHelper = function (name, fn, thisArg) {
  * @api public
  */
 
-Template.prototype.addHelperAsync = function (name, fn, thisArg) {
+Engine.prototype.addHelperAsync = function (name, fn, thisArg) {
   debug.helper('#{adding async helper} name: %s', name);
   return this._.helpers.addHelperAsync(name, fn, thisArg);
 };
@@ -808,7 +808,7 @@ Template.prototype.addHelperAsync = function (name, fn, thisArg) {
  * @api private
  */
 
-Template.prototype.trackType = function (plural, options) {
+Engine.prototype.trackType = function (plural, options) {
   debug.template('#{tracking type}: %s, %s', plural);
   var opts = extend({}, options);
   var type = this.templateType;
@@ -841,7 +841,7 @@ Template.prototype.trackType = function (plural, options) {
  * @api private
  */
 
-Template.prototype.getType = function (type) {
+Engine.prototype.getType = function (type) {
   var arr = this.templateType[type];
 
   return arr.reduce(function (acc, key) {
@@ -865,7 +865,7 @@ Template.prototype.getType = function (type) {
  * @api public
  */
 
-Template.prototype.create = function(type, plural, options, fns) {
+Engine.prototype.create = function(type, plural, options, fns) {
   debug.template('#{creating template}: %s', type);
 
   var args = [].slice.call(arguments);
@@ -887,19 +887,19 @@ Template.prototype.create = function(type, plural, options, fns) {
   this.trackType(plural, options);
   this.typeMiddleware(plural, middleware);
 
-  Template.prototype[type] = function (key, value, locals, opt) {
+  Engine.prototype[type] = function (key, value, locals, opt) {
     debug.template('#{creating template type}:', type);
     this[plural].apply(this, arguments);
   };
 
-  Template.prototype[plural] = function (key, value, locals, opt) {
+  Engine.prototype[plural] = function (key, value, locals, opt) {
     debug.template('#{creating template plural}:', plural);
     this.load(plural, options).apply(this, arguments);
   };
 
   // Create `get` method => e.g. `template.getPartial()`
   var name = type[0].toUpperCase() + type.slice(1);
-  Template.prototype['get' + name] = function (key) {
+  Engine.prototype['get' + name] = function (key) {
     return this.cache[plural][key];
   };
 
@@ -924,7 +924,7 @@ Template.prototype.create = function(type, plural, options, fns) {
  * @param  {String} `type` Template type used for this middleware.
  * @param  {Function|Array} `middleware` Stack of middleware to run for this type.
  */
-Template.prototype.typeMiddleware = function(type, middleware) {
+Engine.prototype.typeMiddleware = function(type, middleware) {
   var filter = function (value, key) {
     if (!value || !value.options) {
       return false;
@@ -945,7 +945,7 @@ Template.prototype.typeMiddleware = function(type, middleware) {
  * @return {Object}
  */
 
-Template.prototype.load = function (plural, options) {
+Engine.prototype.load = function (plural, options) {
   debug.template('#{load} args:', arguments);
 
   var opts = extend({}, this.options, options);
@@ -984,7 +984,7 @@ Template.prototype.load = function (plural, options) {
  * @return {Object} Normalized template.
  */
 
-Template.prototype.normalize = function (plural, template, options) {
+Engine.prototype.normalize = function (plural, template, options) {
   debug.template('#{normalize} args:', arguments);
   this.lazyrouter();
 
@@ -1035,7 +1035,7 @@ Template.prototype.normalize = function (plural, template, options) {
  * @return {Object} Normalized template object.
  */
 
-Template.prototype.format = function (key, value, locals) {
+Engine.prototype.format = function (key, value, locals) {
   debug.template('#{format} args:', arguments);
 
   // Temporarily load a template onto the cache to normalize it.
@@ -1058,7 +1058,7 @@ Template.prototype.format = function (key, value, locals) {
  * @api private
  */
 
-Template.prototype.mergePartials = function (ext, locals, combine) {
+Engine.prototype.mergePartials = function (ext, locals, combine) {
   debug.template('#{merging partials} args:', arguments);
 
   combine = combine || this.option('mergePartials');
@@ -1094,7 +1094,7 @@ Template.prototype.mergePartials = function (ext, locals, combine) {
  * @api public
  */
 
-Template.prototype.preprocess = function (template, locals, cb) {
+Engine.prototype.preprocess = function (template, locals, cb) {
   if (typeof locals === 'function') {
     cb = locals;
     locals = {};
@@ -1175,7 +1175,7 @@ Template.prototype.preprocess = function (template, locals, cb) {
  * @api public
  */
 
-Template.prototype.render = function (content, locals, cb) {
+Engine.prototype.render = function (content, locals, cb) {
   var self = this;
   var state = {};
 
@@ -1224,7 +1224,7 @@ Template.prototype.render = function (content, locals, cb) {
  * @api public
  */
 
-Template.prototype.renderSync = function (content, locals) {
+Engine.prototype.renderSync = function (content, locals) {
   var ext = this.option('viewEngine');
   var engine = this.getEngine(ext);
 
@@ -1247,7 +1247,7 @@ Template.prototype.renderSync = function (content, locals) {
 };
 
 
-Template.prototype.extendLocals = function (key, template, locals) {
+Engine.prototype.extendLocals = function (key, template, locals) {
   template = extend({_locals: {}}, template);
   template._locals[key] = extend({}, template._locals[key], locals);
   return template;
@@ -1262,7 +1262,7 @@ Template.prototype.extendLocals = function (key, template, locals) {
  * @return {Object}
  */
 
-Template.prototype.mergeFn = function (template, locals) {
+Engine.prototype.mergeFn = function (template, locals) {
   var data = this.get('data');
   var o = {};
 

@@ -126,6 +126,8 @@ Engine.prototype.defaultOptions = function() {
   this.option('layoutExt', null);
   this.option('layout', null);
 
+  this.option('templates', 'src/templates');
+
   this.option('preprocess', true);
   this.option('preferLocals', false);
   this.option('partialLayout', null);
@@ -394,7 +396,7 @@ Engine.prototype.route = function (filter) {
  *   next();
  * });
  *
- * template.src('')
+ * engine.src('')
  *   .pipe(routes())
  *   .pipe(template.dest())
  * ```
@@ -532,7 +534,7 @@ Engine.prototype.applyLayout = function(ext, template, locals) {
  * **Example:**
  *
  * ```js
- * template.makeDelims(['{%', '%}'], ['{{', '}}'], opts);
+ * engine.makeDelims(['{%', '%}'], ['{{', '}}'], opts);
  * ```
  *
  * @param  {Array} `arr` Array of delimiters.
@@ -556,9 +558,9 @@ Engine.prototype.makeDelims = function (arr, options) {
  * **Example:**
  *
  * ```js
- * template.addDelims('curly', ['{%', '%}']);
- * template.addDelims('angle', ['<%', '%>']);
- * template.addDelims('es6', ['#{', '}'], {
+ * engine.addDelims('curly', ['{%', '%}']);
+ * engine.addDelims('angle', ['<%', '%>']);
+ * engine.addDelims('es6', ['#{', '}'], {
  *   // override the generated regex
  *   interpolate: /\$\{([^\\}]*(?:\\.[^\\}]*)*)\}/g
  * });
@@ -609,8 +611,8 @@ Engine.prototype.getDelims = function(ext) {
  * Specify by `ext` the delimiters to make active.
  *
  * ```js
- * template.useDelims('curly');
- * template.useDelims('angle');
+ * engine.useDelims('curly');
+ * engine.useDelims('angle');
  * ```
  *
  * @param {String} `ext`

@@ -1,5 +1,5 @@
 /*!
- * view-cache <https://github.com/jonschlinkert/view-cache>
+ * engine <https://github.com/jonschlinkert/engine>
  *
  * Copyright (c) 2014 Jon Schlinkert, contributors
  * Licensed under the MIT License (MIT)
@@ -10,18 +10,18 @@
 var fs = require('fs');
 var path = require('path');
 var should = require('should');
-var Template = require('..');
-var template = new Template();
+var Engine = require('..');
+var template = new Engine();
 
 describe('template locals', function () {
   beforeEach(function (done) {
-    template = new Template();
+    template = new Engine();
     done();
   });
 
   describe('when a custom loader function is set:', function () {
     it('should load using the custom loader', function () {
-      var template = new Template();
+      var template = new Engine();
       var loader = require('./lib/load-npm');
 
       template.create('npm', { loadFn: loader });

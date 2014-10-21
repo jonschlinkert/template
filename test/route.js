@@ -1,5 +1,5 @@
 /*!
- * view-cache <https://github.com/jonschlinkert/view-cache>
+ * engine <https://github.com/jonschlinkert/engine>
  *
  * Copyright (c) 2014 Jon Schlinkert, Brian Woodward, contributors.
  * Licensed under the MIT license.
@@ -11,7 +11,7 @@ var consolidate = require('consolidate');
 var forOwn = require('for-own');
 var should = require('should');
 
-var Template = require('..');
+var Engine = require('..');
 var template = null;
 
 // Route tests from kerouac
@@ -19,7 +19,7 @@ describe('template route', function () {
 
   describe('.middleware', function () {
     beforeEach(function () {
-      template = new Template();
+      template = new Engine();
     });
 
     it('should run default routes', function (done) {

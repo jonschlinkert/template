@@ -1,5 +1,5 @@
 /*!
- * view-cache <https://github.com/jonschlinkert/view-cache>
+ * engine <https://github.com/jonschlinkert/engine>
  *
  * Copyright (c) 2014 Jon Schlinkert, Brian Woodward, contributors.
  * Licensed under the MIT license.
@@ -8,23 +8,23 @@
 'use strict';
 
 var should = require('should');
-var Template = require('..');
+var Engine = require('..');
 
 describe('Template', function () {
   describe('constructor:', function () {
-    it('when new Template() is defined:', function () {
-      var template = new Template({
+    it('when new Engine() is defined:', function () {
+      var template = new Engine({
         one: 1,
         two: 2
       });
       template.get('one').should.eql(1);
       template.get('two').should.eql(2);
-      template.should.be.instanceOf(Template);
+      template.should.be.instanceOf(Engine);
     });
   });
 
   describe('keys():', function () {
-    var template = new Template();
+    var template = new Engine();
     it('should return the keys of properties on the cache.', function () {
       template.clear();
 
@@ -37,7 +37,7 @@ describe('Template', function () {
   });
 
   describe('get/set:', function () {
-    var template = new Template();
+    var template = new Engine();
 
     afterEach(function() {
       template.clear();
@@ -64,7 +64,7 @@ describe('Template', function () {
   });
 
   describe('get():', function () {
-    var template = new Template();
+    var template = new Engine();
     var obj = {a: {b: {c: 1, d: '', e: null, f: undefined, 'g.h.i': 2}}};
     template.merge(obj);
 
@@ -105,7 +105,7 @@ describe('Template', function () {
   });
 
   describe('all:', function () {
-    var template = new Template();
+    var template = new Engine();
 
     it('should list the entire cache', function () {
       template.get().should.eql(template.cache);
@@ -113,7 +113,7 @@ describe('Template', function () {
   });
 
   describe('set()/get():', function () {
-    var template = new Template();
+    var template = new Engine();
     it('should return immediate property value.', function() {
       template.set('a', 1);
       template.get('a').should.eql(1)

@@ -1,5 +1,5 @@
 /*!
- * template <https://github.com/jonschlinkert/template>
+ * engine <https://github.com/jonschlinkert/engine>
  *
  * Copyright (c) 2014 Jon Schlinkert, contributors
  * Licensed under the MIT License (MIT)
@@ -8,12 +8,12 @@
 'use strict';
 
 var should = require('should');
-var Template = require('..');
+var Engine = require('..');
 
 
 describe('.getDelims():', function () {
   it('should use default built-in template:', function () {
-    var template = new Template();
+    var template = new Engine();
 
     template.useDelims('*');
     template.getDelims().should.eql({
@@ -24,7 +24,7 @@ describe('.getDelims():', function () {
   });
 
   it('should allow default built-in template to be overridden:', function () {
-    var template = new Template();
+    var template = new Engine();
 
     template.addDelims('default', ['<<', '>>']);
     template.useDelims('default');
@@ -36,7 +36,7 @@ describe('.getDelims():', function () {
   });
 
   it('should use the currently set template:', function () {
-    var template = new Template();
+    var template = new Engine();
     var ctx = {
       name: '____Jon Schlinkert____'
     };

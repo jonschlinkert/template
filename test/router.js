@@ -1,5 +1,5 @@
 var should = require('should');
-var Template = require('..');
+var Engine = require('..');
 var template = null;
 
 
@@ -9,7 +9,7 @@ describe('template router', function() {
   describe('with two simple routes', function() {
 
     beforeEach(function () {
-      template = new Template();
+      template = new Engine();
 
       template.route('/foo', function foo (page, key, next) {
         page.routedToFoo = true;
@@ -68,7 +68,7 @@ describe('template router', function() {
   describe('with route containing multiple callbacks', function() {
 
     beforeEach(function () {
-      template = new Template();
+      template = new Engine();
       template.route('/foo',
         function(page, key, next) {
           page.routedTo = [ '1' ];
@@ -105,7 +105,7 @@ describe('template router', function() {
   describe('with route containing multiple callbacks some of which are skipped', function() {
 
     beforeEach(function () {
-      template = new Template();
+      template = new Engine();
 
       template.route('/foo',
         function(page, key, next) {
@@ -148,7 +148,7 @@ describe('template router', function() {
   describe('with route that is parameterized', function() {
 
     beforeEach(function () {
-      template = new Template();
+      template = new Engine();
 
       template.route('/blog/:year/:month/:day/:slug', function(page, key, next) {
         page.gotParams = [];
@@ -187,7 +187,7 @@ describe('template router', function() {
   describe('with route that encounters an error', function() {
 
     beforeEach(function () {
-      template = new Template();
+      template = new Engine();
 
       template.route('/foo', function(page, key, next) {
         next(new Error('something went wrong'));
@@ -211,7 +211,7 @@ describe('template router', function() {
   describe('with route that throws an exception', function() {
 
     beforeEach(function () {
-      template = new Template();
+      template = new Engine();
 
       template.route('/foo', function(page, key, next) {
         throw new Error('something went horribly wrong');
@@ -235,7 +235,7 @@ describe('template router', function() {
   describe('with route containing error handling that is not called', function() {
 
     beforeEach(function () {
-      template = new Template();
+      template = new Engine();
 
       template.route('/foo',
         function(page, key, next) {
@@ -272,7 +272,7 @@ describe('template router', function() {
   describe('with route containing error handling that is called', function() {
 
     beforeEach(function () {
-      template = new Template();
+      template = new Engine();
 
       template.route('/foo',
         function(page, key, next) {
@@ -308,7 +308,7 @@ describe('template router', function() {
 
   describe('with route containing error handling that is called due to an exception', function() {
     beforeEach(function () {
-      template = new Template();
+      template = new Engine();
 
       template.route('/foo',
         function(page, key, next) {

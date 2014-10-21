@@ -1,5 +1,5 @@
 /*!
- * view-cache <https://github.com/jonschlinkert/view-cache>
+ * engine <https://github.com/jonschlinkert/engine>
  *
  * Copyright (c) 2014 Jon Schlinkert, contributors
  * Licensed under the MIT License (MIT)
@@ -8,13 +8,13 @@
 'use strict';
 
 var should = require('should');
-var Template = require('..');
+var Engine = require('..');
 
 
 describe('template create:', function () {
   describe('.create():', function () {
     it('should create a new template `type`:', function () {
-      var template = new Template();
+      var template = new Engine();
       template.create('include', 'includes');
 
       template.should.have.property('include');
@@ -24,7 +24,7 @@ describe('template create:', function () {
 
   describe('when a new template type is created:', function () {
     it('should add templates registered for that type to its corresponding (plural) object on the cache:', function () {
-      var template = new Template();
+      var template = new Engine();
       template.create('apple', 'apples');
 
       template.apple('a', 'one');
@@ -37,7 +37,7 @@ describe('template create:', function () {
 
   describe('when the `isRenderable` flag is set on the options:', function () {
     it('should push the name of the type into the `isRenderable` array on the cache:', function () {
-      var template = new Template();
+      var template = new Engine();
       template.create('apple', 'apples', { isRenderable: true });
 
       template.templateType.renderable.should.containEql('pages');
@@ -48,7 +48,7 @@ describe('template create:', function () {
 
   describe('when the `isLayout` flag is set on the options:', function () {
     it('should push the name of the type into the `isLayout` array on the cache:', function () {
-      var template = new Template();
+      var template = new Engine();
       template.create('orange', 'oranges', { isLayout: true });
 
       template.templateType.layout.should.containEql('layouts');
@@ -58,7 +58,7 @@ describe('template create:', function () {
 
   describe('when no type flag is set on the options:', function () {
     it('should push the name of the type into the `isPartial` array on the cache:', function () {
-      var template = new Template();
+      var template = new Engine();
       template.create('banana', 'bananas');
 
       template.templateType.partial.should.containEql('partials');
@@ -68,7 +68,7 @@ describe('template create:', function () {
 
   describe('when the `isPartial` flag is set on the options:', function () {
     it('should push the name of the type into the `isPartial` array on the cache:', function () {
-      var template = new Template();
+      var template = new Engine();
       template.create('banana', 'bananas', { isPartial: true });
 
       template.templateType.partial.should.containEql('partials');
@@ -78,7 +78,7 @@ describe('template create:', function () {
 
   describe('when both the `isPartial` and the `isLayout` flags are set:', function () {
     it('should push the type into both arrays:', function () {
-      var template = new Template();
+      var template = new Engine();
       template.create('banana', 'bananas', { isPartial: true, isLayout: true });
 
       template.templateType.partial.should.containEql('bananas');
@@ -88,7 +88,7 @@ describe('template create:', function () {
 
   describe('when both the `isPartial` and the `isRenderable` flags are set:', function () {
     it('should push the type into both arrays:', function () {
-      var template = new Template();
+      var template = new Engine();
       template.create('banana', 'bananas', { isPartial: true, isRenderable: true });
 
       template.templateType.partial.should.containEql('bananas');
@@ -98,7 +98,7 @@ describe('template create:', function () {
 
   describe('when both the `isLayout` and the `isRenderable` flags are set:', function () {
     it('should push the type into both arrays:', function () {
-      var template = new Template();
+      var template = new Engine();
       template.create('banana', 'bananas', { isLayout: true, isRenderable: true });
 
       template.templateType.layout.should.containEql('bananas');
@@ -108,7 +108,7 @@ describe('template create:', function () {
 
   describe('when all three types flags are set:', function () {
     it('should push the type into all three arrays:', function () {
-      var template = new Template();
+      var template = new Engine();
       template.create('banana', 'bananas', { isPartial: true, isLayout: true, isRenderable: true });
 
       template.templateType.layout.should.containEql('bananas');

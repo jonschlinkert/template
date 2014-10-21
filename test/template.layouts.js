@@ -1,5 +1,5 @@
 /*!
- * template <https://github.com/jonschlinkert/template>
+ * engine <https://github.com/jonschlinkert/engine>
  *
  * Copyright (c) 2014 Jon Schlinkert, contributors
  * Licensed under the MIT License (MIT)
@@ -10,13 +10,13 @@
 var path = require('path');
 var assert = require('assert');
 var should = require('should');
-var Template = require('..');
+var Engine = require('..');
 
 
 describe('template layout', function () {
   describe('.layouts()', function () {
     it('should add layouts defined as strings.', function () {
-      var template = new Template();
+      var template = new Engine();
       template.layout('x.md', 'this is a layout');
       template.layout('y.md', 'this is a layout');
       template.layout('z.md', 'this is a layout');
@@ -26,13 +26,13 @@ describe('template layout', function () {
     });
 
     it('should add layouts defined as glob patterns.', function () {
-      var template = new Template();
+      var template = new Engine();
       template.layouts(['test/fixtures/layouts/matter/*.md']);
       template.cache.layouts.should.have.property('a.md');
     });
 
     it('should use a custom rename function on layout keys:', function () {
-      var template = new Template();
+      var template = new Engine();
       template.option('renameKey', function (filepath) {
         return path.basename(filepath, path.extname(filepath));
       });
@@ -44,7 +44,7 @@ describe('template layout', function () {
     });
 
     it('should use a custom rename function on layout keys:', function () {
-      var template = new Template();
+      var template = new Engine();
       template.option('renameKey', function (filepath) {
         return path.basename(filepath);
       });
@@ -56,7 +56,7 @@ describe('template layout', function () {
     });
 
     it('should use a custom rename function on layout keys:', function () {
-      var template = new Template();
+      var template = new Engine();
       template.option('renameKey', function (filepath) {
         return path.basename(filepath) + ':string';
       });
@@ -70,7 +70,7 @@ describe('template layout', function () {
 
   describe('when a layout has front matter', function () {
     it('should parse the layout.', function () {
-      var template = new Template();
+      var template = new Engine();
       template.layouts('a.md', '---\nname: AAA\n---\nThis is content.');
       template.cache.layouts.should.have.property('a.md');
       template.cache.layouts['a.md'].should.have.property.content;
@@ -78,13 +78,13 @@ describe('template layout', function () {
     });
 
     it('should parse the `content` value.', function () {
-      var template = new Template();
+      var template = new Engine();
       template.layouts({'a.md': {path: 'a.md', content: '---\nname: AAA\n---\nThis is content.'}});
       template.cache.layouts.should.have.property('a.md');
     });
 
     it('should merge `data` with front-matter data.', function () {
-      var template = new Template();
+      var template = new Engine();
       template.layouts({'a.md': {content: '---\nname: AAA\n---\nThis is content.', data: {c: 'c'}}});
       template.cache.layouts.should.have.property('a.md');
       template.cache.layouts['a.md'].data.should.have.property('c');
@@ -92,7 +92,7 @@ describe('template layout', function () {
     });
 
     it('should save both locals and front-matter data to the `file` object.', function () {
-      var template = new Template();
+      var template = new Engine();
       template.layouts({'a.md': {content: '---\nname: AAA\n---\nThis is content.', name: 'BBB'}});
       template.cache.layouts.should.have.property('a.md');
       template.cache.layouts['a.md'].data.name.should.equal('AAA');
@@ -100,7 +100,7 @@ describe('template layout', function () {
     });
 
     it('should use the key as `file.path` if one does not exist.', function () {
-      var template = new Template();
+      var template = new Engine();
       template.layouts({'a.md': {content: '---\nname: AAA\n---\nThis is content.', data: {c: 'c'}}});
       template.cache.layouts.should.have.property('a.md');
       template.cache.layouts['a.md'].path.should.equal('a.md');

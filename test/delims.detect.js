@@ -1,5 +1,5 @@
 /*!
- * view-cache <https://github.com/jonschlinkert/view-cache>
+ * engine <https://github.com/jonschlinkert/engine>
  *
  * Copyright (c) 2014 Jon Schlinkert, contributors
  * Licensed under the MIT License (MIT)
@@ -10,13 +10,13 @@
 var fs = require('fs');
 var path = require('path');
 var should = require('should');
-var Template = require('..');
-var template = new Template();
+var Engine = require('..');
+var template = new Engine();
 
 
 describe('custom delimiters:', function () {
   it('should use custom delimiters defined on a template type:', function (done) {
-    var template = new Template();
+    var template = new Engine();
     template.engine('*', require('engine-lodash'));
     template.create('doc', 'docs', { isRenderable: true , delims: ['<<', '>>']})
 
@@ -36,7 +36,7 @@ describe('custom delimiters:', function () {
   });
 
   it('should use custom delimiters defined on an actual template:', function (done) {
-    var template = new Template();
+    var template = new Engine();
     template.engine('*', require('engine-lodash'));
     template.create('doc', 'docs', { isRenderable: true })
 
@@ -60,7 +60,7 @@ describe('custom delimiters:', function () {
   });
 
   it('should use custom delimiters defined on partials:', function (done) {
-    var template = new Template();
+    var template = new Engine();
     template.engine('*', require('engine-lodash'));
     template.create('doc', 'docs', { isRenderable: true });
 

@@ -1,5 +1,5 @@
 /*!
- * template-cache <https://github.com/jonschlinkert/template-cache>
+ * engine <https://github.com/jonschlinkert/engine>
  *
  * Copyright (c) 2014 Jon Schlinkert, Brian Woodward, contributors.
  * Licensed under the MIT license.
@@ -8,14 +8,14 @@
 'use strict';
 
 var should = require('should');
-var Template = require('..');
-var template = new Template();
+var Engine = require('..');
+var template = new Engine();
 
 
 describe('template option', function() {
   describe('.option()', function() {
     beforeEach(function () {
-      template = new Template();
+      template = new Engine();
     })
 
     it('should set an option.', function() {
@@ -66,7 +66,7 @@ describe('template option', function() {
   });
 
   describe('option events', function () {
-    var template = new Template();
+    var template = new Engine();
 
     it('should emit `option` when a value is set', function () {
       template.once('option', function (key, val) {

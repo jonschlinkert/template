@@ -1,5 +1,5 @@
 /*!
- * view-cache <https://github.com/jonschlinkert/view-cache>
+ * engine <https://github.com/jonschlinkert/engine>
  *
  * Copyright (c) 2014 Jon Schlinkert, contributors
  * Licensed under the MIT License (MIT)
@@ -13,13 +13,13 @@ var should = require('should');
 var forOwn = require('for-own');
 var helpers = require('test-helpers')({dir: 'test'});
 var engines = require('engines');
-var Template = require('..');
-var template = new Template();
+var Engine = require('..');
+var template = new Engine();
 
 
 describe('template render', function () {
   beforeEach(function () {
-    template = new Template();
+    template = new Engine();
   });
 
   describe('when an un-cached string is passed to `.renderSync()`:', function () {

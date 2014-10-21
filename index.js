@@ -890,21 +890,20 @@ Engine.prototype.create = function(type, plural, options, fns) {
   this.trackType(plural, options);
   this.typeMiddleware(plural, middleware);
 
-  Engine.prototype[type] = function (key, value, locals, opt) {
+  mixin(type, function (key, value, locals, opt) {
     debug.template('#{creating template type}:', type);
     this[plural].apply(this, arguments);
-  };
+  });
 
-  Engine.prototype[plural] = function (key, value, locals, opt) {
+  mixin(plural, function (key, value, locals, opt) {
     debug.template('#{creating template plural}:', plural);
     this.load(plural, options).apply(this, arguments);
-  };
+  });
 
-  // Create `get` method => e.g. `template.getPartial()`
-  var name = type[0].toUpperCase() + type.slice(1);
-  Engine.prototype['get' + name] = function (key) {
+  var name = 'get' + type[0].toUpperCase() + type.slice(1);
+  mixin(name, function (key) {
     return this.cache[plural][key];
-  };
+  });
 
   if (!hasOwn(this._.helpers, type)) {
     this.typeHelpers(type, plural);
@@ -1283,6 +1282,18 @@ Engine.prototype.mergeFn = function (template, locals) {
   return extend(data, o, locals);
 };
 
+
+/**
+ * Extend the `Engine` prototype with a new method.
+ *
+ * @param  {String} `method` The method name.
+ * @param  {Function} `fn`
+ * @api private
+ */
+
+function mixin(method, fn) {
+  Engine.prototype[method] = fn;
+}
 
 /**
  * Utility for getting an own property from an object.

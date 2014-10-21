@@ -452,7 +452,7 @@ Template.prototype.applyLayout = function(ext, template, locals) {
  * @api private
  */
 
-Template.prototype.defaultHelpers = function(type, plural) {
+Template.prototype.defaultTypeHelpers = function(type, plural) {
   this.addHelper(type, function (key, locals) {
     var partial = this.cache[plural][key];
     partial = this.extendLocals('partial', partial, locals);
@@ -890,7 +890,11 @@ Template.prototype.create = function(type, plural, options, fns) {
   };
 
   if (!hasOwn(this._.helpers, type)) {
-    this.defaultHelpers(type, plural);
+    this.addHelper(type, function (key, locals, hash) {
+      this.extendLocals('partial', locals);
+      var partial = this.cache[plural][key];
+      return this.renderSync(partial, locals);
+    });
   }
 
   // if (!hasOwn(this._.helpers, type)) {

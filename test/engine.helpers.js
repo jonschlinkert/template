@@ -90,7 +90,8 @@ describe('engine render:', function () {
       return fs.readFileSync(filepath, 'utf8');
     });
 
-    // just for fun :-)
+    // just for fun. If this fails, that means the readme is wrong :-)
+    // so you probably need to run verb.
     var pkg = require(path.join(process.cwd(), 'package.json'));
     var re = new RegExp('^#\\s*' + pkg.name);
 

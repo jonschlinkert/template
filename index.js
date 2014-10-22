@@ -10,17 +10,19 @@
 var _ = require('lodash');
 var path = require('path');
 var chalk = require('chalk');
-var forOwn = require('for-own');
-var id = require('uniqueid');
-var Cache = require('config-cache');
-var Router = require('en-route');
-var Engines = require('engine-cache');
-var Helpers = require('helper-cache');
-var Loader = require('load-templates');
-var Layouts = require('layouts');
 var Delims = require('delims');
-var matter = require('parser-front-matter');
-var noop = require('parser-noop');
+var forOwn = require('for-own');
+var Layouts = require('layouts');
+var Router = require('en-route');
+var Cache = require('config-cache');
+var Helpers = require('helper-cache');
+var Engines = require('engine-cache');
+var engineLodash = require('engine-lodash');
+var engineNoop = require('engine-noop');
+var parserMatter = require('parser-front-matter');
+var parserNoop = require('parser-noop');
+var Loader = require('load-templates');
+var id = require('uniqueid');
 var utils = require('./lib/utils');
 var debug = require('./lib/debug');
 var extend = _.extend;
@@ -115,6 +117,8 @@ Engine.prototype.defaultOptions = function() {
   this.option('pretty', false);
 
   this.option('cwd', process.cwd());
+
+
   this.option('ext', '*');
   this.option('defaultExts', ['md', 'html', 'hbs']);
   this.option('destExt', '.html');
@@ -160,14 +164,14 @@ Engine.prototype.defaultOptions = function() {
 
 Engine.prototype.defaultRoutes = function() {
   this.route(/\.(?:md|hbs)$/, function (value, key, next) {
-    matter.parse(value, function (err) {
+    parserMatter.parse(value, function (err) {
       if (err) return next(err);
       next();
     });
   });
 
   this.route(/.*/, function (value, key, next) {
-    noop.parse(value, function (err) {
+    parserNoop.parse(value, function (err) {
       if (err) return next(err);
       next();
     });
@@ -188,11 +192,13 @@ Engine.prototype.defaultRoutes = function() {
 
 Engine.prototype.defaultEngines = function() {
   var exts = this.option('defaultExts');
-  this.engine(exts, require('engine-lodash'), {
+
+  this.engine(exts, engineLodash, {
     layoutDelims: ['{%', '%}'],
     destExt: '.html'
   });
-  this.engine('*', require('engine-noop'), {
+
+  this.engine('*', engineNoop, {
     layoutDelims: ['{%', '%}'],
     destExt: '.html'
   });
@@ -295,7 +301,7 @@ Engine.prototype.asyncTypeHelpers = function (type, plural) {
  * **Examples:**
  *
  * ```js
- * site.use(template.prettyURLs());
+ * site.use(template.foo());
  * ```
  *
  * @param {String|Function} `filepath`

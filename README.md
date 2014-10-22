@@ -1,38 +1,53 @@
-# template [![NPM version](https://badge.fury.io/js/template.svg)](http://badge.fury.io/js/template)
+# engine [![NPM version](https://badge.fury.io/js/engine.svg)](http://badge.fury.io/js/engine)
 
-
-> Templates.
+> Render templates from any engine. Make custom template types, use built-in or custom delimiters, helpers, routes, middleware and lots more.
 
 ## Install
 #### Install with [npm](npmjs.org):
 
 ```bash
-npm i template --save-dev
+npm i engine --save-dev
 ```
 
 ## Usage
 
 ```js
-var Template = require('template');
+var Template = require('engine');
 var template = new Template();
 ```
 
 ## API
-### [Template](index.js#L47)
+### [Engine](index.js#L47)
 
-Create a new instance of `Template`, optionally passing the default `context` and `options` to use.
+Create a new instance of `Engine`, optionally passing default `options` to initialize with.
 
-* `context` **{Object}**: Context object to start with.    
-* `options` **{Object}**: Options to use.    
+* `options` **{Object}**: Options to initialize with.    
 
-*Example:**
+**Example:**
 
 ```js
-var Template = require('template');
-var template = new Template();
+var Engine = require('engine');
+var engine = new Engine();
 ```
 
-### [.addDelims](index.js#L319)
+### [.use](index.js#L313)
+
+Utilize the given middleware `fn` to the given `filepath`, defaulting to `_/_`.
+
+* `filepath` **{String|Function}**    
+* **{Function}**: fn    
+* `returns` **{Object}** `Template`: for chaining  
+
+**Examples:**
+
+```js
+site.use(template.foo());
+```
+
+Proxy to `Router#param()` with one added api feature. The _name_ parameter
+can be an array of names.
+
+### [.addDelims](index.js#L584)
 
 Cache delimiters by `name` with the given `options` for later use.
 
@@ -40,138 +55,31 @@ Cache delimiters by `name` with the given `options` for later use.
 * `delims` **{Array}**: Array of delimiter strings. See [delims] for details.    
 * `opts` **{Object}**: Options to pass to [delims]. You can also use the options to override any of the generated delimiters.    
 
-*Example:**
+**Example:**
 
 ```js
-template.addDelims('curly', ['']);
-template.addDelims('angle', ['<%', '%>']);
-template.addDelims('es6', ['#{', '}'], {
-// override the generated regex
-interpolate: /\$\{([^\\}]*(?:\\.[^\\}]*)*)\}/g
+engine.addDelims('curly', ['']);
+engine.addDelims('angle', ['<%', '%>']);
+engine.addDelims('es6', ['#{', '}'], {
+  // override the generated regex
+  interpolate: /\$\{([^\\}]*(?:\\.[^\\}]*)*)\}/g
 });
 ```
 
 [delims]: https://github.com/jonschlinkert/delims "Generate regex for delimiters"
 
-### [.useDelims](index.js#L366)
+### [.useDelims](index.js#L628)
 
 Specify by `ext` the delimiters to make active.
 
 * `ext` **{String}**    
 
 ```js
-template.useDelims('curly');
-template.useDelims('angle');
+engine.useDelims('curly');
+engine.useDelims('angle');
 ```
 
-### [.getParsers](index.js#L380)
-
-* `ext` **{String}**: The parser stack to get.    
-* `returns` **{Object}** `Template`: to enable chaining.  
-
-Get the parser stack for the given `ext`.
-
-### [.registerParser](index.js#L418)
-
-Register the given parser callback `fn` as `ext`. If `ext` is not given, the parser `fn` will be pushed into the default parser stack.
-
-* `ext` **{String}**    
-* `fn` **{Function|Object}**: or `options`    
-* `returns` **{Object}** `parsers`: to enable chaining.  
-
-```js
-// Push the parser into the default stack
-template.registerParser(require('parser-front-matter'));
-
-// Or push the parser into the `foo` stack
-template.registerParser('foo', require('parser-front-matter'));
-```
-
-### [.parser](index.js#L475)
-
-Define an async parser.
-
-* `ext` **{String}**    
-* `fn` **{Function|Object}**: or `options`    
-* `fn` **{Function}**: Callback function.    
-* `returns` **{Object}** `Template`: to enable chaining.  
-
-```js
-// Default stack
-template.parser(require('parser-front-matter'));
-
-// Associated with `.hbs` file extension
-template.parser('hbs', require('parser-front-matter'));
-```
-
-See [parser-cache] for the full range of options and documentation.
-
-
-Register the given parser callback `fn` as `ext`. If `ext`
-is not given, the parser `fn` will be pushed into the
-default parser stack.
-
-### [.parserSync](index.js#L499)
-
-Define a synchronous parser.
-
-* `ext` **{String}**    
-* `fn` **{Function|Object}**: or `options`    
-* `fn` **{Function}**: Callback function.    
-* `returns` **{Object}** `Template`: to enable chaining.  
-
-```js
-// Default stack
-template.parser(require('parser-front-matter'));
-
-// Associated with `.hbs` file extension
-template.parser('hbs', require('parser-front-matter'));
-```
-
-See [parser-cache] for the full range of options and documentation.
-
-
-Register the given parser callback `fn` as `ext`. If `ext`
-is not given, the parser `fn` will be pushed into the
-default parser stack.
-
-### [.parse](index.js#L549)
-
-Run a stack of sync or async parsers.
-
-* `template` **{Object|String}**: Either a string or an object.    
-* `stack` **{Array}**: Optionally pass an array of functions to use as parsers.    
-* `options` **{Object}**    
-* `returns` **{Object}**: Normalize `template` object.  
-
-**Examples:**
-
-```js
-var str = fs.readFileSync('a/b/c.md', 'utf8');
-template.parse({path: 'a/b/c.md', content: str}, function (err, file) {
-  if (err) console.log(err);
-  console.log(file);
-});
-```
-
-Optionally pass an array of parser functions as a section argument.
-
-```js
-template.parse({path: 'a/b/c.md', content: str}, [a, b, c], function (err, file) {
-  if (err) console.log(err);
-  console.log(file);
-});
-```
-
-See [parser-cache] for the full range of options and documentation.
-
-
-Run a `stack` of parsers against the given `template`. If `template` is
-an object with a `path` property, then the `extname` is used to
-get the parser stack. If a stack isn't found on the cache the
-default `noop` parser will be used.
-
-### [.engine](index.js#L596)
+### [.engine](index.js#L687)
 
 * `ext` **{String}**    
 * `fn` **{Function|Object}**: or `options`    
@@ -193,7 +101,7 @@ Register the given view engine callback `fn` as `ext`. If only `ext`
 is passed, the engine registered for `ext` is returned. If no `ext`
 is passed, the entire cache is returned.
 
-### [.getEngine](index.js#L650)
+### [.getEngine](index.js#L710)
 
 Get the engine registered for the given `ext`. If no `ext` is passed, the entire cache is returned.
 
@@ -213,7 +121,7 @@ template.getEngine('hbs');
 engine.getEngine('.html');
 ```
 
-### [.addMixin](index.js#L671)
+### [.addMixin](index.js#L731)
 
 Assign mixin `fn` to `name` or return the value of `name` if no other arguments are passed.
 
@@ -224,7 +132,7 @@ This method sets mixins on the cache, which will later be
 passed to a template engine that uses mixins, such as
 Lo-Dash or Underscore.
 
-### [.helper](index.js#L694)
+### [.helper](index.js#L754)
 
 Register a helper for the given `ext` (engine).
 
@@ -233,11 +141,11 @@ Register a helper for the given `ext` (engine).
 
 ```js
 engine.addHelper('lower', function(str) {
-return str.toLowerCase();
+  return str.toLowerCase();
 });
 ```
 
-### [.helpers](index.js#L713)
+### [.helpers](index.js#L772)
 
 Register helpers for the given `ext` (engine).
 
@@ -248,7 +156,7 @@ Register helpers for the given `ext` (engine).
 engine.helpers(require('handlebars-helpers'));
 ```
 
-### [.addHelper](index.js#L733)
+### [.addHelper](index.js#L791)
 
 * `name` **{String}**: The helper to cache or get.    
 * `fn` **{Function}**: The helper function.    
@@ -260,7 +168,7 @@ using this method will be passed to every engine, so be sure to use
 generic javascript functions - unless you want to see Lo-Dash
 blow up from `Handlebars.SafeString`.
 
-### [.addHelperAsync](index.js#L749)
+### [.addHelperAsync](index.js#L807)
 
 * `name` **{String}**: The helper to cache or get.    
 * `fn` **{Function}**: The helper function.    
@@ -269,7 +177,7 @@ blow up from `Handlebars.SafeString`.
 
 Async version of `.addHelper()`.
 
-### [.create](index.js#L839)
+### [.create](index.js#L879)
 
 * `type` **{String}**: Singular name of the type to create, e.g. `page`.    
 * `plural` **{String}**: Plural name of the template type, e.g. `pages`.    
@@ -283,29 +191,56 @@ Async version of `.addHelper()`.
 Add a new template `type`, along with associated get/set methods.
 You must specify both the singular and plural names for the type.
 
-### [.preprocess](index.js#L1015)
+### [.preprocess](index.js#L1103)
 
 * `file` **{Object|String}**: String or normalized template object.    
 * `options` **{Object}**: Options to pass to registered view engines.    
 * `returns`: {String}  
 
-Preprocess `str` with the given `options` and `callback`.
+Preprocess `str` with the given `options` and `callback`. A few
+things to note.
 
-### [.render](index.js#L1090)
-
-* `file` **{Object|String}**: String or normalized template object.    
-* `options` **{Object}**: Options to pass to registered view engines.    
-* `returns`: {String}  
-
-Render `content` with the given `options` and `callback`.
-
-### [.renderSync](index.js#L1125)
+### [.render](index.js#L1184)
 
 * `file` **{Object|String}**: String or normalized template object.    
 * `options` **{Object}**: Options to pass to registered view engines.    
 * `returns`: {String}  
 
 Render `content` with the given `options` and `callback`.
+
+### [.renderSync](index.js#L1233)
+
+* `file` **{Object|String}**: String or normalized template object.    
+* `options` **{Object}**: Options to pass to registered view engines.    
+* `returns`: {String}  
+
+Render `content` with the given `locals`.
+
+## TODO
+
+- [x] layouts
+- [x] engines
+- [x] parsers
+- [x] allow `viewTypes` to set an engine to use for its templates.
+- [x] allow user-defined `mergeFn` to merge context. This could be defined on, for example, `template.post('a', 'b', {mergeFn: _.defaults})`
+- [x] logic for `.create()` plural. e.g. load templates
+- [x] render views with partials passed in
+- [x] render cached templates using the name of the cached template
+
+**Data**
+
+- [ ] `partials` namespacing
+- [ ] merging `cache.data`
+- [ ] matching `cache.data` and `partials` data
+- [ ] `layouts` data
+
+**Delimiters**
+
+Allown delimiters to be defined:
+
+- [x] when an engine is defined
+- [x] when a template is defined
+- [x] on the options
 
 ## Related
 
@@ -325,11 +260,11 @@ Render `content` with the given `options` and `callback`.
 
 ## License
 Copyright (c) 2014 Jon Schlinkert, contributors.  
-Released under the MIT license
+Released under the CC by 3.0, MIT licenses
 
 ***
 
-_This file was generated by [verb-cli](https://github.com/assemble/verb-cli) on September 28, 2014._
+_This file was generated by [verb-cli](https://github.com/assemble/verb-cli) on October 21, 2014._
 
 
 [engine-cache]: https://github.com/jonschlinkert/engine-cache

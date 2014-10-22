@@ -16,7 +16,7 @@ var template = new Engine();
 
 
 
-describe('template engine', function() {
+describe('engine engine', function() {
   beforeEach(function() {
     template.clear();
   });

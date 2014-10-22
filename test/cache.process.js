@@ -13,7 +13,7 @@ var Engine = require('..');
 var template = new Engine();
 
 
-describe('template process', function () {
+describe('engine process', function () {
   beforeEach(function() {
     template.clear();
     template.omit('abcdefghijklmnopqrstuvwxyz'.split(''));

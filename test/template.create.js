@@ -11,7 +11,7 @@ var should = require('should');
 var Engine = require('..');
 
 
-describe('template create:', function () {
+describe('engine create:', function () {
   describe('.create():', function () {
     it('should create a new template `type`:', function () {
       var template = new Engine();

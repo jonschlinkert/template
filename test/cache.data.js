@@ -12,7 +12,7 @@ var Engine = require('..');
 var pkg = require('../package');
 
 
-describe('template data', function() {
+describe('engine data', function() {
   var template = new Engine();
   beforeEach(function() {
     template.clear();

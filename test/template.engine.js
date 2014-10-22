@@ -14,7 +14,7 @@ var Engine = require('..');
 var template = new Engine();
 
 
-describe('template delimiters:', function () {
+describe('engine delimiters:', function () {
   it('should use custom delimiters defined on a template type:', function (done) {
     var template = new Engine();
     template.engine('*', require('engine-lodash'));

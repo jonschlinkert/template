@@ -15,7 +15,7 @@ var Engine = require('..');
 var template = new Engine();
 
 
-describe('template render', function () {
+describe('engine render', function () {
   beforeEach(function (done) {
     template = new Engine();
     done();

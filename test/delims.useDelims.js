@@ -12,7 +12,7 @@ var Engine = require('..');
 var _ = require('lodash');
 
 
-describe('template usage:', function () {
+describe('engine usage:', function () {
   it('should use the currently set delimiters with any custom renderer:', function () {
     var template = new Engine();
 

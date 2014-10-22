@@ -15,7 +15,7 @@ var Engine = require('..');
 var template = null;
 
 // Route tests from kerouac
-describe('template route', function () {
+describe('engine route', function () {
 
   describe('.middleware', function () {
     beforeEach(function () {

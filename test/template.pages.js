@@ -12,7 +12,7 @@ var should = require('should');
 var Engine = require('..');
 
 
-describe('template page', function () {
+describe('engine page', function () {
   describe('.page() strings', function () {
     it('should add pages to the cache.', function () {
       var template = new Engine();

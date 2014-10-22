@@ -12,7 +12,7 @@ var Engine = require('..');
 var template = new Engine();
 
 
-describe('template option', function() {
+describe('engine option', function() {
   describe('.option()', function() {
     beforeEach(function () {
       template = new Engine();

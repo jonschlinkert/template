@@ -1,5 +1,5 @@
 /*!
- * template <https://github.com/jonschlinkert/template>
+ * engine <https://github.com/jonschlinkert/engine>
  *
  * Copyright (c) 2014 Jon Schlinkert, Brian Woodward, contributors.
  * Licensed under the MIT license.
@@ -8,17 +8,18 @@
 'use strict';
 
 var should = require('should');
-var Template = require('..');
+var Engine = require('..');
+var pkg = require('../package');
 
 
 describe('template data', function() {
-  var template = new Template();
+  var template = new Engine();
   beforeEach(function() {
     template.clear();
   });
 
   describe('.extendData()', function() {
-    var template = new Template();
+    var template = new Engine();
     it('should extend the `data` object.', function() {
       template
         .extendData({x: 'x', y: 'y', z: 'z'})
@@ -50,7 +51,7 @@ describe('template data', function() {
   });
 
   describe('.flattenData()', function() {
-    var template = new Template();
+    var template = new Engine();
     it('should merge the value of a nested `data` property onto the root of the given object.', function() {
       var root = template.flattenData({data: {x: 'x'}, y: 'y', z: 'z'});
       root.should.have.property('x');
@@ -70,10 +71,10 @@ describe('template data', function() {
   });
 
   describe('.plasma()', function() {
-    var template = new Template();
+    var template = new Engine();
     it('should read JSON files and return an object.', function() {
       var data = template.plasma('package.json');
-      data.name.should.equal('template');
+      data.name.should.equal(pkg.name);
     });
 
     it('should read YAML files and return an object.', function() {
@@ -83,18 +84,18 @@ describe('template data', function() {
 
     it('should read an array of YAML and JSON files and return an object.', function() {
       var data = template.plasma(['package.json', 'test/fixtures/a.yml']);
-      data.name.should.equal('template');
+      data.name.should.equal(pkg.name);
       data.a.should.equal('b');
     });
 
     it('should expand a glob pattern, read JSON/YAML files and return an object.', function() {
       var data = template.plasma('p*.json');
-      data.name.should.equal('template');
+      data.name.should.equal(pkg.name);
     });
 
     it('should expand an array of glob patterns, read the JSON/YAML files and return an object.', function() {
       var data = template.plasma(['p*.json', 'test/fixtures/*.yml']);
-      data.name.should.equal('template');
+      data.name.should.equal(pkg.name);
       data.a.should.equal('b');
     });
 
@@ -105,7 +106,7 @@ describe('template data', function() {
   });
 
   describe('.data()', function() {
-    var template = new Template();
+    var template = new Engine();
     it('should set properties on the `data` object.', function() {
       template.set('data.foo', 'bar');
       template.get('data').foo.should.equal('bar');
@@ -114,7 +115,7 @@ describe('template data', function() {
 
     it('should read files and merge data onto `cache.data`', function() {
       template.data('package.json');
-      template.get('data.name').should.equal('template');
+      template.get('data.name').should.equal(pkg.name);
     });
 
     it('should read files and merge data onto `cache.data`', function() {

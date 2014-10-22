@@ -1,5 +1,5 @@
 /*!
- * view-cache <https://github.com/jonschlinkert/view-cache>
+ * engine <https://github.com/jonschlinkert/engine>
  *
  * Copyright (c) 2014 Jon Schlinkert, Brian Woodward, contributors.
  * Licensed under the MIT license.
@@ -8,11 +8,11 @@
 'use strict';
 
 var should = require('should');
-var Template = require('..');
+var Engine = require('..');
 
 describe('Template', function () {
   describe('exists():', function () {
-    var template = new Template();
+    var template = new Engine();
     var obj = {a: {b: {c: 1, d: '', e: null, f: undefined, 'g.h.i': 2}}};
 
     template.merge(obj);

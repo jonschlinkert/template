@@ -1,5 +1,5 @@
 /*!
- * view-cache <https://github.com/jonschlinkert/view-cache>
+ * engine <https://github.com/jonschlinkert/engine>
  *
  * Copyright (c) 2014 Jon Schlinkert, contributors
  * Licensed under the MIT License (MIT)
@@ -8,13 +8,12 @@
 'use strict';
 
 var should = require('should');
-var Template = require('..');
-var _ = require('lodash');
+var Engine = require('..');
 
 
 describe('.addDelims():', function () {
   it('should addDelims template by `name` on `template`:', function () {
-    var template = new Template();
+    var template = new Engine();
     Object.keys(template.delims).should.have.length(1);
 
     template.addDelims('hbs', ['{{', '}}']);

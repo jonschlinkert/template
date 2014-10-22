@@ -1,5 +1,5 @@
 /*!
- * template <https://github.com/jonschlinkert/template>
+ * engine <https://github.com/jonschlinkert/engine>
  *
  * Copyright (c) 2014 Jon Schlinkert, contributors
  * Licensed under the MIT License (MIT)
@@ -8,13 +8,13 @@
 'use strict';
 
 var should = require('should');
-var Template = require('..');
+var Engine = require('..');
 var _ = require('lodash');
 
 
 describe('template usage:', function () {
   it('should use the currently set delimiters with any custom renderer:', function () {
-    var template = new Template();
+    var template = new Engine();
 
     var ctx = {name: '____Jon Schlinkert____'};
 
@@ -49,7 +49,7 @@ describe('template usage:', function () {
   });
 
   it('should use the currently set delimiters with `template.render()`:', function (done) {
-    var template = new Template();
+    var template = new Engine();
 
     template.engine('lodash', require('engine-lodash'));
 
@@ -73,7 +73,6 @@ describe('template usage:', function () {
 
     template.render(base, ctx, function (err, content) {
       if (err) console.log(err);
-
       content.should.equal('____Jon Schlinkert____<<= name >>{{= name }}____Jon Schlinkert____{%= name %}');
     });
 

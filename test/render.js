@@ -1,5 +1,5 @@
 /*!
- * view-cache <https://github.com/jonschlinkert/view-cache>
+ * engine <https://github.com/jonschlinkert/engine>
  *
  * Copyright (c) 2014 Jon Schlinkert, contributors
  * Licensed under the MIT License (MIT)
@@ -12,13 +12,13 @@ var path = require('path');
 var should = require('should');
 var helpers = require('test-helpers')({dir: 'test'});
 var consolidate = require('consolidate');
-var Template = require('..');
-var template = new Template();
+var Engine = require('..');
+var template = new Engine();
 
 
 describe('template render', function () {
   beforeEach(function (done) {
-    template = new Template();
+    template = new Engine();
     done();
   });
 
@@ -29,7 +29,6 @@ describe('template render', function () {
         if (err) console.log(err);
         this.should.have.property('cache');
         this.should.have.property('engines');
-        this.should.have.property('parsers');
         this.should.have.property('delims');
         this.should.have.property('options');
         done();
@@ -115,14 +114,14 @@ describe('template render', function () {
 
     it('should use `file.path` to determine the correct consolidate engine to render content:', function (done) {
       template.engine('hbs', consolidate.handlebars);
-      template.engine('jade', consolidate.jade);
+      // template.engine('jade', consolidate.jade);
       template.engine('swig', consolidate.swig);
       template.engine('tmpl', consolidate.lodash);
 
       var files = [
         {path: 'fixture.hbs', content: '<title>{{author}}</title>', author: 'Jon Schlinkert'},
         {path: 'fixture.tmpl', content: '<title><%= author %></title>', author: 'Jon Schlinkert'},
-        {path: 'fixture.jade', content: 'title= author', author: 'Jon Schlinkert'},
+        // {path: 'fixture.jade', content: 'title= author', author: 'Jon Schlinkert'},
         {path: 'fixture.swig', content: '<title>{{author}}</title>', author: 'Jon Schlinkert'}
       ];
 
@@ -138,13 +137,13 @@ describe('template render', function () {
 
     it('should use the key of a cached template to determine the consolidate engine to use:', function (done) {
       template.engine('hbs', consolidate.handlebars);
-      template.engine('jade', consolidate.jade);
+      // template.engine('jade', consolidate.jade);
       template.engine('swig', consolidate.swig);
       template.engine('tmpl', consolidate.lodash);
 
       template.page('a.hbs', '<title>{{author}}</title>', {author: 'Jon Schlinkert'});
       template.page('b.tmpl', '<title><%= author %></title>', {author: 'Jon Schlinkert'});
-      template.page('c.jade', 'title= author', {author: 'Jon Schlinkert'});
+      // template.page('c.jade', 'title= author', {author: 'Jon Schlinkert'});
       template.page('d.swig', '<title>{{author}}</title>', {author: 'Jon Schlinkert'});
 
 

@@ -1,5 +1,5 @@
 /*!
- * view-cache <https://github.com/jonschlinkert/view-cache>
+ * engine <https://github.com/jonschlinkert/engine>
  *
  * Copyright (c) 2014 Jon Schlinkert, contributors
  * Licensed under the MIT License (MIT)
@@ -10,8 +10,8 @@
 var fs = require('fs');
 var path = require('path');
 var should = require('should');
-var Template = require('..');
-var template = new Template();
+var Engine = require('..');
+var template = new Engine();
 var consolidate = require('consolidate');
 
 
@@ -90,7 +90,8 @@ describe('engine render:', function () {
       return fs.readFileSync(filepath, 'utf8');
     });
 
-    // just for fun :-)
+    // just for fun. If this fails, that means the readme is wrong :-)
+    // so you probably need to run verb.
     var pkg = require(path.join(process.cwd(), 'package.json'));
     var re = new RegExp('^#\\s*' + pkg.name);
 

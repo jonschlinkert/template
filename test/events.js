@@ -1,5 +1,5 @@
 /*!
- * view-cache <https://github.com/jonschlinkert/view-cache>
+ * engine <https://github.com/jonschlinkert/engine>
  *
  * Copyright (c) 2014 Jon Schlinkert, contributors
  * Licensed under the MIT License (MIT)
@@ -8,13 +8,13 @@
 'use strict';
 
 var should = require('should');
-var Template = require('..');
-var template = new Template();
+var Engine = require('..');
+var template = new Engine();
 
 describe('events:', function () {
   describe('when configuration settings are customized', function () {
     it('should have the custom settings', function () {
-      var template = new Template();
+      var template = new Engine();
       template.wildcard.should.be.true;
       template.listenerTree.should.be.an.object;
     });
@@ -22,7 +22,7 @@ describe('events:', function () {
 
   describe('when a listener is removed', function () {
     it('should remove listener', function () {
-      var template = new Template();
+      var template = new Engine();
       var called = false;
       var type = 'foo', listeners;
       var fn = function () {};
@@ -41,7 +41,7 @@ describe('events:', function () {
 
   describe('when listeners are added', function () {
     it('should add the listeners', function () {
-      var template = new Template();
+      var template = new Engine();
       var called = false;
       template.on('foo', function () {
         called = 'a';
@@ -64,7 +64,7 @@ describe('events:', function () {
     it('should emit `set` when a value is set', function () {
       var called = false;
       var value = '';
-      var template = new Template();
+      var template = new Engine();
       template.on('set', function (key, val) {
         called = key;
         value = val;
@@ -76,7 +76,7 @@ describe('events:', function () {
 
     it('should emit `set` when items are set on the template.', function () {
       var called = false;
-      var template = new Template();
+      var template = new Engine();
 
       template.on('set', function (key, value) {
         called = true;
@@ -93,7 +93,7 @@ describe('events:', function () {
 
     it('should emit `set`', function () {
       var called = false;
-      var template = new Template();
+      var template = new Engine();
 
       template.on('set', function (key, value) {
         called = true;
@@ -105,7 +105,7 @@ describe('events:', function () {
     });
 
     it('should emit `enabled` when a value is enabled', function () {
-      var template = new Template();
+      var template = new Engine();
       var called = false;
 
       template.once('enable', function (key, value) {
@@ -120,7 +120,7 @@ describe('events:', function () {
 
     it('should emit `disable` when items on the cache are disabled.', function () {
       var called = false;
-      var template = new Template();
+      var template = new Engine();
 
       template.enable('foo');
       template.enabled('foo').should.be.true;
@@ -137,7 +137,7 @@ describe('events:', function () {
 
     it('should emit `clear` when an item is removed from the cache', function () {
       var called = false;
-      var template = new Template();
+      var template = new Engine();
       template.set('one', 'a');
       template.set('two', 'c');
 
@@ -154,7 +154,7 @@ describe('events:', function () {
 
     it('should emit `omit` when items are omitted from the cache', function () {
       var called = false;
-      var template = new Template();
+      var template = new Engine();
       template.set('one', 'a');
       template.set('two', 'c');
       template.set('thr', 'd');
@@ -176,7 +176,7 @@ describe('events:', function () {
 
     it('should emit `merged` when items are merged into the cache', function () {
       var called = false;
-      var template = new Template();
+      var template = new Engine();
 
       template.on('merge', function (key) {
         template.get(key).should.be.undefined;

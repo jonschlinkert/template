@@ -1,5 +1,5 @@
 /*!
- * template <https://github.com/jonschlinkert/template>
+ * engine <https://github.com/jonschlinkert/engine>
  *
  * Copyright (c) 2014 Jon Schlinkert, contributors
  * Licensed under the MIT License (MIT)
@@ -10,28 +10,25 @@
 var assert = require('assert');
 var should = require('should');
 var forOwn = require('for-own');
-var Template = require('..');
-var template = new Template();
+var Engine = require('..');
+var template = new Engine();
 var consolidate = require('consolidate');
-var _ = require('lodash');
 
 
 describe('custom `renderable` types:', function () {
   beforeEach(function () {
-    template = new Template();
+    template = new Engine();
     template.option('preferLocals', true);
   });
 
   it('should use `file.path` to determine the correct consolidate engine to render content:', function (done) {
     template.engine('hbs', consolidate.handlebars);
     template.engine('md', consolidate.handlebars);
-    template.engine('jade', consolidate.jade);
     template.engine('swig', consolidate.swig);
     template.engine('tmpl', consolidate.lodash);
 
     template.page({path: 'a.hbs', content: '<title>{{author}}</title>', author: 'Jon Schlinkert'});
     template.page({path: 'b.tmpl', content: '<title><%= author %></title>', author: 'Jon Schlinkert'});
-    template.page({path: 'c.jade', content: 'title= author', author: 'Jon Schlinkert'});
     template.page({path: 'd.swig', content: '<title>{{author}}</title>', author: 'Jon Schlinkert'});
     template.page({'e.swig': {content: '<title>{{author}}</title>', author: 'Jon Schlinkert'}});
     template.page('f.hbs', '<title>{{author}}</title>', {author: 'Jon Schlinkert'});
@@ -46,10 +43,9 @@ describe('custom `renderable` types:', function () {
     done();
   });
 
-  it('should prefer front-matter data over locals:', function (done) {
+  it('should prefer template locals over front-matter data:', function (done) {
     template.engine('hbs', consolidate.handlebars);
     template.engine('md', consolidate.handlebars);
-
     template.page('fixture.md', '---\nauthor: Brian Woodward\n---\n<title>{{author}}</title>', {author: 'Jon Schlinkert'});
 
     forOwn(template.cache.pages, function (value, key) {

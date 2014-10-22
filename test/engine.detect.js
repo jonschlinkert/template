@@ -11,35 +11,35 @@ var fs = require('fs');
 var path = require('path');
 var assert = require('assert');
 var should = require('should');
-var Template = require('..');
-var template = new Template();
+var Engine = require('..');
+var template = new Engine();
 
 
 describe('engine', function() {
   describe('detect from `engine` property', function() {
     it('should detect the template engine from the options.', function() {
-      var template = new Template();
+      var template = new Engine();
       template.page('a', {content: 'This is content.', options: {engine: '.foo'}});
       template.cache.pages.should.have.property('a');
       template.cache.pages['a'].options.should.have.property('engine', '.foo');
     });
 
     it('should detect the template engine from the options.', function() {
-      var template = new Template();
+      var template = new Engine();
       template.page('a', {content: 'This is content.'}, {a: 'b'}, {engine: '.foo'});
       template.cache.pages.should.have.property('a');
       template.cache.pages['a'].options.should.have.property('engine', '.foo');
     });
 
     it('should detect the template engine from the locals.', function() {
-      var template = new Template();
+      var template = new Engine();
       template.page('a', {content: 'This is content.'}, {engine: '.foo'});
       template.cache.pages.should.have.property('a');
       template.cache.pages['a'].options.should.have.property('engine', '.foo');
     });
 
     it('should detect the template engine from `.create()`.', function() {
-      var template = new Template();
+      var template = new Engine();
 
       template.create('include', 'includes', {
         engine: '.faz'
@@ -62,7 +62,7 @@ describe('engine', function() {
 
   describe('detect from file extension', function() {
     it('should detect the file extension from the template options.', function() {
-      var template = new Template();
+      var template = new Engine();
       template.page('a.md', 'b');
 
       template.cache.pages.should.have.property('a.md');
@@ -70,7 +70,7 @@ describe('engine', function() {
     });
 
     it('should detect the file extension from the path property.', function() {
-      var template = new Template();
+      var template = new Engine();
       template.page('a', {path: 'a.md', content: 'This is content.'});
 
       template.cache.pages.should.have.property('a');
@@ -78,21 +78,21 @@ describe('engine', function() {
     });
 
     it('should detect the file extension from the options.', function() {
-      var template = new Template();
+      var template = new Engine();
       template.page('a', {content: 'This is content.', options: {ext: '.foo'}});
       template.cache.pages.should.have.property('a');
       template.cache.pages['a'].should.have.property('ext', '.foo');
     });
 
     it('should detect the file extension from the options.', function() {
-      var template = new Template();
+      var template = new Engine();
       template.page('a', {content: 'This is content.'}, {a: 'b'}, {ext: '.foo'});
       template.cache.pages.should.have.property('a');
       template.cache.pages['a'].should.have.property('ext', '.foo');
     });
 
     it('should detect the file extension from the locals.', function() {
-      var template = new Template();
+      var template = new Engine();
       template.page('a', {content: 'This is content.'}, {ext: '.foo'});
       template.cache.pages.should.have.property('a');
       template.cache.pages['a'].should.have.property('ext', '.foo');

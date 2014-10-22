@@ -1,5 +1,5 @@
 /*!
- * template <https://github.com/jonschlinkert/template>
+ * engine <https://github.com/jonschlinkert/engine>
  *
  * Copyright (c) 2014 Jon Schlinkert, Brian Woodward, contributors.
  * Licensed under the MIT license.
@@ -9,8 +9,8 @@
 
 var assert = require('assert');
 var should = require('should');
-var Template = require('..');
-var template = new Template();
+var Engine = require('..');
+var template = new Engine();
 
 
 describe('template process', function () {

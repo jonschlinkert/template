@@ -1,5 +1,5 @@
 /*!
- * view-cache <https://github.com/jonschlinkert/view-cache>
+ * engine <https://github.com/jonschlinkert/engine>
  *
  * Copyright (c) 2014 Jon Schlinkert, contributors
  * Licensed under the MIT License (MIT)
@@ -8,14 +8,13 @@
 'use strict';
 
 var should = require('should');
-var Template = require('..');
-var _ = require('lodash');
+var Engine = require('..');
 
 
 describe('template create:', function () {
   describe('.create():', function () {
     it('should create a new template `type`:', function () {
-      var template = new Template();
+      var template = new Engine();
       template.create('include', 'includes');
 
       template.should.have.property('include');
@@ -25,7 +24,7 @@ describe('template create:', function () {
 
   describe('when a new template type is created:', function () {
     it('should add templates registered for that type to its corresponding (plural) object on the cache:', function () {
-      var template = new Template();
+      var template = new Engine();
       template.create('apple', 'apples');
 
       template.apple('a', 'one');
@@ -38,82 +37,83 @@ describe('template create:', function () {
 
   describe('when the `isRenderable` flag is set on the options:', function () {
     it('should push the name of the type into the `isRenderable` array on the cache:', function () {
-      var template = new Template();
+      var template = new Engine();
       template.create('apple', 'apples', { isRenderable: true });
 
-      _.contains(template.templateType.renderable, 'pages').should.be.true;
-      _.contains(template.templateType.renderable, 'apples').should.be.true;
+      template.templateType.renderable.should.containEql('pages');
+      template.templateType.renderable.should.containEql('apples');
+      template.templateType.renderable.should.containEql('apples');
     });
   });
 
   describe('when the `isLayout` flag is set on the options:', function () {
     it('should push the name of the type into the `isLayout` array on the cache:', function () {
-      var template = new Template();
+      var template = new Engine();
       template.create('orange', 'oranges', { isLayout: true });
 
-      _.contains(template.templateType.layout, 'layouts').should.be.true;
-      _.contains(template.templateType.layout, 'oranges').should.be.true;
+      template.templateType.layout.should.containEql('layouts');
+      template.templateType.layout.should.containEql('oranges');
     });
   });
 
   describe('when no type flag is set on the options:', function () {
     it('should push the name of the type into the `isPartial` array on the cache:', function () {
-      var template = new Template();
+      var template = new Engine();
       template.create('banana', 'bananas');
 
-      _.contains(template.templateType.partial, 'partials').should.be.true;
-      _.contains(template.templateType.partial, 'bananas').should.be.true;
+      template.templateType.partial.should.containEql('partials');
+      template.templateType.partial.should.containEql('bananas');
     });
   });
 
   describe('when the `isPartial` flag is set on the options:', function () {
     it('should push the name of the type into the `isPartial` array on the cache:', function () {
-      var template = new Template();
+      var template = new Engine();
       template.create('banana', 'bananas', { isPartial: true });
 
-      _.contains(template.templateType.partial, 'partials').should.be.true;
-      _.contains(template.templateType.partial, 'bananas').should.be.true;
+      template.templateType.partial.should.containEql('partials');
+      template.templateType.partial.should.containEql('bananas');
     });
   });
 
   describe('when both the `isPartial` and the `isLayout` flags are set:', function () {
     it('should push the type into both arrays:', function () {
-      var template = new Template();
+      var template = new Engine();
       template.create('banana', 'bananas', { isPartial: true, isLayout: true });
 
-      _.contains(template.templateType.partial, 'bananas').should.be.true;
-      _.contains(template.templateType.layout, 'bananas').should.be.true;
+      template.templateType.partial.should.containEql('bananas');
+      template.templateType.layout.should.containEql('bananas');
     });
   });
 
   describe('when both the `isPartial` and the `isRenderable` flags are set:', function () {
     it('should push the type into both arrays:', function () {
-      var template = new Template();
+      var template = new Engine();
       template.create('banana', 'bananas', { isPartial: true, isRenderable: true });
 
-      _.contains(template.templateType.partial, 'bananas').should.be.true;
-      _.contains(template.templateType.renderable, 'bananas').should.be.true;
+      template.templateType.partial.should.containEql('bananas');
+      template.templateType.renderable.should.containEql('bananas');
     });
   });
 
   describe('when both the `isLayout` and the `isRenderable` flags are set:', function () {
     it('should push the type into both arrays:', function () {
-      var template = new Template();
+      var template = new Engine();
       template.create('banana', 'bananas', { isLayout: true, isRenderable: true });
 
-      _.contains(template.templateType.layout, 'bananas').should.be.true;
-      _.contains(template.templateType.renderable, 'bananas').should.be.true;
+      template.templateType.layout.should.containEql('bananas');
+      template.templateType.renderable.should.containEql('bananas');
     });
   });
 
   describe('when all three types flags are set:', function () {
     it('should push the type into all three arrays:', function () {
-      var template = new Template();
+      var template = new Engine();
       template.create('banana', 'bananas', { isPartial: true, isLayout: true, isRenderable: true });
 
-      _.contains(template.templateType.layout, 'bananas').should.be.true;
-      _.contains(template.templateType.partial, 'bananas').should.be.true;
-      _.contains(template.templateType.renderable, 'bananas').should.be.true;
+      template.templateType.layout.should.containEql('bananas');
+      template.templateType.partial.should.containEql('bananas');
+      template.templateType.renderable.should.containEql('bananas');
     });
   });
 });

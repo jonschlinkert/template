@@ -1,5 +1,5 @@
 /*!
- * view-cache <https://github.com/jonschlinkert/view-cache>
+ * engine <https://github.com/jonschlinkert/engine>
  *
  * Copyright (c) 2014 Jon Schlinkert, contributors
  * Licensed under the MIT License (MIT)
@@ -11,13 +11,13 @@ var fs = require('fs');
 var path = require('path');
 var should = require('should');
 var helpers = require('test-helpers')({dir: 'test'});
-var Template = require('..');
-var template = new Template();
+var Engine = require('..');
+var template = new Engine();
 
 
 describe('template render', function () {
   beforeEach(function (done) {
-    template = new Template();
+    template = new Engine();
     done();
   });
 

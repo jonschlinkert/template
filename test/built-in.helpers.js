@@ -22,7 +22,7 @@ describe('generated helpers:', function () {
       var file = {path: 'a.md', content: 'foo <%= partial("a.md") %> bar'};
 
       template.render(file, function (err, content) {
-        if (err) console.log(err);
+        if (err) return done(err);
         content.should.equal('foo BBB bar');
         done();
       });
@@ -33,7 +33,7 @@ describe('generated helpers:', function () {
       var obj = {path: 'xyz.md', content: 'foo <%= partial("abc.md", {name: "CCC"}) %> bar'};
 
       template.render(obj, {name: 'DDD'}, function (err, content) {
-        if (err) console.log(err);
+        if (err) return done(err);
         content.should.equal('foo CCC bar');
         done();
       });
@@ -45,11 +45,11 @@ describe('generated helpers:', function () {
     it('should use the `partial` helper with handlebars.', function (done) {
       template.engine('hbs', consolidate.handlebars);
 
-      template.partial('title', '<title>{{name}}</title>', {name: 'BBB'});
-      template.page('a.hbs', {path: 'a.hbs', content: 'foo {{{partial "title" name}}} bar', name: 'Halle Nicole'});
+      template.partial('title.hbs', '<title>{{name}}</title>', {name: 'BBB'});
+      template.page('a.hbs', {path: 'a.hbs', content: 'foo {{{partial "title.hbs" custom.locals}}} bar'});
 
-      template.render('a.hbs', function (err, content) {
-        if (err) console.log(err);
+      template.render('a.hbs', {custom: {locals: {name: 'Halle Nicole' }}}, function (err, content) {
+        if (err) return done(err);
         content.should.equal('foo <title>Halle Nicole</title> bar');
         done();
       });

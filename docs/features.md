@@ -1,6 +1,6 @@
 # Features
 
-> Here are just a few of the features that Assemble offers to make you faster at web development
+> Here are just a few of the features that Engine offers to make you faster at web development
 
 
  - creating templates for pages, partials, and layouts

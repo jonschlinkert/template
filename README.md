@@ -17,7 +17,7 @@ var template = new Template();
 ```
 
 ## API
-### [Engine](index.js#L47)
+### [Engine](index.js#L46)
 
 Create a new instance of `Engine`, optionally passing default `options` to initialize with.
 
@@ -30,24 +30,7 @@ var Engine = require('engine');
 var engine = new Engine();
 ```
 
-### [.use](index.js#L313)
-
-Utilize the given middleware `fn` to the given `filepath`, defaulting to `_/_`.
-
-* `filepath` **{String|Function}**    
-* **{Function}**: fn    
-* `returns` **{Object}** `Template`: for chaining  
-
-**Examples:**
-
-```js
-site.use(template.foo());
-```
-
-Proxy to `Router#param()` with one added api feature. The _name_ parameter
-can be an array of names.
-
-### [.addDelims](index.js#L584)
+### [.addDelims](index.js#L477)
 
 Cache delimiters by `name` with the given `options` for later use.
 
@@ -68,7 +51,7 @@ engine.addDelims('es6', ['#{', '}'], {
 
 [delims]: https://github.com/jonschlinkert/delims "Generate regex for delimiters"
 
-### [.useDelims](index.js#L628)
+### [.useDelims](index.js#L524)
 
 Specify by `ext` the delimiters to make active.
 
@@ -79,12 +62,12 @@ engine.useDelims('curly');
 engine.useDelims('angle');
 ```
 
-### [.engine](index.js#L687)
+### [.engine](index.js#L573)
 
 * `ext` **{String}**    
 * `fn` **{Function|Object}**: or `options`    
 * `options` **{Object}**    
-* `returns` **{Object}** `Template`: to enable chaining  
+* `returns` **{Object}** `Engine`: to enable chaining  
 
 **Example:**
 
@@ -101,7 +84,7 @@ Register the given view engine callback `fn` as `ext`. If only `ext`
 is passed, the engine registered for `ext` is returned. If no `ext`
 is passed, the entire cache is returned.
 
-### [.getEngine](index.js#L710)
+### [.getEngine](index.js#L596)
 
 Get the engine registered for the given `ext`. If no `ext` is passed, the entire cache is returned.
 
@@ -121,18 +104,7 @@ template.getEngine('hbs');
 engine.getEngine('.html');
 ```
 
-### [.addMixin](index.js#L731)
-
-Assign mixin `fn` to `name` or return the value of `name` if no other arguments are passed.
-
-* `name` **{String}**: The name of the mixin to add.    
-* `fn` **{Function}**: The actual mixin function.    
-
-This method sets mixins on the cache, which will later be
-passed to a template engine that uses mixins, such as
-Lo-Dash or Underscore.
-
-### [.helper](index.js#L754)
+### [.helper](index.js#L640)
 
 Register a helper for the given `ext` (engine).
 
@@ -145,9 +117,9 @@ engine.addHelper('lower', function(str) {
 });
 ```
 
-### [.helpers](index.js#L772)
+### [.helpers](index.js#L658)
 
-Register helpers for the given `ext` (engine).
+Register an object of helpers for the given `ext` (engine).
 
 * `ext` **{String}**: The engine to register helpers with.    
 * `returns` **{Object}**: Object of helpers for the specified engine.  
@@ -156,7 +128,7 @@ Register helpers for the given `ext` (engine).
 engine.helpers(require('handlebars-helpers'));
 ```
 
-### [.addHelper](index.js#L791)
+### [.addHelper](index.js#L677)
 
 * `name` **{String}**: The helper to cache or get.    
 * `fn` **{Function}**: The helper function.    
@@ -168,7 +140,7 @@ using this method will be passed to every engine, so be sure to use
 generic javascript functions - unless you want to see Lo-Dash
 blow up from `Handlebars.SafeString`.
 
-### [.addHelperAsync](index.js#L807)
+### [.addHelperAsync](index.js#L693)
 
 * `name` **{String}**: The helper to cache or get.    
 * `fn` **{Function}**: The helper function.    
@@ -177,7 +149,7 @@ blow up from `Handlebars.SafeString`.
 
 Async version of `.addHelper()`.
 
-### [.create](index.js#L879)
+### [.create](index.js#L765)
 
 * `type` **{String}**: Singular name of the type to create, e.g. `page`.    
 * `plural` **{String}**: Plural name of the template type, e.g. `pages`.    
@@ -186,12 +158,12 @@ Async version of `.addHelper()`.
     - `layout` **{Boolean}**: Can the template be used as a layout?
     - `partial` **{Boolean}**: Can the template be used as a partial?
       
-* `returns` **{Object}** `Template`: to enable chaining.  
+* `returns` **{Object}** `Engine`: to enable chaining.  
 
 Add a new template `type`, along with associated get/set methods.
 You must specify both the singular and plural names for the type.
 
-### [.preprocess](index.js#L1103)
+### [.preprocess](index.js#L980)
 
 * `file` **{Object|String}**: String or normalized template object.    
 * `options` **{Object}**: Options to pass to registered view engines.    
@@ -200,7 +172,7 @@ You must specify both the singular and plural names for the type.
 Preprocess `str` with the given `options` and `callback`. A few
 things to note.
 
-### [.render](index.js#L1184)
+### [.render](index.js#L1063)
 
 * `file` **{Object|String}**: String or normalized template object.    
 * `options` **{Object}**: Options to pass to registered view engines.    
@@ -208,7 +180,7 @@ things to note.
 
 Render `content` with the given `options` and `callback`.
 
-### [.renderSync](index.js#L1233)
+### [.renderSync](index.js#L1108)
 
 * `file` **{Object|String}**: String or normalized template object.    
 * `options` **{Object}**: Options to pass to registered view engines.    
@@ -264,7 +236,7 @@ Released under the CC by 3.0, MIT licenses
 
 ***
 
-_This file was generated by [verb-cli](https://github.com/assemble/verb-cli) on October 21, 2014._
+_This file was generated by [verb-cli](https://github.com/assemble/verb-cli) on October 22, 2014._
 
 
 [engine-cache]: https://github.com/jonschlinkert/engine-cache

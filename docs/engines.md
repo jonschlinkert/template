@@ -1,8 +1,10 @@
 ## Defining an engine
 
 ```js
-template.engine(extension, fn, options);
+var template = new Engine();
+template.engine(ext, fn, options);
 ```
+
 * `ext` **{String}** The engine to use for rendering templates.
 * `fn` **{Function|Object}**: or `options` Callback function or options to pass to the engine.
 * `options` **{Object}** Options to pass to the engine.
@@ -35,7 +37,7 @@ template.create('post', 'posts', {
 
 // usage
 template.doc('about.md', 'this is the <%= title %> page', {title: 'About'});
-template.post('post.md', 'this is post is about {{title}}', {title: 'Assemble'});
+template.post('post.md', 'this is post is about {{title}}', {title: 'Engine'});
 // this works with built-in template types too
-template.page('post.md', 'this is post is about {{title}}', {title: 'Assemble'});
+template.page('post.md', 'this is post is about {{title}}', {title: 'Engine'});
 ```

@@ -1070,7 +1070,6 @@ Engine.prototype.preprocess = function (template, locals, async) {
 
 Engine.prototype.render = function (content, locals, cb) {
   var self = this;
-  var state = {};
 
   if (typeof locals === 'function') {
     cb = locals;
@@ -1078,28 +1077,26 @@ Engine.prototype.render = function (content, locals, cb) {
   }
 
   var ext = self.option('viewEngine');
-  state.content = content;
-  state.locals = locals;
-  state.engine = self.getEngine(ext);
+  var engine = self.getEngine(ext);
 
   if (self.option('preprocess')) {
-    state = self.preprocess(state.content, state.locals, true);
+    var pre = self.preprocess(content, locals, true);
+    content = pre.content;
+    locals = extend({}, pre.locals, locals);
+    engine = pre.engine;
   }
 
   try {
-    state.engine.render(state.content, state.locals, function (err, res) {
-      if (err) {
-        cb.call(self, err, res);
-        return;
-      }
+    engine.render(content, locals, function (err, res) {
+      if (err) return cb.call(self, err);
 
-      return self._.asyncHelpers.resolve(res, function (err, res) {
-        if (err) console.log(err);
-        return cb.call(self, err, res);
+      self._.asyncHelpers.resolve(res, function (err, res) {
+        if (err) return cb.call(self, err);
+        cb.call(self, null, res);
       });
     });
   } catch (err) {
-    cb(err);
+    cb.call(self, err);
   }
 };
 

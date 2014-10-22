@@ -46,7 +46,7 @@ var extend = _.extend;
 var Engine = module.exports = Cache.extend({
   constructor: function (options) {
     Engine.__super__.constructor.call(this, options);
-    this.init();
+    this.initEngine();
   }
 });
 
@@ -59,7 +59,7 @@ Engine.extend = Cache.extend;
  * @api private
  */
 
-Engine.prototype.init = function() {
+Engine.prototype.initEngine = function() {
   this.engines = this.engines || {};
   this.delims = this.delims || {};
   this._stack = [];
@@ -81,7 +81,7 @@ Engine.prototype.init = function() {
 
 
 /**
- * Initialize default cache configuration.
+ * Initialize the default configuration.
  *
  * @api private
  */
@@ -93,6 +93,7 @@ Engine.prototype.defaultConfig = function() {
     bindFunctions: true,
     thisArg: this
   });
+
   this._.asyncHelpers = new Helpers({
     bindFunctions: true,
     thisArg: this
@@ -120,8 +121,6 @@ Engine.prototype.defaultOptions = function() {
   this.option('pretty', false);
 
   this.option('cwd', process.cwd());
-
-
   this.option('ext', '*');
   this.option('defaultExts', ['md', 'html', 'hbs']);
   this.option('destExt', '.html');
@@ -140,11 +139,12 @@ Engine.prototype.defaultOptions = function() {
   this.option('mergeFunction', extend);
   this.option('bindHelpers', true);
 
-  // loader options
+  // Custom function for naming partial keys
   this.option('partialsKey', function (fp) {
     return path.basename(fp, path.extname(fp));
   });
 
+  // Custom function for all other template keys
   this.option('renameKey', function (fp) {
     return path.basename(fp);
   });
@@ -244,7 +244,9 @@ Engine.prototype.typeHelpers = function(type, plural) {
     this.extendLocals('partial', locals);
     var partial = this.cache[plural][key];
     var content = this.renderSync(partial, locals);
-    if (content instanceof Error) throw content;
+    if (content instanceof Error) {
+      throw content;
+    }
     return content;
   });
 };
@@ -276,8 +278,8 @@ Engine.prototype.typeHelpersAsync = function (type, plural) {
     var partial = this.cache[plural][name];
 
     if (!partial) {
-      // TODO: should this throw an error _here_?
-      console.log(chalk.red('helper {{' + type + ' "' + name + '"}} not found.'));
+      var msg = chalk.red('helper {{' + type + ' "' + name + '"}} not found.');
+      console.log(msg);
       next(null, '');
       return;
     }
@@ -333,8 +335,8 @@ Engine.prototype.middleware = function () {
 /**
  * Set a router to be called.
  *
- * @param  {Function|String} `filter` Either string or filter function used to determine which middleware stack to run.
- * @param  {Function|Array}  `middleware` Middleware stack to run for this filter.
+ * @param  {Function|String} `filter` String or filter function to get the middleware stack to run.
+ * @param  {Function|Array}  `middleware` Middleware stack to run for the given route.
  * @return {Object} `Engine` to enable chaining.
  * @api private
  */
@@ -543,7 +545,7 @@ Engine.prototype.useDelims = function(ext) {
  * @api private
  */
 
-Engine.prototype._registerEngine = function (ext, fn, options) {
+Engine.prototype.registerEngine = function (ext, fn, options) {
   var opts = extend({thisArg: this, bindFunctions: true}, options);
   if (ext[0] !== '.') {
     ext = '.' + ext;
@@ -579,7 +581,7 @@ Engine.prototype._registerEngine = function (ext, fn, options) {
 Engine.prototype.engine = function (extension, fn, options) {
   debug.engine('#{engine} args: ', arguments);
   utils.arrayify(extension).forEach(function (ext) {
-    this._registerEngine(ext, fn, options);
+    this.registerEngine(ext, fn, options);
   }.bind(this));
   return this;
 };
@@ -1167,7 +1169,10 @@ Engine.prototype.mergeFn = function (template, locals, async) {
     }
   }
 
-  o.helpers = extend({}, this._.helpers, (async ? this._.asyncHelpers : {}), o.helpers);
+  o.helpers = extend({}, this._.helpers, (async
+    ? this._.asyncHelpers
+    : {}), o.helpers);
+
   return extend(data, o, locals);
 };
 

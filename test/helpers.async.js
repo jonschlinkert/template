@@ -9,12 +9,12 @@
 
 var should = require('should');
 var Engine = require('..');
-var engine = new Engine();
+var engine;
 
 
 describe('.addHelperAsync():', function () {
   beforeEach(function () {
-    engine.init();
+    engine = new Engine();
   });
 
 

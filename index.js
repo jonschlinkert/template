@@ -93,6 +93,10 @@ Engine.prototype.defaultConfig = function() {
     bindFunctions: true,
     thisArg: this
   });
+  this._.asyncHelpers = new Helpers({
+    bindFunctions: true,
+    thisArg: this
+  });
 
   this.set('mixins', {});
   this.set('locals', {});
@@ -239,7 +243,9 @@ Engine.prototype.typeHelpers = function(type, plural) {
   this.addHelper(type, function (key, locals) {
     this.extendLocals('partial', locals);
     var partial = this.cache[plural][key];
-    return this.renderSync(partial, locals);
+    var content = this.renderSync(partial, locals);
+    if (content instanceof Error) throw content;
+    return content;
   });
 };
 
@@ -692,7 +698,7 @@ Engine.prototype.addHelper = function (name, fn, thisArg) {
 
 Engine.prototype.addHelperAsync = function (name, fn, thisArg) {
   debug.helper('#{adding async helper} name: %s', name);
-  return this._.helpers.addHelperAsync(name, fn, thisArg);
+  return this._.asyncHelpers.addHelperAsync(name, fn, thisArg);
 };
 
 
@@ -803,9 +809,9 @@ Engine.prototype.create = function(type, plural, options, fns) {
     this.typeHelpers(type, plural);
   }
 
-  // if (!hasOwn(this._.helpers, type)) {
-  //   this.typeHelpersAsync(type, plural);
-  // }
+  if (!hasOwn(this._.asyncHelpers, type)) {
+    this.typeHelpersAsync(type, plural);
+  }
   return this;
 };
 
@@ -977,9 +983,9 @@ Engine.prototype.mergePartials = function (ext, locals, combine) {
  * @api public
  */
 
-Engine.prototype.preprocess = function (template, locals, cb) {
-  if (typeof locals === 'function') {
-    cb = locals;
+Engine.prototype.preprocess = function (template, locals, async) {
+  if (typeof locals === 'boolean') {
+    async = locals;
     locals = {};
   }
 
@@ -1008,7 +1014,7 @@ Engine.prototype.preprocess = function (template, locals, cb) {
 
   if (utils.isObject(template)) {
     content = template.content;
-    locals = this.mergeFn(template, locals);
+    locals = this.mergeFn(template, locals, async);
     delims = delims || utils.pickDelims(template, locals);
 
   } else {
@@ -1075,7 +1081,7 @@ Engine.prototype.render = function (content, locals, cb) {
   state.engine = self.getEngine(ext);
 
   if (self.option('preprocess')) {
-    state = self.preprocess(state.content, state.locals);
+    state = self.preprocess(state.content, state.locals, true);
   }
 
   try {
@@ -1085,7 +1091,7 @@ Engine.prototype.render = function (content, locals, cb) {
         return;
       }
 
-      return self._.helpers.resolve(res, function (err, res) {
+      return self._.asyncHelpers.resolve(res, function (err, res) {
         if (err) console.log(err);
         return cb.call(self, err, res);
       });
@@ -1144,7 +1150,7 @@ Engine.prototype.extendLocals = function (key, template, locals) {
  * @return {Object}
  */
 
-Engine.prototype.mergeFn = function (template, locals) {
+Engine.prototype.mergeFn = function (template, locals, async) {
   var data = this.get('data');
   var o = {};
 
@@ -1161,7 +1167,7 @@ Engine.prototype.mergeFn = function (template, locals) {
     }
   }
 
-  o.helpers = extend({}, this._.helpers, o.helpers);
+  o.helpers = extend({}, this._.helpers, (async ? this._.asyncHelpers : {}), o.helpers);
   return extend(data, o, locals);
 };
 

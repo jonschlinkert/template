@@ -101,8 +101,8 @@ describe('.addHelperAsync():', function () {
         callback(null, str.toUpperCase());
       });
 
-    engine._.helpers.should.have.properties(['a', 'b']);
-    engine._.helpers._.helpersAsync.should.have.properties(['a', 'b']);
+    engine._.asyncHelpers.should.have.properties(['a', 'b']);
+    engine._.asyncHelpers._.helpersAsync.should.have.properties(['a', 'b']);
 
     engine.page('foo.md', {content: 'A: <%= a(name) %>\nB: <%= b(name) %>'});
 

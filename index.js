@@ -241,8 +241,10 @@ Engine.prototype.defaultTemplates = function() {
 
 Engine.prototype.typeHelpers = function(type, plural) {
   this.addHelper(type, function (key, locals) {
-    this.extendLocals('partial', locals);
     var partial = this.cache[plural][key];
+
+    partial = this.stashLocals(type, partial, locals);
+
     var content = this.renderSync(partial, locals);
     if (content instanceof Error) {
       throw content;
@@ -270,12 +272,12 @@ Engine.prototype.typeHelpersAsync = function (type, plural) {
       next = locals;
       locals = {};
     }
-
     if (typeof next !== 'function') {
       next = last;
     }
 
     var partial = this.cache[plural][name];
+    this.stashLocals('typeHelpersAsync', partial, locals);
 
     if (!partial) {
       var msg = chalk.red('helper {{' + type + ' "' + name + '"}} not found.');
@@ -395,8 +397,8 @@ Engine.prototype.lazyLayouts = function(ext, options) {
  * If a layout is defined, apply it. Otherwise just return the content as-is.
  *
  * @param  {String} `ext` The layout settings to use.
- * @param  {Object} `file` Template object, with `content` property.
- * @return  {String} Either the string wrapped with a layout, or the original string if no layout was defined.
+ * @param  {Object} `template` Template object, with `content` to be wrapped with a layout.
+ * @return  {String} Either the string wrapped with a layout, or the original string if no layout was found.
  * @api private
  */
 
@@ -418,6 +420,7 @@ Engine.prototype.applyLayout = function(ext, template, locals) {
   }
 
   var obj = utils.pickContent(template);
+  obj = this.stashLocals('applyLayout', obj, locals);
 
   if (layoutEngine && !template.options.hasLayout) {
     debug.layout('#{applying layout} settings: ', layoutEngine);
@@ -451,7 +454,7 @@ Engine.prototype.applyLayout = function(ext, template, locals) {
  */
 
 Engine.prototype.makeDelims = function (arr, options) {
-  var settings = extend({}, options, {escape: true});
+  var settings = extend({}, options, { escape: true });
   var delims = this._.delims.templates(arr, settings);
 
   debug.delims('#{making delims}: ', delims);
@@ -546,7 +549,7 @@ Engine.prototype.useDelims = function(ext) {
  */
 
 Engine.prototype.registerEngine = function (ext, fn, options) {
-  var opts = extend({thisArg: this, bindFunctions: true}, options);
+  var opts = extend({ thisArg: this, bindFunctions: true }, options);
   if (ext[0] !== '.') {
     ext = '.' + ext;
   }
@@ -772,7 +775,6 @@ Engine.prototype.getType = function (type) {
 
 Engine.prototype.create = function(type, plural, options, fns) {
   debug.template('#{creating template}: %s', type);
-
   var args = [].slice.call(arguments);
 
   if (typeof plural !== 'string') {
@@ -895,7 +897,7 @@ Engine.prototype.normalize = function (plural, template, options) {
   var renameKey = this.option('renameKey');
 
   forOwn(template, function (value, key) {
-    value.options = extend({type: plural}, options, value.options);
+    value.options = extend({ type: plural }, options, value.options);
     key = renameKey.call(this, key);
 
     var ext = utils.pickExt(value, value.options, this);
@@ -935,7 +937,7 @@ Engine.prototype.format = function (key, value, locals) {
 
   // Get the normalized template and return it.
   var template = this.cache['anonymous'][key];
-  return this.extendLocals('render', template, locals);
+  return this.stashLocals('render', template, locals);
 };
 
 
@@ -955,12 +957,11 @@ Engine.prototype.mergePartials = function (ext, locals, combine) {
   combine = combine || this.option('mergePartials');
   var opts = extend({partials: {}}, locals);
 
-  // this.cache.partials  = extend({}, this.cache.partials, opts.partials);
-
   this.templateType['partial'].forEach(function (type) {
     forOwn(this.cache[type], function (value, key) {
       value.content = this.applyLayout(ext, value, value.locals);
       opts = extend({}, opts, value.data, value.locals);
+
       if (combine) {
         var fn = this.option('partialsKey');
         key = fn(key);
@@ -1008,7 +1009,7 @@ Engine.prototype.preprocess = function (template, locals, async) {
 
   if (tmpl) {
     template = tmpl;
-    template = this.extendLocals('render', template, locals);
+    template = this.stashLocals('render', template, locals);
   } else {
     // generate a unique, temporary id
     template = this.format(utils.generateId(), template, locals);
@@ -1026,7 +1027,7 @@ Engine.prototype.preprocess = function (template, locals, async) {
   // Get the extension to use for picking an engine
   var ext = utils.pickExt(template, locals, this);
 
-  // if a layout is defined, apply it now.
+  // if a layout is defined, wrap `content` with it
   content = this.applyLayout(ext, template, locals);
 
   // Ensure that `content` is a string.
@@ -1034,6 +1035,8 @@ Engine.prototype.preprocess = function (template, locals, async) {
     content = content.content;
   }
 
+  // Ensure that delimiters are cached, so we
+  // can pass to the engine
   if (delims) this.addDelims(ext, delims);
   if (utils.isString(engine)) {
     if (engine[0] !== '.') {
@@ -1133,9 +1136,18 @@ Engine.prototype.renderSync = function (content, locals) {
 };
 
 
-Engine.prototype.extendLocals = function (key, template, locals) {
-  template = extend({_locals: {}}, template);
-  template._locals[key] = extend({}, template._locals[key], locals);
+/**
+ * Store a copy of a `locals` object at a given `location`.
+ *
+ * @param  {String} `name`
+ * @param  {Object} `template`
+ * @param  {Object} `locals`
+ * @api private
+ */
+
+Engine.prototype.stashLocals = function (name, template, locals) {
+  template._locals = template._locals || {};
+  template._locals[name] = locals;
   return template;
 };
 

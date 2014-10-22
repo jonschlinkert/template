@@ -60,7 +60,7 @@
     "debug": "^2.1.0",
     "deep-pick": "^0.1.0",
     "delims": "^0.4.0",
-    "en-route": "git://github.com/jonschlinkert/en-route#argument-refactor",
+    "en-route": "jonschlinkert/en-route#argument-refactor",
     "engine-cache": "^0.3.3",
     "engine-lodash": "^0.2.0",
     "engine-noop": "^0.1.0",

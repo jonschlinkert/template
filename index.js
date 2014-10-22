@@ -129,8 +129,6 @@ Engine.prototype.defaultOptions = function() {
   this.option('layoutExt', null);
   this.option('layout', null);
 
-  this.option('templates', 'src/templates');
-
   this.option('preprocess', true);
   this.option('preferLocals', false);
   this.option('partialLayout', null);
@@ -139,12 +137,12 @@ Engine.prototype.defaultOptions = function() {
   this.option('bindHelpers', true);
 
   // loader options
-  this.option('renameKey', function (fp) {
-    return path.basename(fp);
-  });
-
   this.option('partialsKey', function (fp) {
     return path.basename(fp, path.extname(fp));
+  });
+
+  this.option('renameKey', function (fp) {
+    return path.basename(fp);
   });
 };
 
@@ -254,7 +252,7 @@ Engine.prototype.typeHelpers = function(type, plural) {
  * @api private
  */
 
-Engine.prototype.asyncTypeHelpers = function (type, plural) {
+Engine.prototype.typeHelpersAsync = function (type, plural) {
   this.addHelperAsync(type, function (name, locals, next) {
     var last = _.last(arguments);
 
@@ -270,6 +268,7 @@ Engine.prototype.asyncTypeHelpers = function (type, plural) {
     }
 
     var partial = this.cache[plural][name];
+
     if (!partial) {
       // TODO: should this throw an error _here_?
       console.log(chalk.red('helper {{' + type + ' "' + name + '"}} not found.'));
@@ -501,7 +500,10 @@ Engine.prototype.addDelims = function (ext, arr, layoutDelims, settings) {
 
 Engine.prototype.getDelims = function(ext) {
   debug.delims('#{getting delims} ext: %s', ext);
-  if(hasOwn(this.delims, ext)) return this.delims[ext];
+
+  if(hasOwn(this.delims, ext)) {
+    return this.delims[ext];
+  }
   ext = this.currentDelims || 'default';
   return this.delims[ext];
 };
@@ -537,8 +539,6 @@ Engine.prototype.useDelims = function(ext) {
 
 Engine.prototype._registerEngine = function (ext, fn, options) {
   var opts = extend({thisArg: this, bindFunctions: true}, options);
-  // opts.helpers = extend({}, this._.helpers, opts.helpers);
-
   if (ext[0] !== '.') {
     ext = '.' + ext;
   }
@@ -611,7 +611,7 @@ Engine.prototype.getEngine = function (ext) {
  *
  * @param {String} `name` The name of the mixin to add.
  * @param {Function} `fn` The actual mixin function.
- * @api public
+ * @api private
  */
 
 Engine.prototype.addMixin = function (name, fn) {
@@ -644,7 +644,7 @@ Engine.prototype.helper = function (ext) {
 
 
 /**
- * Register helpers for the given `ext` (engine).
+ * Register an object of helpers for the given `ext` (engine).
  *
  * ```js
  * engine.helpers(require('handlebars-helpers'));
@@ -803,9 +803,9 @@ Engine.prototype.create = function(type, plural, options, fns) {
     this.typeHelpers(type, plural);
   }
 
-  if (!hasOwn(this._.helpers, type)) {
-    this.asyncTypeHelpers(type, plural);
-  }
+  // if (!hasOwn(this._.helpers, type)) {
+  //   this.typeHelpersAsync(type, plural);
+  // }
   return this;
 };
 

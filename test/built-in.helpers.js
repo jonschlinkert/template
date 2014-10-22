@@ -46,13 +46,14 @@ describe('generated helpers:', function () {
       template.engine('hbs', consolidate.handlebars);
 
       template.partial('title.hbs', '<title>{{name}}</title>', {name: 'BBB'});
-      template.page('a.hbs', {path: 'a.hbs', content: 'foo {{{partial "title.hbs" custom.locals}}} bar'});
+      template.page('a.hbs', {path: 'a.hbs', content: 'foo {{{partial "title.hbs" this}}} bar'});
 
-      template.render('a.hbs', {custom: {locals: {name: 'Halle Nicole' }}}, function (err, content) {
+      template.render('a.hbs', {name: 'Halle Nicole' }, function (err, content) {
         if (err) return done(err);
         content.should.equal('foo <title>Halle Nicole</title> bar');
         done();
       });
+
     });
 
     // it('should use the `partial` helper with any engine.', function (done) {

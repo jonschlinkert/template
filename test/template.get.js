@@ -12,7 +12,7 @@ var should = require('should');
 var Engine = require('..');
 
 
-describe('template get', function () {
+describe('engine get', function () {
   it('should `.get()` default template types from the cache.', function () {
     var template = new Engine();
     template.get('partials').should.be.an.object;

@@ -13,7 +13,7 @@ var Engine = require('..');
 var template = new Engine();
 
 
-describe('template get/set', function () {
+describe('engine get/set', function () {
   afterEach(function() {
     template.clear();
   });

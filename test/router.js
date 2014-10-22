@@ -4,7 +4,7 @@ var template = null;
 
 
 // Router tests from kerouac
-describe('template router', function() {
+describe('engine router', function() {
 
   describe('with two simple routes', function() {
 

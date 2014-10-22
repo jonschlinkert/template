@@ -16,7 +16,7 @@ var Engine = require('..');
 var template = new Engine();
 
 
-describe('template render', function () {
+describe('engine render', function () {
   beforeEach(function (done) {
     template = new Engine();
     done();
@@ -80,7 +80,7 @@ describe('template render', function () {
     });
   });
 
-  describe('template render:', function () {
+  describe('engine render:', function () {
     it('should determine the engine from the `path` on the given object:', function (done) {
       var file = {path: 'a/b/c.md', content: '<%= name %>', name: 'Jon Schlinkert'};
 

@@ -13,7 +13,7 @@ var should = require('should');
 var Engine = require('..');
 var template = new Engine();
 
-describe('template data', function () {
+describe('engine data', function () {
   beforeEach(function (done) {
     template = new Engine();
     done();
@@ -46,7 +46,7 @@ describe('template data', function () {
     });
   });
 
-  describe('template.cache:', function () {
+  describe('engine.cache:', function () {
     it('should store data on `cache.data`:', function () {
       template.data({ a: 'a', b: 'b', c: 'c' });
       template.cache.data.should.have.property('a', 'a');

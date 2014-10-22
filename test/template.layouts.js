@@ -13,7 +13,7 @@ var should = require('should');
 var Engine = require('..');
 
 
-describe('template layout', function () {
+describe('engine layout', function () {
   describe('.layouts()', function () {
     it('should add layouts defined as strings.', function () {
       var template = new Engine();

@@ -12,7 +12,7 @@ var should = require('should');
 var Engine = require('..');
 
 
-describe('template partial', function () {
+describe('engine partial', function () {
   describe('.partial() strings', function () {
     it('should add a partial to the cache.', function () {
       var template = new Engine();

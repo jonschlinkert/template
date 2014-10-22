@@ -14,7 +14,7 @@ var Engine = require('..');
 var template = new Engine();
 
 
-describe('template function:', function () {
+describe('engine function:', function () {
   it.skip('should use the function to process the template:', function (done) {
     var template = new Engine();
     template.engine('*', require('engine-lodash'));

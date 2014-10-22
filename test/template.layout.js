@@ -12,7 +12,7 @@ var should = require('should');
 var Engine = require('..');
 
 
-describe('template layout', function () {
+describe('engine layout', function () {
   describe('.layout() strings', function () {
     it('should add a layout to the cache.', function () {
       var template = new Engine();

@@ -16,9 +16,8 @@ var template = new Engine();
 
 
 describe('engine render', function () {
-  beforeEach(function (done) {
+  beforeEach(function () {
     template = new Engine();
-    done();
   });
 
 

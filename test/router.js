@@ -7,7 +7,6 @@ var template = null;
 describe('engine router', function() {
 
   describe('with two simple routes', function() {
-
     beforeEach(function () {
       template = new Engine();
 
@@ -22,8 +21,7 @@ describe('engine router', function() {
       });
     });
 
-    it('should have two routes', function() {
-      // including default routes for default template types
+    it('should have routes for default template types.', function() {
       template._router._routes.should.have.length(7);
     });
 
@@ -69,6 +67,7 @@ describe('engine router', function() {
 
     beforeEach(function () {
       template = new Engine();
+
       template.route('/foo',
         function(page, key, next) {
           page.routedTo = [ '1' ];
@@ -102,8 +101,7 @@ describe('engine router', function() {
 
   });
 
-  describe('with route containing multiple callbacks some of which are skipped', function() {
-
+  describe('when routes have multiple callbacks, some of which are skipped:', function() {
     beforeEach(function () {
       template = new Engine();
 
@@ -125,7 +123,6 @@ describe('engine router', function() {
         page.routedTo.push('b1');
         next();
       });
-
     });
 
     it('should dispatch /foo', function(done) {
@@ -145,8 +142,7 @@ describe('engine router', function() {
 
   });
 
-  describe('with route that is parameterized', function() {
-
+  describe('when routes are parameterized:', function() {
     beforeEach(function () {
       template = new Engine();
 
@@ -163,7 +159,6 @@ describe('engine router', function() {
         page.blogPage = true;
         next();
       });
-
     });
 
     it('should dispatch /blog', function(done) {
@@ -181,18 +176,15 @@ describe('engine router', function() {
         done();
       });
     });
-
   });
 
-  describe('with route that encounters an error', function() {
-
+  describe('when routes encounter errors:', function() {
     beforeEach(function () {
       template = new Engine();
 
       template.route('/foo', function(page, key, next) {
         next(new Error('something went wrong'));
       });
-
     });
 
     it('should dispatch /foo', function(done) {
@@ -205,18 +197,15 @@ describe('engine router', function() {
         done();
       });
     });
-
   });
 
   describe('with route that throws an exception', function() {
-
     beforeEach(function () {
       template = new Engine();
 
       template.route('/foo', function(page, key, next) {
         throw new Error('something went horribly wrong');
       });
-
     });
 
     it('should dispatch /foo', function(done) {
@@ -229,11 +218,9 @@ describe('engine router', function() {
         done();
       });
     });
-
   });
 
-  describe('with route containing error handling that is not called', function() {
-
+  describe('when routes have error handling that is not called:', function() {
     beforeEach(function () {
       template = new Engine();
 
@@ -266,11 +253,9 @@ describe('engine router', function() {
         done();
       });
     });
-
   });
 
   describe('with route containing error handling that is called', function() {
-
     beforeEach(function () {
       template = new Engine();
 
@@ -303,7 +288,6 @@ describe('engine router', function() {
         done();
       });
     });
-
   });
 
   describe('with route containing error handling that is called due to an exception', function() {
@@ -342,5 +326,4 @@ describe('engine router', function() {
     });
 
   });
-
 });

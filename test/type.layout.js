@@ -9,128 +9,17 @@
 
 var should = require('should');
 var Engine = require('..');
+var template;
 
-
-describe('engine layouts:', function () {
-  describe('default engine:', function () {
-    it('should use layouts defined as objects', function (done) {
-      var template = new Engine();
-
-      template.layout({a: { layout: 'b', content: 'A above\n{% body %}\nA below' }});
-      template.layout({b: { layout: 'c', content: 'B above\n{% body %}\nB below' }});
-      template.layout({c: { layout: 'd', content: 'C above\n{% body %}\nC below' }});
-      template.layout({d: { layout: 'e', content: 'D above\n{% body %}\nD below' }});
-      template.layout({last: { layout: undefined, content: 'last!\n{% body %}\nlast!' }});
-      template.layout({e: { layout: 'f', content: 'E above\n{% body %}\nE below' }});
-      template.layout({f: { layout: 'last', content: 'F above\n{% body %}\nF below' }});
-      template.layout({first: { layout: 'a', content: '{% body %}' }});
-      template.page('about', 'This is the about page.', {layout: 'first'}, {ext: '.html'});
-
-      var expected = [
-        'last!',
-        'F above',
-        'E above',
-        'D above',
-        'C above',
-        'B above',
-        'A above',
-        'fooo',
-        'A below',
-        'B below',
-        'C below',
-        'D below',
-        'E below',
-        'F below',
-        'last!'
-      ].join('\n');
-
-      template.render({content: 'fooo', layout: 'first'}, function(err, content) {
-        if (err) return done(err);
-        content.should.equal(expected);
-        done();
-      });
-    });
-
-    it('should use layouts defined as objects', function (done) {
-      var template = new Engine();
-
-      template.layout({a: { layout: 'b', content: 'A above\n{% body %}\nA below' }});
-      template.layout({b: { layout: 'c', content: 'B above\n{% body %}\nB below' }});
-      template.layout({c: { layout: 'd', content: 'C above\n{% body %}\nC below' }});
-      template.layout({d: { layout: 'e', content: 'D above\n{% body %}\nD below' }});
-      template.layout({last: { layout: undefined, content: 'last!\n{% body %}\nlast!' }});
-      template.layout({e: { layout: 'f', content: 'E above\n{% body %}\nE below' }});
-      template.layout({f: { layout: 'last', content: 'F above\n{% body %}\nF below' }});
-      template.layout({first: { layout: 'a', content: '{% body %}' }});
-      template.page('about', 'This is the about page.', {layout: 'first'}, {ext: '.html'});
-
-      var expected = [
-        'last!',
-        'F above',
-        'E above',
-        'D above',
-        'C above',
-        'B above',
-        'A above',
-        'This is the about page.',
-        'A below',
-        'B below',
-        'C below',
-        'D below',
-        'E below',
-        'F below',
-        'last!'
-      ].join('\n');
-
-      template.render('about', function(err, content) {
-        if (err) return done(err);
-        content.should.equal(expected);
-        done();
-      });
-    });
-
-    it('should use layouts defined as strings:', function (done) {
-      var template = new Engine();
-
-      template.layout('first', '{% body %}', {layout: 'a'});
-      template.layout('a', 'A above\n{% body %}\nA below', {layout: 'b'});
-      template.layout('b', 'B above\n{% body %}\nB below', {layout: 'c'});
-      template.layout('c', 'C above\n{% body %}\nC below', {layout: 'd'});
-      template.layout('d', 'D above\n{% body %}\nD below', {layout: 'e'});
-      template.layout('e', 'E above\n{% body %}\nE below', {layout: 'default'});
-      template.layout('default', 'default!\n{% body %}\ndefault!');
-
-      var expected = [
-        'default!',
-        'E above',
-        'D above',
-        'C above',
-        'B above',
-        'A above',
-        'This is a page!',
-        'A below',
-        'B below',
-        'C below',
-        'D below',
-        'E below',
-        'default!'
-      ].join('\n');
-
-      template.render({content: 'This is a page!', layout: 'first'}, function(err, content) {
-        if (err) return done(err);
-        content.should.eql(expected);
-        done();
-      });
-    });
+describe('layout usage:', function () {
+  beforeEach(function () {
+    template = new Engine();
   });
 
-  describe('default engine:', function () {
-    var template = new Engine();
-
-    template.layout('sidebar', '<nav></nav>\n{% body %}', {layout: 'default'});
-    template.layout('default', 'default!\n{% body %}\ndefault!');
-
-    it('should use layouts defined as strings:', function (done) {
+  describe('default template types:', function () {
+    it('should use layouts with `page`s:', function (done) {
+      template.layout('sidebar', '<nav></nav>\n{% body %}', {layout: 'default'});
+      template.layout('default', 'default!\n{% body %}\ndefault!');
 
       var expected = [
         'default!',
@@ -145,18 +34,57 @@ describe('engine layouts:', function () {
         done();
       });
     });
+
+    it('should use layouts with `partial`s:', function (done) {
+      template.layout('default', 'default!\n{% body %}\ndefault!');
+      template.partial('alert', '<div>Heads up! This is an alert.</div>', {layout: 'default'});
+      template.page('home.md', {content: 'This is a page!\n<%= partial("alert") %>'});
+
+      var expected = [
+        'This is a page!',
+        'default!',
+        '<div>Heads up! This is an alert.</div>',
+        'default!'
+      ].join('\n');
+
+      template.render('home.md', function(err, content) {
+        if (err) return done(err);
+        content.should.eql(expected);
+        done();
+      });
+    });
+
+    it('should nest layouts with `partial`s:', function (done) {
+      template.layout('a', 'AAA!\n{% body %}\nAAA!', {layout: 'b'});
+      template.layout('b', 'BBB!\n{% body %}\nBBB!');
+      template.partial('alert', '<div>Heads up! This is an alert.</div>', {layout: 'a'});
+      template.page('home.md', {content: '<%= partial("alert") %>'});
+
+      var expected = [
+        'BBB!',
+        'AAA!',
+        '<div>Heads up! This is an alert.</div>',
+        'AAA!',
+        'BBB!'
+      ].join('\n');
+
+      template.render('home.md', function(err, content) {
+        if (err) return done(err);
+        content.should.eql(expected);
+        done();
+      });
+    });
   });
 
 
   describe('custom template types:', function () {
-    var template = new Engine();
-    template.create('doc', 'docs', { isRenderable: true });
+    it('should use layouts with custom template types:', function (done) {
+      template.create('doc', 'docs', { isRenderable: true });
 
-    template.layout('sidebar', '<nav></nav>\n{% body %}', {layout: 'default'});
-    template.layout('default', 'default!\n{% body %}\ndefault!');
-    template.doc('home', 'This is the home page.', {layout: 'sidebar'}, {ext: '.html'});
+      template.layout('sidebar', '<nav></nav>\n{% body %}', {layout: 'default'});
+      template.layout('default', 'default!\n{% body %}\ndefault!');
+      template.doc('home', 'This is the home page.', {layout: 'sidebar'}, {ext: '.html'});
 
-    it('should use layouts defined as strings:', function (done) {
       var expected = [
         'default!',
         '<nav></nav>',

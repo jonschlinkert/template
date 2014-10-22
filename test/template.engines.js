@@ -15,10 +15,9 @@ var Engine = require('..');
 var template = new Engine();
 
 
-
 describe('engine engine', function() {
-  beforeEach(function() {
-    template.clear();
+  beforeEach(function () {
+    template = new Engine();
   });
 
   describe('.engine()', function() {
@@ -36,11 +35,7 @@ describe('engine engine', function() {
         render: function () {}
       });
 
-      template.engines.should.have.property('.a');
-      template.engines.should.have.property('.b');
-      template.engines.should.have.property('.c');
-      template.engines.should.have.property('.d');
-      Object.keys(template.engines).length.should.equal(8);
+      template.engines.should.have.properties(['.a', '.b', '.c', '.d']);
     });
 
     it('should normalize engine extensions to not have a dot.', function() {
@@ -57,11 +52,7 @@ describe('engine engine', function() {
         render: function () {}
       });
 
-      template.engines.should.have.property('.a');
-      template.engines.should.have.property('.b');
-      template.engines.should.have.property('.c');
-      template.engines.should.have.property('.d');
-      Object.keys(template.engines).length.should.equal(8);
+      template.engines.should.have.properties(['.a', '.b', '.c', '.d']);
     });
 
     it('should be chainable.', function() {
@@ -79,74 +70,9 @@ describe('engine engine', function() {
           render: function () {}
         });
 
-
-      var a = template.getEngine('.a');
-
-      assert.equal(typeof a, 'object');
-      assert.equal(typeof a.render, 'function');
-
-      // console.log(template)
-
-      template.engines.should.have.property('.a');
-      template.engines.should.have.property('.b');
-      template.engines.should.have.property('.c');
-      template.engines.should.have.property('.d');
-      Object.keys(template.engines).length.should.equal(8);
+      template.engines.should.have.properties(['.a', '.b', '.c', '.d']);
     });
   });
-});
-
-
-describe('engines', function() {
-  var lodash = template.getEngine('md');
-  it('should render content with lodash.', function(done) {
-    var ctx = {name: 'Jon Schlinkert'};
-
-    lodash.render('<%= name %>', ctx, function (err, content) {
-      content.should.equal('Jon Schlinkert');
-      done();
-    });
-  });
-
-  it('should use custom delimiters: swig.', function(done) {
-    var ctx = {name: 'Jon Schlinkert', delims: ['{%', '%}']};
-
-    lodash.render('{%= name %}', ctx, function (err, content) {
-      content.should.equal('Jon Schlinkert');
-      done();
-    });
-  });
-
-  it('should use custom delimiters: hbs.', function(done) {
-    var ctx = {name: 'Jon Schlinkert', delims: ['{{', '}}']};
-
-    lodash.render('{{= name }}', ctx, function (err, content) {
-      content.should.equal('Jon Schlinkert');
-      done();
-    });
-  });
-
-  it('should use helpers registered on the imports property.', function(done) {
-    var ctx = {
-      name: 'Jon Schlinkert',
-      imports: {
-        include: function(name) {
-          var filepath = path.join('test/fixtures', name);
-          return fs.readFileSync(filepath, 'utf8');
-        },
-        upper: function(str) {
-          return str.toUpperCase()
-        }
-      }
-    };
-
-    lodash.render('<%= upper(include("content.tmpl")) %>', ctx, function (err, content) {
-      if (err) console.log(err);
-      content.should.equal('JON SCHLINKERT');
-      done();
-    });
-  });
-
 
   describe('.getEngine()', function() {
     it('should get an engine.', function() {
@@ -163,13 +89,66 @@ describe('engines', function() {
         render: function () {}
       });
 
-      // 4 + 2 built-in engines
-      Object.keys(template.engines).length.should.equal(8);
-
       template.getEngine('a').should.have.property('render');
       template.getEngine('b').should.have.property('render');
       template.getEngine('c').should.have.property('render');
       template.getEngine('d').should.have.property('render');
     });
+  });
+
+  describe('engine rendering', function() {
+
+    it('should render content with lodash.', function(done) {
+      var lodash = template.getEngine('md');
+      var ctx = {name: 'Jon Schlinkert'};
+
+      lodash.render('<%= name %>', ctx, function (err, content) {
+        content.should.equal('Jon Schlinkert');
+        done();
+      });
+    });
+
+    it('should use custom delimiters: swig.', function(done) {
+      var lodash = template.getEngine('md');
+      var ctx = {name: 'Jon Schlinkert', delims: ['{%', '%}']};
+
+      lodash.render('{%= name %}', ctx, function (err, content) {
+        content.should.equal('Jon Schlinkert');
+        done();
+      });
+    });
+
+    it('should use custom delimiters: hbs.', function(done) {
+      var lodash = template.getEngine('md');
+      var ctx = {name: 'Jon Schlinkert', delims: ['{{', '}}']};
+
+      lodash.render('{{= name }}', ctx, function (err, content) {
+        content.should.equal('Jon Schlinkert');
+        done();
+      });
+    });
+
+    it('should use helpers registered on the imports property.', function(done) {
+      var lodash = template.getEngine('md');
+      var ctx = {
+        name: 'Jon Schlinkert',
+        imports: {
+          include: function(name) {
+            var filepath = path.join('test/fixtures', name);
+            return fs.readFileSync(filepath, 'utf8');
+          },
+          upper: function(str) {
+            return str.toUpperCase()
+          }
+        }
+      };
+
+      lodash.render('<%= upper(include("content.tmpl")) %>', ctx, function (err, content) {
+        if (err) console.log(err);
+        content.should.equal('JON SCHLINKERT');
+        done();
+      });
+    });
+
   });
 });

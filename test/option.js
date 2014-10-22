@@ -64,26 +64,4 @@ describe('engine option', function() {
     });
 
   });
-
-  describe('option events', function () {
-    var template = new Engine();
-
-    it('should emit `option` when a value is set', function () {
-      template.once('option', function (key, val) {
-        template.option('a', 'b');
-      });
-      template.option('foo', 'bar');
-      template.options.should.have.property('foo');
-      template.options.should.have.property('a');
-    });
-
-    it('should emit `option` when an object is set', function () {
-      template.once('option', function (key, val) {
-        template.option('a', 'b');
-      });
-      template.option({foo: 'bar'});
-      template.options.should.have.property('foo');
-      template.options.should.have.property('a');
-    });
-  });
 });

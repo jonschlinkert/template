@@ -14,18 +14,17 @@ var Engine = require('..');
 var template = new Engine();
 
 describe('engine locals', function () {
-  beforeEach(function (done) {
+  beforeEach(function () {
     template = new Engine();
-    done();
   });
 
   describe('context:', function () {
     it('should pass data to templates from locals:', function (done) {
-      template.page('aaa.md', '<%= abc %>', { abc: 'xyz'});
+      template.page('aaa.md', 'foo <%= abc %> bar', { abc: 'xyz'});
 
       template.render('aaa.md', function (err, content) {
         if (err) console.log(err);
-        content.should.equal('xyz');
+        content.should.equal('foo xyz bar');
         done();
       });
     });

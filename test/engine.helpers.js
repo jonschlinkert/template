@@ -22,7 +22,6 @@ describe('engine render:', function () {
     });
 
     var helpers = template.helpers('hbs');
-
     helpers.addHelper('foo', function (str) {
       return str.toLowerCase();
     });
@@ -31,8 +30,7 @@ describe('engine render:', function () {
       return str.toUpperCase();
     });
 
-    helpers.should.have.property('foo');
-    helpers.should.have.property('bar');
+    helpers.should.have.properties(['foo', 'bar']);
     helpers.getHelper('foo').should.be.a.function;
     helpers.getHelper('bar').should.be.a.function;
   });
@@ -52,8 +50,7 @@ describe('engine render:', function () {
         return str.toUpperCase();
       });
 
-    helpers.should.have.property('foo');
-    helpers.should.have.property('bar');
+    helpers.should.have.properties(['foo', 'bar']);
     helpers.getHelper('foo').should.be.a.function;
     helpers.getHelper('bar').should.be.a.function;
   });

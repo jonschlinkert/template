@@ -18,6 +18,32 @@ describe('engine data', function() {
     template.clear();
   });
 
+
+  describe('.data()', function() {
+    var template = new Engine();
+    it('should set properties on the `data` object.', function() {
+      template.set('data.foo', 'bar');
+      template.get('data').foo.should.equal('bar');
+      template.get('data.foo').should.equal('bar');
+    });
+
+    it('should read files and merge data onto `cache.data`', function() {
+      template.data('package.json');
+      template.get('data.name').should.equal(pkg.name);
+    });
+
+    it('should read files and merge data onto `cache.data`', function() {
+      template.data({xyz: 'abc'});
+      template.get('data.xyz').should.equal('abc');
+    });
+
+    it('should read files and merge data onto `cache.data`', function() {
+      template.data([{aaa: 'bbb', ccc: 'ddd'}]);
+      template.get('data.aaa').should.equal('bbb');
+      template.get('data.ccc').should.equal('ddd');
+    });
+  });
+
   describe('.extendData()', function() {
     var template = new Engine();
     it('should extend the `data` object.', function() {
@@ -25,13 +51,7 @@ describe('engine data', function() {
         .extendData({x: 'x', y: 'y', z: 'z'})
         .extendData({a: 'a', b: 'b', c: 'c'});
 
-      template.get('data').should.have.property('a');
-      template.get('data').should.have.property('b');
-      template.get('data').should.have.property('c');
-
-      template.get('data').should.have.property('x');
-      template.get('data').should.have.property('y');
-      template.get('data').should.have.property('z');
+      template.get('data').should.have.properties(['a', 'b', 'c', 'x', 'y', 'z']);
     });
 
     it('should extend the `data` object when the first param is a string.', function() {
@@ -39,14 +59,25 @@ describe('engine data', function() {
         .extendData('foo', {x: 'x', y: 'y', z: 'z'})
         .extendData('bar', {a: 'a', b: 'b', c: 'c'});
 
-      template.get('data').should.have.property('foo');
-      template.get('data').should.have.property('bar');
+      template.get('data').should.have.properties(['foo', 'bar']);
+    });
 
-      template.get('data.foo').should.have.property('x');
-      template.get('data.bar').should.have.property('a');
+    it('should be able to lookup properties directly from the `cache.data` object.', function() {
+      template
+        .extendData('foo', {x: 'x', y: 'y', z: 'z'})
+        .extendData('bar', {a: 'a', b: 'b', c: 'c'});
 
       template.cache.data.foo.should.have.property('x');
       template.cache.data.bar.should.have.property('a');
+    });
+
+    it('should be able to lookup properties using object paths.', function() {
+      template
+        .extendData('foo', {x: 'x', y: 'y', z: 'z'})
+        .extendData('bar', {a: 'a', b: 'b', c: 'c'});
+
+      template.get('data.foo').should.have.property('x');
+      template.get('data.bar').should.have.property('a');
     });
   });
 
@@ -54,18 +85,13 @@ describe('engine data', function() {
     var template = new Engine();
     it('should merge the value of a nested `data` property onto the root of the given object.', function() {
       var root = template.flattenData({data: {x: 'x'}, y: 'y', z: 'z'});
-      root.should.have.property('x');
-      root.should.have.property('y');
-      root.should.have.property('z');
+      root.should.have.properties(['x', 'y', 'z']);
       root.should.not.have.property('data');
     });
 
     it('should merge the value of a nested `data` property onto the root of the given object.', function() {
       var root = template.flattenData({a: 'b', data: {x: 'x'}, y: 'y', z: 'z'});
-      root.should.have.property('a');
-      root.should.have.property('x');
-      root.should.have.property('y');
-      root.should.have.property('z');
+      root.should.have.properties(['a', 'x', 'y', 'z']);
       root.should.not.have.property('data');
     });
   });
@@ -105,28 +131,4 @@ describe('engine data', function() {
     });
   });
 
-  describe('.data()', function() {
-    var template = new Engine();
-    it('should set properties on the `data` object.', function() {
-      template.set('data.foo', 'bar');
-      template.get('data').foo.should.equal('bar');
-      template.get('data.foo').should.equal('bar');
-    });
-
-    it('should read files and merge data onto `cache.data`', function() {
-      template.data('package.json');
-      template.get('data.name').should.equal(pkg.name);
-    });
-
-    it('should read files and merge data onto `cache.data`', function() {
-      template.data({xyz: 'abc'});
-      template.get('data.xyz').should.equal('abc');
-    });
-
-    it('should read files and merge data onto `cache.data`', function() {
-      template.data([{aaa: 'bbb', ccc: 'ddd'}]);
-      template.get('data.aaa').should.equal('bbb');
-      template.get('data.ccc').should.equal('ddd');
-    });
-  });
 });

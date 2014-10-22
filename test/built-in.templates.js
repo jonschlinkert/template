@@ -14,17 +14,14 @@ var template = new Engine();
 
 describe('default templates:', function () {
   it('should have `partial` and `partials` on the cache.', function () {
-    template.should.have.property('partial');
-    template.should.have.property('partials');
+    template.should.have.properties(['partial', 'partials']);
   });
 
   it('should have `page` and `pages` on the cache.', function () {
-    template.should.have.property('page');
-    template.should.have.property('pages');
+    template.should.have.properties(['page', 'pages']);
   });
 
   it('should have `layout` and `layouts` on the cache.', function () {
-    template.should.have.property('layout');
-    template.should.have.property('layouts');
+    template.should.have.properties(['layout', 'layouts']);
   });
 });

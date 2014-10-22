@@ -22,7 +22,6 @@ var engineNoop = require('engine-noop');
 var parserMatter = require('parser-front-matter');
 var parserNoop = require('parser-noop');
 var Loader = require('load-templates');
-var id = require('uniqueid');
 var utils = require('./lib/utils');
 var debug = require('./lib/debug');
 var extend = _.extend;
@@ -296,40 +295,6 @@ Engine.prototype.asyncTypeHelpers = function (type, plural) {
 
 
 /**
- * Utilize the given middleware `fn` to the given `filepath`, defaulting to `_/_`.
- *
- * **Examples:**
- *
- * ```js
- * site.use(template.foo());
- * ```
- *
- * @param {String|Function} `filepath`
- * @param {Function} fn
- * @return {Object} `Template` for chaining
- * @api public
- */
-
-Engine.prototype.use = function(filepath, fn) {
-  // default route to '/'
-  if (typeof filepath !== 'string') {
-    fn = filepath;
-    filepath = '/';
-  }
-
-  // strip trailing slash
-  if (filepath[filepath.length - 1] === '/') {
-    filepath = filepath.slice(0, -1);
-  }
-
-  // add the middleware
-  debug.plugin('use %s %s', filepath || '/', fn.name || 'anonymous');
-  this._stack.push({ path: filepath, handle: fn });
-  return this;
-};
-
-
-/**
  * Lazily initalize router, to allow options to
  * be passed in after init.
  *
@@ -365,7 +330,7 @@ Engine.prototype.middleware = function () {
  *
  * @param  {Function|String} `filter` Either string or filter function used to determine which middleware stack to run.
  * @param  {Function|Array}  `middleware` Middleware stack to run for this filter.
- * @return {Object} `Template` to enable chaining.
+ * @return {Object} `Engine` to enable chaining.
  * @api private
  */
 
@@ -373,8 +338,8 @@ Engine.prototype.route = function (filter) {
   debug.routes('#route', arguments);
   this.lazyrouter();
 
-  /* if the filter is a string, turn it into a filter that
-   * we expect for view-cache */
+  /* if the filter is a string, turn it into a filter
+   * formatted as expected by Engines */
   if (typeof filter === 'string' || filter instanceof RegExp) {
     var str = filter;
     filter = function routeFilter(value, key) {
@@ -390,77 +355,6 @@ Engine.prototype.route = function (filter) {
   this._router.route.apply(this._router, args);
   return this;
 };
-
-
-/**
- * **Example:**
- *
- * ```js
- * var routes = template.router();
- * routes.route(':basename.hbs', function (file, params, next) {
- *   // do something with the file
- *   next();
- * });
- *
- * engine.src('')
- *   .pipe(routes())
- *   .pipe(template.dest())
- * ```
- *
- * @param  {Object} `options`
- * @return {Function}
- */
-
-// Engine.prototype.router = function(options) {
-//   var self = this;
-
-//   var opts = _.defaults({}, options, this.options, {
-//     caseSensitive: this.enabled('case sensitive routing'),
-//     strict: this.enabled('strict routing')
-//   });
-
-//   var router = new Router(opts);
-
-//   // make a new function that gets returned for later use
-//   var rte = function() {
-//     opts.router = router;
-//     return routes.call(self, opts);
-//   };
-
-//   // add new routes to the specific router
-//   rte.route = function(route, fn) {
-//     router.route(route, fn);
-//   };
-
-//   // return the new function
-//   return rte;
-// };
-
-
-/**
- * Proxy to `Router#param()` with one added api feature. The _name_ parameter
- * can be an array of names.
- *
- * @param {String|Array} `name`
- * @param {Function} `fn`
- * @return {Object} `Template` to enable chaining
- * @api public
- */
-
-// Engine.prototype.param = function(name, fn){
-//   var self = this;
-//   this.lazyrouter();
-
-//   if (Array.isArray(name)) {
-//     name.forEach(function(key) {
-//       self.param(key, fn);
-//     });
-//     return this;
-//   }
-
-//   this._router.param(name, fn);
-//   return this;
-// };
 
 
 /**
@@ -632,26 +526,18 @@ Engine.prototype.useDelims = function(ext) {
 
 
 /**
- * Generate a temporary id for an unknown template.
- */
-
-Engine.prototype.id = function () {
-  return id({prefix: '__id', suffix: '__'});
-};
-
-
-/**
  * Private method for registering an engine.
  *
  * @param {String} `ext`
  * @param {Function|Object} `fn` or `options`
  * @param {Object} `options`
- * @return {Object} `Template` to enable chaining
+ * @return {Object} `Engine` to enable chaining
  * @api private
  */
 
 Engine.prototype._registerEngine = function (ext, fn, options) {
   var opts = extend({thisArg: this, bindFunctions: true}, options);
+  // opts.helpers = extend({}, this._.helpers, opts.helpers);
 
   if (ext[0] !== '.') {
     ext = '.' + ext;
@@ -680,7 +566,7 @@ Engine.prototype._registerEngine = function (ext, fn, options) {
  * @param {String} `ext`
  * @param {Function|Object} `fn` or `options`
  * @param {Object} `options`
- * @return {Object} `Template` to enable chaining
+ * @return {Object} `Engine` to enable chaining
  * @api public
  */
 
@@ -872,7 +758,7 @@ Engine.prototype.getType = function (type) {
  *   @option {Boolean} [options] `isRenderable` Is the template a partial view?
  *   @option {Boolean} [options] `layout` Can the template be used as a layout?
  *   @option {Boolean} [options] `partial` Can the template be used as a partial?
- * @return {Object} `Template` to enable chaining.
+ * @return {Object} `Engine` to enable chaining.
  * @api public
  */
 
@@ -1010,15 +896,6 @@ Engine.prototype.normalize = function (plural, template, options) {
     var isLayout = utils.isLayout(value);
     utils.pickLayout(value);
 
-
-    // Dispatch routes
-    // var results = this._router.middlewareSync(value);
-    // if (results.err) {
-    //   throw new Error(results.err);
-    // }
-    // console.log('results:', results);
-    // console.log('value:', value);
-
     template[key] = value;
 
     if (isLayout) {
@@ -1125,8 +1002,8 @@ Engine.prototype.preprocess = function (template, locals, cb) {
     template = tmpl;
     template = this.extendLocals('render', template, locals);
   } else {
-    key = utils.generateId();
-    template = this.format(key, template, locals);
+    // generate a unique, temporary id
+    template = this.format(utils.generateId(), template, locals);
   }
 
   if (utils.isObject(template)) {
@@ -1138,10 +1015,12 @@ Engine.prototype.preprocess = function (template, locals, cb) {
     content = template;
   }
 
+  // Get the extension to use for picking an engine
   var ext = utils.pickExt(template, locals, this);
 
   // if a layout is defined, apply it now.
   content = this.applyLayout(ext, template, locals);
+
   // Ensure that `content` is a string.
   if (utils.isObject(content)) {
     content = content.content;
@@ -1190,7 +1069,6 @@ Engine.prototype.render = function (content, locals, cb) {
     locals = {};
   }
 
-
   var ext = self.option('viewEngine');
   state.content = content;
   state.locals = locals;
@@ -1203,16 +1081,13 @@ Engine.prototype.render = function (content, locals, cb) {
   try {
     state.engine.render(state.content, state.locals, function (err, res) {
       if (err) {
-        console.log(err);
-        return cb.call(self, err, res);
+        cb.call(self, err, res);
+        return;
       }
+
       return self._.helpers.resolve(res, function (err, res) {
         if (err) console.log(err);
         return cb.call(self, err, res);
-        // return self.middleware(state, state.locals.path, function (err) {
-        //   if (err) console.log(err);
-        //   cb.call(self, err, state.content);
-        // });
       });
     });
   } catch (err) {
@@ -1237,7 +1112,7 @@ Engine.prototype.renderSync = function (content, locals) {
   if (this.option('preprocess')) {
     var pre = this.preprocess(content, locals);
     content = pre.content;
-    locals = _.extend({}, pre.locals, locals);
+    locals = extend({}, pre.locals, locals);
     engine = pre.engine;
   }
 

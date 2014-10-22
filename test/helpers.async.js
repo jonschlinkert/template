@@ -9,17 +9,17 @@
 
 var should = require('should');
 var Engine = require('..');
-var template = new Engine();
+var engine = new Engine();
 
 
 describe('.addHelperAsync():', function () {
   beforeEach(function () {
-    template.init();
+    engine.init();
   });
 
 
-  it('should register _bound_ template async helper functions by default:', function (done) {
-    var helpers = template.helpers('md');
+  it('should register _bound_ async helper functions by default:', function () {
+    var helpers = engine.helpers('md');
 
     helpers.addHelperAsync('a', function (str, callback) {
       callback(null, str.toLowerCase());
@@ -29,13 +29,24 @@ describe('.addHelperAsync():', function () {
       callback(null, str.toUpperCase());
     });
 
-    helpers.should.have.property('a');
-    helpers.should.have.property('b');
-    helpers._.helpersAsync.should.have.property('a');
-    helpers._.helpersAsync.should.have.property('b');
+    helpers.should.have.properties(['a', 'b']);
+    helpers._.helpersAsync.should.have.properties(['a', 'b']);
+  });
 
-    template.page('foo.md', {content: 'A: <%= a(name) %>\nB: <%= b(name) %>'});
-    template.render('foo.md', {name: 'Jon Schlinkert'}, function (err, content) {
+
+  it('should use bound helpers in templates:', function (done) {
+    var helpers = engine.helpers('md');
+
+    helpers.addHelperAsync('a', function (str, callback) {
+      callback(null, str.toLowerCase());
+    });
+
+    helpers.addHelperAsync('b', function (str, callback) {
+      callback(null, str.toUpperCase());
+    });
+
+    engine.page('foo.md', {content: 'A: <%= a(name) %>\nB: <%= b(name) %>'});
+    engine.render('foo.md', {name: 'Jon Schlinkert'}, function (err, content) {
       if (err) return done(err);
       content.should.equal('A: jon schlinkert\nB: JON SCHLINKERT');
       done();
@@ -43,9 +54,9 @@ describe('.addHelperAsync():', function () {
   });
 
 
-  it('should register _un-bound_ template async helpers when `bindHelpers` is false:', function (done) {
-    template.option('bindHelpers', false);
-    var helpers = template.helpers('md');
+  it('should register _un-bound_ async helpers when `bindHelpers` is false:', function () {
+    engine.option('bindHelpers', false);
+    var helpers = engine.helpers('md');
 
     helpers
       .addHelperAsync('a', function (str, callback) {
@@ -55,22 +66,17 @@ describe('.addHelperAsync():', function () {
         callback(null, str.toUpperCase());
       });
 
-    helpers.should.have.property('a');
-    helpers.should.have.property('b');
-    helpers._.helpersAsync.should.have.property('a');
-    helpers._.helpersAsync.should.have.property('b');
 
-    template.page('foo.md', {content: 'A: <%= a(name) %>\nB: <%= b(name) %>'});
-
-    template.render('foo.md', {name: 'Jon Schlinkert'}, function (err, content) {
-      if (err) return done(err);
-      content.should.equal('A: jon schlinkert\nB: JON SCHLINKERT');
-      done();
-    });
+    helpers.should.have.properties(['a', 'b']);
+    helpers._.helpersAsync.should.have.properties(['a', 'b']);
   });
 
-  it('should use helpers registered for all engines:', function (done) {
-    template
+
+  it('should use _un-bound_ helpers in templates:', function (done) {
+    engine.option('bindHelpers', false);
+    var helpers = engine.helpers('md');
+
+    helpers
       .addHelperAsync('a', function (str, callback) {
         callback(null, str.toLowerCase());
       })
@@ -78,14 +84,29 @@ describe('.addHelperAsync():', function () {
         callback(null, str.toUpperCase());
       });
 
-    template._.helpers.should.have.property('a');
-    template._.helpers.should.have.property('b');
-    template._.helpers._.helpersAsync.should.have.property('a');
-    template._.helpers._.helpersAsync.should.have.property('b');
+    engine.page('foo.md', {content: 'A: <%= a(name) %>\nB: <%= b(name) %>'});
+    engine.render('foo.md', {name: 'Jon Schlinkert'}, function (err, content) {
+      if (err) return done(err);
+      content.should.equal('A: jon schlinkert\nB: JON SCHLINKERT');
+      done();
+    });
+  });
 
-    template.page('foo.md', {content: 'A: <%= a(name) %>\nB: <%= b(name) %>'});
+  it('should use helpers registered for all engines:', function (done) {
+    engine
+      .addHelperAsync('a', function (str, callback) {
+        callback(null, str.toLowerCase());
+      })
+      .addHelperAsync('b', function (str, callback) {
+        callback(null, str.toUpperCase());
+      });
 
-    template.render('foo.md', {name: 'Jon Schlinkert'}, function (err, content) {
+    engine._.helpers.should.have.properties(['a', 'b']);
+    engine._.helpers._.helpersAsync.should.have.properties(['a', 'b']);
+
+    engine.page('foo.md', {content: 'A: <%= a(name) %>\nB: <%= b(name) %>'});
+
+    engine.render('foo.md', {name: 'Jon Schlinkert'}, function (err, content) {
       if (err) return done(err);
       content.should.equal('A: jon schlinkert\nB: JON SCHLINKERT');
       done();

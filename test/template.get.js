@@ -10,18 +10,20 @@
 var assert = require('assert');
 var should = require('should');
 var Engine = require('..');
-
+var template;
 
 describe('engine get', function () {
+  beforeEach(function () {
+    template = new Engine();
+  });
+
   it('should `.get()` default template types from the cache.', function () {
-    var template = new Engine();
     template.get('partials').should.be.an.object;
     template.get('layouts').should.be.an.object;
     template.get('pages').should.be.an.object;
   });
 
   it('should `.get()` custom template types:', function () {
-    var template = new Engine();
     template.create('doc', 'docs');
     template.doc('abc', {content: 'This is a document'});
     template.getDoc('abc').should.be.an.object;

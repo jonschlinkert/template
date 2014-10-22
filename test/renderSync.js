@@ -45,16 +45,13 @@ describe('engine render', function () {
   describe('when the name of a cached template is passed to `.renderSync()`:', function () {
     it('should get the template and render it:', function () {
       template.page('aaa.md', '<%= name %>', {name: 'Jon Schlinkert'});
-
       template.renderSync('aaa.md').should.equal('Jon Schlinkert');
     });
 
     it('should render the first matching template is dupes are found:', function () {
       template.page('aaa.md', '<%= name %>', {name: 'Brian Woodward'});
-
       template.create('post', 'posts', { isRenderable: true });
       template.post('bbb.md', '<%= name %>', {name: 'Jon Schlinkert'});
-
       template.renderSync('aaa.md').should.equal('Brian Woodward');
     });
   });
@@ -62,14 +59,12 @@ describe('engine render', function () {
   describe('engine render:', function () {
     it('should determine the engine from the `path` on the given object:', function () {
       var file = {path: 'a/b/c.md', content: '<%= name %>', name: 'Jon Schlinkert'};
-
       var content = template.renderSync(file);
       content.should.equal('Jon Schlinkert');
     });
 
     it('should determine the engine from the `path` on the given object:', function () {
       var file = {path: 'a/b/c.md', content: '<%= name %>'};
-
       template.renderSync(file, {name: 'Jon Schlinkert'}).should.equal('Jon Schlinkert');
     });
   });

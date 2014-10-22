@@ -22,15 +22,11 @@ describe('engine render', function () {
     done();
   });
 
-
-  describe('when an un-cached string is passed to `.render()`:', function () {
+  describe('engine object:', function () {
     it('should expose `this` to the .render() method:', function (done) {
       template.render('<%= name %>', {name: 'Jon Schlinkert'}, function (err, content) {
         if (err) console.log(err);
-        this.should.have.property('cache');
-        this.should.have.property('engines');
-        this.should.have.property('delims');
-        this.should.have.property('options');
+        this.should.have.properties(['cache', 'options', 'engines', 'delims']);
         done();
       });
     });
@@ -114,21 +110,28 @@ describe('engine render', function () {
 
     it('should use `file.path` to determine the correct consolidate engine to render content:', function (done) {
       template.engine('hbs', consolidate.handlebars);
-      // template.engine('jade', consolidate.jade);
       template.engine('swig', consolidate.swig);
       template.engine('tmpl', consolidate.lodash);
 
       var files = [
-        {path: 'fixture.hbs', content: '<title>{{author}}</title>', author: 'Jon Schlinkert'},
-        {path: 'fixture.tmpl', content: '<title><%= author %></title>', author: 'Jon Schlinkert'},
-        // {path: 'fixture.jade', content: 'title= author', author: 'Jon Schlinkert'},
-        {path: 'fixture.swig', content: '<title>{{author}}</title>', author: 'Jon Schlinkert'}
+        {path: 'fixture.hbs', content: '<title>{{title}}</title>', title: 'Handlebars'},
+        {path: 'fixture.tmpl', content: '<title><%= title %></title>', title: 'Lo-Dash'},
+        {path: 'fixture.swig', content: '<title>{{title}}</title>', title: 'Swig'}
       ];
 
       files.forEach(function(file) {
         template.render(file, function (err, content) {
           if (err) console.log(err);
-          content.should.equal('<title>Jon Schlinkert</title>');
+
+          if (file.path === 'fixture.hbs') {
+            content.should.equal('<title>Handlebars</title>');
+          }
+          if (file.path === 'fixture.tmpl') {
+            content.should.equal('<title>Lo-Dash</title>');
+          }
+          if (file.path === 'fixture.swig') {
+            content.should.equal('<title>Swig</title>');
+          }
         });
       });
 
@@ -137,22 +140,29 @@ describe('engine render', function () {
 
     it('should use the key of a cached template to determine the consolidate engine to use:', function (done) {
       template.engine('hbs', consolidate.handlebars);
-      // template.engine('jade', consolidate.jade);
       template.engine('swig', consolidate.swig);
       template.engine('tmpl', consolidate.lodash);
 
-      template.page('a.hbs', '<title>{{author}}</title>', {author: 'Jon Schlinkert'});
-      template.page('b.tmpl', '<title><%= author %></title>', {author: 'Jon Schlinkert'});
-      // template.page('c.jade', 'title= author', {author: 'Jon Schlinkert'});
-      template.page('d.swig', '<title>{{author}}</title>', {author: 'Jon Schlinkert'});
+      template.page('a.hbs', {content: '<title>{{title}}</title>', title: 'Handlebars'});
+      template.page('b.tmpl', {content: '<title><%= title %></title>', title: 'Lo-Dash'});
+      template.page('d.swig', {content: '<title>{{title}}</title>', title: 'Swig'});
 
-
-      Object.keys(template.cache.pages).forEach(function(page) {
-        template.render(page, function (err, content) {
+      Object.keys(template.cache.pages).forEach(function(file) {
+        template.render(file, function (err, content) {
           if (err) console.log(err);
-          content.should.equal('<title>Jon Schlinkert</title>');
+
+          if (file.path === 'fixture.hbs') {
+            content.should.equal('<title>Handlebars</title>');
+          }
+          if (file.path === 'fixture.tmpl') {
+            content.should.equal('<title>Lo-Dash</title>');
+          }
+          if (file.path === 'fixture.swig') {
+            content.should.equal('<title>Swig</title>');
+          }
         });
       });
+
       done();
     });
   });

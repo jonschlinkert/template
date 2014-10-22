@@ -11,12 +11,15 @@ var fs = require('fs');
 var path = require('path');
 var should = require('should');
 var Engine = require('..');
-var template = new Engine();
+var template;
 
 
 describe('engine delimiters:', function () {
+  beforeEach(function () {
+    template = new Engine();
+  });
+
   it('should use custom delimiters defined on a template type:', function (done) {
-    var template = new Engine();
     template.engine('*', require('engine-lodash'));
     template.create('doc', 'docs', {
       delims: ['<<', '>>'],
@@ -39,7 +42,6 @@ describe('engine delimiters:', function () {
   });
 
   it('should define the engine to use when creating a new template type:', function (done) {
-    var template = new Engine();
     template.engine('handlebars', require('engine-handlebars'));
     template.engine('lodash', require('engine-lodash'));
 
@@ -69,7 +71,6 @@ describe('engine delimiters:', function () {
   });
 
   it('should define the engine to use on templates:', function (done) {
-    var template = new Engine();
     template.engine('handlebars', require('engine-handlebars'));
     template.engine('lodash', require('engine-lodash'));
     template.create('apple', 'apples', { isRenderable: true })

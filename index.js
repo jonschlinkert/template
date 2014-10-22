@@ -401,12 +401,12 @@ Engine.prototype.applyLayout = function(ext, template, locals) {
     layoutEngine = this.layoutSettings[ext];
   }
 
-  if (this.option('layoutExt')) {
-    var ext = this.option('layoutExt');
-    if (ext[0] !== '.') {
-      ext = '.' + ext;
+  var optsExt = this.option('layoutExt');
+  if (optsExt) {
+    if (optsExt[0] !== '.') {
+      optsExt = '.' + optsExt;
     }
-    layout = layout + ext;
+    layout = layout + optsExt;
   }
 
   var obj = utils.pickContent(template);

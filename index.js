@@ -821,11 +821,12 @@ Engine.prototype.create = function(type, plural, options, fns) {
 
 
 /**
- * Add type middleware to the router for the specific type.
+ * Add middleware to the router for the given `type`.
  *
  * @param  {String} `type` Template type used for this middleware.
  * @param  {Function|Array} `middleware` Stack of middleware to run for this type.
  */
+
 Engine.prototype.typeMiddleware = function(type, middleware) {
   var filter = function (value, key) {
     if (!value || !value.options) {
@@ -834,6 +835,24 @@ Engine.prototype.typeMiddleware = function(type, middleware) {
     return value.options.type === type;
   };
   this.route(filter, middleware);
+};
+
+
+/**
+ * Create a new instance of `Loader` with the given `options.
+ *
+ * ```js
+ * var loader = engine.loader({vinyl: true});
+ * loader.load('home.md', {title: 'My Blog'});
+ * ```
+ *
+ * @param  {Object} `options`
+ * @api public
+ */
+
+Engine.prototype.loader = function(options) {
+  var opts = extend({}, this.options, options);
+  return new Loader(opts);
 };
 
 
@@ -851,10 +870,11 @@ Engine.prototype.load = function (plural, options) {
   debug.template('#{load} args:', arguments);
 
   var opts = extend({}, this.options, options);
-  var loader = new Loader(opts);
+  var loader = this.loader(opts);
 
   return function (key, value, locals) {
     var loaded = null;
+
     if (opts.loadFn) {
       loaded = opts.loadFn.apply(this, arguments);
     } else {

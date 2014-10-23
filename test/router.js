@@ -63,6 +63,64 @@ describe('engine router', function() {
 
   });
 
+  describe('with two simple stages', function() {
+    beforeEach(function () {
+      template = new Engine();
+
+      template.use('first', function first (page, key, next) {
+        page.stageCalledFirst = true;
+        next();
+      });
+
+      template.use('second', function second (page, key, next) {
+        page.stageCalledSecond = true;
+        next();
+      });
+    });
+
+    it('should have stages for default template types.', function() {
+      // template._router._routes.should.have.length(7);
+      Object.keys(template._router._stages).should.have.length(2);
+    });
+
+    it('should dispatch first', function(done) {
+      var page = {};
+      page.path = '/foo'
+
+      template.stage('first', page, page.path, function(err) {
+        if (err) { return done(err); }
+        page.stageCalledFirst.should.be.true;
+        (typeof page.stageCalledSecond == 'undefined').should.be.true;
+        done();
+      });
+    });
+
+    it('should dispatch second', function(done) {
+      var page = {};
+      page.path = '/bar'
+
+      template.stage('second', page, page.path, function(err) {
+        if (err) { return done(err); }
+        (typeof page.stageCalledFirst == 'undefined').should.be.true;
+        page.stageCalledSecond.should.be.true;
+        done();
+      });
+    });
+
+    it('should not dispatch third', function(done) {
+      var page = {};
+      page.path = '/baz'
+
+      template.stage('third', page, page.path, function(err) {
+        if (err) { return done(err); }
+        (typeof page.stageCalledFirst == 'undefined').should.be.true;
+        (typeof page.stageCalledSecond == 'undefined').should.be.true;
+        done();
+      });
+    });
+
+  });
+
   describe('with route containing multiple callbacks', function() {
 
     beforeEach(function () {

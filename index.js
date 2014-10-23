@@ -164,15 +164,15 @@ Engine.prototype.defaultOptions = function() {
  */
 
 Engine.prototype.defaultRoutes = function() {
-  this.route(/\.(?:md|hbs)$/, function (value, key, next) {
-    parserMatter.parse(value, function (err) {
+  this.route(/\.(?:md|hbs)$/, function (src, dest, next) {
+    parserMatter.parse(src, function (err) {
       if (err) return next(err);
       next();
     });
   });
 
-  this.route(/.*/, function (value, key, next) {
-    parserNoop.parse(value, function (err) {
+  this.route(/.*/, function (src, dest, next) {
+    parserNoop.parse(src, function (err) {
       if (err) return next(err);
       next();
     });
@@ -335,7 +335,22 @@ Engine.prototype.middleware = function () {
 
 
 /**
- * Set a router to be called.
+ * Dispatch a template through a middleware stack for a specific stage
+ *
+ * @param {String} `stage` Name of the stage to use
+ * @param  {arguments} `arguments` Any arguments that should be passed through the middleware stack
+ * @api private
+ */
+
+Engine.prototype.stage = function() {
+  debug.routes('#routes:stage', arguments);
+  this.lazyrouter();
+  this._router.stage.apply(this._router, arguments);
+};
+
+
+/**
+ * Set a route to be called.
  *
  * @param  {Function|String} `filter` String or filter function to get the middleware stack to run.
  * @param  {Function|Array}  `middleware` Middleware stack to run for the given route.
@@ -351,10 +366,10 @@ Engine.prototype.route = function (filter) {
    * formatted as expected by Engines */
   if (typeof filter === 'string' || filter instanceof RegExp) {
     var str = filter;
-    filter = function routeFilter(value, key) {
+    filter = function routeFilter(src, dest) {
       debug.middleware('#route:filter', str, arguments);
       this.createPathRegex(str);
-      return this.matchStr(key);
+      return this.matchStr(src.path);
     };
   }
 
@@ -362,6 +377,23 @@ Engine.prototype.route = function (filter) {
   debug.routes('#route', args);
 
   this._router.route.apply(this._router, args);
+  return this;
+};
+
+
+/**
+ * Set middleware to be used for a specific stage
+ *
+ * @param  {String} `stage` Name of the middleware stack to add to.
+ * @param  {Function|Array}  `middleware` Middleware stack to run for the given stage.
+ * @return {Object} `Engine` to enable chaining.
+ * @api private
+ */
+
+Engine.prototype.use = function (stage) {
+  debug.routes('#use', arguments);
+  this.lazyrouter();
+  this._router.use.apply(this._router, arguments);
   return this;
 };
 
@@ -827,11 +859,11 @@ Engine.prototype.create = function(type, plural, options, fns) {
  * @param  {Function|Array} `middleware` Stack of middleware to run for this type.
  */
 Engine.prototype.typeMiddleware = function(type, middleware) {
-  var filter = function (value, key) {
-    if (!value || !value.options) {
+  var filter = function (src, dest) {
+    if (!src || !src.options) {
       return false;
     }
-    return value.options.type === type;
+    return src.options.type === type;
   };
   this.route(filter, middleware);
 };
@@ -864,7 +896,7 @@ Engine.prototype.load = function (plural, options) {
     var template = this.normalize(plural, loaded, options);
 
     forOwn(template, function (value, key) {
-      this.middleware(value, key, function (err) {
+      this.stage('load', value, null, function (err) {
         if (err) console.log(err);
       });
     }.bind(this));

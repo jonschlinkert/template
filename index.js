@@ -903,7 +903,7 @@ Engine.prototype.load = function(plural, options) {
 
     forOwn(template, function (value, key) {
       this.stage('load', value, null, function (err) {
-        if (err) console.log(err);
+        if (err) console.log(chalk.red(err));
       });
     }.bind(this));
 

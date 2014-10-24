@@ -8,7 +8,7 @@
 'use strict';
 
 var consolidate = require('consolidate');
-var parserMatter = require('parser-front-matter');
+var parser = require('parser-front-matter');
 var forOwn = require('for-own');
 var should = require('should');
 var Engine = require('..');
@@ -22,7 +22,7 @@ describe('engine route', function () {
       template = new Engine();
 
       template.route(/\.*/, function (src, dest, next) {
-        parserMatter.parse(src, function (err) {
+        parser.parse(src, function (err) {
           if (err) return next(err);
           next();
         });

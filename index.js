@@ -7,6 +7,8 @@
 
 'use strict';
 
+// process.env.DEBUG = 'engine:*';
+
 var _ = require('lodash');
 var path = require('path');
 var chalk = require('chalk');
@@ -44,7 +46,7 @@ var extend = _.extend;
  */
 
 var Engine = module.exports = Cache.extend({
-  constructor: function (options) {
+  constructor: function(options) {
     Engine.__super__.constructor.call(this, options);
     this.initEngine();
   }
@@ -123,10 +125,10 @@ Engine.prototype.defaultOptions = function() {
   this.option('ext', '*');
   this.option('defaultExts', ['md', 'html', 'hbs']);
   this.option('destExt', '.html');
-  this.option('delims', {});
   this.option('viewEngine', '.*');
   this.option('engineDelims', null);
   this.option('layoutTag', 'body');
+  this.option('delims', ['<%', '%>']);
   this.option('layoutDelims', ['{%', '%}']);
   this.option('layoutExt', null);
   this.option('layout', null);
@@ -163,15 +165,15 @@ Engine.prototype.defaultOptions = function() {
  */
 
 Engine.prototype.defaultRoutes = function() {
-  this.route(/\.(?:md|hbs)$/, function (src, dest, next) {
-    parserMatter.parse(src, function (err) {
+  this.route(/\.(?:md|hbs)$/, function route(src, dest, next) {
+    parserMatter.parse(src, function(err) {
       if (err) return next(err);
       next();
     });
   });
 
-  this.route(/.*/, function (src, dest, next) {
-    parserNoop.parse(src, function (err) {
+  this.route(/.*/, function route(src, dest, next) {
+    parserNoop.parse(src, function(err) {
       if (err) return next(err);
       next();
     });
@@ -261,7 +263,7 @@ Engine.prototype.typeHelpers = function(type, plural) {
  * @api private
  */
 
-Engine.prototype.typeHelpersAsync = function (type, plural) {
+Engine.prototype.typeHelpersAsync = function(type, plural) {
   this.addHelperAsync(type, function (name, locals, next) {
     var last = _.last(arguments);
 
@@ -326,7 +328,7 @@ Engine.prototype.lazyrouter = function() {
  * @api private
  */
 
-Engine.prototype.middleware = function () {
+Engine.prototype.middleware = function() {
   debug.routes('#routes:middleware', arguments);
   this.lazyrouter();
   this.router.middleware.apply(this.router, arguments);
@@ -357,12 +359,12 @@ Engine.prototype.stage = function() {
  * @api private
  */
 
-Engine.prototype.route = function (filter) {
+Engine.prototype.route = function(filter) {
   debug.routes('#route', arguments);
   this.lazyrouter();
 
   /* if the filter is a string, turn it into a filter
-   * formatted as expected by Engines */
+   * formatted the way Engine expects it */
   if (typeof filter === 'string' || filter instanceof RegExp) {
     var str = filter;
     filter = function routeFilter(src, dest) {
@@ -389,7 +391,7 @@ Engine.prototype.route = function (filter) {
  * @api private
  */
 
-Engine.prototype.runStage = function (stage) {
+Engine.prototype.runStage = function(stage) {
   debug.routes('#use', arguments);
   this.lazyrouter();
   this.router.runStage.apply(this.router, arguments);
@@ -437,6 +439,7 @@ Engine.prototype.applyLayout = function(ext, template, locals) {
   debug.layout('#{lazyLayouts} ext: %s', ext);
 
   var layout = utils.pickLayout(template, locals, true);
+
   var layoutEngine = this.layoutSettings[path.extname(layout)];
   if (!layoutEngine) {
     layoutEngine = this.layoutSettings[ext];
@@ -484,12 +487,16 @@ Engine.prototype.applyLayout = function(ext, template, locals) {
  * @api private
  */
 
-Engine.prototype.makeDelims = function (arr, options) {
+Engine.prototype.makeDelims = function(arr, options) {
   var settings = extend({}, options, { escape: true });
-  var delims = this._.delims.templates(arr, settings);
 
+  if (!Array.isArray(arr)) {
+    throw new Error('Engine#makeDelims expects an array of delimiters.');
+  }
+
+  var delims = this._.delims.templates(arr, settings);
   debug.delims('#{making delims}: ', delims);
-  return extend(delims, options);
+  return extend({}, delims, options);
 };
 
 
@@ -516,7 +523,7 @@ Engine.prototype.makeDelims = function (arr, options) {
  * @api public
  */
 
-Engine.prototype.addDelims = function (ext, arr, layoutDelims, settings) {
+Engine.prototype.addDelims = function(ext, arr, layoutDelims, settings) {
   debug.delims('#{adding delims} ext: %s, delims:', ext, arr);
 
   if (Array.isArray(layoutDelims)) {
@@ -579,7 +586,7 @@ Engine.prototype.useDelims = function(ext) {
  * @api private
  */
 
-Engine.prototype.registerEngine = function (ext, fn, options) {
+Engine.prototype.registerEngine = function(ext, fn, options) {
   var opts = extend({ thisArg: this, bindFunctions: true }, options);
   if (ext[0] !== '.') {
     ext = '.' + ext;
@@ -612,9 +619,9 @@ Engine.prototype.registerEngine = function (ext, fn, options) {
  * @api public
  */
 
-Engine.prototype.engine = function (extension, fn, options) {
+Engine.prototype.engine = function(extension, fn, options) {
   debug.engine('#{engine} args: ', arguments);
-  utils.arrayify(extension).forEach(function (ext) {
+  utils.arrayify(extension).forEach(function(ext) {
     this.registerEngine(ext, fn, options);
   }.bind(this));
   return this;
@@ -635,7 +642,7 @@ Engine.prototype.engine = function (extension, fn, options) {
  * @api public
  */
 
-Engine.prototype.getEngine = function (ext) {
+Engine.prototype.getEngine = function(ext) {
   debug.engine('#{getEngine} ext: %s', ext);
   var engine = this._.engines.get(ext);
   engine.options.thisArg = null;
@@ -656,7 +663,7 @@ Engine.prototype.getEngine = function (ext) {
  * @api private
  */
 
-Engine.prototype.addMixin = function (name, fn) {
+Engine.prototype.addMixin = function(name, fn) {
   if (arguments.length === 1) {
     return this.cache.mixins[name];
   }
@@ -679,7 +686,7 @@ Engine.prototype.addMixin = function (name, fn) {
  * @api public
  */
 
-Engine.prototype.helper = function (ext) {
+Engine.prototype.helper = function(ext) {
   debug.helper('#{helper} ext: %s', ext);
   return this.getEngine(ext).helpers;
 };
@@ -697,7 +704,7 @@ Engine.prototype.helper = function (ext) {
  * @api public
  */
 
-Engine.prototype.helpers = function (ext) {
+Engine.prototype.helpers = function(ext) {
   debug.helper('#{helpers} ext: %s', ext);
   return this.getEngine(ext).helpers;
 };
@@ -716,7 +723,7 @@ Engine.prototype.helpers = function (ext) {
  * @api public
  */
 
-Engine.prototype.addHelper = function (name, fn, thisArg) {
+Engine.prototype.addHelper = function(name, fn, thisArg) {
   debug.helper('#{adding helper} name: %s', name);
   return this._.helpers.addHelper(name, fn, thisArg);
 };
@@ -732,7 +739,7 @@ Engine.prototype.addHelper = function (name, fn, thisArg) {
  * @api public
  */
 
-Engine.prototype.addHelperAsync = function (name, fn, thisArg) {
+Engine.prototype.addHelperAsync = function(name, fn, thisArg) {
   debug.helper('#{adding async helper} name: %s', name);
   return this._.asyncHelpers.addHelperAsync(name, fn, thisArg);
 };
@@ -747,7 +754,7 @@ Engine.prototype.addHelperAsync = function (name, fn, thisArg) {
  * @api private
  */
 
-Engine.prototype.trackType = function (plural, options) {
+Engine.prototype.trackType = function(plural, options) {
   debug.template('#{tracking type}: %s, %s', plural);
   var opts = extend({}, options);
   var type = this.templateType;
@@ -780,10 +787,10 @@ Engine.prototype.trackType = function (plural, options) {
  * @api private
  */
 
-Engine.prototype.getType = function (type) {
+Engine.prototype.getType = function(type) {
   var arr = this.templateType[type];
 
-  return arr.reduce(function (acc, key) {
+  return arr.reduce(function(acc, key) {
     acc[key] = this.cache[key];
     return acc;
   }.bind(this), {});
@@ -878,7 +885,7 @@ Engine.prototype.typeMiddleware = function(type, middleware) {
  * @return {Object}
  */
 
-Engine.prototype.load = function (plural, options) {
+Engine.prototype.load = function(plural, options) {
   debug.template('#{load} args:', arguments);
 
   var opts = extend({}, this.options, options);
@@ -917,7 +924,7 @@ Engine.prototype.load = function (plural, options) {
  * @return {Object} Normalized template.
  */
 
-Engine.prototype.normalize = function (plural, template, options) {
+Engine.prototype.normalize = function(plural, template, options) {
   debug.template('#{normalize} args:', arguments);
   this.lazyrouter();
 
@@ -959,7 +966,7 @@ Engine.prototype.normalize = function (plural, template, options) {
  * @return {Object} Normalized template object.
  */
 
-Engine.prototype.format = function (key, value, locals) {
+Engine.prototype.format = function(key, value, locals) {
   debug.template('#{format} args:', arguments);
 
   // Temporarily load a template onto the cache to normalize it.
@@ -982,7 +989,7 @@ Engine.prototype.format = function (key, value, locals) {
  * @api private
  */
 
-Engine.prototype.mergePartials = function (ext, locals, combine) {
+Engine.prototype.mergePartials = function(ext, locals, combine) {
   debug.template('#{merging partials} args:', arguments);
 
   combine = combine || this.option('mergePartials');
@@ -1017,7 +1024,7 @@ Engine.prototype.mergePartials = function (ext, locals, combine) {
  * @api public
  */
 
-Engine.prototype.preprocess = function (template, locals, async) {
+Engine.prototype.preprocess = function(template, locals, async) {
   if (typeof locals === 'boolean') {
     async = locals;
     locals = {};
@@ -1069,6 +1076,7 @@ Engine.prototype.preprocess = function (template, locals, async) {
   // Ensure that delimiters are cached, so we
   // can pass to the engine
   if (delims) this.addDelims(ext, delims);
+
   if (utils.isString(engine)) {
     if (engine[0] !== '.') {
       engine = '.' + engine;
@@ -1102,7 +1110,7 @@ Engine.prototype.preprocess = function (template, locals, async) {
  * @api public
  */
 
-Engine.prototype.render = function (content, locals, cb) {
+Engine.prototype.render = function(content, locals, cb) {
   var self = this;
 
   if (typeof locals === 'function') {
@@ -1144,7 +1152,7 @@ Engine.prototype.render = function (content, locals, cb) {
  * @api public
  */
 
-Engine.prototype.renderSync = function (content, locals) {
+Engine.prototype.renderSync = function(content, locals) {
   var ext = this.option('viewEngine');
   var engine = this.getEngine(ext);
 
@@ -1176,7 +1184,7 @@ Engine.prototype.renderSync = function (content, locals) {
  * @api private
  */
 
-Engine.prototype.stashLocals = function (name, template, locals) {
+Engine.prototype.stashLocals = function(name, template, locals) {
   template._locals = template._locals || {};
   template._locals[name] = locals;
   return template;
@@ -1192,7 +1200,7 @@ Engine.prototype.stashLocals = function (name, template, locals) {
  * @return {Object}
  */
 
-Engine.prototype.mergeFn = function (template, locals, async) {
+Engine.prototype.mergeFn = function(template, locals, async) {
   var data = this.get('data');
   var o = {};
 

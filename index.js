@@ -125,10 +125,9 @@ Engine.prototype.defaultOptions = function() {
   this.option('ext', '*');
   this.option('defaultExts', ['md', 'html', 'hbs']);
   this.option('destExt', '.html');
-  this.option('viewEngine', '.*');
-  this.option('engineDelims', null);
-  this.option('layoutTag', 'body');
   this.option('delims', ['<%', '%>']);
+  this.option('viewEngine', '.*');
+  this.option('layoutTag', 'body');
   this.option('layoutDelims', ['{%', '%}']);
   this.option('layoutExt', null);
   this.option('layout', null);
@@ -491,7 +490,7 @@ Engine.prototype.makeDelims = function(arr, options) {
   var settings = extend({}, options, { escape: true });
 
   if (!Array.isArray(arr)) {
-    throw new Error('Engine#makeDelims expects an array of delimiters.');
+    return extend(options, this.getDelims('*'));
   }
 
   var delims = this._.delims.templates(arr, settings);
@@ -527,7 +526,7 @@ Engine.prototype.addDelims = function(ext, arr, layoutDelims, settings) {
   debug.delims('#{adding delims} ext: %s, delims:', ext, arr);
 
   if (Array.isArray(layoutDelims)) {
-    this.lazyLayouts(ext, settings || {});
+    this.lazyLayouts(ext, {layoutDelims: layoutDelims}, settings || {});
   } else {
     settings = layoutDelims;
     layoutDelims = this.option('layoutDelims');
@@ -596,7 +595,7 @@ Engine.prototype.registerEngine = function(ext, fn, options) {
   debug.engine('#{register} ext: %s', ext);
 
   this._.engines.register(ext, fn, opts);
-  if (opts.delims) {
+  if (opts.delims && !Boolean(this.delims[ext])) {
     this.addDelims(ext, opts.delims);
     this.engines[ext].delims = this.getDelims(ext);
   }
@@ -1031,6 +1030,7 @@ Engine.prototype.preprocess = function(template, locals, async) {
   }
 
   locals = locals || {};
+
   var state = {};
   var engine = locals.engine;
   var delims = locals.delims;
@@ -1053,6 +1053,7 @@ Engine.prototype.preprocess = function(template, locals, async) {
     template = this.format(utils.generateId(), template, locals);
   }
 
+  // console.log(this);
   if (utils.isObject(template)) {
     content = template.content;
     locals = this.mergeFn(template, locals, async);
@@ -1074,8 +1075,10 @@ Engine.prototype.preprocess = function(template, locals, async) {
   }
 
   // Ensure that delimiters are cached, so we
-  // can pass to the engine
-  if (delims) this.addDelims(ext, delims);
+  // can pass them to the engine
+  if (Array.isArray(delims)) {
+    this.addDelims(ext, delims);
+  }
 
   if (utils.isString(engine)) {
     if (engine[0] !== '.') {
@@ -1096,7 +1099,6 @@ Engine.prototype.preprocess = function(template, locals, async) {
   state.delims = delims;
   state.locals = locals;
   state.locals.path = template.path;
-
   return state;
 };
 
@@ -1130,7 +1132,11 @@ Engine.prototype.render = function(content, locals, cb) {
 
   try {
     engine.render(content, locals, function (err, res) {
-      if (err) return cb.call(self, err);
+      if (err) {
+        console.log(chalk.red(err));
+        cb.call(self, err);
+        return;
+      }
 
       self._.asyncHelpers.resolve(res, function (err, res) {
         if (err) return cb.call(self, err);
@@ -1138,6 +1144,7 @@ Engine.prototype.render = function(content, locals, cb) {
       });
     });
   } catch (err) {
+    console.log(chalk.red(err));
     cb.call(self, err);
   }
 };
@@ -1170,6 +1177,7 @@ Engine.prototype.renderSync = function(content, locals) {
   try {
     return engine.renderSync(content, locals);
   } catch (err) {
+    console.log(chalk.red(err));
     return err;
   }
 };

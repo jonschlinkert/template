@@ -62,7 +62,6 @@ Engine.extend = Cache.extend;
 Engine.prototype.initEngine = function() {
   this.engines = this.engines || {};
   this.delims = this.delims || {};
-  this._stack = [];
 
   this._ = {};
   this.templateType = {};
@@ -311,8 +310,8 @@ Engine.prototype.typeHelpersAsync = function (type, plural) {
  */
 
 Engine.prototype.lazyrouter = function() {
-  if (!this._router) {
-    this._router = new Router({
+  if (!this.router) {
+    this.router = new Router({
       caseSensitive: this.enabled('case sensitive routing'),
       strict: this.enabled('strict routing')
     });
@@ -330,7 +329,7 @@ Engine.prototype.lazyrouter = function() {
 Engine.prototype.middleware = function () {
   debug.routes('#routes:middleware', arguments);
   this.lazyrouter();
-  this._router.middleware.apply(this._router, arguments);
+  this.router.middleware.apply(this.router, arguments);
 };
 
 
@@ -345,7 +344,7 @@ Engine.prototype.middleware = function () {
 Engine.prototype.stage = function() {
   debug.routes('#routes:stage', arguments);
   this.lazyrouter();
-  this._router.stage.apply(this._router, arguments);
+  this.router.stage.apply(this.router, arguments);
 };
 
 
@@ -376,7 +375,7 @@ Engine.prototype.route = function (filter) {
   var args = [filter].concat([].slice.call(arguments, 1));
   debug.routes('#route', args);
 
-  this._router.route.apply(this._router, args);
+  this.router.route.apply(this.router, args);
   return this;
 };
 
@@ -390,10 +389,10 @@ Engine.prototype.route = function (filter) {
  * @api private
  */
 
-Engine.prototype.use = function (stage) {
+Engine.prototype.runStage = function (stage) {
   debug.routes('#use', arguments);
   this.lazyrouter();
-  this._router.use.apply(this._router, arguments);
+  this.router.runStage.apply(this.router, arguments);
   return this;
 };
 

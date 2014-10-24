@@ -1,3 +1,12 @@
+/*!
+ * engine <https://github.com/jonschlinkert/engine>
+ *
+ * Copyright (c) 2014 Jon Schlinkert, Brian Woodward, contributors.
+ * Licensed under the MIT license.
+ */
+
+'use strict';
+
 var should = require('should');
 var Engine = require('..');
 var template = null;
@@ -5,11 +14,12 @@ var template = null;
 
 // Router tests from kerouac
 describe('engine router', function() {
+  beforeEach(function () {
+    template = new Engine();
+  });
 
   describe('with two simple routes', function() {
     beforeEach(function () {
-      template = new Engine();
-
       template.route('/foo', function foo (page, key, next) {
         page.routedToFoo = true;
         next();
@@ -22,7 +32,7 @@ describe('engine router', function() {
     });
 
     it('should have routes for default template types.', function() {
-      template._router._routes.should.have.length(7);
+      template.router.stack.should.have.length(7);
     });
 
     it('should dispatch /foo', function(done) {
@@ -65,22 +75,19 @@ describe('engine router', function() {
 
   describe('with two simple stages', function() {
     beforeEach(function () {
-      template = new Engine();
-
-      template.use('first', function first (page, key, next) {
+      template.runStage('first', function first (page, key, next) {
         page.stageCalledFirst = true;
         next();
       });
 
-      template.use('second', function second (page, key, next) {
+      template.runStage('second', function second (page, key, next) {
         page.stageCalledSecond = true;
         next();
       });
     });
 
     it('should have stages for default template types.', function() {
-      // template._router._routes.should.have.length(7);
-      Object.keys(template._router._stages).should.have.length(2);
+      Object.keys(template.router.stages).should.have.length(2);
     });
 
     it('should dispatch first', function(done) {
@@ -124,8 +131,6 @@ describe('engine router', function() {
   describe('with route containing multiple callbacks', function() {
 
     beforeEach(function () {
-      template = new Engine();
-
       template.route('/foo',
         function(page, key, next) {
           page.routedTo = [ '1' ];
@@ -161,7 +166,6 @@ describe('engine router', function() {
 
   describe('when routes have multiple callbacks, some of which are skipped:', function() {
     beforeEach(function () {
-      template = new Engine();
 
       template.route('/foo',
         function(page, key, next) {
@@ -202,7 +206,6 @@ describe('engine router', function() {
 
   describe('when routes are parameterized:', function() {
     beforeEach(function () {
-      template = new Engine();
 
       template.route('/blog/:year/:month/:day/:slug', function(page, key, next) {
         page.gotParams = [];
@@ -238,7 +241,6 @@ describe('engine router', function() {
 
   describe('when routes encounter errors:', function() {
     beforeEach(function () {
-      template = new Engine();
 
       template.route('/foo', function(page, key, next) {
         next(new Error('something went wrong'));
@@ -259,7 +261,6 @@ describe('engine router', function() {
 
   describe('with route that throws an exception', function() {
     beforeEach(function () {
-      template = new Engine();
 
       template.route('/foo', function(page, key, next) {
         throw new Error('something went horribly wrong');
@@ -280,7 +281,6 @@ describe('engine router', function() {
 
   describe('when routes have error handling that is not called:', function() {
     beforeEach(function () {
-      template = new Engine();
 
       template.route('/foo',
         function(page, key, next) {
@@ -315,7 +315,6 @@ describe('engine router', function() {
 
   describe('with route containing error handling that is called', function() {
     beforeEach(function () {
-      template = new Engine();
 
       template.route('/foo',
         function(page, key, next) {
@@ -350,7 +349,6 @@ describe('engine router', function() {
 
   describe('with route containing error handling that is called due to an exception', function() {
     beforeEach(function () {
-      template = new Engine();
 
       template.route('/foo',
         function(page, key, next) {

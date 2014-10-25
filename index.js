@@ -164,16 +164,24 @@ Engine.prototype.defaultOptions = function() {
  */
 
 Engine.prototype.defaultRoutes = function() {
-  this.route(/\.(?:md|hbs)$/, function route(src, dest, next) {
+  this.route(/\.(md|hbs)$/, function route(src, dest, next) {
     parserMatter.parse(src, function(err) {
-      if (err) return next(err);
+      if (err) {
+        console.log('route [md|hbs]:', chalk.red(err));
+        next(err);
+        return;
+      }
       next();
     });
   });
 
   this.route(/.*/, function route(src, dest, next) {
     parserNoop.parse(src, function(err) {
-      if (err) return next(err);
+      if (err) {
+        console.log('route [md|hbs]:', chalk.red(err));
+        next(err);
+        return;
+      }
       next();
     });
   });
@@ -293,6 +301,7 @@ Engine.prototype.typeHelpersAsync = function(type, plural) {
       debug.helper('#{async helper rendering}:', content);
 
       if (err) {
+        console.log('asyncHelpers:', chalk.red(err));
         next(err);
         return;
       }

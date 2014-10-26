@@ -16,17 +16,21 @@ describe('engine create:', function () {
     template = new Engine();
   });
 
+
   describe('.create():', function () {
     it('should create a new template `type`:', function () {
       template.create('include', 'includes');
-
-      template.should.have.property('include');
-      template.should.have.property('includes');
+      template.should.have.properties('include', 'includes');
     });
   });
 
   describe('when a new template type is created:', function () {
-    it('should add templates registered for that type to its corresponding (plural) object:', function () {
+    it('should add methods to the cache for that type:', function () {
+      template.create('apple', 'apples');
+      template.should.have.properties('apple', 'apples');
+    });
+
+    it('should add templates to the cache for a given template type:', function () {
       template.create('apple', 'apples');
 
       template.apple('a', 'one');
@@ -35,6 +39,39 @@ describe('engine create:', function () {
 
       template.cache.should.have.property('apples');
       template.cache.apples.should.have.properties('a', 'b', 'c');
+    });
+
+    describe('.decorate()', function () {
+      /* setup */
+      beforeEach(function () {
+        template = new Engine();
+
+        // create some custom template types
+        template.create('block', 'blocks', { isLayout: true });
+        template.create('include', 'includes', { isPartial: true });
+        template.create('post', 'posts', { isRenderable: true });
+        template.create('doc', 'docs', { isRenderable: true });
+
+        // intentionally create dupes using different renderable types
+        template.page('aaa.md', '<%= name %>', {name: 'Jon Schlinkert'});
+        template.post('aaa.md', '<%= name %>', {name: 'Brian Woodward'});
+        template.docs('aaa.md', '<%= name %>', {name: 'Halle Nicole'});
+
+        template.include('sidebar.md', '<nav>sidebar</nav>');
+        template.block('default.md', 'abc {% body %} xyz');
+      });
+
+      it('should decorate the type with a `get` method:', function () {
+        template.should.have.properties(['getPage', 'getPost', 'getDoc', 'getInclude']);
+      });
+
+      it.skip('should decorate the type with a `set` method:', function () {
+        template.should.have.properties(['setPage', 'setPost', 'setDoc', 'setInclude']);
+      });
+
+      it('should decorate the type with a `render` method:', function () {
+        template.should.have.properties(['renderPage', 'renderPost', 'renderDoc']);
+      });
     });
   });
 

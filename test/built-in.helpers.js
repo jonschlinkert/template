@@ -12,11 +12,14 @@ var should = require('should');
 var Engine = require('..');
 var template = new Engine();
 var consolidate = require('consolidate');
+var handlebars = consolidate.handlebars;
+var lodash = consolidate.lodash;
+var swig = consolidate.swig;
 var async = require('async');
 
 
 describe('generated helpers:', function () {
-  describe('build-in engines:', function () {
+  describe('built-in engines:', function () {
     it('should use the `partial` helper with a built-in engine.', function (done) {
       template.partial('a.md', '---\nname: "AAA"\n---\n<%= name %>', {name: 'BBB'});
       var file = {path: 'a.md', content: 'foo <%= partial("a.md") %> bar'};
@@ -43,7 +46,7 @@ describe('generated helpers:', function () {
 
   describe('user-defined engines:', function () {
     it('should use the `partial` helper with handlebars.', function (done) {
-      template.engine('hbs', consolidate.handlebars);
+      template.engine('hbs', handlebars);
 
       template.partial('title.hbs', '<title>{{name}}</title>', {name: 'BBB'});
       template.page('a.hbs', {path: 'a.hbs', content: 'foo {{{partial "title.hbs" this}}} bar'});
@@ -56,10 +59,10 @@ describe('generated helpers:', function () {
     });
 
     it('should use the `partial` helper with any engine.', function (done) {
-      template.engine('hbs', consolidate.handlebars);
-      template.engine('md', consolidate.handlebars);
-      template.engine('swig', consolidate.swig);
-      template.engine('tmpl', consolidate.lodash);
+      template.engine('hbs', handlebars);
+      template.engine('md', handlebars);
+      template.engine('swig', swig);
+      template.engine('tmpl', lodash);
 
       template.partial('a.hbs', '---\nname: "AAA"\n---\n<title>{{name}}</title>', {name: 'BBB'});
       template.page({path: 'a.hbs', content: '<title>{{author}}</title>', author: 'Halle Nicole'});

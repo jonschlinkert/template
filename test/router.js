@@ -40,7 +40,7 @@ describe('engine router', function() {
       page.path = '/foo'
 
       template.middleware(page, page.path, function(err) {
-        if (err) { return done(err); }
+        if (err) return done(err);
         page.routedToFoo.should.be.true;
         (typeof page.routedToBar == 'undefined').should.be.true;
         done();
@@ -49,10 +49,11 @@ describe('engine router', function() {
 
     it('should dispatch /bar', function(done) {
       var page = {};
-      page.path = '/bar'
+      page.path = '/bar';
+      page.content = 'this is content';
 
       template.middleware(page, page.path, function(err) {
-        if (err) { return done(err); }
+        if (err) return done(err);
         (typeof page.routedToFoo == 'undefined').should.be.true;
         page.routedToBar.should.be.true;
         done();
@@ -64,7 +65,7 @@ describe('engine router', function() {
       page.path = '/baz'
 
       template.middleware(page, page.path, function(err) {
-        if (err) { return done(err); }
+        if (err) return done(err);
         (typeof page.routedToFoo == 'undefined').should.be.true;
         (typeof page.routedToBar == 'undefined').should.be.true;
         done();
@@ -95,7 +96,7 @@ describe('engine router', function() {
       page.path = '/foo'
 
       template.stage('first', page, page.path, function(err) {
-        if (err) { return done(err); }
+        if (err) return done(err);
         page.stageCalledFirst.should.be.true;
         (typeof page.stageCalledSecond == 'undefined').should.be.true;
         done();
@@ -107,7 +108,7 @@ describe('engine router', function() {
       page.path = '/bar'
 
       template.stage('second', page, page.path, function(err) {
-        if (err) { return done(err); }
+        if (err) return done(err);
         (typeof page.stageCalledFirst == 'undefined').should.be.true;
         page.stageCalledSecond.should.be.true;
         done();
@@ -119,7 +120,7 @@ describe('engine router', function() {
       page.path = '/baz'
 
       template.stage('third', page, page.path, function(err) {
-        if (err) { return done(err); }
+        if (err) return done(err);
         (typeof page.stageCalledFirst == 'undefined').should.be.true;
         (typeof page.stageCalledSecond == 'undefined').should.be.true;
         done();
@@ -152,7 +153,7 @@ describe('engine router', function() {
       page.path = '/foo'
 
       template.middleware(page, page.path, function(err) {
-        if (err) { return done(err); }
+        if (err) return done(err);
         page.routedTo.should.be.an.instanceOf(Array);
         page.routedTo.should.have.length(3);
         page.routedTo[0].should.equal('1');
@@ -192,7 +193,7 @@ describe('engine router', function() {
       page.path = '/foo'
 
       template.middleware(page, page.path, function(err) {
-        if (err) { return done(err); }
+        if (err) return done(err);
         page.routedTo.should.be.an.instanceOf(Array);
         page.routedTo.should.have.length(3);
         page.routedTo[0].should.equal('a1');
@@ -227,7 +228,7 @@ describe('engine router', function() {
       page.path = '/blog/2013/04/20/foo'
 
       template.middleware(page, page.path, function(err) {
-        if (err) { return done(err); }
+        if (err) return done(err);
         page.gotParams.should.have.length(4);
         page.gotParams[0].should.equal('2013');
         page.gotParams[1].should.equal('04');
@@ -303,7 +304,7 @@ describe('engine router', function() {
       page.path = '/foo'
 
       template.middleware(page, page.path, function(err) {
-        if (err) { return done(err); }
+        if (err) return done(err);
         page.routedTo.should.be.an.instanceOf(Array);
         page.routedTo.should.have.length(2);
         page.routedTo[0].should.equal('1');
@@ -337,7 +338,7 @@ describe('engine router', function() {
       page.path = '/foo'
 
       template.middleware(page, page.path, function(err) {
-        if (err) { return done(err); }
+        if (err) return done(err);
         page.routedTo.should.be.an.instanceOf(Array);
         page.routedTo.should.have.length(2);
         page.routedTo[0].should.equal('1');
@@ -372,7 +373,7 @@ describe('engine router', function() {
       page.path = '/foo'
 
       template.middleware(page, page.path, function(err) {
-        if (err) { return done(err); }
+        if (err) return done(err);
         page.routedTo.should.be.an.instanceOf(Array);
         page.routedTo.should.have.length(2);
         page.routedTo[0].should.equal('1');

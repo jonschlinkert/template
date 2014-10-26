@@ -133,6 +133,8 @@ Engine.prototype.defaultOptions = function() {
   this.option('layoutExt', null);
   this.option('layout', null);
 
+  this.enable('built-in:engines');
+
   this.option('preprocess', true);
   this.option('preferLocals', false);
   this.option('partialLayout', null);
@@ -153,7 +155,7 @@ Engine.prototype.defaultOptions = function() {
 
 
 /**
- * Load default middleware
+ * Load default routes / middleware
  *
  *     - `.md`: parse front matter in markdown files
  *     - `.hbs`: parse front matter in handlebars templates
@@ -179,7 +181,7 @@ Engine.prototype.defaultRoutes = function() {
   this.route(/.*/, function route(src, dest, next) {
     parserNoop.parse(src, function(err) {
       if (err) {
-        console.log('route [md|hbs]:', chalk.red(err));
+        console.log('route [*]:', chalk.red(err));
         next(err);
         return;
       }
@@ -201,17 +203,16 @@ Engine.prototype.defaultRoutes = function() {
  */
 
 Engine.prototype.defaultEngines = function() {
-  var exts = this.option('defaultExts');
-
-  this.engine(exts, engineLodash, {
-    layoutDelims: ['{%', '%}'],
-    destExt: '.html'
-  });
-
-  this.engine('*', engineNoop, {
-    layoutDelims: ['{%', '%}'],
-    destExt: '.html'
-  });
+  if (this.enabled('built-in:engines')) {
+    this.engine(this.option('defaultExts'), engineLodash, {
+      layoutDelims: ['{%', '%}'],
+      destExt: '.html'
+    });
+    this.engine('*', engineNoop, {
+      layoutDelims: ['{%', '%}'],
+      destExt: '.html'
+    });
+  }
 };
 
 
@@ -821,7 +822,7 @@ Engine.prototype.getType = function(kind) {
  */
 
 Engine.prototype.create = function(subtype, plural, options, fns) {
-  debug.template('#{creating template}: %s', subtype);
+  debug.template('#{creating template subtype}: %s', subtype);
   var args = [].slice.call(arguments);
 
   if (typeof plural !== 'string') {
@@ -835,76 +836,90 @@ Engine.prototype.create = function(subtype, plural, options, fns) {
     options = {};
   }
 
-  var middleware = utils.filterMiddleware(fns, args);
-
+  this.typeMiddleware(plural, utils.filterMiddleware(fns, args));
   this.cache[plural] = this.cache[plural] || {};
   this.trackType(plural, options);
-  this.typeMiddleware(plural, middleware);
 
-  // Add convenience methods.
-  this.decorate(plural, subtype, options);
+  // Add convenience methods for this sub-type
+  this.decorate(subtype, plural, options);
 
+  // Create a sync helper for this type
   if (!hasOwn(this._.helpers, subtype)) {
     this.typeHelpers(subtype, plural);
   }
 
+  // Create an async helper for this type
   if (!hasOwn(this._.asyncHelpers, subtype)) {
     this.typeHelpersAsync(subtype, plural);
   }
-
   return this;
 };
 
 
 /**
- * Decorate a new template type with convenience methods
- * that are specified to that type.
+ * Decorate a new template subtype with convenience methods.
  *
- * @param  {String} `type` Template type used for this middleware.
- * @param  {Function|Array} `middleware` Stack of middleware to run for this type.
+ * @param  {String} `subtype`
+ * @param  {String} `plural`
+ * @param  {Object} `options`
+ * @api private
  */
 
-Engine.prototype.decorate = function(plural, type, options) {
+Engine.prototype.decorate = function(subtype, plural, options) {
+  debug.template('#{decorating template subtype}:', subtype);
   options = extend({}, options);
 
-  mixin(type, function (key, value, locals, opt) {
-    debug.template('#{creating template type}:', type);
+  /**
+   * Add a method to `Engine` for `subtype`
+   */
+
+  mixin(subtype, function (key, value, locals, opt) {
     this[plural].apply(this, arguments);
   });
 
+  /**
+   * Add a method to `Engine` for `plural`
+   */
+
   mixin(plural, function (key, value, locals, opt) {
-    debug.template('#{creating template plural}:', plural);
     this.load(plural, options).apply(this, arguments);
   });
 
-  mixin(decorate.methodName('get', type), function (key) {
+  /**
+   * Add a `get` method to `Engine` for `subtype`
+   */
+
+  mixin(decorate.methodName('get', subtype), function (key) {
     return this.cache[plural][key];
   });
 
+  /**
+   * Add a `render` method to `Engine` for `subtype`
+   */
 
   if (options.isRenderable) {
-    mixin(decorate.methodName('render', type), function (key) {
-      return this.renderType('renderable', type);
+    mixin(decorate.methodName('render', subtype), function (key) {
+      return this.renderType('renderable', subtype);
     });
   }
 };
 
 
 /**
- * Add type middleware to the router for the specific type.
+ * Add default middleware to the router for the specific type.
  *
- * @param  {String} `type` Template type used for this middleware.
- * @param  {Function|Array} `middleware` Stack of middleware to run for this type.
+ * @param  {String} `plural` Template type used for this middleware.
+ * @param  {Function|Array} `stack` Middleware stack to run for this type.
+ * @api private
  */
 
-Engine.prototype.typeMiddleware = function(type, middleware) {
-  var filter = function (src, dest) {
+Engine.prototype.typeMiddleware = function(plural, stack) {
+  this.route(function (src, dest) {
     if (!src || !src.options) {
       return false;
     }
-    return src.options.type === type;
-  };
-  this.route(filter, middleware);
+    return src.options.type === plural;
+  }, stack);
 };
 
 

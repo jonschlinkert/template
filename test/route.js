@@ -8,9 +8,9 @@
 'use strict';
 
 var consolidate = require('consolidate');
+var parser = require('parser-front-matter');
 var forOwn = require('for-own');
 var should = require('should');
-
 var Engine = require('..');
 var template = null;
 
@@ -20,6 +20,13 @@ describe('engine route', function () {
   describe('.middleware', function () {
     beforeEach(function () {
       template = new Engine();
+
+      template.route(/\.*/, function (src, dest, next) {
+        parser.parse(src, function (err) {
+          if (err) return next(err);
+          next();
+        });
+      });
     });
 
     it('should run default routes', function (done) {

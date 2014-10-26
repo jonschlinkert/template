@@ -7,6 +7,8 @@
 
 'use strict';
 
+// process.env.DEBUG = 'engine:*';
+
 var _ = require('lodash');
 var path = require('path');
 var chalk = require('chalk');
@@ -22,6 +24,7 @@ var engineNoop = require('engine-noop');
 var parserMatter = require('parser-front-matter');
 var parserNoop = require('parser-noop');
 var Loader = require('load-templates');
+var decorate = require('./lib/decorate');
 var utils = require('./lib/utils');
 var debug = require('./lib/debug');
 var extend = _.extend;
@@ -44,7 +47,7 @@ var extend = _.extend;
  */
 
 var Engine = module.exports = Cache.extend({
-  constructor: function (options) {
+  constructor: function(options) {
     Engine.__super__.constructor.call(this, options);
     this.initEngine();
   }
@@ -62,7 +65,6 @@ Engine.extend = Cache.extend;
 Engine.prototype.initEngine = function() {
   this.engines = this.engines || {};
   this.delims = this.delims || {};
-  this._stack = [];
 
   this._ = {};
   this.templateType = {};
@@ -124,13 +126,14 @@ Engine.prototype.defaultOptions = function() {
   this.option('ext', '*');
   this.option('defaultExts', ['md', 'html', 'hbs']);
   this.option('destExt', '.html');
-  this.option('delims', {});
-  this.option('viewEngine', '.*');
-  this.option('engineDelims', null);
+  this.option('delims', ['<%', '%>']);
+  this.option('viewEngine', '*');
   this.option('layoutTag', 'body');
   this.option('layoutDelims', ['{%', '%}']);
   this.option('layoutExt', null);
   this.option('layout', null);
+
+  this.enable('built-in:engines');
 
   this.option('preprocess', true);
   this.option('preferLocals', false);
@@ -152,28 +155,36 @@ Engine.prototype.defaultOptions = function() {
 
 
 /**
- * Load default middleware
+ * Load default routes / middleware
  *
- *     - `.md`: parse front matter in markdown files
- *     - `.hbs`: parse front matter in handlebars templates
- *     - `.*`: use the noop engine for any unclaimed extensions. This just
- *             passes files through but adds expected properties to the
- *             template object if they don't already exist.
+ *   - `.md`: parse front matter in markdown files
+ *   - `.hbs`: parse front matter in handlebars templates
+ *   - `.*`: use the noop engine for any unclaimed extensions. This just
+ *           passes files through but adds expected properties to the
+ *           template object if they don't already exist.
  *
  * @api private
  */
 
 Engine.prototype.defaultRoutes = function() {
-  this.route(/\.(?:md|hbs)$/, function (value, key, next) {
-    parserMatter.parse(value, function (err) {
-      if (err) return next(err);
+  this.route(/\.(md|hbs)$/, function route(src, dest, next) {
+    parserMatter.parse(src, function(err) {
+      if (err) {
+        console.log('route [md|hbs]:', chalk.red(err));
+        next(err);
+        return;
+      }
       next();
     });
   });
 
-  this.route(/.*/, function (value, key, next) {
-    parserNoop.parse(value, function (err) {
-      if (err) return next(err);
+  this.route(/.*/, function route(src, dest, next) {
+    parserNoop.parse(src, function(err) {
+      if (err) {
+        console.log('route [*]:', chalk.red(err));
+        next(err);
+        return;
+      }
       next();
     });
   });
@@ -192,25 +203,24 @@ Engine.prototype.defaultRoutes = function() {
  */
 
 Engine.prototype.defaultEngines = function() {
-  var exts = this.option('defaultExts');
-
-  this.engine(exts, engineLodash, {
-    layoutDelims: ['{%', '%}'],
-    destExt: '.html'
-  });
-
-  this.engine('*', engineNoop, {
-    layoutDelims: ['{%', '%}'],
-    destExt: '.html'
-  });
+  if (this.enabled('built-in:engines')) {
+    this.engine(this.option('defaultExts'), engineLodash, {
+      layoutDelims: ['{%', '%}'],
+      destExt: '.html'
+    });
+    this.engine('*', engineNoop, {
+      layoutDelims: ['{%', '%}'],
+      destExt: '.html'
+    });
+  }
 };
 
 
 /**
  * Register default template delimiters.
  *
- *    - engine delimiters: Delimiters used in templates process by [engine-lodash], the default engine.
- *    - layout delimiters: Delimiters used in layouts.
+ *   - engine delimiters: Delimiters used in templates process by [engine-lodash], the default engine.
+ *   - layout delimiters: Delimiters used in layouts.
  *
  * @api private
  */
@@ -262,11 +272,10 @@ Engine.prototype.typeHelpers = function(type, plural) {
  * @api private
  */
 
-Engine.prototype.typeHelpersAsync = function (type, plural) {
+Engine.prototype.typeHelpersAsync = function(type, plural) {
   this.addHelperAsync(type, function (name, locals, next) {
+    debug.helper('#{creating async type helper}:', name);
     var last = _.last(arguments);
-
-    debug.helper('#{async helper name}:', name);
 
     if (typeof locals === 'function') {
       next = locals;
@@ -286,13 +295,13 @@ Engine.prototype.typeHelpersAsync = function (type, plural) {
       return;
     }
 
-    partial.locals = extend({}, partial.locals, locals);
+    partial.locals = extend({}, partial.locals, partial.data, locals);
     debug.helper('#{async helper partial}:', partial);
 
-    this.render(partial, {}, function (err, content) {
+    this.render(partial, partial.locals, function (err, content) {
       debug.helper('#{async helper rendering}:', content);
-
       if (err) {
+        console.log('asyncHelpers:', chalk.red(err));
         next(err);
         return;
       }
@@ -311,8 +320,8 @@ Engine.prototype.typeHelpersAsync = function (type, plural) {
  */
 
 Engine.prototype.lazyrouter = function() {
-  if (!this._router) {
-    this._router = new Router({
+  if (!this.router) {
+    this.router = new Router({
       caseSensitive: this.enabled('case sensitive routing'),
       strict: this.enabled('strict routing')
     });
@@ -327,15 +336,30 @@ Engine.prototype.lazyrouter = function() {
  * @api private
  */
 
-Engine.prototype.middleware = function () {
+Engine.prototype.middleware = function() {
   debug.routes('#routes:middleware', arguments);
   this.lazyrouter();
-  this._router.middleware.apply(this._router, arguments);
+  this.router.middleware.apply(this.router, arguments);
 };
 
 
 /**
- * Set a router to be called.
+ * Dispatch a template through a middleware stack for a specific stage
+ *
+ * @param {String} `stage` Name of the stage to use
+ * @param  {arguments} `arguments` Any arguments that should be passed through the middleware stack
+ * @api private
+ */
+
+Engine.prototype.stage = function() {
+  debug.routes('#routes:stage', arguments);
+  this.lazyrouter();
+  this.router.stage.apply(this.router, arguments);
+};
+
+
+/**
+ * Set a route to be called.
  *
  * @param  {Function|String} `filter` String or filter function to get the middleware stack to run.
  * @param  {Function|Array}  `middleware` Middleware stack to run for the given route.
@@ -343,25 +367,42 @@ Engine.prototype.middleware = function () {
  * @api private
  */
 
-Engine.prototype.route = function (filter) {
+Engine.prototype.route = function(filter) {
   debug.routes('#route', arguments);
   this.lazyrouter();
 
   /* if the filter is a string, turn it into a filter
-   * formatted as expected by Engines */
+   * formatted the way Engine expects it */
   if (typeof filter === 'string' || filter instanceof RegExp) {
     var str = filter;
-    filter = function routeFilter(value, key) {
+    filter = function routeFilter(src, dest) {
       debug.middleware('#route:filter', str, arguments);
       this.createPathRegex(str);
-      return this.matchStr(key);
+      return this.matchStr(src.path);
     };
   }
 
   var args = [filter].concat([].slice.call(arguments, 1));
   debug.routes('#route', args);
 
-  this._router.route.apply(this._router, args);
+  this.router.route.apply(this.router, args);
+  return this;
+};
+
+
+/**
+ * Set middleware to be used for a specific stage
+ *
+ * @param  {String} `stage` Name of the middleware stack to add to.
+ * @param  {Function|Array}  `middleware` Middleware stack to run for the given stage.
+ * @return {Object} `Engine` to enable chaining.
+ * @api private
+ */
+
+Engine.prototype.runStage = function(stage) {
+  debug.routes('#use', arguments);
+  this.lazyrouter();
+  this.router.runStage.apply(this.router, arguments);
   return this;
 };
 
@@ -386,7 +427,6 @@ Engine.prototype.lazyLayouts = function(ext, options) {
       delims: opts.layoutDelims,
       layouts: opts.layouts,
       locals: opts.locals,
-      ext: opts.layoutExt,
       tag: opts.layoutTag,
     });
   }
@@ -405,9 +445,12 @@ Engine.prototype.lazyLayouts = function(ext, options) {
 Engine.prototype.applyLayout = function(ext, template, locals) {
   debug.layout('#{lazyLayouts} ext: %s', ext);
 
-  var layout = utils.pickLayout(template, locals, true);
+  var layout = utils.determineLayout(template, locals, true);
   var layoutEngine = this.layoutSettings[path.extname(layout)];
   if (!layoutEngine) {
+    if (ext[0] !== '.') {
+      ext = '.' + ext;
+    }
     layoutEngine = this.layoutSettings[ext];
   }
 
@@ -453,12 +496,16 @@ Engine.prototype.applyLayout = function(ext, template, locals) {
  * @api private
  */
 
-Engine.prototype.makeDelims = function (arr, options) {
+Engine.prototype.makeDelims = function(arr, options) {
   var settings = extend({}, options, { escape: true });
-  var delims = this._.delims.templates(arr, settings);
 
+  if (!Array.isArray(arr)) {
+    return extend(options, this.getDelims('*'));
+  }
+
+  var delims = this._.delims.templates(arr, settings);
   debug.delims('#{making delims}: ', delims);
-  return extend(delims, options);
+  return extend({}, delims, options);
 };
 
 
@@ -485,11 +532,14 @@ Engine.prototype.makeDelims = function (arr, options) {
  * @api public
  */
 
-Engine.prototype.addDelims = function (ext, arr, layoutDelims, settings) {
+Engine.prototype.addDelims = function(ext, arr, layoutDelims, settings) {
   debug.delims('#{adding delims} ext: %s, delims:', ext, arr);
 
   if (Array.isArray(layoutDelims)) {
-    this.lazyLayouts(ext, settings || {});
+    if (ext[0] !== '.') {
+      ext = '.' + ext;
+    }
+    this.lazyLayouts(ext, {layoutDelims: layoutDelims}, settings || {});
   } else {
     settings = layoutDelims;
     layoutDelims = this.option('layoutDelims');
@@ -548,7 +598,7 @@ Engine.prototype.useDelims = function(ext) {
  * @api private
  */
 
-Engine.prototype.registerEngine = function (ext, fn, options) {
+Engine.prototype.registerEngine = function(ext, fn, options) {
   var opts = extend({ thisArg: this, bindFunctions: true }, options);
   if (ext[0] !== '.') {
     ext = '.' + ext;
@@ -558,7 +608,7 @@ Engine.prototype.registerEngine = function (ext, fn, options) {
   debug.engine('#{register} ext: %s', ext);
 
   this._.engines.register(ext, fn, opts);
-  if (opts.delims) {
+  if (opts.delims && !Boolean(this.delims[ext])) {
     this.addDelims(ext, opts.delims);
     this.engines[ext].delims = this.getDelims(ext);
   }
@@ -581,9 +631,12 @@ Engine.prototype.registerEngine = function (ext, fn, options) {
  * @api public
  */
 
-Engine.prototype.engine = function (extension, fn, options) {
+Engine.prototype.engine = function(extension, fn, options) {
   debug.engine('#{engine} args: ', arguments);
-  utils.arrayify(extension).forEach(function (ext) {
+  utils.arrayify(extension).forEach(function(ext) {
+    if (ext[0] !== '.') {
+      ext = '.' + ext;
+    }
     this.registerEngine(ext, fn, options);
   }.bind(this));
   return this;
@@ -604,7 +657,7 @@ Engine.prototype.engine = function (extension, fn, options) {
  * @api public
  */
 
-Engine.prototype.getEngine = function (ext) {
+Engine.prototype.getEngine = function(ext) {
   debug.engine('#{getEngine} ext: %s', ext);
   var engine = this._.engines.get(ext);
   engine.options.thisArg = null;
@@ -625,7 +678,7 @@ Engine.prototype.getEngine = function (ext) {
  * @api private
  */
 
-Engine.prototype.addMixin = function (name, fn) {
+Engine.prototype.addMixin = function(name, fn) {
   if (arguments.length === 1) {
     return this.cache.mixins[name];
   }
@@ -648,7 +701,7 @@ Engine.prototype.addMixin = function (name, fn) {
  * @api public
  */
 
-Engine.prototype.helper = function (ext) {
+Engine.prototype.helper = function(ext) {
   debug.helper('#{helper} ext: %s', ext);
   return this.getEngine(ext).helpers;
 };
@@ -666,7 +719,7 @@ Engine.prototype.helper = function (ext) {
  * @api public
  */
 
-Engine.prototype.helpers = function (ext) {
+Engine.prototype.helpers = function(ext) {
   debug.helper('#{helpers} ext: %s', ext);
   return this.getEngine(ext).helpers;
 };
@@ -685,7 +738,7 @@ Engine.prototype.helpers = function (ext) {
  * @api public
  */
 
-Engine.prototype.addHelper = function (name, fn, thisArg) {
+Engine.prototype.addHelper = function(name, fn, thisArg) {
   debug.helper('#{adding helper} name: %s', name);
   return this._.helpers.addHelper(name, fn, thisArg);
 };
@@ -701,36 +754,35 @@ Engine.prototype.addHelper = function (name, fn, thisArg) {
  * @api public
  */
 
-Engine.prototype.addHelperAsync = function (name, fn, thisArg) {
+Engine.prototype.addHelperAsync = function(name, fn, thisArg) {
   debug.helper('#{adding async helper} name: %s', name);
   return this._.asyncHelpers.addHelperAsync(name, fn, thisArg);
 };
 
 
 /**
- * Keeps track of custom view types, so we can pass them properly to
+ * Keep an array of template sub-type for each template type, to
+ * make it easier to get/set templates and pass them properly to
  * registered engines.
  *
- * @param {String} `plural`
- * @param {Object} `opts`
+ * @param {String} `plural` e.g. `pages`
+ * @param {Object} `options`
  * @api private
  */
 
-Engine.prototype.trackType = function (plural, options) {
+Engine.prototype.trackType = function(plural, options) {
   debug.template('#{tracking type}: %s, %s', plural);
   var opts = extend({}, options);
-  var type = this.templateType;
 
   if (opts.isRenderable) {
-    type.renderable.push(plural);
+    this.templateType.renderable.push(plural);
   }
   if (opts.isLayout) {
-    type.layout.push(plural);
+    this.templateType.layout.push(plural);
   }
   if (opts.isPartial || (!opts.isRenderable && !opts.isLayout)) {
-    type.partial.push(plural);
+    this.templateType.partial.push(plural);
   }
-  return type;
 };
 
 
@@ -749,10 +801,9 @@ Engine.prototype.trackType = function (plural, options) {
  * @api private
  */
 
-Engine.prototype.getType = function (type) {
-  var arr = this.templateType[type];
-
-  return arr.reduce(function (acc, key) {
+Engine.prototype.getType = function(kind) {
+  var arr = this.templateType[kind];
+  return arr.reduce(function(acc, key) {
     acc[key] = this.cache[key];
     return acc;
   }.bind(this), {});
@@ -760,10 +811,10 @@ Engine.prototype.getType = function (type) {
 
 
 /**
- * Add a new template `type`, along with associated get/set methods.
+ * Add a new template `sub-type`, along with associated get/set methods.
  * You must specify both the singular and plural names for the type.
  *
- * @param {String} `type` Singular name of the type to create, e.g. `page`.
+ * @param {String} `subtype` Singular name of the sub-type to create, e.g. `page`.
  * @param {String} `plural` Plural name of the template type, e.g. `pages`.
  * @param {Object} `options` Options for the template type.
  *   @option {Boolean} [options] `isRenderable` Is the template a partial view?
@@ -773,14 +824,14 @@ Engine.prototype.getType = function (type) {
  * @api public
  */
 
-Engine.prototype.create = function(type, plural, options, fns) {
-  debug.template('#{creating template}: %s', type);
+Engine.prototype.create = function(subtype, plural, options, fns) {
+  debug.template('#{creating template subtype}: %s', subtype);
   var args = [].slice.call(arguments);
 
   if (typeof plural !== 'string') {
     fns = options;
     options = plural;
-    plural = type + 's';
+    plural = subtype + 's';
   }
 
   if (typeof options === 'function') {
@@ -788,71 +839,90 @@ Engine.prototype.create = function(type, plural, options, fns) {
     options = {};
   }
 
-  var middleware = utils.filterMiddleware(fns, args);
-
+  this.typeMiddleware(plural, utils.filterMiddleware(fns, args));
   this.cache[plural] = this.cache[plural] || {};
   this.trackType(plural, options);
-  this.typeMiddleware(plural, middleware);
 
-  mixin(type, function (key, value, locals, opt) {
-    debug.template('#{creating template type}:', type);
-    this[plural].apply(this, arguments);
-  });
+  // Add convenience methods for this sub-type
+  this.decorate(subtype, plural, options);
 
-  mixin(plural, function (key, value, locals, opt) {
-    debug.template('#{creating template plural}:', plural);
-    this.load(plural, options).apply(this, arguments);
-  });
-
-  var name = 'get' + type[0].toUpperCase() + type.slice(1);
-  mixin(name, function (key) {
-    return this.cache[plural][key];
-  });
-
-  if (!hasOwn(this._.helpers, type)) {
-    this.typeHelpers(type, plural);
+  // Create a sync helper for this type
+  if (!hasOwn(this._.helpers, subtype)) {
+    this.typeHelpers(subtype, plural);
   }
 
-  if (!hasOwn(this._.asyncHelpers, type)) {
-    this.typeHelpersAsync(type, plural);
+  // Create an async helper for this type
+  if (!hasOwn(this._.asyncHelpers, subtype)) {
+    this.typeHelpersAsync(subtype, plural);
   }
   return this;
 };
 
 
 /**
- * Add middleware to the router for the given `type`.
+ * Decorate a new template subtype with convenience methods.
  *
- * @param  {String} `type` Template type used for this middleware.
- * @param  {Function|Array} `middleware` Stack of middleware to run for this type.
+ * @param  {String} `subtype`
+ * @param  {String} `plural`
+ * @param  {Object} `options`
+ * @api private
  */
 
-Engine.prototype.typeMiddleware = function(type, middleware) {
-  var filter = function (value, key) {
-    if (!value || !value.options) {
-      return false;
-    }
-    return value.options.type === type;
-  };
-  this.route(filter, middleware);
+Engine.prototype.decorate = function(subtype, plural, options) {
+  debug.template('#{decorating template subtype}:', subtype);
+  options = extend({}, options);
+
+  /**
+   * Add a method to `Engine` for `subtype`
+   */
+
+  mixin(subtype, function (key, value, locals, opt) {
+    this[plural].apply(this, arguments);
+  });
+
+  /**
+   * Add a method to `Engine` for `plural`
+   */
+
+  mixin(plural, function (key, value, locals, opt) {
+    this.load(plural, options).apply(this, arguments);
+  });
+
+  /**
+   * Add a `get` method to `Engine` for `subtype`
+   */
+
+  mixin(decorate.methodName('get', subtype), function (key) {
+    return this.cache[plural][key];
+  });
+
+  /**
+   * Add a `render` method to `Engine` for `subtype`
+   */
+
+  if (options.isRenderable) {
+    mixin(decorate.methodName('render', subtype), function (key) {
+      return this.renderType('renderable', subtype);
+    });
+  }
 };
 
 
 /**
- * Create a new instance of `Loader` with the given `options.
+ * Add default middleware to the router for the specific type.
  *
- * ```js
- * var loader = engine.loader({vinyl: true});
- * loader.load('home.md', {title: 'My Blog'});
- * ```
- *
- * @param  {Object} `options`
- * @api public
+ * @param  {String} `plural` Template type used for this middleware.
+ * @param  {Function|Array} `stack` Middleware stack to run for this type.
+ * @api private
  */
 
-Engine.prototype.loader = function(options) {
-  var opts = extend({}, this.options, options);
-  return new Loader(opts);
+Engine.prototype.typeMiddleware = function(plural, stack) {
+  this.route(function (src, dest) {
+    if (!src || !src.options) {
+      return false;
+    }
+    return src.options.type === plural;
+  }, stack);
 };
 
 
@@ -866,15 +936,14 @@ Engine.prototype.loader = function(options) {
  * @return {Object}
  */
 
-Engine.prototype.load = function (plural, options) {
+Engine.prototype.load = function(plural, options) {
   debug.template('#{load} args:', arguments);
 
   var opts = extend({}, this.options, options);
-  var loader = this.loader(opts);
+  var loader = new Loader(opts);
 
   return function (key, value, locals) {
     var loaded = null;
-
     if (opts.loadFn) {
       loaded = opts.loadFn.apply(this, arguments);
     } else {
@@ -884,8 +953,8 @@ Engine.prototype.load = function (plural, options) {
     var template = this.normalize(plural, loaded, options);
 
     forOwn(template, function (value, key) {
-      this.middleware(value, key, function (err) {
-        if (err) console.log(err);
+      this.stage('load', value, null, function (err) {
+        if (err) console.log(chalk.red(err));
       });
     }.bind(this));
 
@@ -906,7 +975,7 @@ Engine.prototype.load = function (plural, options) {
  * @return {Object} Normalized template.
  */
 
-Engine.prototype.normalize = function (plural, template, options) {
+Engine.prototype.normalize = function(plural, template, options) {
   debug.template('#{normalize} args:', arguments);
   this.lazyrouter();
 
@@ -924,7 +993,7 @@ Engine.prototype.normalize = function (plural, template, options) {
     this.lazyLayouts(ext, value.options);
 
     var isLayout = utils.isLayout(value);
-    utils.pickLayout(value);
+    utils.determineLayout(value);
 
     template[key] = value;
 
@@ -948,7 +1017,7 @@ Engine.prototype.normalize = function (plural, template, options) {
  * @return {Object} Normalized template object.
  */
 
-Engine.prototype.format = function (key, value, locals) {
+Engine.prototype.format = function(key, value, locals) {
   debug.template('#{format} args:', arguments);
 
   // Temporarily load a template onto the cache to normalize it.
@@ -971,7 +1040,7 @@ Engine.prototype.format = function (key, value, locals) {
  * @api private
  */
 
-Engine.prototype.mergePartials = function (ext, locals, combine) {
+Engine.prototype.mergePartials = function(ext, locals, combine) {
   debug.template('#{merging partials} args:', arguments);
 
   combine = combine || this.option('mergePartials');
@@ -1006,13 +1075,14 @@ Engine.prototype.mergePartials = function (ext, locals, combine) {
  * @api public
  */
 
-Engine.prototype.preprocess = function (template, locals, async) {
+Engine.prototype.preprocess = function(template, locals, async) {
   if (typeof locals === 'boolean') {
     async = locals;
     locals = {};
   }
 
   locals = locals || {};
+
   var state = {};
   var engine = locals.engine;
   var delims = locals.delims;
@@ -1021,9 +1091,9 @@ Engine.prototype.preprocess = function (template, locals, async) {
   var key;
 
   if (this.option('cache')) {
-    tmpl = utils.pickCached(template, this);
+    tmpl = utils.getRenderable(template, this);
     if (!tmpl) {
-      tmpl = utils.pickPartial(template, this);
+      tmpl = utils.getPartial(template, this);
     }
   }
 
@@ -1035,6 +1105,7 @@ Engine.prototype.preprocess = function (template, locals, async) {
     template = this.format(utils.generateId(), template, locals);
   }
 
+  // console.log(this);
   if (utils.isObject(template)) {
     content = template.content;
     locals = this.mergeFn(template, locals, async);
@@ -1056,8 +1127,11 @@ Engine.prototype.preprocess = function (template, locals, async) {
   }
 
   // Ensure that delimiters are cached, so we
-  // can pass to the engine
-  if (delims) this.addDelims(ext, delims);
+  // can pass them to the engine
+  if (Array.isArray(delims)) {
+    this.addDelims(ext, delims);
+  }
+
   if (utils.isString(engine)) {
     if (engine[0] !== '.') {
       engine = '.' + engine;
@@ -1077,7 +1151,6 @@ Engine.prototype.preprocess = function (template, locals, async) {
   state.delims = delims;
   state.locals = locals;
   state.locals.path = template.path;
-
   return state;
 };
 
@@ -1091,7 +1164,7 @@ Engine.prototype.preprocess = function (template, locals, async) {
  * @api public
  */
 
-Engine.prototype.render = function (content, locals, cb) {
+Engine.prototype.renderBase = function(engine, content, locals, cb) {
   var self = this;
 
   if (typeof locals === 'function') {
@@ -1099,8 +1172,168 @@ Engine.prototype.render = function (content, locals, cb) {
     locals = {};
   }
 
-  var ext = self.option('viewEngine');
-  var engine = self.getEngine(ext);
+  try {
+    engine.render(content, locals, function (err, res) {
+      if (err) {
+        console.log(chalk.red(err));
+        cb.call(self, err);
+        return;
+      }
+
+      self._.asyncHelpers.resolve(res, function (err, res) {
+        if (err) return cb.call(self, err);
+        cb.call(self, null, res);
+      });
+    });
+  } catch (err) {
+    console.log(chalk.red(err));
+    cb.call(self, err);
+  }
+};
+
+
+/**
+ * Render the given string with the specified `locals` and `callback`.
+ *
+ * @param  {String} `str` The string to render.
+ * @param  {Object} `locals` Locals and/or options to pass to registered view engines.
+ * @return {String}
+ * @api public
+ */
+
+Engine.prototype.renderType = function(kind, type) {
+  var self = this;
+
+  return function(name, locals, cb) {
+    if (typeof locals === 'function') {
+      cb = locals;
+      locals = {};
+    }
+
+    var cache = self.getType(kind);
+    var template;
+    if (type == null) {
+      template = utils.getType(name, self, kind);
+    } else {
+      template = cache[type][name];
+    }
+
+    // The user-defined, default engine to use
+    var viewEngine = self.option('viewEngine');
+    var engine = self.getEngine(viewEngine);
+
+    // Attempt to get the template from the cache.
+
+    if (template == null) {
+      throw new Error('Cannot find "' + name + '" on the cache.');
+    }
+
+    var content = template.content;
+    locals = _.extend({}, template.locals, locals);
+
+    if (Boolean(template.engine)) {
+      engine = self.getEngine(template.engine);
+    } else if (Boolean(template.ext)) {
+      engine = self.getEngine(template.ext);
+    }
+
+    self.renderBase(engine, content, locals, cb);
+  };
+};
+
+
+/**
+ * Render `content` from the given cached template with the
+ * given `locals` and `callback`.
+ *
+ * @param  {String} `name` Name of the cached template.
+ * @param  {Object} `locals` Locals and/or options to pass to registered view engines.
+ * @return {String}
+ * @api public
+ */
+
+Engine.prototype.renderCached = function(name, locals, cb) {
+  var self = this;
+
+  if (typeof locals === 'function') {
+    cb = locals;
+    locals = {};
+  }
+
+  // The user-defined, default engine to use
+  var viewEngine = this.option('viewEngine');
+  var engine = this.getEngine(viewEngine);
+
+  // Attempt to get the template from the cache.
+  var template = utils.getType(name, this, ['renderable']);
+  if (template == null) {
+    throw new Error('Cannot find "' + name + '" on the cache.');
+  }
+
+  var content = template.content;
+  locals = _.extend({}, template.locals, locals);
+
+
+  if (Boolean(template.engine)) {
+    engine = this.getEngine(template.engine);
+  } else if (Boolean(template.ext)) {
+    engine = this.getEngine(template.ext);
+  }
+
+  this.renderBase(engine, content, locals, cb);
+};
+
+
+/**
+ * Render the given string with the specified `locals` and `callback`.
+ *
+ * @param  {String} `str` The string to render.
+ * @param  {Object} `locals` Locals and/or options to pass to registered view engines.
+ * @return {String}
+ * @api public
+ */
+
+Engine.prototype.renderString = function(str, locals, cb) {
+  var self = this;
+
+  if (typeof locals === 'function') {
+    cb = locals;
+    locals = {};
+  }
+
+  // The user-defined, default engine to use
+  var viewEngine = this.option('viewEngine');
+  var engine = this.getEngine(viewEngine);
+
+  if (Boolean(locals.engine)) {
+    engine = this.getEngine(locals.engine);
+  } else if (Boolean(locals.ext)) {
+    engine = this.getEngine(locals.ext);
+  }
+
+  this.renderBase(engine, str, locals, cb);
+};
+
+
+/**
+ * Render `content` with the given `options` and `callback`.
+ *
+ * @param  {Object|String} `file` String or normalized template object.
+ * @param  {Object} `options` Options to pass to registered view engines.
+ * @return {String}
+ * @api public
+ */
+
+Engine.prototype.render = function(content, locals, cb) {
+  var self = this;
+
+  if (typeof locals === 'function') {
+    cb = locals;
+    locals = {};
+  }
+
+  var defaultExt = this.option('viewEngine');
+  var engine = this.getEngine(defaultExt);
 
   if (self.option('preprocess')) {
     var pre = self.preprocess(content, locals, true);
@@ -1109,18 +1342,7 @@ Engine.prototype.render = function (content, locals, cb) {
     engine = pre.engine;
   }
 
-  try {
-    engine.render(content, locals, function (err, res) {
-      if (err) return cb.call(self, err);
-
-      self._.asyncHelpers.resolve(res, function (err, res) {
-        if (err) return cb.call(self, err);
-        cb.call(self, null, res);
-      });
-    });
-  } catch (err) {
-    cb.call(self, err);
-  }
+  this.renderBase(engine, content, locals, cb);
 };
 
 
@@ -1133,7 +1355,7 @@ Engine.prototype.render = function (content, locals, cb) {
  * @api public
  */
 
-Engine.prototype.renderSync = function (content, locals) {
+Engine.prototype.renderSync = function(content, locals) {
   var ext = this.option('viewEngine');
   var engine = this.getEngine(ext);
 
@@ -1151,6 +1373,7 @@ Engine.prototype.renderSync = function (content, locals) {
   try {
     return engine.renderSync(content, locals);
   } catch (err) {
+    console.log(chalk.red(err));
     return err;
   }
 };
@@ -1165,7 +1388,7 @@ Engine.prototype.renderSync = function (content, locals) {
  * @api private
  */
 
-Engine.prototype.stashLocals = function (name, template, locals) {
+Engine.prototype.stashLocals = function(name, template, locals) {
   template._locals = template._locals || {};
   template._locals[name] = locals;
   return template;
@@ -1181,7 +1404,7 @@ Engine.prototype.stashLocals = function (name, template, locals) {
  * @return {Object}
  */
 
-Engine.prototype.mergeFn = function (template, locals, async) {
+Engine.prototype.mergeFn = function(template, locals, async) {
   var data = this.get('data');
   var o = {};
 

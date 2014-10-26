@@ -10,6 +10,8 @@
 var fs = require('fs');
 var path = require('path');
 var should = require('should');
+var handlebars = require('engine-handlebars');
+var lodash = require('engine-lodash');
 var Engine = require('..');
 var template;
 
@@ -41,9 +43,9 @@ describe('engine delimiters:', function () {
     done();
   });
 
-  it('should define the engine to use when creating a new template type:', function (done) {
-    template.engine('handlebars', require('engine-handlebars'));
-    template.engine('lodash', require('engine-lodash'));
+  it('should allow the engine to be defined when creating a template type:', function (done) {
+    template.engine('handlebars', handlebars);
+    template.engine('lodash', lodash);
 
     template.create('apple', 'apples', {
       engine: 'lodash',
@@ -70,11 +72,11 @@ describe('engine delimiters:', function () {
     done();
   });
 
-  it('should define the engine to use on templates:', function (done) {
-    template.engine('handlebars', require('engine-handlebars'));
-    template.engine('lodash', require('engine-lodash'));
-    template.create('apple', 'apples', { isRenderable: true })
-    template.create('orange', 'oranges', { isRenderable: true })
+  it('should allow the engine to be defined on templates:', function (done) {
+    template.engine('handlebars', handlebars);
+    template.engine('lodash', lodash);
+    template.create('apple', 'apples', { isRenderable: true });
+    template.create('orange', 'oranges', { isRenderable: true });
 
     template.apple('foo', {content: '<<= name >>{{ name }}<%= name %>', name: 'Halle'}, {
       engine: 'lodash'

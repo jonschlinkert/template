@@ -295,10 +295,10 @@ Engine.prototype.typeHelpersAsync = function(type, plural) {
       return;
     }
 
-    partial.locals = extend({}, partial.locals, locals);
+    partial.locals = extend({}, partial.locals, partial.data, locals);
     debug.helper('#{async helper partial}:', partial);
 
-    this.render(partial, {}, function (err, content) {
+    this.render(partial, partial.locals, function (err, content) {
       debug.helper('#{async helper rendering}:', content);
       if (err) {
         console.log('asyncHelpers:', chalk.red(err));

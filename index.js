@@ -157,11 +157,11 @@ Engine.prototype.defaultOptions = function() {
 /**
  * Load default routes / middleware
  *
- *     - `.md`: parse front matter in markdown files
- *     - `.hbs`: parse front matter in handlebars templates
- *     - `.*`: use the noop engine for any unclaimed extensions. This just
- *             passes files through but adds expected properties to the
- *             template object if they don't already exist.
+ *   - `.md`: parse front matter in markdown files
+ *   - `.hbs`: parse front matter in handlebars templates
+ *   - `.*`: use the noop engine for any unclaimed extensions. This just
+ *           passes files through but adds expected properties to the
+ *           template object if they don't already exist.
  *
  * @api private
  */
@@ -219,8 +219,8 @@ Engine.prototype.defaultEngines = function() {
 /**
  * Register default template delimiters.
  *
- *    - engine delimiters: Delimiters used in templates process by [engine-lodash], the default engine.
- *    - layout delimiters: Delimiters used in layouts.
+ *   - engine delimiters: Delimiters used in templates process by [engine-lodash], the default engine.
+ *   - layout delimiters: Delimiters used in layouts.
  *
  * @api private
  */
@@ -274,9 +274,8 @@ Engine.prototype.typeHelpers = function(type, plural) {
 
 Engine.prototype.typeHelpersAsync = function(type, plural) {
   this.addHelperAsync(type, function (name, locals, next) {
+    debug.helper('#{creating async type helper}:', name);
     var last = _.last(arguments);
-
-    debug.helper('#{async helper name}:', name);
 
     if (typeof locals === 'function') {
       next = locals;
@@ -301,7 +300,6 @@ Engine.prototype.typeHelpersAsync = function(type, plural) {
 
     this.render(partial, {}, function (err, content) {
       debug.helper('#{async helper rendering}:', content);
-
       if (err) {
         console.log('asyncHelpers:', chalk.red(err));
         next(err);
@@ -448,9 +446,11 @@ Engine.prototype.applyLayout = function(ext, template, locals) {
   debug.layout('#{lazyLayouts} ext: %s', ext);
 
   var layout = utils.determineLayout(template, locals, true);
-
   var layoutEngine = this.layoutSettings[path.extname(layout)];
   if (!layoutEngine) {
+    if (ext[0] !== '.') {
+      ext = '.' + ext;
+    }
     layoutEngine = this.layoutSettings[ext];
   }
 
@@ -536,6 +536,9 @@ Engine.prototype.addDelims = function(ext, arr, layoutDelims, settings) {
   debug.delims('#{adding delims} ext: %s, delims:', ext, arr);
 
   if (Array.isArray(layoutDelims)) {
+    if (ext[0] !== '.') {
+      ext = '.' + ext;
+    }
     this.lazyLayouts(ext, {layoutDelims: layoutDelims}, settings || {});
   } else {
     settings = layoutDelims;
@@ -631,6 +634,9 @@ Engine.prototype.registerEngine = function(ext, fn, options) {
 Engine.prototype.engine = function(extension, fn, options) {
   debug.engine('#{engine} args: ', arguments);
   utils.arrayify(extension).forEach(function(ext) {
+    if (ext[0] !== '.') {
+      ext = '.' + ext;
+    }
     this.registerEngine(ext, fn, options);
   }.bind(this));
   return this;
@@ -796,10 +802,7 @@ Engine.prototype.trackType = function(plural, options) {
  */
 
 Engine.prototype.getType = function(kind) {
-  // Array of `type`s for the given kind, e.g. `['pages', 'posts']
   var arr = this.templateType[kind];
-
-
   return arr.reduce(function(acc, key) {
     acc[key] = this.cache[key];
     return acc;

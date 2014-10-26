@@ -19,14 +19,14 @@ var async = require('async');
 
 
 describe('generated helpers:', function () {
-  describe('built-in engines:', function () {
+  describe('helpers for built-in engines:', function () {
     it('should use the `partial` helper with a built-in engine.', function (done) {
       template.partial('a.md', '---\nname: "AAA"\n---\n<%= name %>', {name: 'BBB'});
       var file = {path: 'a.md', content: 'foo <%= partial("a.md") %> bar'};
 
       template.render(file, function (err, content) {
         if (err) return done(err);
-        content.should.equal('foo BBB bar');
+        content.should.equal('foo AAA bar');
         done();
       });
     });
@@ -38,6 +38,53 @@ describe('generated helpers:', function () {
       template.render(obj, {name: 'DDD'}, function (err, content) {
         if (err) return done(err);
         content.should.equal('foo CCC bar');
+        done();
+      });
+    });
+  });
+
+
+  describe('helper context:', function () {
+    it('should give preference to front-matter over template locals and helper locals.', function (done) {
+      template.partial('a.md', '---\nname: "AAA"\n---\n<%= name %>', {name: 'BBB'});
+      var file = {path: 'a.md', content: 'foo <%= partial("a.md") %> bar'};
+
+      template.render(file, function (err, content) {
+        if (err) return done(err);
+        content.should.equal('foo AAA bar');
+        done();
+      });
+    });
+
+    it('should give preference to helper locals over template locals.', function (done) {
+      template.partial({'abc.md': {content: '<%= name %>', name: 'BBB'}});
+      var obj = {path: 'xyz.md', content: 'foo <%= partial("abc.md", { name: "CCC" }) %> bar'};
+
+      template.render(obj, {name: 'DDD'}, function (err, content) {
+        if (err) return done(err);
+        content.should.equal('foo CCC bar');
+        done();
+      });
+    });
+
+    it('should give preference to template locals over render locals.', function (done) {
+      template.partial({'abc.md': {content: '<%= name %>', name: 'BBB'}});
+      var obj = {path: 'xyz.md', content: 'foo <%= partial("abc.md") %> bar'};
+
+      template.render(obj, {name: 'DDD'}, function (err, content) {
+        if (err) return done(err);
+        content.should.equal('foo BBB bar');
+        done();
+      });
+    });
+
+    it('should use render locals when other locals are not defined.', function (done) {
+      template.partial({'abc.md': {content: '<%= name %>'}});
+      var obj = {path: 'xyz.md', content: 'foo <%= partial("abc.md") %> bar'};
+
+      template.render(obj, {name: 'DDD'}, function (err, content) {
+        if (err) return done(err);
+        content.should.equal('foo DDD bar');
         done();
       });
     });

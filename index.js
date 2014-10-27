@@ -250,11 +250,11 @@ Engine.prototype.defaultTemplates = function() {
  * @api private
  */
 
-Engine.prototype.typeHelpers = function(type, plural) {
+Engine.prototype.createTypeHelper = function(type, plural) {
   this.addHelper(type, function (key, locals) {
     var partial = this.cache[plural][key];
 
-    partial = this.stashLocals(type, partial, locals);
+    partial = this.stashLocals('typeHelper', partial, locals);
 
     var content = this.renderSync(partial, locals);
     if (content instanceof Error) {
@@ -273,7 +273,7 @@ Engine.prototype.typeHelpers = function(type, plural) {
  * @api private
  */
 
-Engine.prototype.typeHelpersAsync = function(type, plural) {
+Engine.prototype.createTypeHelperAsync = function(type, plural) {
   this.addHelperAsync(type, function (name, locals, next) {
     debug.helper('#{creating async type helper}:', name);
     var last = _.last(arguments);
@@ -288,26 +288,22 @@ Engine.prototype.typeHelpersAsync = function(type, plural) {
 
     var partial = this.cache[plural][name];
     if (partial) {
-      this.stashLocals('typeHelpersAsync', partial, locals);
-    }
-
-    if (!partial) {
-      var msg = chalk.red('helper {{' + type + ' "' + name + '"}} not found.');
-      console.log(msg);
-      next(null, '');
-      return;
+      this.stashLocals('typeHelperAsync', partial, locals);
+    } else {
+      console.log(chalk.red('helper {{' + type + ' "' + name + '"}} not found.'));
+      return next(null, '');
     }
 
     partial.locals = extend({}, partial.locals, partial.data, locals);
     debug.helper('#{async helper partial}:', partial);
 
     this.render(partial, partial.locals, function (err, content) {
-      debug.helper('#{async helper rendering}:', content);
       if (err) {
-        console.log('asyncHelpers:', chalk.red(err));
+        debug.helper(chalk.red('#{async helper err}: %j'), err);
         next(err);
         return;
       }
+      debug.helper('#{async helper rendering}:', content);
       next(null, content);
       return;
     });
@@ -699,26 +695,6 @@ Engine.prototype.addMixin = function(name, fn) {
 
 
 /**
- * Register a helper for the given `ext` (engine).
- *
- * ```js
- * engine.addHelper('lower', function(str) {
- *   return str.toLowerCase();
- * });
- * ```
- *
- * @param {String} `ext` The engine to register helpers with.
- * @return {Object} Object of helpers for the specified engine.
- * @api public
- */
-
-Engine.prototype.helper = function(ext) {
-  debug.helper('#{helper} ext: %s', ext);
-  return this.getEngine(ext).helpers;
-};
-
-
-/**
  * Register an object of helpers for the given `ext` (engine).
  *
  * ```js
@@ -756,6 +732,26 @@ Engine.prototype.addHelper = function(name, fn, thisArg) {
 
 
 /**
+ * Register a helper for the given `ext` (engine).
+ *
+ * ```js
+ * engine.helper('lower', function(str) {
+ *   return str.toLowerCase();
+ * });
+ * ```
+ *
+ * @param {String} `ext` The engine to register helpers with.
+ * @return {Object} Object of helpers for the specified engine.
+ * @api public
+ */
+
+Engine.prototype.helper = function() {
+  debug.helper('#{helper}: %j', arguments);
+  return this.addHelper.apply(this, arguments);
+};
+
+
+/**
  * Async version of `.addHelper()`.
  *
  * @param {String} `name` The helper to cache or get.
@@ -768,6 +764,26 @@ Engine.prototype.addHelper = function(name, fn, thisArg) {
 Engine.prototype.addHelperAsync = function(name, fn, thisArg) {
   debug.helper('#{adding async helper} name: %s', name);
   return this._.asyncHelpers.addHelperAsync(name, fn, thisArg);
+};
+
+
+/**
+ * Register a helper for the given `ext` (engine).
+ *
+ * ```js
+ * engine.helperAsync('lower', function(str) {
+ *   return str.toLowerCase();
+ * });
+ * ```
+ *
+ * @param {String} `ext` The engine to register helpers with.
+ * @return {Object} Object of helpers for the specified engine.
+ * @api public
+ */
+
+Engine.prototype.helperAsync = function() {
+  debug.helper('#{helper}: %j', arguments);
+  return this.addHelperAsync.apply(this, arguments);
 };
 
 
@@ -840,11 +856,11 @@ Engine.prototype.create = function(subtype, plural, options, fns) {
   debug.template('#{creating template subtype}: %s', subtype);
   var args = [].slice.call(arguments);
 
+  // If you need more than the following just define
+  // `plural` explicitly
   if (typeof plural !== 'string') {
     fns = options;
     options = plural;
-    // If you need more than this, just define the
-    // plural name explicitly
     plural = subtype + 's';
   }
 
@@ -862,12 +878,12 @@ Engine.prototype.create = function(subtype, plural, options, fns) {
 
   // Create a sync helper for this type
   if (!hasOwn(this._.helpers, subtype)) {
-    this.typeHelpers(subtype, plural);
+    this.createTypeHelper(subtype, plural);
   }
 
   // Create an async helper for this type
   if (!hasOwn(this._.asyncHelpers, subtype)) {
-    this.typeHelpersAsync(subtype, plural);
+    this.createTypeHelperAsync(subtype, plural);
   }
   return this;
 };

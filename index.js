@@ -609,9 +609,10 @@ Engine.prototype.getEngine = function(ext) {
  * Assign mixin `fn` to `name` or return the value of `name`
  * if no other arguments are passed.
  *
- * This method sets mixins on the cache, which will later be
- * passed to a template engine that uses mixins, such as
- * Lo-Dash or Underscore.
+ * This method sets mixins on the cache, which can later be passed
+ * to any template engine that uses mixins, like Lo-Dash or Underscore.
+ * This also ensures that mixins are passed to the same instance of
+ * whatever engine is used.
  *
  * @param {String} `name` The name of the mixin to add.
  * @param {Function} `fn` The actual mixin function.

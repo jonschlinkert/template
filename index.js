@@ -91,6 +91,7 @@ Engine.prototype.initEngine = function() {
 Engine.prototype.defaultConfig = function() {
   this._.delims = new Delims(this.options);
   this._.engines = new Engines(this.engines);
+
   this._.helpers = new Helpers({
     bindFunctions: true,
     thisArg: this
@@ -239,7 +240,7 @@ Engine.prototype.defaultDelimiters = function() {
 Engine.prototype.defaultTemplates = function() {
   this.create('page', { isRenderable: true });
   this.create('layout', { isLayout: true });
-  this.create('partial');
+  this.create('partial', { isPartial: true });
 };
 
 
@@ -805,8 +806,6 @@ Engine.prototype.setType = function(plural, options) {
  * ```js
  * var pages = template.getType('renderable');
  * //=> { pages: { 'home.hbs': { ... }, 'about.hbs': { ... }}, posts: { ... }}
- *
- * var partials = template.getType('partial');
  * ```
  *
  * @param {String} `plural`
@@ -814,8 +813,8 @@ Engine.prototype.setType = function(plural, options) {
  * @api private
  */
 
-Engine.prototype.getType = function(kind) {
-  var arr = this.templateType[kind];
+Engine.prototype.getType = function(type) {
+  var arr = this.templateType[type];
   return arr.reduce(function(acc, key) {
     acc[key] = this.cache[key];
     return acc;
@@ -844,6 +843,8 @@ Engine.prototype.create = function(subtype, plural, options, fns) {
   if (typeof plural !== 'string') {
     fns = options;
     options = plural;
+    // If you need more than this, just define the
+    // plural name explicitly
     plural = subtype + 's';
   }
 

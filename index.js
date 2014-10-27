@@ -245,73 +245,6 @@ Engine.prototype.defaultTemplates = function() {
 
 
 /**
- * Create helpers for each default template `type`.
- *
- * @api private
- */
-
-Engine.prototype.createTypeHelper = function(type, plural) {
-  this.addHelper(type, function (key, locals) {
-    var partial = this.cache[plural][key];
-
-    partial = this.stashLocals('typeHelper', partial, locals);
-
-    var content = this.renderSync(partial, locals);
-    if (content instanceof Error) {
-      throw content;
-    }
-    return content;
-  });
-};
-
-
-/**
- * Create async helpers for each default template `type`.
- *
- * @param {String} `type` The type of template.
- * @param {String} `plural` Plural form of `type`.
- * @api private
- */
-
-Engine.prototype.createTypeHelperAsync = function(type, plural) {
-  this.addHelperAsync(type, function (name, locals, next) {
-    debug.helper('#{creating async type helper}:', name);
-    var last = _.last(arguments);
-
-    if (typeof locals === 'function') {
-      next = locals;
-      locals = {};
-    }
-    if (typeof next !== 'function') {
-      next = last;
-    }
-
-    var partial = this.cache[plural][name];
-    if (partial) {
-      this.stashLocals('typeHelperAsync', partial, locals);
-    } else {
-      console.log(chalk.red('helper {{' + type + ' "' + name + '"}} not found.'));
-      return next(null, '');
-    }
-
-    partial.locals = extend({}, partial.locals, partial.data, locals);
-    debug.helper('#{async helper partial}:', partial);
-
-    this.render(partial, partial.locals, function (err, content) {
-      if (err) {
-        debug.helper(chalk.red('#{async helper err}: %j'), err);
-        next(err);
-        return;
-      }
-      debug.helper('#{async helper rendering}:', content);
-      next(null, content);
-      return;
-    });
-  }.bind(this));
-};
-
-
-/**
  * Lazily initalize router, to allow options to
  * be passed in after init.
  *
@@ -784,6 +717,73 @@ Engine.prototype.addHelperAsync = function(name, fn, thisArg) {
 Engine.prototype.helperAsync = function() {
   debug.helper('#{helper}: %j', arguments);
   return this.addHelperAsync.apply(this, arguments);
+};
+
+
+/**
+ * Create helpers for each default template `type`.
+ *
+ * @api private
+ */
+
+Engine.prototype.createTypeHelper = function(type, plural) {
+  this.addHelper(type, function (key, locals) {
+    var partial = this.cache[plural][key];
+
+    partial = this.stashLocals('typeHelper', partial, locals);
+
+    var content = this.renderSync(partial, locals);
+    if (content instanceof Error) {
+      throw content;
+    }
+    return content;
+  });
+};
+
+
+/**
+ * Create async helpers for each default template `type`.
+ *
+ * @param {String} `type` The type of template.
+ * @param {String} `plural` Plural form of `type`.
+ * @api private
+ */
+
+Engine.prototype.createTypeHelperAsync = function(type, plural) {
+  this.addHelperAsync(type, function (name, locals, next) {
+    debug.helper('#{creating async type helper}:', name);
+    var last = _.last(arguments);
+
+    if (typeof locals === 'function') {
+      next = locals;
+      locals = {};
+    }
+    if (typeof next !== 'function') {
+      next = last;
+    }
+
+    var partial = this.cache[plural][name];
+    if (partial) {
+      this.stashLocals('typeHelperAsync', partial, locals);
+    } else {
+      console.log(chalk.red('helper {{' + type + ' "' + name + '"}} not found.'));
+      return next(null, '');
+    }
+
+    partial.locals = extend({}, partial.locals, partial.data, locals);
+    debug.helper('#{async helper partial}:', partial);
+
+    this.render(partial, partial.locals, function (err, content) {
+      if (err) {
+        debug.helper(chalk.red('#{async helper err}: %j'), err);
+        next(err);
+        return;
+      }
+      debug.helper('#{async helper rendering}:', content);
+      next(null, content);
+      return;
+    });
+  }.bind(this));
 };
 
 

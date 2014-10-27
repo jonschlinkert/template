@@ -42,7 +42,9 @@ describe('engine create:', function () {
     });
 
     describe('.decorate()', function () {
+
       /* setup */
+
       beforeEach(function () {
         template = new Engine();
 
@@ -60,6 +62,8 @@ describe('engine create:', function () {
         template.include('sidebar.md', '<nav>sidebar</nav>');
         template.block('default.md', 'abc {% body %} xyz');
       });
+
+      /* tests */
 
       it('should decorate the type with a `get` method:', function () {
         template.should.have.properties(['getPage', 'getPost', 'getDoc', 'getInclude']);

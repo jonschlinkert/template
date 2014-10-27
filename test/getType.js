@@ -17,19 +17,22 @@ describe('.getType()', function() {
     engine = new Engine();
   });
 
-  it('should get all templates of `type: renderable`:', function () {
-    engine.create('post', { isRenderable: true });
+  it('should get all built-in templates of `type: renderable`:', function () {
     engine.page('abc.md', '<%= abc %>');
-    engine.post('xyz.md', '<%= abc %>');
-
     engine.getType('renderable').should.be.an.object;
     engine.getType('renderable').should.have.property('pages');
-    engine.getType('renderable').should.have.property('posts');
     engine.getType('renderable').pages.should.have.property('abc.md');
+  });
+
+  it('should get all custom templates of `type: renderable`:', function () {
+    engine.create('post', { isRenderable: true });
+    engine.post('xyz.md', '<%= abc %>');
+    engine.getType('renderable').should.be.an.object;
+    engine.getType('renderable').should.have.property('posts');
     engine.getType('renderable').posts.should.have.property('xyz.md');
   });
 
-  it('should get all templates of `type: partial`:', function () {
+  it('should get all templates of built-in `type: partial`:', function () {
     engine.create('include', { isPartial: true });
     engine.partial('abc.md', '<%= abc %>');
     engine.include('xyz.md', '<%= abc %>');
@@ -38,6 +41,15 @@ describe('.getType()', function() {
     engine.getType('partial').should.have.property('partials');
     engine.getType('partial').should.have.property('includes');
     engine.getType('partial').partials.should.have.property('abc.md');
+    engine.getType('partial').includes.should.have.property('xyz.md');
+  });
+
+  it('should get all templates of custom `type: partial`:', function () {
+    engine.create('include', { isPartial: true });
+    engine.include('xyz.md', '<%= abc %>');
+
+    engine.getType('partial').should.be.an.object;
+    engine.getType('partial').should.have.property('includes');
     engine.getType('partial').includes.should.have.property('xyz.md');
   });
 

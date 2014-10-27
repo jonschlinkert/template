@@ -24,12 +24,12 @@ describe('engine delimiters:', function () {
     template.page('bar', {content: '<<= name >>', name: 'Brian Woodward'});
 
     template.render('foo', function (err, content) {
-      if (err) console.log(err);
+      if (err) return done(err);
       content.should.equal('Jon Schlinkert');
     });
 
     template.render('bar', function (err, content) {
-      if (err) console.log(err);
+      if (err) return done(err);
       content.should.equal('Brian Woodward');
     });
     done();

@@ -65,10 +65,6 @@ describe('engine create:', function () {
         template.should.have.properties(['getPage', 'getPost', 'getDoc', 'getInclude']);
       });
 
-      it.skip('should decorate the type with a `set` method:', function () {
-        template.should.have.properties(['setPage', 'setPost', 'setDoc', 'setInclude']);
-      });
-
       it('should decorate the type with a `render` method:', function () {
         template.should.have.properties(['renderPage', 'renderPost', 'renderDoc']);
       });

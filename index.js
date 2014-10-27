@@ -286,7 +286,9 @@ Engine.prototype.typeHelpersAsync = function(type, plural) {
     }
 
     var partial = this.cache[plural][name];
-    this.stashLocals('typeHelpersAsync', partial, locals);
+    if (partial) {
+      this.stashLocals('typeHelpersAsync', partial, locals);
+    }
 
     if (!partial) {
       var msg = chalk.red('helper {{' + type + ' "' + name + '"}} not found.');
@@ -534,11 +536,11 @@ Engine.prototype.makeDelims = function(arr, options) {
 
 Engine.prototype.addDelims = function(ext, arr, layoutDelims, settings) {
   debug.delims('#{adding delims} ext: %s, delims:', ext, arr);
+  if (ext[0] !== '.') {
+    ext = '.' + ext;
+  }
 
   if (Array.isArray(layoutDelims)) {
-    if (ext[0] !== '.') {
-      ext = '.' + ext;
-    }
     this.lazyLayouts(ext, {layoutDelims: layoutDelims}, settings || {});
   } else {
     settings = layoutDelims;
@@ -561,11 +563,15 @@ Engine.prototype.addDelims = function(ext, arr, layoutDelims, settings) {
 
 Engine.prototype.getDelims = function(ext) {
   debug.delims('#{getting delims} ext: %s', ext);
+  if (ext && ext[0] !== '.') {
+    ext = '.' + ext;
+  }
 
   if(hasOwn(this.delims, ext)) {
     return this.delims[ext];
   }
-  ext = this.currentDelims || 'default';
+
+  ext = this.currentDelims || '.default';
   return this.delims[ext];
 };
 
@@ -584,6 +590,9 @@ Engine.prototype.getDelims = function(ext) {
 
 Engine.prototype.useDelims = function(ext) {
   debug.delims('#{using delims} ext: %s', ext);
+  if (ext && ext[0] !== '.') {
+    ext = '.' + ext;
+  }
   return this.currentDelims = ext;
 };
 
@@ -608,7 +617,8 @@ Engine.prototype.registerEngine = function(ext, fn, options) {
   debug.engine('#{register} ext: %s', ext);
 
   this._.engines.register(ext, fn, opts);
-  if (opts.delims && !Boolean(this.delims[ext])) {
+
+  if (opts.delims) {
     this.addDelims(ext, opts.delims);
     this.engines[ext].delims = this.getDelims(ext);
   }
@@ -770,7 +780,7 @@ Engine.prototype.addHelperAsync = function(name, fn, thisArg) {
  * @api private
  */
 
-Engine.prototype.trackType = function(plural, options) {
+Engine.prototype.setType = function(plural, options) {
   debug.template('#{tracking type}: %s, %s', plural);
   var opts = extend({}, options);
 
@@ -782,7 +792,10 @@ Engine.prototype.trackType = function(plural, options) {
   }
   if (opts.isPartial || (!opts.isRenderable && !opts.isLayout)) {
     this.templateType.partial.push(plural);
+    opts.isPartial = true;
   }
+
+  return opts;
 };
 
 
@@ -841,7 +854,7 @@ Engine.prototype.create = function(subtype, plural, options, fns) {
 
   this.typeMiddleware(plural, utils.filterMiddleware(fns, args));
   this.cache[plural] = this.cache[plural] || {};
-  this.trackType(plural, options);
+  options = this.setType(plural, options);
 
   // Add convenience methods for this sub-type
   this.decorate(subtype, plural, options);
@@ -1049,7 +1062,7 @@ Engine.prototype.mergePartials = function(ext, locals, combine) {
   this.templateType['partial'].forEach(function (type) {
     forOwn(this.cache[type], function (value, key) {
       value.content = this.applyLayout(ext, value, value.locals);
-      opts = extend({}, opts, value.data, value.locals);
+      opts = extend({}, opts, value.locals);
 
       if (combine) {
         var fn = this.option('partialsKey');
@@ -1132,6 +1145,7 @@ Engine.prototype.preprocess = function(template, locals, async) {
     this.addDelims(ext, delims);
   }
 
+
   if (utils.isString(engine)) {
     if (engine[0] !== '.') {
       engine = '.' + engine;
@@ -1143,7 +1157,7 @@ Engine.prototype.preprocess = function(template, locals, async) {
     delims = this.getDelims(ext);
   }
 
-  locals = extend({}, locals, this.mergePartials(locals), delims);
+  locals = extend({}, this.mergePartials(locals), locals, delims);
 
   // populate the state to pass back
   state.content = content;
@@ -1170,6 +1184,10 @@ Engine.prototype.renderBase = function(engine, content, locals, cb) {
   if (typeof locals === 'function') {
     cb = locals;
     locals = {};
+  }
+
+  if (!hasOwn(engine, 'render')) {
+    throw new Error('`.render()` method cannot be found on engine: "' + engine + '".');
   }
 
   try {
@@ -1201,7 +1219,7 @@ Engine.prototype.renderBase = function(engine, content, locals, cb) {
  * @api public
  */
 
-Engine.prototype.renderType = function(kind, type) {
+Engine.prototype.renderType = function(type, subtype) {
   var self = this;
 
   return function(name, locals, cb) {
@@ -1210,12 +1228,12 @@ Engine.prototype.renderType = function(kind, type) {
       locals = {};
     }
 
-    var cache = self.getType(kind);
+    var cache = self.getType(type);
     var template;
-    if (type == null) {
-      template = utils.getType(name, self, kind);
+    if (subtype == null) {
+      template = utils.firstOfType(name, self, type);
     } else {
-      template = cache[type][name];
+      template = cache[subtype][name];
     }
 
     // The user-defined, default engine to use
@@ -1223,7 +1241,6 @@ Engine.prototype.renderType = function(kind, type) {
     var engine = self.getEngine(viewEngine);
 
     // Attempt to get the template from the cache.
-
     if (template == null) {
       throw new Error('Cannot find "' + name + '" on the cache.');
     }
@@ -1265,7 +1282,7 @@ Engine.prototype.renderCached = function(name, locals, cb) {
   var engine = this.getEngine(viewEngine);
 
   // Attempt to get the template from the cache.
-  var template = utils.getType(name, this, ['renderable']);
+  var template = utils.firstOfType(name, this, ['renderable']);
   if (template == null) {
     throw new Error('Cannot find "' + name + '" on the cache.');
   }
@@ -1440,6 +1457,7 @@ Engine.prototype.mergeFn = function(template, locals, async) {
 function mixin(method, fn) {
   Engine.prototype[method] = fn;
 }
+
 
 /**
  * Utility for getting an own property from an object.

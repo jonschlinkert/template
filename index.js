@@ -331,10 +331,10 @@ Engine.prototype.route = function(filter) {
  * @api private
  */
 
-Engine.prototype.runStage = function(stage) {
+Engine.prototype.use = function(stage) {
   debug.routes('#use', arguments);
   this.lazyrouter();
-  this.router.runStage.apply(this.router, arguments);
+  this.router.use.apply(this.router, arguments);
   return this;
 };
 
@@ -759,7 +759,7 @@ Engine.prototype.helperAsync = function() {
  */
 
 Engine.prototype.createTypeHelper = function(type, plural) {
-  this.addHelper(type, function (key, locals) {
+  this.helper(type, function (key, locals) {
     var partial = this.cache[plural][key];
 
     partial = this.stashLocals('typeHelper', partial, locals);
@@ -782,7 +782,7 @@ Engine.prototype.createTypeHelper = function(type, plural) {
  */
 
 Engine.prototype.createTypeHelperAsync = function(type, plural) {
-  this.addHelperAsync(type, function (name, locals, next) {
+  this.helperAsync(type, function (name, locals, next) {
     debug.helper('#{creating async type helper}:', name);
     var last = _.last(arguments);
 

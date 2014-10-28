@@ -32,7 +32,7 @@ describe('engine router', function() {
     });
 
     it('should have routes for default template types.', function() {
-      template.router.stack.should.have.length(7);
+      template.router._routes.should.have.length(7);
     });
 
     it('should dispatch /foo', function(done) {
@@ -76,19 +76,19 @@ describe('engine router', function() {
 
   describe('with two simple stages', function() {
     beforeEach(function () {
-      template.runStage('first', function first (page, key, next) {
+      template.use('first', function first (page, key, next) {
         page.stageCalledFirst = true;
         next();
       });
 
-      template.runStage('second', function second (page, key, next) {
+      template.use('second', function second (page, key, next) {
         page.stageCalledSecond = true;
         next();
       });
     });
 
     it('should have stages for default template types.', function() {
-      Object.keys(template.router.stages).should.have.length(2);
+      Object.keys(template.router._stages).should.have.length(2);
     });
 
     it('should dispatch first', function(done) {

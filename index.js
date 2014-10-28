@@ -528,7 +528,8 @@ Engine.prototype.useDelims = function(ext) {
 
 
 /**
- * Private method for registering an engine.
+ * Private method for registering an engine. Register the given view
+ * engine callback `fn` as `ext`.
  *
  * @param {String} `ext`
  * @param {Function|Object} `fn` or `options`
@@ -546,8 +547,7 @@ Engine.prototype.registerEngine = function(ext, fn, options) {
   debug.engine('#{register} args:', arguments);
   debug.engine('#{register} ext: %s', ext);
 
-  this._.engines.register(ext, fn, opts);
-
+  this._.engines.setEngine(ext, fn, opts);
   if (opts.delims) {
     this.addDelims(ext, opts.delims);
     this.engines[ext].delims = this.getDelims(ext);
@@ -564,16 +564,17 @@ Engine.prototype.registerEngine = function(ext, fn, options) {
  * is passed, the entire cache is returned.
  *
  * @doc api-engine
- * @param {String} `ext`
+ * @param {String|Array} `exts` File extension or array of extensions.
  * @param {Function|Object} `fn` or `options`
  * @param {Object} `options`
  * @return {Object} `Engine` to enable chaining
  * @api public
  */
 
-Engine.prototype.engine = function(extension, fn, options) {
+Engine.prototype.engine = function(exts, fn, options) {
   debug.engine('#{engine} args: ', arguments);
-  utils.arrayify(extension).forEach(function(ext) {
+
+  utils.arrayify(exts).forEach(function(ext) {
     if (ext[0] !== '.') {
       ext = '.' + ext;
     }
@@ -584,7 +585,33 @@ Engine.prototype.engine = function(extension, fn, options) {
 
 
 /**
- * Get the engine registered for the given `ext`. If no
+ * Register the given view engine callback `fn` as `ext`. If only `ext`
+ * is passed, the engine registered for `ext` is returned. If no `ext`
+ * is passed, the entire cache is returned.
+ *
+ * @doc api-engine
+ * @param {String|Array} `exts` File extension or array of extensions.
+ * @param {Function|Object} `fn` or `options`
+ * @param {Object} `options`
+ * @return {Object} `Engine` to enable chaining
+ * @api public
+ */
+
+Engine.prototype.register = function(exts, fn, options) {
+  debug.engine('#{engine} args: ', arguments);
+
+  utils.arrayify(exts).forEach(function(ext) {
+    if (ext[0] !== '.') {
+      ext = '.' + ext;
+    }
+    this.registerEngine(ext, fn, options);
+  }.bind(this));
+  return this;
+};
+
+
+/**
+ * Get the engine object registered for the given `ext`. If no
  * `ext` is passed, the entire cache is returned.
  *
  * ```js
@@ -593,13 +620,13 @@ Engine.prototype.engine = function(extension, fn, options) {
  *
  * @doc api-getEngine
  * @param {String} `ext` The engine to get.
- * @return {Object} Object of methods for the specified engine.
+ * @return {Object} Object with methods and settings for the specified engine.
  * @api public
  */
 
 Engine.prototype.getEngine = function(ext) {
   debug.engine('#{getEngine} ext: %s', ext);
-  var engine = this._.engines.get(ext);
+  var engine = this._.engines.getEngine(ext);
   engine.options.thisArg = null;
   return engine;
 };
@@ -629,25 +656,9 @@ Engine.prototype.addMixin = function(name, fn) {
 
 
 /**
- * Register an object of helpers for the given `ext` (engine).
+ * Get and set _generic_ helpers on the `cache`.
  *
- * ```js
- * engine.helpers(require('handlebars-helpers'));
- * ```
- *
- * @param {String} `ext` The engine to register helpers with.
- * @return {Object} Object of helpers for the specified engine.
- * @api public
- */
-
-Engine.prototype.helpers = function(ext) {
-  debug.helper('#{helpers} ext: %s', ext);
-  return this.getEngine(ext).helpers;
-};
-
-
-/**
- * Get and set _generic_ helpers on the `cache`. Helpers registered
+ * Helpers registered
  * using this method will be passed to every engine, so be sure to use
  * generic javascript functions - unless you want to see Lo-Dash
  * blow up from `Handlebars.SafeString`.
@@ -666,7 +677,9 @@ Engine.prototype.addHelper = function(name, fn, thisArg) {
 
 
 /**
- * Register a helper for the given `ext` (engine).
+ * Register a helper for the given `ext` (engine). Register the given view engine callback `fn` as `ext`. If only `ext`
+ * is passed, the engine registered for `ext` is returned. If no `ext`
+ * is passed, the entire cache is returned.
  *
  * ```js
  * engine.helper('lower', function(str) {
@@ -682,6 +695,24 @@ Engine.prototype.addHelper = function(name, fn, thisArg) {
 Engine.prototype.helper = function() {
   debug.helper('#{helper}: %j', arguments);
   return this.addHelper.apply(this, arguments);
+};
+
+
+/**
+ * Register an object of helpers for the given `ext` (engine).
+ *
+ * ```js
+ * engine.helpers(require('handlebars-helpers'));
+ * ```
+ *
+ * @param {String} `ext` The engine to register helpers with.
+ * @return {Object} Object of helpers for the specified engine.
+ * @api public
+ */
+
+Engine.prototype.helpers = function(ext) {
+  debug.helper('#{helpers} ext: %s', ext);
+  return this.getEngine(ext).helpers;
 };
 
 

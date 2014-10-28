@@ -15,7 +15,8 @@ var chalk = require('chalk');
 var Delims = require('delims');
 var forOwn = require('for-own');
 var Layouts = require('layouts');
-var Router = require('en-route');
+var Router = require('en-route').Router;
+var Route = require('en-route').Route;
 var Cache = require('config-cache');
 var Helpers = require('helper-cache');
 var Engines = require('engine-cache');
@@ -24,6 +25,10 @@ var engineNoop = require('engine-noop');
 var parserMatter = require('parser-front-matter');
 var parserNoop = require('parser-noop');
 var Loader = require('load-templates');
+var slice = require('array-slice');
+var flatten = require('arr-flatten');
+
+var init = require('./lib/middleware/init');
 var decorate = require('./lib/decorate');
 var utils = require('./lib/utils');
 var debug = require('./lib/debug');
@@ -54,6 +59,8 @@ var Engine = module.exports = Cache.extend({
 });
 
 Engine.extend = Cache.extend;
+Engine.Router = Router;
+Engine.Route = Route;
 
 
 /**
@@ -168,8 +175,8 @@ Engine.prototype.defaultOptions = function() {
  */
 
 Engine.prototype.defaultRoutes = function() {
-  this.route(/\.(md|hbs)$/, function route(src, dest, next) {
-    parserMatter.parse(src, function(err) {
+  this.route(/\.(md|hbs)$/).all(function route(file, next) {
+    parserMatter.parse(file, function(err) {
       if (err) {
         console.log('route [md|hbs]:', chalk.red(err));
         next(err);
@@ -179,8 +186,8 @@ Engine.prototype.defaultRoutes = function() {
     });
   });
 
-  this.route(/.*/, function route(src, dest, next) {
-    parserNoop.parse(src, function(err) {
+  this.route(/.*/).all(function route(file, next) {
+    parserNoop.parse(file, function(err) {
       if (err) {
         console.log('route [*]:', chalk.red(err));
         next(err);
@@ -328,6 +335,7 @@ Engine.prototype.lazyrouter = function() {
       caseSensitive: this.enabled('case sensitive routing'),
       strict: this.enabled('strict routing')
     });
+    this.router.use(init(this));
   }
 };
 
@@ -339,76 +347,149 @@ Engine.prototype.lazyrouter = function() {
  * @api private
  */
 
-Engine.prototype.middleware = function() {
-  debug.routes('#routes:middleware', arguments);
-  this.lazyrouter();
-  this.router.middleware.apply(this.router, arguments);
-};
+Engine.prototype.handle = function(file, done) {
+  debug.routes('#routes:handle', arguments);
+  var router = this.router;
 
-
-/**
- * Dispatch a template through a middleware stack for a specific stage
- *
- * @param {String} `stage` Name of the stage to use
- * @param  {arguments} `arguments` Any arguments that should be passed through the middleware stack
- * @api private
- */
-
-Engine.prototype.stage = function() {
-  debug.routes('#routes:stage', arguments);
-  this.lazyrouter();
-  this.router.stage.apply(this.router, arguments);
-};
-
-
-/**
- * Set a route to be called.
- *
- * @param  {Function|String} `filter` String or filter function to get the middleware stack to run.
- * @param  {Function|Array}  `middleware` Middleware stack to run for the given route.
- * @return {Object} `Engine` to enable chaining.
- * @api private
- */
-
-Engine.prototype.route = function(filter) {
-  debug.routes('#route', arguments);
-  this.lazyrouter();
-
-  /* if the filter is a string, turn it into a filter
-   * formatted the way Engine expects it */
-  if (typeof filter === 'string' || filter instanceof RegExp) {
-    var str = filter;
-    filter = function routeFilter(src, dest) {
-      debug.middleware('#route:filter', str, arguments);
-      this.createPathRegex(str);
-      return this.matchStr(src.path);
-    };
+  // no routes
+  if (!router) {
+    debug('no routes defined on engine');
+    done();
+    return;
   }
 
-  var args = [filter].concat([].slice.call(arguments, 1));
-  debug.routes('#route', args);
+  if (typeof file === 'string') {
+    // lookup the file
+  }
 
-  this.router.route.apply(this.router, args);
+  router.handle(file, done);
+};
+
+/**
+ * Proxy `Router#use()` to add middleware to the engine router.
+ * See Router#use() documentation for details.
+ *
+ * If the _fn_ parameter is an engine, then it will be
+ * mounted at the _route_ specified.
+ *
+ * @api public
+ */
+
+Engine.prototype.use = function (fn) {
+  var offset = 0;
+  var path = '/';
+
+  // default path to '/'
+  // disambiguate engine.use([fn])
+  if (typeof fn !== 'function') {
+    var arg = fn;
+
+    while (Array.isArray(arg) && arg.length !== 0) {
+      arg = arg[0];
+    }
+
+    // first arg is the path
+    if (typeof arg !== 'function') {
+      offset = 1;
+      path = fn;
+    }
+  }
+
+  var fns = flatten(slice(arguments, offset));
+
+  if (fns.length === 0) {
+    throw new TypeError('engine.use() requires middleware functions');
+  }
+
+  // setup router
+  this.lazyrouter();
+  var router = this.router;
+
+  fns.forEach(function (fn) {
+    // non-engine instance
+    if (!fn || !fn.handle || !fn.set) {
+      return router.use(path, fn);
+    }
+
+    debug('.use engine under %s', path);
+    fn.mountpath = path;
+    fn.parent = this;
+
+    // // restore .app property on req and res
+    // router.use(path, function mounted_app(file, next) {
+    //   fn.handle(file, function (err) {
+    //     next(err);
+    //   });
+    // });
+
+    // mounted an app
+    // fn.emit('mount', this);
+  }, this);
+
   return this;
 };
 
 
 /**
- * Set middleware to be used for a specific stage
+ * Proxy to the engine `Router#route()`
+ * Returns a new `Route` instance for the _path_.
  *
- * @param  {String} `stage` Name of the middleware stack to add to.
- * @param  {Function|Array}  `middleware` Middleware stack to run for the given stage.
- * @return {Object} `Engine` to enable chaining.
- * @api private
+ * Routes are isolated middleware stacks for specific paths.
+ * See the Route api docs for details.
+ *
+ * @api public
  */
 
-Engine.prototype.runStage = function(stage) {
-  debug.routes('#use', arguments);
+Engine.prototype.route = function(path){
   this.lazyrouter();
-  this.router.runStage.apply(this.router, arguments);
+  return this.router.route(path);
+};
+
+/**
+ * Proxy to `Router#param()` with one added api feature. The _name_ parameter
+ * can be an array of names.
+ *
+ * See the Router#param() docs for more details.
+ *
+ * @param {String|Array} `name`
+ * @param {Function} `fn`
+ * @return {engine} for chaining
+ * @api public
+ */
+
+Engine.prototype.param = function(name, fn){
+  this.lazyrouter();
+
+  if (Array.isArray(name)) {
+    name.forEach(function(key) {
+      this.param(key, fn);
+    }, this);
+    return this;
+  }
+
+  this.router.param(name, fn);
   return this;
 };
 
+
+/**
+ * Special-cased "all" method, applying the given route `path`,
+ * middleware, and callback.
+ *
+ * @param {String} `path`
+ * @param {Function} ...
+ * @return {engine} for chaining
+ * @api public
+ */
+
+Engine.prototype.all = function(path){
+  this.lazyrouter();
+
+  var route = this.router.route(path);
+  var args = slice(arguments, 1);
+  route.all.apply(route, args);
+  return this;
+};
 
 /**
  * Lazily add a `Layout` instance if it has not yet been added.
@@ -838,7 +919,7 @@ Engine.prototype.getType = function(type) {
 
 Engine.prototype.create = function(subtype, plural, options, fns) {
   debug.template('#{creating template subtype}: %s', subtype);
-  var args = [].slice.call(arguments);
+  var args = slice(arguments);
 
   if (typeof plural !== 'string') {
     fns = options;
@@ -853,12 +934,11 @@ Engine.prototype.create = function(subtype, plural, options, fns) {
     options = {};
   }
 
-  this.typeMiddleware(plural, utils.filterMiddleware(fns, args));
   this.cache[plural] = this.cache[plural] || {};
   options = this.setType(plural, options);
 
   // Add convenience methods for this sub-type
-  this.decorate(subtype, plural, options);
+  this.decorate(subtype, plural, options, utils.filterMiddleware(fns, args));
 
   // Create a sync helper for this type
   if (!hasOwn(this._.helpers, subtype)) {
@@ -882,7 +962,7 @@ Engine.prototype.create = function(subtype, plural, options, fns) {
  * @api private
  */
 
-Engine.prototype.decorate = function(subtype, plural, options) {
+Engine.prototype.decorate = function(subtype, plural, options, fns) {
   debug.template('#{decorating template subtype}:', subtype);
   options = extend({}, options);
 
@@ -899,7 +979,7 @@ Engine.prototype.decorate = function(subtype, plural, options) {
    */
 
   mixin(plural, function (key, value, locals, opt) {
-    this.load(plural, options).apply(this, arguments);
+    this.load(plural, options, fns).apply(this, arguments);
   });
 
   /**
@@ -919,24 +999,7 @@ Engine.prototype.decorate = function(subtype, plural, options) {
       return this.renderType('renderable', subtype);
     });
   }
-};
 
-
-/**
- * Add default middleware to the router for the specific type.
- *
- * @param  {String} `plural` Template type used for this middleware.
- * @param  {Function|Array} `stack` Middleware stack to run for this type.
- * @api private
- */
-
-Engine.prototype.typeMiddleware = function(plural, stack) {
-  this.route(function (src, dest) {
-    if (!src || !src.options) {
-      return false;
-    }
-    return src.options.type === plural;
-  }, stack);
 };
 
 
@@ -950,7 +1013,7 @@ Engine.prototype.typeMiddleware = function(plural, stack) {
  * @return {Object}
  */
 
-Engine.prototype.load = function(plural, options) {
+Engine.prototype.load = function(plural, options, fns) {
   debug.template('#{load} args:', arguments);
 
   var opts = extend({}, this.options, options);
@@ -966,11 +1029,12 @@ Engine.prototype.load = function(plural, options) {
 
     var template = this.normalize(plural, loaded, options);
 
-    forOwn(template, function (value, key) {
-      this.stage('load', value, null, function (err) {
-        if (err) console.log(chalk.red(err));
-      });
-    }.bind(this));
+    // make sure all the templates go through the stack of middleware
+    if (fns) {
+      forOwn(template, function (value, key) {
+        this.route(value.path).all(fns);
+      }.bind(this));
+    }
 
     extend(this.cache[plural], template);
     return this;

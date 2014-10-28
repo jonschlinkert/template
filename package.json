@@ -56,6 +56,7 @@
   },
   "dependencies": {
     "ansi-styles": "^1.1.0",
+    "arr-flatten": "^0.2.0",
     "array-slice": "^0.2.2",
     "arrayify-compact": "^0.1.0",
     "chalk": "^0.5.1",
@@ -63,7 +64,7 @@
     "debug": "^2.1.0",
     "deep-pick": "^0.1.0",
     "delims": "^0.4.0",
-    "en-route": "^0.2.0",
+    "en-route": "git://github.com/jonschlinkert/en-route#refactor",
     "engine-cache": "^0.3.4",
     "engine-lodash": "^0.3.2",
     "engine-noop": "^0.1.0",

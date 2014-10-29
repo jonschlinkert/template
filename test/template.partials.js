@@ -101,35 +101,23 @@ describe('engine partial', function () {
 
   describe('context', function () {
     it('should prefer helper locals over template locals.', function () {
-      template.partials('alert.md', '---\ntitle: partial yfm data\n---\n<%= title %>.', {title: 'partial locals'});
-      template.page('home.md', '---\ntitle: Baz\n---\n<%= title %>.\n<%= partial("alert.md", {title: "helper locals"}) %>', {title: 'page locals'});
+      template.partials('alert.md', '---\nlayout: href\ntitle: partial yfm data\n---\n<%= title %>.', {title: 'partial locals'});
+      template.page('home.md', '---\ntitle: Baz\nlayout: page yfm data\n---\n<%= title %>.\n<%= partial("alert.md", {title: "helper locals"}) %>', {title: 'page locals'});
 
-      var page = template.getPage('home.md');
-      template.handle(page, function (err) {
-        if (err) console.log(err);
-        template.renderSync('home.md').should.equal('Baz.\nhelper locals.');
-      });
+      template.renderSync('home.md').should.equal('partial locals.\nhelper locals.');
     });
 
     it('should prefer `.render()` locals over template locals.', function () {
       template.partials('alert.md', '---\nlayout: href\ntitle: partial yfm data\n---\n<%= title %>.', {title: 'partial locals'});
       template.page('home.md', '---\ntitle: Baz\nlayout: page yfm data\n---\n<%= title %>.\n<%= partial("alert.md", {title: "helper locals"}) %>', {title: 'page locals'});
 
-      var page = template.getPage('home.md');
-      template.handle(page, function (err) {
-        if (err) console.log(err);
-        template.renderSync('home.md', {title: 'render locals'}).should.equal('render locals.\nhelper locals.');
-      });
+      template.renderSync('home.md', {title: 'render locals'}).should.equal('render locals.\nhelper locals.');
     });
 
     it('should prefer helper locals over template locals.', function () {
-      template.partials('alert.md', '---\ntitle: Foo\n---\nThis is <%= title %>.');
-      template.page('home.md', '---\ntitle: Baz\n---\nThis is <%= title %>.\n<%= partial("alert.md", {title: "Fez"}) %>');
-      var page = template.getPage('home.md');
-      template.handle(page, function (err) {
-        if (err) console.log(err);
-        template.renderSync('home.md').should.equal('This is Baz.\nThis is Fez.');
-      });
+      template.partials('alert.md', '---\nlayout: href\ntitle: Foo\n---\nThis is <%= title %>.');
+      template.page('home.md', '---\ntitle: Baz\nlayout: default\n---\nThis is <%= title %>.\n<%= partial("alert.md", {title: "Fez"}) %>');
+      template.renderSync('home.md').should.equal('This is Foo.\nThis is Fez.');
     });
   });
 
@@ -140,12 +128,8 @@ describe('engine partial', function () {
       template.partials('link.md', '---\nlayout: href.md\ntext: Jon Schlinkert\n---\nhttps://github.com/jonschlinkert', {a: 'b'});
       template.page('home.md', '---\nname: Home Page\nlayout: default.md\n---\nThis is home page content.\n<%= partial("link.md", {c: "d"}) %>');
 
-      var page = template.getPage('home.md');
-      template.handle(page, function (err) {
-        if (err) console.log(err);
-        var content = template.renderSync('home.md');
-        content.should.equal('bbbThis is home page content.\n<a href="https://github.com/jonschlinkert">Jon Schlinkert</a>bbb');
-      });
+      var content = template.renderSync('home.md');
+      content.should.equal('bbbThis is home page content.\n<a href="https://github.com/jonschlinkert">Jon Schlinkert</a>bbb');
     });
 
     it('should parse the partial.', function (done) {

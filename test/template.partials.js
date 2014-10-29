@@ -104,7 +104,7 @@ describe('engine partial', function () {
       template.partials('alert.md', '---\nlayout: href\ntitle: partial yfm data\n---\n<%= title %>.', {title: 'partial locals'});
       template.page('home.md', '---\ntitle: Baz\nlayout: page yfm data\n---\n<%= title %>.\n<%= partial("alert.md", {title: "helper locals"}) %>', {title: 'page locals'});
 
-      template.renderSync('home.md').should.equal('partial locals.\nhelper locals.');
+      template.renderSync('home.md').should.equal('Baz.\nhelper locals.');
     });
 
     it('should prefer `.render()` locals over template locals.', function () {
@@ -117,7 +117,7 @@ describe('engine partial', function () {
     it('should prefer helper locals over template locals.', function () {
       template.partials('alert.md', '---\nlayout: href\ntitle: Foo\n---\nThis is <%= title %>.');
       template.page('home.md', '---\ntitle: Baz\nlayout: default\n---\nThis is <%= title %>.\n<%= partial("alert.md", {title: "Fez"}) %>');
-      template.renderSync('home.md').should.equal('This is Foo.\nThis is Fez.');
+      template.renderSync('home.md').should.equal('This is Baz.\nThis is Fez.');
     });
   });
 

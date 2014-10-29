@@ -1029,12 +1029,16 @@ Engine.prototype.load = function(plural, options, fns) {
 
     var template = this.normalize(plural, loaded, options);
 
-    // make sure all the templates go through the stack of middleware
-    if (fns) {
-      forOwn(template, function (value, key) {
-        this.route(value.path).all(fns);
-      }.bind(this));
-    }
+    forOwn(template, function (value, key) {
+      // make sure all the templates go through the stack of middleware
+      if (fns) this.route(value.path).all(fns);
+      this.handle(value, function (err) {
+        if (err) {
+          console.log(chalk.red('Error running middleware for', key));
+          console.log(chalk.red(err));
+        }
+      });
+    }.bind(this));
 
     extend(this.cache[plural], template);
     return this;

@@ -58,6 +58,10 @@ var Template = module.exports = Cache.extend({
   }
 });
 
+/**
+ * Extend `Template`
+ */
+
 Template.extend = Cache.extend;
 Template.Router = Router;
 Template.Route = Route;
@@ -967,7 +971,6 @@ Template.prototype.decorate = function(subtype, plural, options, fns) {
       return this.renderType('renderable', subtype);
     });
   }
-
 };
 
 /**
@@ -999,6 +1002,7 @@ Template.prototype.load = function(plural, options, fns) {
     forOwn(template, function (value, key) {
       // make sure all the templates go through the stack of middleware
       if (fns) this.route(value.path).all(fns);
+
       this.handle(value, function (err) {
         if (err) {
           console.log(chalk.red('Error running middleware for', key));
@@ -1031,11 +1035,8 @@ Template.prototype.normalize = function(plural, template, options) {
     return this.options.normalize.apply(this, arguments);
   }
 
-  var renameKey = this.option('renameKey');
-
   forOwn(template, function (value, key) {
     value.options = extend({ type: plural }, options, value.options);
-    key = renameKey.call(this, key);
 
     var ext = utils.pickExt(value, value.options, this);
     this.lazyLayouts(ext, value.options);
@@ -1177,7 +1178,6 @@ Template.prototype.preprocess = function(template, locals, async) {
     this.addDelims(ext, delims);
   }
 
-
   if (utils.isString(engine)) {
     if (engine[0] !== '.') {
       engine = '.' + engine;
@@ -1196,7 +1196,6 @@ Template.prototype.preprocess = function(template, locals, async) {
   state.engine = engine;
   state.delims = delims;
   state.locals = locals;
-  state.locals.path = template.path;
   return state;
 };
 

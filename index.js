@@ -1,5 +1,5 @@
 /*!
- * engine <https://github.com/jonschlinkert/engine>
+ * template <https://github.com/jonschlinkert/template>
  *
  * Copyright (c) 2014 Jon Schlinkert, contributors.
  * Licensed under the MIT license.
@@ -42,8 +42,8 @@ var extend = _.extend;
  * **Example:**
  *
  * ```js
- * var Template = require('engine');
- * var engine = new Template();
+ * var Template = require('template');
+ * var template = new Template();
  * ```
  *
  * @class `Template`

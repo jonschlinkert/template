@@ -1,5 +1,5 @@
 /*!
- * engine <https://github.com/jonschlinkert/engine>
+ * template <https://github.com/jonschlinkert/template>
  *
  * Copyright (c) 2014 Jon Schlinkert, contributors
  * Licensed under the MIT License (MIT)

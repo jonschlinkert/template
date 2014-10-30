@@ -9,12 +9,12 @@
 
 var assert = require('assert');
 var should = require('should');
-var Engine = require('..');
+var Template = require('..');
 var template;
 
 describe('engine partial', function () {
   beforeEach(function () {
-    template = new Engine();
+    template = new Template();
   });
 
   describe('.partial() strings', function () {
@@ -101,8 +101,8 @@ describe('engine partial', function () {
 
   describe('context', function () {
     it('should prefer helper locals over template locals.', function () {
-      template.partials('alert.md', '---\ntitle: partial yfm data\n---\n<%= title %>.', {title: 'partial locals'});
-      template.page('home.md', '---\ntitle: Baz\n---\n<%= title %>.\n<%= partial("alert.md", {title: "helper locals"}) %>', {title: 'page locals'});
+      template.partials('alert.md', '---\nlayout: href\ntitle: partial yfm data\n---\n<%= title %>.', {title: 'partial locals'});
+      template.page('home.md', '---\ntitle: Baz\nlayout: page yfm data\n---\n<%= title %>.\n<%= partial("alert.md", {title: "helper locals"}) %>', {title: 'page locals'});
 
       template.renderSync('home.md').should.equal('Baz.\nhelper locals.');
     });
@@ -115,8 +115,8 @@ describe('engine partial', function () {
     });
 
     it('should prefer helper locals over template locals.', function () {
-      template.partials('alert.md', '---\ntitle: Foo\n---\nThis is <%= title %>.');
-      template.page('home.md', '---\ntitle: Baz\n---\nThis is <%= title %>.\n<%= partial("alert.md", {title: "Fez"}) %>');
+      template.partials('alert.md', '---\nlayout: href\ntitle: Foo\n---\nThis is <%= title %>.');
+      template.page('home.md', '---\ntitle: Baz\nlayout: default\n---\nThis is <%= title %>.\n<%= partial("alert.md", {title: "Fez"}) %>');
       template.renderSync('home.md').should.equal('This is Baz.\nThis is Fez.');
     });
   });

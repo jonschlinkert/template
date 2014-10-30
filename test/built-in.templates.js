@@ -8,8 +8,8 @@
 'use strict';
 
 var should = require('should');
-var Engine = require('..');
-var template = new Engine();
+var Template = require('..');
+var template = new Template();
 
 
 describe('default templates:', function () {

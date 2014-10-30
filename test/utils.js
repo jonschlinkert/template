@@ -9,32 +9,32 @@
 
 var should = require('should');
 var utils = require('../lib/utils');
-var Engine = require('..');
-var engine;
+var Template = require('..');
+var template;
 
 
 describe('utils', function() {
   beforeEach(function() {
-    engine = new Engine();
+    template = new Template();
   });
 
   describe('.firstOfType:', function () {
     it('should get the first template of the type `renderable` by default:', function () {
-      engine.create('post', { isRenderable: true });
+      template.create('post', { isRenderable: true });
 
-      engine.page('aaa.md', '<%= abc %>');
-      engine.post('aaa.md', '<%= abc %>');
+      template.page('aaa.md', '<%= abc %>');
+      template.post('aaa.md', '<%= abc %>');
 
-      utils.firstOfType('aaa.md', engine).should.have.property('options', {type: 'pages', isRenderable: true});
+      utils.firstOfType('aaa.md', template).should.have.property('options', {type: 'pages', isRenderable: true});
     });
 
     it('should get the first template of the given type:', function () {
-      engine.create('include', { isPartial: true });
+      template.create('include', { isPartial: true });
 
-      engine.partial('aaa.md', '<%= abc %>');
-      engine.include('aaa.md', '<%= abc %>');
+      template.partial('aaa.md', '<%= abc %>');
+      template.include('aaa.md', '<%= abc %>');
 
-      utils.firstOfType('aaa.md', engine, ['partial']).should.have.property('options', {type: 'partials', isPartial: true });
+      utils.firstOfType('aaa.md', template, ['partial']).should.have.property('options', {type: 'partials', isPartial: true });
     });
   });
 });

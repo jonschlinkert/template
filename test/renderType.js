@@ -12,13 +12,13 @@ var path = require('path');
 var should = require('should');
 var helpers = require('test-helpers')({dir: 'test'});
 var consolidate = require('consolidate');
-var Engine = require('..');
-var template = new Engine();
+var Template = require('..');
+var template = new Template();
 
 
 describe('.renderType()', function () {
   beforeEach(function () {
-    template = new Engine();
+    template = new Template();
 
     template.create('post', 'posts', { isRenderable: true });
     template.create('doc', 'docs', { isRenderable: true });

@@ -11,18 +11,19 @@ var consolidate = require('consolidate');
 var parser = require('parser-front-matter');
 var forOwn = require('for-own');
 var should = require('should');
-var Engine = require('..');
+var Template = require('..');
+var Route = Template.Route;
 var template = null;
 
 // Route tests from kerouac
 describe('engine route', function () {
 
-  describe('.middleware', function () {
+  describe('.handle', function () {
     beforeEach(function () {
-      template = new Engine();
+      template = new Template();
 
-      template.route(/\.*/, function (src, dest, next) {
-        parser.parse(src, function (err) {
+      template.route(/\.*/).all(function (file, next) {
+        parser.parse(file, function (err) {
           if (err) return next(err);
           next();
         });
@@ -44,7 +45,7 @@ describe('engine route', function () {
 
       var doneCalled = false;
       forOwn(template.cache.pages, function (value, key) {
-        template.middleware(value, key, function (err) {
+        template.handle(value, function (err) {
           if (err) {
             doneCalled = true;
             return done(err);
@@ -88,33 +89,24 @@ describe('engine route', function () {
   });
 
 
-  // describe('with path', function () {
-  //   var route = new Route('/welcome', [
-  //     function () {}
-  //   ]);
+  describe('with path', function () {
+    var route = new Route('/welcome').all([
+      function () {}
+    ]);
 
-  //   it('should have path property', function () {
-  //     route.path.should.equal('/welcome');
-  //   });
+    it('should have path property', function () {
+      route.path.should.equal('/welcome');
+    });
 
-  //   it('should have fns property', function () {
-  //     route.fns.should.be.instanceof(Array);
-  //     route.fns.should.have.length(1);
-  //   });
-
-  //   it('should have whole path', function () {
-  //     route.isWholePath().should.be.true;
-  //   });
-
-  //   it('should match correctly', function () {
-  //     route.match('/welcome').should.be.true;
-  //     route.match('/not-welcome').should.be.false;
-  //   });
-  // });
+    it('should have stack property', function () {
+      route.stack.should.be.instanceof(Array);
+      route.stack.should.have.length(1);
+    });
+  });
 
 
   // describe('with parameterized path', function () {
-  //   var route = new Route('/blog/:year/:month/:day/:slug', [
+  //   var route = new Route('/blog/:year/:month/:day/:slug').all([
   //     function () {}
   //   ]);
 
@@ -122,9 +114,9 @@ describe('engine route', function () {
   //     route.path.should.equal('/blog/:year/:month/:day/:slug');
   //   });
 
-  //   it('should have fns property', function () {
-  //     route.fns.should.be.instanceof(Array);
-  //     route.fns.should.have.length(1);
+  //   it('should have stack property', function () {
+  //     route.stack.should.be.instanceof(Array);
+  //     route.stack.should.have.length(1);
   //   });
 
   //   it('should not have whole path', function () {

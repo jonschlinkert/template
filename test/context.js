@@ -8,21 +8,21 @@
 'use strict';
 
 var should = require('should');
-var Engine = require('..');
-var engine;
+var Template = require('..');
+var template;
 
 
 describe('context', function() {
   beforeEach(function() {
-    engine = new Engine();
+    template = new Template();
   });
 
   describe('context:', function () {
     it('should pass data to templates in the `.render()` method:', function (done) {
-      engine.data({ abc: 'xyz'});
-      engine.page('aaa.md', '<%= abc %>');
+      template.data({ abc: 'xyz'});
+      template.page('aaa.md', '<%= abc %>');
 
-      engine.render('aaa.md', function (err, content) {
+      template.render('aaa.md', function (err, content) {
         if (err) console.log(err);
         content.should.equal('xyz');
         done();
@@ -30,29 +30,29 @@ describe('context', function() {
     });
 
     it('should pass data to templates in the `.renderSync()` method:', function () {
-      engine.data({ letter: 'b'});
-      engine.page('aaa.md', 'a<%= letter %>c');
-      engine.renderSync('aaa.md').should.equal('abc');
+      template.data({ letter: 'b'});
+      template.page('aaa.md', 'a<%= letter %>c');
+      template.renderSync('aaa.md').should.equal('abc');
     });
 
     it('should give preference to locals over "global" data:', function () {
-      engine.data({ letter: 'b'});
-      engine.page('aaa.md', 'a<%= letter %>c', { letter: 'bbb'});
-      engine.renderSync('aaa.md').should.equal('abbbc');
+      template.data({ letter: 'b'});
+      template.page('aaa.md', 'a<%= letter %>c', { letter: 'bbb'});
+      template.renderSync('aaa.md').should.equal('abbbc');
     });
 
     it('should give preference to front matter over locals:', function () {
-      engine.data({ letter: 'b'});
-      engine.page('aaa.md', '---\nletter: zzz\n---\na<%= letter %>c', { letter: 'bbb'});
-      engine.renderSync('aaa.md').should.equal('azzzc');
+      template.data({ letter: 'b'});
+      template.page('aaa.md', '---\nletter: zzz\n---\na<%= letter %>c', { letter: 'bbb'});
+      template.renderSync('aaa.md').should.equal('azzzc');
     });
 
     describe('when `options.preferLocals` is defined:', function () {
       it('should give preference to locals over front matter:', function () {
-        engine.option('preferLocals', true);
-        engine.data({ letter: 'b'});
-        engine.page('aaa.md', '---\nletter: zzz\n---\na<%= letter %>c', { letter: 'bbb'});
-        engine.renderSync('aaa.md').should.equal('abbbc');
+        template.option('preferLocals', true);
+        template.data({ letter: 'b'});
+        template.page('aaa.md', '---\nletter: zzz\n---\na<%= letter %>c', { letter: 'bbb'});
+        template.renderSync('aaa.md').should.equal('abbbc');
       });
     });
   });

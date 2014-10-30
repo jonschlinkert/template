@@ -10,14 +10,14 @@
 var assert = require('assert');
 var should = require('should');
 var forOwn = require('for-own');
-var Engine = require('..');
+var Template = require('..');
 var template;
 var consolidate = require('consolidate');
 
 
 describe('custom `renderable` types:', function () {
   beforeEach(function () {
-    template = new Engine();
+    template = new Template();
     template.option('preferLocals', true);
   });
 

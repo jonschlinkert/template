@@ -8,17 +8,17 @@
 'use strict';
 
 var should = require('should');
-var Engine = require('..');
-var engine;
+var Template = require('..');
+var template;
 
 
 describe('.addHelper():', function () {
   beforeEach(function () {
-    engine = new Engine();
+    template = new Template();
   });
 
   it('should register _bound_ helper functions by default:', function () {
-    var helpers = engine.helpers('*');
+    var helpers = template.helpers('*');
     helpers.addHelper('a', function () {});
     helpers.addHelper('b', function () {});
 
@@ -26,8 +26,8 @@ describe('.addHelper():', function () {
   });
 
   it('should register _un-bound_ helpers when `bindHelpers` is false:', function () {
-    engine.option('bindHelpers', false);
-    var helpers = engine.helpers('*');
+    template.option('bindHelpers', false);
+    var helpers = template.helpers('*');
 
     helpers.addHelper('a', function () {});
     helpers.addHelper('b', function () {});
@@ -35,14 +35,14 @@ describe('.addHelper():', function () {
   });
 
   it('should use helpers in templates:', function (done) {
-    engine.option('bindHelpers', false);
-    var helpers = engine.helpers('md');
+    template.option('bindHelpers', false);
+    var helpers = template.helpers('md');
 
     helpers.addHelper('upper', function (str) {
       return str.toUpperCase();
     });
 
-    var lodash = engine.getEngine('md');
+    var lodash = template.getEngine('md');
 
     lodash.render('<%= upper(name) %>', {name: 'Halle Nicole'}, function (err, content) {
       if (err) console.log(err);

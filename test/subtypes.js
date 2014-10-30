@@ -8,53 +8,53 @@
 'use strict';
 
 var should = require('should');
-var Engine = require('..');
-var engine;
+var Template = require('..');
+var template;
 
 
 describe('subtypes', function() {
   beforeEach(function() {
-    engine = new Engine();
+    template = new Template();
   });
 
   it('should have templates of built-in `subtype: pages`:', function () {
-    engine.page('abc.md', '<%= abc %>');
-    engine.cache.pages.should.be.an.object;
-    engine.cache.pages.should.have.property('abc.md');
+    template.page('abc.md', '<%= abc %>');
+    template.cache.pages.should.be.an.object;
+    template.cache.pages.should.have.property('abc.md');
   });
 
   it('should have templates of custom `subtype: posts`:', function () {
-    engine.create('post', { isRenderable: true });
-    engine.post('xyz.md', '<%= abc %>');
-    engine.cache.posts.should.be.an.object;
-    engine.cache.posts.should.have.property('xyz.md');
+    template.create('post', { isRenderable: true });
+    template.post('xyz.md', '<%= abc %>');
+    template.cache.posts.should.be.an.object;
+    template.cache.posts.should.have.property('xyz.md');
   });
 
   it('should have templates of built-in `subtype: partials`:', function () {
-    engine.partial('abc.md', '<%= abc %>');
-    engine.cache.partials.should.be.an.object;
-    engine.cache.partials.should.have.property('abc.md');
+    template.partial('abc.md', '<%= abc %>');
+    template.cache.partials.should.be.an.object;
+    template.cache.partials.should.have.property('abc.md');
   });
 
   it('should have templates of custom `subtype: includes`:', function () {
-    engine.create('include', { isPartial: true });
-    engine.include('xyz.md', '<%= abc %>');
+    template.create('include', { isPartial: true });
+    template.include('xyz.md', '<%= abc %>');
 
-    engine.cache.includes.should.be.an.object;
-    engine.cache.includes.should.have.property('xyz.md');
+    template.cache.includes.should.be.an.object;
+    template.cache.includes.should.have.property('xyz.md');
   });
 
   it('should have templates of built-in `subtype: layouts`:', function () {
-    engine.layout('abc.md', '<%= abc %>');
-    engine.cache.layouts.should.be.an.object;
-    engine.cache.layouts.should.have.property('abc.md');
+    template.layout('abc.md', '<%= abc %>');
+    template.cache.layouts.should.be.an.object;
+    template.cache.layouts.should.have.property('abc.md');
   });
 
   it('should have templates of custom `subtype: blocks`:', function () {
-    engine.create('block', { isLayout: true });
-    engine.block('xyz.md', '<%= abc %>');
+    template.create('block', { isLayout: true });
+    template.block('xyz.md', '<%= abc %>');
 
-    engine.cache.blocks.should.be.an.object;
-    engine.cache.blocks.should.have.property('xyz.md');
+    template.cache.blocks.should.be.an.object;
+    template.cache.blocks.should.have.property('xyz.md');
   });
 });

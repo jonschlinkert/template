@@ -11,13 +11,13 @@ var fs = require('fs');
 var path = require('path');
 var should = require('should');
 var helpers = require('test-helpers')({dir: 'test'});
-var Engine = require('..');
-var template = new Engine();
+var Template = require('..');
+var template = new Template();
 
 
 describe('engine render', function () {
   beforeEach(function () {
-    template = new Engine();
+    template = new Template();
   });
 
 

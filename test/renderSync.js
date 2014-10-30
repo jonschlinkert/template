@@ -13,13 +13,13 @@ var should = require('should');
 var forOwn = require('for-own');
 var helpers = require('test-helpers')({dir: 'test'});
 var engines = require('engines');
-var Engine = require('..');
-var template = new Engine();
+var Template = require('..');
+var template = new Template();
 
 
 describe('engine render', function () {
   beforeEach(function () {
-    template = new Engine();
+    template = new Template();
   });
 
   describe('when an un-cached string is passed to `.renderSync()`:', function () {

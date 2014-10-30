@@ -8,12 +8,12 @@
 'use strict';
 
 var should = require('should');
-var Engine = require('..');
+var Template = require('..');
 var template;
 
 describe('layout usage:', function () {
   beforeEach(function () {
-    template = new Engine();
+    template = new Template();
   });
 
   describe('default template types:', function () {

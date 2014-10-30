@@ -12,13 +12,13 @@ var path = require('path');
 var should = require('should');
 var helpers = require('test-helpers')({dir: 'test'});
 var consolidate = require('consolidate');
-var Engine = require('..');
-var template = new Engine();
+var Template = require('..');
+var template = new Template();
 
 
 describe('.renderString()', function () {
   beforeEach(function (done) {
-    template = new Engine();
+    template = new Template();
     done();
   });
 

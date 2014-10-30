@@ -8,13 +8,13 @@
 'use strict';
 
 var should = require('should');
-var Engine = require('..');
+var Template = require('..');
 var _ = require('lodash');
 
 
 describe('engine usage:', function () {
   it('should use the currently set delimiters with any custom renderer:', function () {
-    var template = new Engine();
+    var template = new Template();
 
     var ctx = {name: '____Jon Schlinkert____'};
 
@@ -49,7 +49,7 @@ describe('engine usage:', function () {
   });
 
   it('should use the currently set delimiters with `template.render()`:', function (done) {
-    var template = new Engine();
+    var template = new Template();
 
     template.engine('lodash', require('engine-lodash'));
 

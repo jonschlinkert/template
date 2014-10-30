@@ -11,8 +11,8 @@ var consolidate = require('consolidate');
 var parser = require('parser-front-matter');
 var forOwn = require('for-own');
 var should = require('should');
-var Engine = require('..');
-var Route = Engine.Route;
+var Template = require('..');
+var Route = Template.Route;
 var template = null;
 
 // Route tests from kerouac
@@ -20,7 +20,7 @@ describe('engine route', function () {
 
   describe('.handle', function () {
     beforeEach(function () {
-      template = new Engine();
+      template = new Template();
 
       template.route(/\.*/).all(function (file, next) {
         parser.parse(file, function (err) {

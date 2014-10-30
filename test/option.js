@@ -8,14 +8,14 @@
 'use strict';
 
 var should = require('should');
-var Engine = require('..');
-var template = new Engine();
+var Template = require('..');
+var template = new Template();
 
 
 describe('engine option', function() {
   describe('.option()', function() {
     beforeEach(function () {
-      template = new Engine();
+      template = new Template();
     })
 
     it('should set an option.', function() {

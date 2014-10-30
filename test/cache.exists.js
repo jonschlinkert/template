@@ -8,11 +8,11 @@
 'use strict';
 
 var should = require('should');
-var Engine = require('..');
+var Template = require('..');
 
 describe('Template', function () {
   describe('exists():', function () {
-    var template = new Engine();
+    var template = new Template();
     var obj = {a: {b: {c: 1, d: '', e: null, f: undefined, 'g.h.i': 2}}};
 
     template.merge(obj);

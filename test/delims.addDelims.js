@@ -8,12 +8,12 @@
 'use strict';
 
 var should = require('should');
-var Engine = require('..');
+var Template = require('..');
 
 
 describe('.addDelims():', function () {
   it('should addDelims template by `name` on `template`:', function () {
-    var template = new Engine();
+    var template = new Template();
     Object.keys(template.delims).should.have.length(1);
 
     template.addDelims('hbs', ['{{', '}}']);

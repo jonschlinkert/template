@@ -9,8 +9,8 @@
 
 var fs = require('fs');
 var should = require('should');
-var Engine = require('..');
-var template = new Engine();
+var Template = require('..');
+var template = new Template();
 var consolidate = require('consolidate');
 var handlebars = consolidate.handlebars;
 var lodash = consolidate.lodash;

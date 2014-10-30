@@ -8,13 +8,13 @@
 'use strict';
 
 var should = require('should');
-var Engine = require('..');
+var Template = require('..');
 
 
 describe('engine layouts:', function () {
   describe('default engine:', function () {
     it('should use layouts defined as objects', function (done) {
-      var template = new Engine();
+      var template = new Template();
 
       template.layout({a: { layout: 'b', content: 'A above\n{% body %}\nA below' }});
       template.layout({b: { layout: 'c', content: 'B above\n{% body %}\nB below' }});
@@ -52,7 +52,7 @@ describe('engine layouts:', function () {
     });
 
     it('should use layouts defined as objects', function (done) {
-      var template = new Engine();
+      var template = new Template();
 
       template.layout({a: { layout: 'b', content: 'A above\n{% body %}\nA below' }});
       template.layout({b: { layout: 'c', content: 'B above\n{% body %}\nB below' }});
@@ -90,7 +90,7 @@ describe('engine layouts:', function () {
     });
 
     it('should use layouts defined as strings:', function (done) {
-      var template = new Engine();
+      var template = new Template();
 
       template.layout('first', '{% body %}', {layout: 'a'});
       template.layout('a', 'A above\n{% body %}\nA below', {layout: 'b'});
@@ -125,7 +125,7 @@ describe('engine layouts:', function () {
   });
 
   describe('default engine:', function () {
-    var template = new Engine();
+    var template = new Template();
 
     template.layout('sidebar', '<nav></nav>\n{% body %}', {layout: 'default'});
     template.layout('default', 'default!\n{% body %}\ndefault!');
@@ -149,7 +149,7 @@ describe('engine layouts:', function () {
 
 
   describe('custom template types:', function () {
-    var template = new Engine();
+    var template = new Template();
     template.create('doc', 'docs', { isRenderable: true });
 
     template.layout('sidebar', '<nav></nav>\n{% body %}', {layout: 'default'});

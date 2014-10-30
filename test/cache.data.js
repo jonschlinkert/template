@@ -8,19 +8,19 @@
 'use strict';
 
 var should = require('should');
-var Engine = require('..');
+var Template = require('..');
 var pkg = require('../package');
 
 
 describe('engine data', function() {
-  var template = new Engine();
+  var template = new Template();
   beforeEach(function() {
     template.clear();
   });
 
 
   describe('.data()', function() {
-    var template = new Engine();
+    var template = new Template();
     it('should set properties on the `data` object.', function() {
       template.set('data.foo', 'bar');
       template.get('data').foo.should.equal('bar');
@@ -45,7 +45,7 @@ describe('engine data', function() {
   });
 
   describe('.extendData()', function() {
-    var template = new Engine();
+    var template = new Template();
     it('should extend the `data` object.', function() {
       template
         .extendData({x: 'x', y: 'y', z: 'z'})
@@ -82,7 +82,7 @@ describe('engine data', function() {
   });
 
   describe('.flattenData()', function() {
-    var template = new Engine();
+    var template = new Template();
     it('should merge the value of a nested `data` property onto the root of the given object.', function() {
       var root = template.flattenData({data: {x: 'x'}, y: 'y', z: 'z'});
       root.should.have.properties(['x', 'y', 'z']);
@@ -97,7 +97,7 @@ describe('engine data', function() {
   });
 
   describe('.plasma()', function() {
-    var template = new Engine();
+    var template = new Template();
     it('should read JSON files and return an object.', function() {
       var data = template.plasma('package.json');
       data.name.should.equal(pkg.name);

@@ -10,13 +10,13 @@
 var fs = require('fs');
 var path = require('path');
 var should = require('should');
-var Engine = require('..');
-var template = new Engine();
+var Template = require('..');
+var template = new Template();
 
 
 describe('custom delimiters:', function () {
   it('should use custom delimiters defined on a template type:', function (done) {
-    var template = new Engine();
+    var template = new Template();
     template.engine('*', require('engine-lodash'));
     template.create('doc', 'docs', { isRenderable: true , delims: ['<<', '>>']})
 
@@ -36,7 +36,7 @@ describe('custom delimiters:', function () {
   });
 
   it('should use custom delimiters defined on an actual template:', function (done) {
-    var template = new Engine();
+    var template = new Template();
     template.engine('*', require('engine-lodash'));
     template.create('doc', 'docs', { isRenderable: true })
 
@@ -60,7 +60,7 @@ describe('custom delimiters:', function () {
   });
 
   it('should use custom delimiters defined on partials:', function (done) {
-    var template = new Engine();
+    var template = new Template();
     template.engine('*', require('engine-lodash'));
     template.create('doc', 'docs', { isRenderable: true });
 

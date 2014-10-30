@@ -8,60 +8,60 @@
 'use strict';
 
 var should = require('should');
-var Engine = require('..');
-var engine;
+var Template = require('..');
+var template;
 
 
 describe('.getType()', function() {
   beforeEach(function() {
-    engine = new Engine();
+    template = new Template();
   });
 
   it('should get all built-in templates of `type: renderable`:', function () {
-    engine.page('abc.md', '<%= abc %>');
-    engine.getType('renderable').should.be.an.object;
-    engine.getType('renderable').should.have.property('pages');
-    engine.getType('renderable').pages.should.have.property('abc.md');
+    template.page('abc.md', '<%= abc %>');
+    template.getType('renderable').should.be.an.object;
+    template.getType('renderable').should.have.property('pages');
+    template.getType('renderable').pages.should.have.property('abc.md');
   });
 
   it('should get all custom templates of `type: renderable`:', function () {
-    engine.create('post', { isRenderable: true });
-    engine.post('xyz.md', '<%= abc %>');
-    engine.getType('renderable').should.be.an.object;
-    engine.getType('renderable').should.have.property('posts');
-    engine.getType('renderable').posts.should.have.property('xyz.md');
+    template.create('post', { isRenderable: true });
+    template.post('xyz.md', '<%= abc %>');
+    template.getType('renderable').should.be.an.object;
+    template.getType('renderable').should.have.property('posts');
+    template.getType('renderable').posts.should.have.property('xyz.md');
   });
 
   it('should get all templates of built-in `type: partial`:', function () {
-    engine.create('include', { isPartial: true });
-    engine.partial('abc.md', '<%= abc %>');
-    engine.include('xyz.md', '<%= abc %>');
+    template.create('include', { isPartial: true });
+    template.partial('abc.md', '<%= abc %>');
+    template.include('xyz.md', '<%= abc %>');
 
-    engine.getType('partial').should.be.an.object;
-    engine.getType('partial').should.have.property('partials');
-    engine.getType('partial').should.have.property('includes');
-    engine.getType('partial').partials.should.have.property('abc.md');
-    engine.getType('partial').includes.should.have.property('xyz.md');
+    template.getType('partial').should.be.an.object;
+    template.getType('partial').should.have.property('partials');
+    template.getType('partial').should.have.property('includes');
+    template.getType('partial').partials.should.have.property('abc.md');
+    template.getType('partial').includes.should.have.property('xyz.md');
   });
 
   it('should get all templates of custom `type: partial`:', function () {
-    engine.create('include', { isPartial: true });
-    engine.include('xyz.md', '<%= abc %>');
+    template.create('include', { isPartial: true });
+    template.include('xyz.md', '<%= abc %>');
 
-    engine.getType('partial').should.be.an.object;
-    engine.getType('partial').should.have.property('includes');
-    engine.getType('partial').includes.should.have.property('xyz.md');
+    template.getType('partial').should.be.an.object;
+    template.getType('partial').should.have.property('includes');
+    template.getType('partial').includes.should.have.property('xyz.md');
   });
 
   it('should get all templates of `type: layout`:', function () {
-    engine.create('block', { isLayout: true });
-    engine.layout('abc.md', '<%= abc %>');
-    engine.block('xyz.md', '<%= abc %>');
+    template.create('block', { isLayout: true });
+    template.layout('abc.md', '<%= abc %>');
+    template.block('xyz.md', '<%= abc %>');
 
-    engine.getType('layout').should.be.an.object;
-    engine.getType('layout').should.have.property('layouts');
-    engine.getType('layout').should.have.property('blocks');
-    engine.getType('layout').layouts.should.have.property('abc.md');
-    engine.getType('layout').blocks.should.have.property('xyz.md');
+    template.getType('layout').should.be.an.object;
+    template.getType('layout').should.have.property('layouts');
+    template.getType('layout').should.have.property('blocks');
+    template.getType('layout').layouts.should.have.property('abc.md');
+    template.getType('layout').blocks.should.have.property('xyz.md');
   });
 });

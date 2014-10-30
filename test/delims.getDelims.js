@@ -8,12 +8,12 @@
 'use strict';
 
 var should = require('should');
-var Engine = require('..');
+var Template = require('..');
 
 
 describe('.getDelims():', function () {
   it('should use default built-in template:', function () {
-    var template = new Engine();
+    var template = new Template();
 
     template.useDelims('*');
     template.getDelims().should.eql({
@@ -24,7 +24,7 @@ describe('.getDelims():', function () {
   });
 
   it('should allow default built-in template to be overridden:', function () {
-    var template = new Engine();
+    var template = new Template();
 
     template.addDelims('default', ['<<', '>>']);
     template.useDelims('default');
@@ -36,7 +36,7 @@ describe('.getDelims():', function () {
   });
 
   it('should use the currently set template:', function () {
-    var template = new Engine();
+    var template = new Template();
     var ctx = {
       name: '____Jon Schlinkert____'
     };

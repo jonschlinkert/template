@@ -9,12 +9,12 @@
 
 var assert = require('assert');
 var should = require('should');
-var Engine = require('..');
+var Template = require('..');
 var template;
 
 describe('engine get', function () {
   beforeEach(function () {
-    template = new Engine();
+    template = new Template();
   });
 
   it('should `.get()` default template types from the cache.', function () {

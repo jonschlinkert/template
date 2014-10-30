@@ -8,13 +8,13 @@
 'use strict';
 
 var should = require('should');
-var Engine = require('..');
+var Template = require('..');
 var template;
 
 
 describe('option events', function() {
   beforeEach(function () {
-    template = new Engine();
+    template = new Template();
   });
 
   it('should emit `option` when a value is set', function () {

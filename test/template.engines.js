@@ -11,13 +11,13 @@ var fs = require('fs');
 var path = require('path');
 var assert = require('assert');
 var should = require('should');
-var Engine = require('..');
-var template = new Engine();
+var Template = require('..');
+var template = new Template();
 
 
 describe('engine engine', function() {
   beforeEach(function () {
-    template = new Engine();
+    template = new Template();
   });
 
   describe('.engine()', function() {

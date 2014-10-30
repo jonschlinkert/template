@@ -8,18 +8,18 @@
 'use strict';
 
 var should = require('should');
-var Engine = require('..');
-var engine;
+var Template = require('..');
+var template;
 
 
 describe('.addHelperAsync():', function () {
   beforeEach(function () {
-    engine = new Engine();
+    template = new Template();
   });
 
 
   it('should register _bound_ async helper functions by default:', function () {
-    var helpers = engine.helpers('md');
+    var helpers = template.helpers('md');
 
     helpers.addHelperAsync('a', function (str, callback) {
       callback(null, str.toLowerCase());
@@ -35,7 +35,7 @@ describe('.addHelperAsync():', function () {
 
 
   it('should use bound helpers in templates:', function (done) {
-    var helpers = engine.helpers('md');
+    var helpers = template.helpers('md');
 
     helpers.addHelperAsync('a', function (str, callback) {
       callback(null, str.toLowerCase());
@@ -45,8 +45,8 @@ describe('.addHelperAsync():', function () {
       callback(null, str.toUpperCase());
     });
 
-    engine.page('foo.md', {content: 'A: <%= a(name) %>\nB: <%= b(name) %>'});
-    engine.render('foo.md', {name: 'Jon Schlinkert'}, function (err, content) {
+    template.page('foo.md', {content: 'A: <%= a(name) %>\nB: <%= b(name) %>'});
+    template.render('foo.md', {name: 'Jon Schlinkert'}, function (err, content) {
       if (err) return done(err);
       content.should.equal('A: jon schlinkert\nB: JON SCHLINKERT');
       done();
@@ -55,8 +55,8 @@ describe('.addHelperAsync():', function () {
 
 
   it('should register _un-bound_ async helpers when `bindHelpers` is false:', function () {
-    engine.option('bindHelpers', false);
-    var helpers = engine.helpers('md');
+    template.option('bindHelpers', false);
+    var helpers = template.helpers('md');
 
     helpers
       .addHelperAsync('a', function (str, callback) {
@@ -73,8 +73,8 @@ describe('.addHelperAsync():', function () {
 
 
   it('should use _un-bound_ helpers in templates:', function (done) {
-    engine.option('bindHelpers', false);
-    var helpers = engine.helpers('md');
+    template.option('bindHelpers', false);
+    var helpers = template.helpers('md');
 
     helpers
       .addHelperAsync('a', function (str, callback) {
@@ -84,8 +84,8 @@ describe('.addHelperAsync():', function () {
         callback(null, str.toUpperCase());
       });
 
-    engine.page('foo.md', {content: 'A: <%= a(name) %>\nB: <%= b(name) %>'});
-    engine.render('foo.md', {name: 'Jon Schlinkert'}, function (err, content) {
+    template.page('foo.md', {content: 'A: <%= a(name) %>\nB: <%= b(name) %>'});
+    template.render('foo.md', {name: 'Jon Schlinkert'}, function (err, content) {
       if (err) return done(err);
       content.should.equal('A: jon schlinkert\nB: JON SCHLINKERT');
       done();
@@ -93,7 +93,7 @@ describe('.addHelperAsync():', function () {
   });
 
   it('should use helpers registered for all engines:', function (done) {
-    engine
+    template
       .addHelperAsync('a', function (str, callback) {
         callback(null, str.toLowerCase());
       })
@@ -101,12 +101,12 @@ describe('.addHelperAsync():', function () {
         callback(null, str.toUpperCase());
       });
 
-    engine._.asyncHelpers.should.have.properties(['a', 'b']);
-    engine._.asyncHelpers._.helpersAsync.should.have.properties(['a', 'b']);
+    template._.asyncHelpers.should.have.properties(['a', 'b']);
+    template._.asyncHelpers._.helpersAsync.should.have.properties(['a', 'b']);
 
-    engine.page('foo.md', {content: 'A: <%= a(name) %>\nB: <%= b(name) %>'});
+    template.page('foo.md', {content: 'A: <%= a(name) %>\nB: <%= b(name) %>'});
 
-    engine.render('foo.md', {name: 'Jon Schlinkert'}, function (err, content) {
+    template.render('foo.md', {name: 'Jon Schlinkert'}, function (err, content) {
       if (err) return done(err);
       content.should.equal('A: jon schlinkert\nB: JON SCHLINKERT');
       done();

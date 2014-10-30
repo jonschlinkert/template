@@ -8,14 +8,14 @@
 'use strict';
 
 var should = require('should');
-var Engine = require('..');
+var Template = require('..');
 var template = null;
 
 
 // Router tests from kerouac
 describe('engine router', function() {
   beforeEach(function () {
-    template = new Engine();
+    template = new Template();
   });
 
   describe('with two simple routes', function() {
@@ -32,7 +32,7 @@ describe('engine router', function() {
     });
 
     it('should have routes for default template types.', function() {
-      template.router.stack.should.have.length(5);
+      template.router.stack.should.have.length(4);
     });
 
     it('should dispatch /foo', function(done) {

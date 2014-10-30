@@ -1,4 +1,4 @@
-# engine [![NPM version](https://badge.fury.io/js/engine.svg)](http://badge.fury.io/js/engine)
+# template [![NPM version](https://badge.fury.io/js/template.svg)](http://badge.fury.io/js/template)
 
 > Render templates from any engine. Make custom template types, use built-in or custom delimiters, helpers, routes, middleware and lots more.
 
@@ -6,31 +6,64 @@
 #### Install with [npm](npmjs.org):
 
 ```bash
-npm i engine --save-dev
+npm i template --save-dev
 ```
 
 ## Usage
 
 ```js
-var Template = require('engine');
+var Template = require('template');
 var template = new Template();
 ```
 
 ## API
-### [Engine](index.js#L46)
+### [Template](index.js#L54)
 
-Create a new instance of `Engine`, optionally passing default `options` to initialize with.
+Create a new instance of `Template`, optionally passing default `options` to initialize with.
 
 * `options` **{Object}**: Options to initialize with.    
 
 **Example:**
 
 ```js
-var Engine = require('engine');
-var engine = new Engine();
+var Template = require('engine');
+var engine = new Template();
 ```
 
-### [.addDelims](index.js#L477)
+### [.use](index.js#L275)
+
+Proxy `Router#use()` to add middleware to the engine router. See Router#use() documentation for details.
+
+If the _fn_ parameter is an engine, then it will be
+mounted at the _route_ specified.
+
+### [.route](index.js#L339)
+
+Proxy to the engine `Router#route()` Returns a new `Route` instance for the _path_.
+
+Routes are isolated middleware stacks for specific paths.
+See the Route api docs for details.
+
+### [.param](index.js#L356)
+
+Proxy to `Router#param()` with one added api feature. The _name_ parameter can be an array of names.
+
+* `name` **{String|Array}**    
+* `fn` **{Function}**    
+* `returns` **{engine}**: for chaining  
+
+See the Router#param() docs for more details.
+
+### [.all](index.js#L380)
+
+* `path` **{String}**    
+* **{Function}**: ...    
+* `returns` **{engine}**: for chaining  
+
+Special-cased "all" method, applying the given route `path`,
+middleware, and callback.
+
+### [.addDelims](index.js#L511)
 
 Cache delimiters by `name` with the given `options` for later use.
 
@@ -41,9 +74,9 @@ Cache delimiters by `name` with the given `options` for later use.
 **Example:**
 
 ```js
-engine.addDelims('curly', ['']);
-engine.addDelims('angle', ['<%', '%>']);
-engine.addDelims('es6', ['#{', '}'], {
+template.addDelims('curly', ['']);
+template.addDelims('angle', ['<%', '%>']);
+template.addDelims('es6', ['#{', '}'], {
   // override the generated regex
   interpolate: /\$\{([^\\}]*(?:\\.[^\\}]*)*)\}/g
 });
@@ -51,23 +84,23 @@ engine.addDelims('es6', ['#{', '}'], {
 
 [delims]: https://github.com/jonschlinkert/delims "Generate regex for delimiters"
 
-### [.useDelims](index.js#L524)
+### [.useDelims](index.js#L563)
 
 Specify by `ext` the delimiters to make active.
 
 * `ext` **{String}**    
 
 ```js
-engine.useDelims('curly');
-engine.useDelims('angle');
+template.useDelims('curly');
+template.useDelims('angle');
 ```
 
-### [.engine](index.js#L573)
+### [.engine](index.js#L614)
 
-* `ext` **{String}**    
+* `exts` **{String|Array}**: File extension or array of extensions.    
 * `fn` **{Function|Object}**: or `options`    
 * `options` **{Object}**    
-* `returns` **{Object}** `Engine`: to enable chaining  
+* `returns` **{Object}** `Template`: to enable chaining  
 
 **Example:**
 
@@ -84,12 +117,12 @@ Register the given view engine callback `fn` as `ext`. If only `ext`
 is passed, the engine registered for `ext` is returned. If no `ext`
 is passed, the entire cache is returned.
 
-### [.getEngine](index.js#L596)
+### [.getEngine](index.js#L640)
 
-Get the engine registered for the given `ext`. If no `ext` is passed, the entire cache is returned.
+Get the engine object registered for the given `ext`. If no `ext` is passed, the entire cache is returned.
 
 * `ext` **{String}**: The engine to get.    
-* `returns` **{Object}**: Object of methods for the specified engine.  
+* `returns` **{Object}**: Object with methods and settings for the specified engine.  
 
 **Example:**
 
@@ -101,23 +134,37 @@ template.getEngine('hbs');
 ```
 
 ```js
-engine.getEngine('.html');
+template.getEngine('.html');
 ```
 
-### [.helper](index.js#L640)
+### [.addHelper](index.js#L684)
 
-Register a helper for the given `ext` (engine).
+Get and set _generic_ helpers on the `cache`.
+
+* `name` **{String}**: The helper to cache or get.    
+* `fn` **{Function}**: The helper function.    
+* `thisArg` **{Object}**: Context to bind to the helper.    
+* `returns` **{Object}**: Object of helpers for the specified engine.  
+
+Helpers registered
+using this method will be passed to every engine, so be sure to use
+generic javascript functions - unless you want to see Lo-Dash
+blow up from `Handlebars.SafeString`.
+
+### [.helper](index.js#L705)
+
+Register a helper for the given `ext` (engine). Register the given view engine callback `fn` as `ext`. If only `ext` is passed, the engine registered for `ext` is returned. If no `ext` is passed, the entire cache is returned.
 
 * `ext` **{String}**: The engine to register helpers with.    
 * `returns` **{Object}**: Object of helpers for the specified engine.  
 
 ```js
-engine.addHelper('lower', function(str) {
+template.helper('lower', function(str) {
   return str.toLowerCase();
 });
 ```
 
-### [.helpers](index.js#L658)
+### [.helpers](index.js#L722)
 
 Register an object of helpers for the given `ext` (engine).
 
@@ -125,22 +172,10 @@ Register an object of helpers for the given `ext` (engine).
 * `returns` **{Object}**: Object of helpers for the specified engine.  
 
 ```js
-engine.helpers(require('handlebars-helpers'));
+template.helpers(require('handlebars-helpers'));
 ```
 
-### [.addHelper](index.js#L677)
-
-* `name` **{String}**: The helper to cache or get.    
-* `fn` **{Function}**: The helper function.    
-* `thisArg` **{Object}**: Context to bind to the helper.    
-* `returns` **{Object}**: Object of helpers for the specified engine.  
-
-Get and set _generic_ helpers on the `cache`. Helpers registered
-using this method will be passed to every engine, so be sure to use
-generic javascript functions - unless you want to see Lo-Dash
-blow up from `Handlebars.SafeString`.
-
-### [.addHelperAsync](index.js#L693)
+### [.addHelperAsync](index.js#L737)
 
 * `name` **{String}**: The helper to cache or get.    
 * `fn` **{Function}**: The helper function.    
@@ -149,21 +184,34 @@ blow up from `Handlebars.SafeString`.
 
 Async version of `.addHelper()`.
 
-### [.create](index.js#L765)
+### [.helperAsync](index.js#L756)
 
-* `type` **{String}**: Singular name of the type to create, e.g. `page`.    
+Register a helper for the given `ext` (engine).
+
+* `ext` **{String}**: The engine to register helpers with.    
+* `returns` **{Object}**: Object of helpers for the specified engine.  
+
+```js
+template.helperAsync('lower', function(str) {
+  return str.toLowerCase();
+});
+```
+
+### [.create](index.js#L889)
+
+* `subtype` **{String}**: Singular name of the sub-type to create, e.g. `page`.    
 * `plural` **{String}**: Plural name of the template type, e.g. `pages`.    
 * `options` **{Object}**: Options for the template type.  
     - `isRenderable` **{Boolean}**: Is the template a partial view?
     - `layout` **{Boolean}**: Can the template be used as a layout?
     - `partial` **{Boolean}**: Can the template be used as a partial?
       
-* `returns` **{Object}** `Engine`: to enable chaining.  
+* `returns` **{Object}** `Template`: to enable chaining.  
 
-Add a new template `type`, along with associated get/set methods.
+Add a new template `sub-type`, along with associated get/set methods.
 You must specify both the singular and plural names for the type.
 
-### [.preprocess](index.js#L980)
+### [.preprocess](index.js#L1123)
 
 * `file` **{Object|String}**: String or normalized template object.    
 * `options` **{Object}**: Options to pass to registered view engines.    
@@ -172,7 +220,7 @@ You must specify both the singular and plural names for the type.
 Preprocess `str` with the given `options` and `callback`. A few
 things to note.
 
-### [.render](index.js#L1063)
+### [.renderBase](index.js#L1212)
 
 * `file` **{Object|String}**: String or normalized template object.    
 * `options` **{Object}**: Options to pass to registered view engines.    
@@ -180,7 +228,40 @@ things to note.
 
 Render `content` with the given `options` and `callback`.
 
-### [.renderSync](index.js#L1108)
+### [.renderType](index.js#L1252)
+
+* `str` **{String}**: The string to render.    
+* `locals` **{Object}**: Locals and/or options to pass to registered view engines.    
+* `returns`: {String}  
+
+Render the given string with the specified `locals` and `callback`.
+
+### [.renderCached](index.js#L1301)
+
+* `name` **{String}**: Name of the cached template.    
+* `locals` **{Object}**: Locals and/or options to pass to registered view engines.    
+* `returns`: {String}  
+
+Render `content` from the given cached template with the
+given `locals` and `callback`.
+
+### [.renderString](index.js#L1341)
+
+* `str` **{String}**: The string to render.    
+* `locals` **{Object}**: Locals and/or options to pass to registered view engines.    
+* `returns`: {String}  
+
+Render the given string with the specified `locals` and `callback`.
+
+### [.render](index.js#L1371)
+
+* `file` **{Object|String}**: String or normalized template object.    
+* `options` **{Object}**: Options to pass to registered view engines.    
+* `returns`: {String}  
+
+Render `content` with the given `options` and `callback`.
+
+### [.renderSync](index.js#L1401)
 
 * `file` **{Object|String}**: String or normalized template object.    
 * `options` **{Object}**: Options to pass to registered view engines.    
@@ -236,7 +317,7 @@ Released under the CC by 3.0, MIT licenses
 
 ***
 
-_This file was generated by [verb-cli](https://github.com/assemble/verb-cli) on October 22, 2014._
+_This file was generated by [verb-cli](https://github.com/assemble/verb-cli) on October 30, 2014._
 
 
 [engine-cache]: https://github.com/jonschlinkert/engine-cache

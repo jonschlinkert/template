@@ -1,27 +1,27 @@
 {
-  "name": "engine",
+  "name": "template",
   "description": "Render templates from any engine. Make custom template types, use built-in or custom delimiters, helpers, routes, middleware and lots more.",
   "version": "0.1.0",
-  "homepage": "https://github.com/jonschlinkert/engine",
+  "homepage": "https://github.com/jonschlinkert/template",
   "author": {
     "name": "Jon Schlinkert",
     "url": "https://github.com/jonschlinkert"
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/jonschlinkert/engine.git"
+    "url": "git://github.com/jonschlinkert/template.git"
   },
   "bugs": {
-    "url": "https://github.com/jonschlinkert/engine/issues"
+    "url": "https://github.com/jonschlinkert/template/issues"
   },
   "licenses": [
     {
       "type": "CC by 3.0",
-      "url": "https://github.com/jonschlinkert/engine/blob/master/LICENSE-CC"
+      "url": "https://github.com/jonschlinkert/template/blob/master/LICENSE-CC"
     },
     {
       "type": "MIT",
-      "url": "https://github.com/jonschlinkert/engine/blob/master/LICENSE-MIT"
+      "url": "https://github.com/jonschlinkert/template/blob/master/LICENSE-MIT"
     }
   ],
   "main": "index.js",

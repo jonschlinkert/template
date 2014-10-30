@@ -252,77 +252,6 @@ Engine.prototype.defaultTemplates = function() {
 
 
 /**
- * Create helpers for each default template `type`.
- *
- * @api private
- */
-
-Engine.prototype.typeHelpers = function(type, plural) {
-  this.addHelper(type, function (key, locals) {
-    var partial = this.cache[plural][key];
-
-    partial = this.stashLocals(type, partial, locals);
-
-    var content = this.renderSync(partial, locals);
-    if (content instanceof Error) {
-      throw content;
-    }
-    return content;
-  });
-};
-
-
-/**
- * Create async helpers for each default template `type`.
- *
- * @param {String} `type` The type of template.
- * @param {String} `plural` Plural form of `type`.
- * @api private
- */
-
-Engine.prototype.typeHelpersAsync = function(type, plural) {
-  this.addHelperAsync(type, function (name, locals, next) {
-    debug.helper('#{creating async type helper}:', name);
-    var last = _.last(arguments);
-
-    if (typeof locals === 'function') {
-      next = locals;
-      locals = {};
-    }
-    if (typeof next !== 'function') {
-      next = last;
-    }
-
-    var partial = this.cache[plural][name];
-    if (partial) {
-      this.stashLocals('typeHelpersAsync', partial, locals);
-    }
-
-    if (!partial) {
-      var msg = chalk.red('helper {{' + type + ' "' + name + '"}} not found.');
-      console.log(msg);
-      next(null, '');
-      return;
-    }
-
-    partial.locals = extend({}, partial.locals, partial.data, locals);
-    debug.helper('#{async helper partial}:', partial);
-
-    this.render(partial, partial.locals, function (err, content) {
-      debug.helper('#{async helper rendering}:', content);
-      if (err) {
-        console.log('asyncHelpers:', chalk.red(err));
-        next(err);
-        return;
-      }
-      next(null, content);
-      return;
-    });
-  }.bind(this));
-};
-
-
-/**
  * Lazily initalize router, to allow options to
  * be passed in after init.
  *
@@ -680,7 +609,8 @@ Engine.prototype.useDelims = function(ext) {
 
 
 /**
- * Private method for registering an engine.
+ * Private method for registering an engine. Register the given view
+ * engine callback `fn` as `ext`.
  *
  * @param {String} `ext`
  * @param {Function|Object} `fn` or `options`
@@ -698,8 +628,7 @@ Engine.prototype.registerEngine = function(ext, fn, options) {
   debug.engine('#{register} args:', arguments);
   debug.engine('#{register} ext: %s', ext);
 
-  this._.engines.register(ext, fn, opts);
-
+  this._.engines.setEngine(ext, fn, opts);
   if (opts.delims) {
     this.addDelims(ext, opts.delims);
     this.engines[ext].delims = this.getDelims(ext);
@@ -716,16 +645,17 @@ Engine.prototype.registerEngine = function(ext, fn, options) {
  * is passed, the entire cache is returned.
  *
  * @doc api-engine
- * @param {String} `ext`
+ * @param {String|Array} `exts` File extension or array of extensions.
  * @param {Function|Object} `fn` or `options`
  * @param {Object} `options`
  * @return {Object} `Engine` to enable chaining
  * @api public
  */
 
-Engine.prototype.engine = function(extension, fn, options) {
+Engine.prototype.engine = function(exts, fn, options) {
   debug.engine('#{engine} args: ', arguments);
-  utils.arrayify(extension).forEach(function(ext) {
+
+  utils.arrayify(exts).forEach(function(ext) {
     if (ext[0] !== '.') {
       ext = '.' + ext;
     }
@@ -736,7 +666,33 @@ Engine.prototype.engine = function(extension, fn, options) {
 
 
 /**
- * Get the engine registered for the given `ext`. If no
+ * Register the given view engine callback `fn` as `ext`. If only `ext`
+ * is passed, the engine registered for `ext` is returned. If no `ext`
+ * is passed, the entire cache is returned.
+ *
+ * @doc api-engine
+ * @param {String|Array} `exts` File extension or array of extensions.
+ * @param {Function|Object} `fn` or `options`
+ * @param {Object} `options`
+ * @return {Object} `Engine` to enable chaining
+ * @api public
+ */
+
+Engine.prototype.register = function(exts, fn, options) {
+  debug.engine('#{engine} args: ', arguments);
+
+  utils.arrayify(exts).forEach(function(ext) {
+    if (ext[0] !== '.') {
+      ext = '.' + ext;
+    }
+    this.registerEngine(ext, fn, options);
+  }.bind(this));
+  return this;
+};
+
+
+/**
+ * Get the engine object registered for the given `ext`. If no
  * `ext` is passed, the entire cache is returned.
  *
  * ```js
@@ -745,13 +701,13 @@ Engine.prototype.engine = function(extension, fn, options) {
  *
  * @doc api-getEngine
  * @param {String} `ext` The engine to get.
- * @return {Object} Object of methods for the specified engine.
+ * @return {Object} Object with methods and settings for the specified engine.
  * @api public
  */
 
 Engine.prototype.getEngine = function(ext) {
   debug.engine('#{getEngine} ext: %s', ext);
-  var engine = this._.engines.get(ext);
+  var engine = this._.engines.getEngine(ext);
   engine.options.thisArg = null;
   return engine;
 };
@@ -761,9 +717,10 @@ Engine.prototype.getEngine = function(ext) {
  * Assign mixin `fn` to `name` or return the value of `name`
  * if no other arguments are passed.
  *
- * This method sets mixins on the cache, which will later be
- * passed to a template engine that uses mixins, such as
- * Lo-Dash or Underscore.
+ * This method sets mixins on the cache, which can later be passed
+ * to any template engine that uses mixins, like Lo-Dash or Underscore.
+ * This also ensures that mixins are passed to the same instance of
+ * whatever engine is used.
  *
  * @param {String} `name` The name of the mixin to add.
  * @param {Function} `fn` The actual mixin function.
@@ -780,10 +737,33 @@ Engine.prototype.addMixin = function(name, fn) {
 
 
 /**
- * Register a helper for the given `ext` (engine).
+ * Get and set _generic_ helpers on the `cache`.
+ *
+ * Helpers registered
+ * using this method will be passed to every engine, so be sure to use
+ * generic javascript functions - unless you want to see Lo-Dash
+ * blow up from `Handlebars.SafeString`.
+ *
+ * @param {String} `name` The helper to cache or get.
+ * @param {Function} `fn` The helper function.
+ * @param {Object} `thisArg` Context to bind to the helper.
+ * @return {Object} Object of helpers for the specified engine.
+ * @api public
+ */
+
+Engine.prototype.addHelper = function(name, fn, thisArg) {
+  debug.helper('#{adding helper} name: %s', name);
+  return this._.helpers.addHelper(name, fn, thisArg);
+};
+
+
+/**
+ * Register a helper for the given `ext` (engine). Register the given view engine callback `fn` as `ext`. If only `ext`
+ * is passed, the engine registered for `ext` is returned. If no `ext`
+ * is passed, the entire cache is returned.
  *
  * ```js
- * engine.addHelper('lower', function(str) {
+ * engine.helper('lower', function(str) {
  *   return str.toLowerCase();
  * });
  * ```
@@ -793,9 +773,9 @@ Engine.prototype.addMixin = function(name, fn) {
  * @api public
  */
 
-Engine.prototype.helper = function(ext) {
-  debug.helper('#{helper} ext: %s', ext);
-  return this.getEngine(ext).helpers;
+Engine.prototype.helper = function() {
+  debug.helper('#{helper}: %j', arguments);
+  return this.addHelper.apply(this, arguments);
 };
 
 
@@ -818,25 +798,6 @@ Engine.prototype.helpers = function(ext) {
 
 
 /**
- * Get and set _generic_ helpers on the `cache`. Helpers registered
- * using this method will be passed to every engine, so be sure to use
- * generic javascript functions - unless you want to see Lo-Dash
- * blow up from `Handlebars.SafeString`.
- *
- * @param {String} `name` The helper to cache or get.
- * @param {Function} `fn` The helper function.
- * @param {Object} `thisArg` Context to bind to the helper.
- * @return {Object} Object of helpers for the specified engine.
- * @api public
- */
-
-Engine.prototype.addHelper = function(name, fn, thisArg) {
-  debug.helper('#{adding helper} name: %s', name);
-  return this._.helpers.addHelper(name, fn, thisArg);
-};
-
-
-/**
  * Async version of `.addHelper()`.
  *
  * @param {String} `name` The helper to cache or get.
@@ -849,6 +810,93 @@ Engine.prototype.addHelper = function(name, fn, thisArg) {
 Engine.prototype.addHelperAsync = function(name, fn, thisArg) {
   debug.helper('#{adding async helper} name: %s', name);
   return this._.asyncHelpers.addHelperAsync(name, fn, thisArg);
+};
+
+
+/**
+ * Register a helper for the given `ext` (engine).
+ *
+ * ```js
+ * engine.helperAsync('lower', function(str) {
+ *   return str.toLowerCase();
+ * });
+ * ```
+ *
+ * @param {String} `ext` The engine to register helpers with.
+ * @return {Object} Object of helpers for the specified engine.
+ * @api public
+ */
+
+Engine.prototype.helperAsync = function() {
+  debug.helper('#{helper}: %j', arguments);
+  return this.addHelperAsync.apply(this, arguments);
+};
+
+
+/**
+ * Create helpers for each default template `type`.
+ *
+ * @api private
+ */
+
+Engine.prototype.createTypeHelper = function(type, plural) {
+  this.helper(type, function (key, locals) {
+    var partial = this.cache[plural][key];
+
+    partial = this.stashLocals('typeHelper', partial, locals);
+
+    var content = this.renderSync(partial, locals);
+    if (content instanceof Error) {
+      throw content;
+    }
+    return content;
+  });
+};
+
+
+/**
+ * Create async helpers for each default template `type`.
+ *
+ * @param {String} `type` The type of template.
+ * @param {String} `plural` Plural form of `type`.
+ * @api private
+ */
+
+Engine.prototype.createTypeHelperAsync = function(type, plural) {
+  this.helperAsync(type, function (name, locals, next) {
+    debug.helper('#{creating async type helper}:', name);
+    var last = _.last(arguments);
+
+    if (typeof locals === 'function') {
+      next = locals;
+      locals = {};
+    }
+    if (typeof next !== 'function') {
+      next = last;
+    }
+
+    var partial = this.cache[plural][name];
+    if (partial) {
+      this.stashLocals('typeHelperAsync', partial, locals);
+    } else {
+      console.log(chalk.red('helper {{' + type + ' "' + name + '"}} not found.'));
+      return next(null, '');
+    }
+
+    partial.locals = extend({}, partial.locals, partial.data, locals);
+    debug.helper('#{async helper partial}:', partial);
+
+    this.render(partial, partial.locals, function (err, content) {
+      if (err) {
+        debug.helper(chalk.red('#{async helper err}: %j'), err);
+        next(err);
+        return;
+      }
+      debug.helper('#{async helper rendering}:', content);
+      next(null, content);
+      return;
+    });
+  }.bind(this));
 };
 
 
@@ -921,11 +969,11 @@ Engine.prototype.create = function(subtype, plural, options, fns) {
   debug.template('#{creating template subtype}: %s', subtype);
   var args = slice(arguments);
 
+  // If you need more than the following just define
+  // `plural` explicitly
   if (typeof plural !== 'string') {
     fns = options;
     options = plural;
-    // If you need more than this, just define the
-    // plural name explicitly
     plural = subtype + 's';
   }
 
@@ -942,12 +990,12 @@ Engine.prototype.create = function(subtype, plural, options, fns) {
 
   // Create a sync helper for this type
   if (!hasOwn(this._.helpers, subtype)) {
-    this.typeHelpers(subtype, plural);
+    this.createTypeHelper(subtype, plural);
   }
 
   // Create an async helper for this type
   if (!hasOwn(this._.asyncHelpers, subtype)) {
-    this.typeHelpersAsync(subtype, plural);
+    this.createTypeHelperAsync(subtype, plural);
   }
   return this;
 };
@@ -1029,12 +1077,16 @@ Engine.prototype.load = function(plural, options, fns) {
 
     var template = this.normalize(plural, loaded, options);
 
-    // make sure all the templates go through the stack of middleware
-    if (fns) {
-      forOwn(template, function (value, key) {
-        this.route(value.path).all(fns);
-      }.bind(this));
-    }
+    forOwn(template, function (value, key) {
+      // make sure all the templates go through the stack of middleware
+      if (fns) this.route(value.path).all(fns);
+      this.handle(value, function (err) {
+        if (err) {
+          console.log(chalk.red('Error running middleware for', key));
+          console.log(chalk.red(err));
+        }
+      });
+    }.bind(this));
 
     extend(this.cache[plural], template);
     return this;

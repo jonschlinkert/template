@@ -34,25 +34,13 @@ describe('custom `renderable` types:', function () {
     template.page('f.hbs', '<title>{{author}}</title>', {author: 'Jon Schlinkert'});
     template.page('g.md', '---\nauthor: Brian Woodward\n---\n<title>{{author}}</title>', {author: 'Jon Schlinkert'});
 
-    template.use(function render (file, next) {
-      template.render(file.path, function (err, content) {
-        if (err) return next(err);
-        file.content = content;
-        next();
-      });
-    });
-
-    var doneCalled = false;
     forOwn(template.cache.pages, function (value, key) {
-      template.handle(value, function (err) {
-        if (err) {
-          doneCalled = true;
-          return done(err);
-        }
-        value.content.should.equal('<title>Jon Schlinkert</title>');
+      template.render(key, function (err, content) {
+        if (err) console.log(err);
+        content.should.equal('<title>Jon Schlinkert</title>');
       });
     });
-    if (!doneCalled) done();
+    done();
   });
 
   it('should prefer template locals over front-matter data:', function (done) {
@@ -60,18 +48,10 @@ describe('custom `renderable` types:', function () {
     template.engine('md', consolidate.handlebars);
     template.page('fixture.md', '---\nauthor: Brian Woodward\n---\n<title>{{author}}</title>', {author: 'Jon Schlinkert'});
 
-    template.use(function render (file, next) {
-      template.render(file.path, function (err, content) {
-        if (err) return next(err);
-        file.content = content;
-        next();
-      });
-    });
-
     forOwn(template.cache.pages, function (value, key) {
-      template.handle(value, function (err) {
+      template.render(key, function (err, content) {
         if (err) console.log(err);
-        value.content.should.equal('<title>Jon Schlinkert</title>');
+        content.should.equal('<title>Jon Schlinkert</title>');
       });
     });
     done();
@@ -87,18 +67,9 @@ describe('custom `renderable` types:', function () {
         author: 'Jon Schlinkert'
       });
 
-      template.use(function render (file, next) {
-        template.render(file.path, function (err, content) {
-          if (err) return next(err);
-          file.content = content;
-          next();
-        });
-      });
-
-      var post = template.getPost('2014-08-31.md');
-      template.handle(post, function (err, content) {
+      template.render('2014-08-31.md', function (err, content) {
         if (err) console.log(err);
-        post.content.should.equal('<title>Jon Schlinkert</title>\n<nav>sidebar stuff...</nav>');
+        content.should.equal('<title>Jon Schlinkert</title>\n<nav>sidebar stuff...</nav>');
         done();
       });
     });
@@ -117,18 +88,10 @@ describe('custom `renderable` types:', function () {
         author: 'Jon Schlinkert'
       });
 
-      template.use(function render (file, next) {
-        template.render(file.path, function (err, content) {
-          if (err) return next(err);
-          file.content = content;
-          next();
-        });
-      });
-
       forOwn(template.cache.posts, function(value, key) {
-        template.handle(value, function (err, content) {
+        template.render(key, function (err, content) {
           if (err) console.log(err);
-          value.content.should.equal('<title>Jon Schlinkert</title>\n<nav>sidebar stuff...bfoo</nav>');
+          content.should.equal('<title>Jon Schlinkert</title>\n<nav>sidebar stuff...bfoo</nav>');
         });
       });
       done();

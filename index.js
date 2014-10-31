@@ -78,10 +78,10 @@ Template.prototype.initTemplate = function() {
 
   this._ = {};
   this.subtypes = {};
-  this.templateType = {};
-  this.templateType.partial = [];
-  this.templateType.renderable = [];
-  this.templateType.layout = [];
+  this.type = {};
+  this.type.partial = [];
+  this.type.renderable = [];
+  this.type.layout = [];
   this.layoutSettings = {};
 
   this.defaultConfig();
@@ -827,13 +827,13 @@ Template.prototype.setType = function(plural, options) {
   var opts = extend({}, options);
 
   if (opts.isRenderable) {
-    this.templateType.renderable.push(plural);
+    this.type.renderable.push(plural);
   }
   if (opts.isLayout) {
-    this.templateType.layout.push(plural);
+    this.type.layout.push(plural);
   }
   if (opts.isPartial || (!opts.isRenderable && !opts.isLayout)) {
-    this.templateType.partial.push(plural);
+    this.type.partial.push(plural);
     opts.isPartial = true;
   }
 
@@ -854,7 +854,7 @@ Template.prototype.setType = function(plural, options) {
  */
 
 Template.prototype.getType = function(type) {
-  var arr = this.templateType[type];
+  var arr = this.type[type];
   var template = this;
 
   return arr.reduce(function(acc, key) {
@@ -1064,7 +1064,7 @@ Template.prototype.decorate = function(subtype, plural, options, fns) {
 
 /**
  * Get partials from the cache. More specifically, all templates with
- * a `templateType` of `partial` defined. If `options.mergePartials` is `true`,
+ * a `type` of `partial` defined. If `options.mergePartials` is `true`,
  * this object will keep custom partial types seperate - otherwise, all
  * templates with the type `partials` will be merged onto the same object.
  * This is useful when necessary for the engine being used.
@@ -1078,7 +1078,7 @@ Template.prototype.mergePartials = function(ext, locals, combine) {
   combine = combine || this.option('mergePartials');
   var opts = extend({partials: {}}, locals);
 
-  this.templateType['partial'].forEach(function (type) {
+  this.type['partial'].forEach(function (type) {
     forOwn(this.cache[type], function (value, key) {
       value.content = this.applyLayout(ext, value, value.locals);
       opts = extend({}, opts, value.locals);

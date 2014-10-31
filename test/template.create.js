@@ -79,9 +79,9 @@ describe('engine create:', function () {
     it('should push the name of the type into the `isRenderable` array:', function () {
       template.create('apple', 'apples', { isRenderable: true });
 
-      template.templateType.renderable.should.containEql('pages');
-      template.templateType.renderable.should.containEql('apples');
-      template.templateType.renderable.should.containEql('apples');
+      template.type.renderable.should.containEql('pages');
+      template.type.renderable.should.containEql('apples');
+      template.type.renderable.should.containEql('apples');
     });
   });
 
@@ -89,8 +89,8 @@ describe('engine create:', function () {
     it('should push the name of the type into the `isLayout` array:', function () {
       template.create('orange', 'oranges', { isLayout: true });
 
-      template.templateType.layout.should.containEql('layouts');
-      template.templateType.layout.should.containEql('oranges');
+      template.type.layout.should.containEql('layouts');
+      template.type.layout.should.containEql('oranges');
     });
   });
 
@@ -98,8 +98,8 @@ describe('engine create:', function () {
     it('should push the name of the type into the `isPartial` array:', function () {
       template.create('banana', 'bananas');
 
-      template.templateType.partial.should.containEql('partials');
-      template.templateType.partial.should.containEql('bananas');
+      template.type.partial.should.containEql('partials');
+      template.type.partial.should.containEql('bananas');
     });
   });
 
@@ -107,8 +107,8 @@ describe('engine create:', function () {
     it('should push the name of the type into the `isPartial` array:', function () {
       template.create('banana', 'bananas', { isPartial: true });
 
-      template.templateType.partial.should.containEql('partials');
-      template.templateType.partial.should.containEql('bananas');
+      template.type.partial.should.containEql('partials');
+      template.type.partial.should.containEql('bananas');
     });
   });
 
@@ -116,8 +116,8 @@ describe('engine create:', function () {
     it('should push the type into both arrays:', function () {
       template.create('banana', 'bananas', { isPartial: true, isLayout: true });
 
-      template.templateType.partial.should.containEql('bananas');
-      template.templateType.layout.should.containEql('bananas');
+      template.type.partial.should.containEql('bananas');
+      template.type.layout.should.containEql('bananas');
     });
   });
 
@@ -125,8 +125,8 @@ describe('engine create:', function () {
     it('should push the type into both arrays:', function () {
       template.create('banana', 'bananas', { isPartial: true, isRenderable: true });
 
-      template.templateType.partial.should.containEql('bananas');
-      template.templateType.renderable.should.containEql('bananas');
+      template.type.partial.should.containEql('bananas');
+      template.type.renderable.should.containEql('bananas');
     });
   });
 
@@ -134,8 +134,8 @@ describe('engine create:', function () {
     it('should push the type into both arrays:', function () {
       template.create('banana', 'bananas', { isLayout: true, isRenderable: true });
 
-      template.templateType.layout.should.containEql('bananas');
-      template.templateType.renderable.should.containEql('bananas');
+      template.type.layout.should.containEql('bananas');
+      template.type.renderable.should.containEql('bananas');
     });
   });
 
@@ -143,9 +143,9 @@ describe('engine create:', function () {
     it('should push the type into all three arrays:', function () {
       template.create('banana', 'bananas', { isPartial: true, isLayout: true, isRenderable: true });
 
-      template.templateType.layout.should.containEql('bananas');
-      template.templateType.partial.should.containEql('bananas');
-      template.templateType.renderable.should.containEql('bananas');
+      template.type.layout.should.containEql('bananas');
+      template.type.partial.should.containEql('bananas');
+      template.type.renderable.should.containEql('bananas');
     });
   });
 });

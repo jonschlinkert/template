@@ -822,10 +822,14 @@ Template.prototype.createTypeHelperAsync = function(subtype, plural) {
  * @api private
  */
 
-Template.prototype.setType = function(plural, options) {
+Template.prototype.setType = function(subtype, plural, options) {
   debug.template('#{tracking type}: %s, %s', plural);
   var opts = extend({}, options);
 
+  // Make an association between `subtype` and its `plural`
+  this.subtypes[subtype] = plural;
+
+  // Track the new template subtype by its parent `type`
   if (opts.isRenderable) {
     this.type.renderable.push(plural);
   }
@@ -836,7 +840,6 @@ Template.prototype.setType = function(plural, options) {
     this.type.partial.push(plural);
     opts.isPartial = true;
   }
-
   return opts;
 };
 
@@ -999,7 +1002,7 @@ Template.prototype.create = function(subtype, plural, options, fns) {
   }
 
   this.cache[plural] = this.cache[plural] || {};
-  options = this.setType(plural, options);
+  options = this.setType(subtype, plural, options);
 
   // Add convenience methods for this sub-type
   this.decorate(subtype, plural, options, utils.filterMiddleware(fns, args));
@@ -1293,7 +1296,9 @@ Template.prototype.renderSubtype = function(subtype) {
       locals = {};
     }
 
-    var template = self.cache[subtype][name];
+    // Get the plural name of the cache to use
+    var cachename = self.subtypes[subtype];
+    var template = self.cache[cachename][name];
 
     // The user-defined, default engine to use
     var viewEngine = self.option('viewEngine');

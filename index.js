@@ -77,6 +77,7 @@ Template.prototype.initTemplate = function() {
   this.delims = this.delims || {};
 
   this._ = {};
+  this.subtypes = {};
   this.templateType = {};
   this.templateType.partial = [];
   this.templateType.renderable = [];
@@ -313,7 +314,6 @@ Template.prototype.use = function (fn) {
     //     next(err);
     //   });
     // });
-
     // mounted an app
     // fn.emit('mount', this);
   }, this);
@@ -864,101 +864,6 @@ Template.prototype.getType = function(type) {
 };
 
 /**
- * Add a new template `sub-type`, along with associated get/set methods.
- * You must specify both the singular and plural names for the type.
- *
- * @param {String} `subtype` Singular name of the sub-type to create, e.g. `page`.
- * @param {String} `plural` Plural name of the template type, e.g. `pages`.
- * @param {Object} `options` Options for the template type.
- *   @option {Boolean} [options] `isRenderable` Is the template a partial view?
- *   @option {Boolean} [options] `layout` Can the template be used as a layout?
- *   @option {Boolean} [options] `partial` Can the template be used as a partial?
- * @return {Object} `Template` to enable chaining.
- * @api public
- */
-
-Template.prototype.create = function(subtype, plural, options, fns) {
-  debug.template('#{creating template subtype}: %s', subtype);
-  var args = slice(arguments);
-
-  // If you need more than the following just define
-  // `plural` explicitly
-  if (typeof plural !== 'string') {
-    fns = options;
-    options = plural;
-    plural = subtype + 's';
-  }
-
-  if (typeof options === 'function') {
-    fns = options;
-    options = {};
-  }
-
-  this.cache[plural] = this.cache[plural] || {};
-  options = this.setType(plural, options);
-
-  // Add convenience methods for this sub-type
-  this.decorate(subtype, plural, options, utils.filterMiddleware(fns, args));
-
-  // Create a sync helper for this type
-  if (!hasOwn(this._.helpers, subtype)) {
-    this.createTypeHelper(subtype, plural);
-  }
-
-  // Create an async helper for this type
-  if (!hasOwn(this._.asyncHelpers, subtype)) {
-    this.createTypeHelperAsync(subtype, plural);
-  }
-  return this;
-};
-
-/**
- * Decorate a new template subtype with convenience methods.
- *
- * @param  {String} `subtype`
- * @param  {String} `plural`
- * @param  {Object} `options`
- * @api private
- */
-
-Template.prototype.decorate = function(subtype, plural, options, fns) {
-  debug.template('#{decorating template subtype}:', subtype);
-  options = extend({}, options);
-
-  /**
-   * Add a method to `Engine` for `subtype`
-   */
-
-  mixin(subtype, function (key, value, locals, opt) {
-    this[plural].apply(this, arguments);
-  });
-
-  /**
-   * Add a method to `Engine` for `plural`
-   */
-
-  mixin(plural, function (key, value, locals, opt) {
-    this.load(plural, options, fns).apply(this, arguments);
-  });
-
-  /**
-   * Add a `get` method to `Engine` for `subtype`
-   */
-
-  mixin(decorate.methodName('get', subtype), function (key) {
-    return this.cache[plural][key];
-  });
-
-  /**
-   * Add a `render` method to `Engine` for `subtype`
-   */
-
-  mixin(decorate.methodName('render', subtype), function (key) {
-    return this.renderType('renderable', subtype);
-  });
-};
-
-/**
  * Load templates and normalize them to an object with consistent
  * properties.
  *
@@ -1063,6 +968,101 @@ Template.prototype.format = function(key, value, locals) {
 };
 
 /**
+ * Add a new template `sub-type`, along with associated get/set methods.
+ * You must specify both the singular and plural names for the type.
+ *
+ * @param {String} `subtype` Singular name of the sub-type to create, e.g. `page`.
+ * @param {String} `plural` Plural name of the template type, e.g. `pages`.
+ * @param {Object} `options` Options for the template type.
+ *   @option {Boolean} [options] `isRenderable` Is the template a partial view?
+ *   @option {Boolean} [options] `layout` Can the template be used as a layout?
+ *   @option {Boolean} [options] `partial` Can the template be used as a partial?
+ * @return {Object} `Template` to enable chaining.
+ * @api public
+ */
+
+Template.prototype.create = function(subtype, plural, options, fns) {
+  debug.template('#{creating template subtype}: %s', subtype);
+  var args = slice(arguments);
+
+  // If you need more than the following just define
+  // `plural` explicitly
+  if (typeof plural !== 'string') {
+    fns = options;
+    options = plural;
+    plural = subtype + 's';
+  }
+
+  if (typeof options === 'function') {
+    fns = options;
+    options = {};
+  }
+
+  this.cache[plural] = this.cache[plural] || {};
+  options = this.setType(plural, options);
+
+  // Add convenience methods for this sub-type
+  this.decorate(subtype, plural, options, utils.filterMiddleware(fns, args));
+
+  // Create a sync helper for this type
+  if (!hasOwn(this._.helpers, subtype)) {
+    this.createTypeHelper(subtype, plural);
+  }
+
+  // Create an async helper for this type
+  if (!hasOwn(this._.asyncHelpers, subtype)) {
+    this.createTypeHelperAsync(subtype, plural);
+  }
+  return this;
+};
+
+/**
+ * Decorate a new template subtype with convenience methods.
+ *
+ * @param  {String} `subtype`
+ * @param  {String} `plural`
+ * @param  {Object} `options`
+ * @api private
+ */
+
+Template.prototype.decorate = function(subtype, plural, options, fns) {
+  debug.template('#{decorating template subtype}:', subtype);
+  options = extend({}, options);
+
+  /**
+   * Add a method to `Engine` for `subtype`
+   */
+
+  mixin(subtype, function (key, value, locals, opt) {
+    this[plural].apply(this, arguments);
+  });
+
+  /**
+   * Add a method to `Engine` for `plural`
+   */
+
+  mixin(plural, function (key, value, locals, opt) {
+    this.load(plural, options, fns).apply(this, arguments);
+  });
+
+  /**
+   * Add a `get` method to `Engine` for `subtype`
+   */
+
+  mixin(decorate.methodName('get', subtype), function (key) {
+    return this.cache[plural][key];
+  });
+
+  /**
+   * Add a `render` method to `Engine` for `subtype`
+   */
+
+  mixin(decorate.methodName('render', subtype), function () {
+    return this.renderSubtype(subtype);
+  });
+};
+
+/**
  * Get partials from the cache. More specifically, all templates with
  * a `templateType` of `partial` defined. If `options.mergePartials` is `true`,
  * this object will keep custom partial types seperate - otherwise, all
@@ -1136,7 +1136,6 @@ Template.prototype.preprocess = function(template, locals, async) {
     template = this.format(utils.generateId(), template, locals);
   }
 
-  // console.log(this);
   if (utils.isObject(template)) {
     content = template.content;
     locals = this.mergeFn(template, locals, async);
@@ -1271,6 +1270,19 @@ Template.prototype.renderType = function(type, subtype) {
     self.renderBase(engine, content, locals, cb);
   };
 };
+
+/**
+ * Create a `.render()` method for the given `subtype`.
+ *
+ * The created method has takes the same parameters as the default
+ * `.render()` method, accept that the first parameter expects the
+ * name of a cached template, rather than any given string.
+ *
+ * @param  {String} `str` The string to render.
+ * @param  {Object} `locals` Locals and/or options to pass to registered view engines.
+ * @return {String}
+ * @api public
+ */
 
 Template.prototype.renderSubtype = function(subtype) {
   var self = this;

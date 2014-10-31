@@ -802,7 +802,7 @@ Template.prototype.createTypeHelperAsync = function(subtype, plural) {
     }
 
     var loc = extend({}, partial.locals, partial.data, locals);
-    var render = template.renderSubtype(plural);
+    var render = template.renderSubtype(subtype);
 
     render(name, loc, function (err, content) {
       if (err) return next(err);
@@ -1297,8 +1297,8 @@ Template.prototype.renderSubtype = function(subtype) {
     }
 
     // Get the plural name of the cache to use
-    var cachename = self.subtypes[subtype];
-    var template = self.cache[cachename][name];
+    var plural = self.subtypes[subtype];
+    var template = self.cache[plural][name];
 
     // The user-defined, default engine to use
     var viewEngine = self.option('viewEngine');

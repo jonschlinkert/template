@@ -953,11 +953,9 @@ Template.prototype.decorate = function(subtype, plural, options, fns) {
    * Add a `render` method to `Engine` for `subtype`
    */
 
-  if (options.isRenderable) {
-    mixin(decorate.methodName('render', subtype), function (key) {
-      return this.renderType('renderable', subtype);
-    });
-  }
+  mixin(decorate.methodName('render', subtype), function (key) {
+    return this.renderType('renderable', subtype);
+  });
 };
 
 /**

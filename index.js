@@ -15,8 +15,7 @@ var chalk = require('chalk');
 var Delims = require('delims');
 var forOwn = require('for-own');
 var Layouts = require('layouts');
-var Router = require('en-route').Router;
-var Route = require('en-route').Route;
+var routes = require('en-route');
 var Cache = require('config-cache');
 var Helpers = require('helper-cache');
 var Engines = require('engine-cache');
@@ -28,6 +27,8 @@ var Loader = require('load-templates');
 var slice = require('array-slice');
 var flatten = require('arr-flatten');
 
+var Router = routes.Router;
+var Route = routes.Route;
 var init = require('./lib/middleware/init');
 var decorate = require('./lib/decorate');
 var utils = require('./lib/utils');
@@ -134,9 +135,7 @@ Template.prototype.defaultOptions = function() {
   this.option('layoutDelims', ['{%', '%}']);
   this.option('layoutExt', null);
   this.option('layout', null);
-
-  this.enable('built-in:engines');
-
+  this.option('built-in:engines', true);
   this.option('preprocess', true);
   this.option('preferLocals', false);
   this.option('partialLayout', null);
@@ -187,7 +186,7 @@ Template.prototype.defaultRoutes = function() {
  */
 
 Template.prototype.defaultEngines = function() {
-  if (this.enabled('built-in:engines')) {
+  if (this.option('built-in:engines')) {
     this.engine(this.option('defaultExts'), engineLodash, {
       layoutDelims: ['{%', '%}'],
       destExt: '.html'
@@ -242,7 +241,7 @@ Template.prototype.lazyrouter = function() {
 };
 
 /**
- * Dispatch a template through a middleware stack
+ * Dispatch `file` through a middleware stack
  *
  * @param  {Object} `file` File object to be passed through the middleware stack
  * @api private
@@ -259,6 +258,27 @@ Template.prototype.handle = function(file, done) {
 };
 
 /**
+ * Dispatch `template` through a middleware `stack`.
+ *
+ * @param  {Object} `template`
+ * @param  {Array} `stack`
+ */
+
+Template.prototype.handleTemplate = function(template, stack) {
+  forOwn(template, function (value, key) {
+    if (stack) {
+      this.route(value.path).all(stack);
+    }
+    this.handle(value, function (err) {
+      if (err) {
+        console.log(chalk.red('Error running middleware for', key));
+        console.log(chalk.red(err));
+      }
+    });
+  }.bind(this));
+};
+
+/**
  * Proxy `Router#use()` to add middleware to the engine router.
  * See Router#use() documentation for details.
  *
@@ -272,8 +292,7 @@ Template.prototype.use = function (fn) {
   var offset = 0;
   var path = '/';
 
-  // default path to '/'
-  // disambiguate `engine.use([fn])`
+  // default path to '/', disambiguate `engine.use([fn])`
   if (typeof fn !== 'function') {
     var arg = fn;
 
@@ -289,12 +308,10 @@ Template.prototype.use = function (fn) {
   }
 
   var fns = flatten(slice(arguments, offset));
-
   if (fns.length === 0) {
     throw new TypeError('engine.use() requires middleware functions');
   }
 
-  // setup router
   this.lazyrouter();
   var router = this.router;
 
@@ -317,7 +334,6 @@ Template.prototype.use = function (fn) {
     // mounted an app
     // fn.emit('mount', this);
   }, this);
-
   return this;
 };
 
@@ -344,7 +360,7 @@ Template.prototype.route = function(path){
  *
  * @param {String|Array} `name`
  * @param {Function} `fn`
- * @return {engine} for chaining
+ * @return {Object} `Template` for chaining
  * @api public
  */
 
@@ -367,8 +383,8 @@ Template.prototype.param = function(name, fn){
  * middleware, and callback.
  *
  * @param {String} `path`
- * @param {Function} ...
- * @return {engine} for chaining
+ * @param {Function} Callback
+ * @return {Object} `Template` for chaining
  * @api public
  */
 
@@ -836,6 +852,7 @@ Template.prototype.setType = function(subtype, plural, options) {
   if (opts.isLayout) {
     this.type.layout.push(plural);
   }
+  // if it's not renderable or a layout, assume it's a partial
   if (opts.isPartial || (!opts.isRenderable && !opts.isLayout)) {
     this.type.partial.push(plural);
     opts.isPartial = true;
@@ -844,24 +861,28 @@ Template.prototype.setType = function(subtype, plural, options) {
 };
 
 /**
- * Get all cached templates of the given `plural` type.
+ * Get all cached templates of the given `type`. Types are:
+ *
+ *   - `renderable`: Templates that may be rendered at some point
+ *   - `layout`: Templates to be used as layouts
+ *   - `partial`: Templates to be used as partial views or includes
  *
  * ```js
  * var pages = template.getType('renderable');
  * //=> { pages: { 'home.hbs': { ... }, 'about.hbs': { ... }}, posts: { ... }}
  * ```
  *
- * @param {String} `plural`
+ * @param {String} `type`
  * @param {Object} `opts`
- * @api private
+ * @api public
  */
 
 Template.prototype.getType = function(type) {
   var arr = this.type[type];
   var template = this;
 
-  return arr.reduce(function(acc, key) {
-    acc[key] = template.cache[key];
+  return arr.reduce(function(acc, subtype) {
+    acc[subtype] = template.cache[subtype];
     return acc;
   }, {});
 };
@@ -892,17 +913,8 @@ Template.prototype.load = function(plural, options, fns) {
 
     var template = this.normalize(plural, loaded, options);
 
-    forOwn(template, function (value, key) {
-      // make sure all the templates go through the stack of middleware
-      if (fns) this.route(value.path).all(fns);
-
-      this.handle(value, function (err) {
-        if (err) {
-          console.log(chalk.red('Error running middleware for', key));
-          console.log(chalk.red(err));
-        }
-      });
-    }.bind(this));
+    // Handle middleware
+    this.handleTemplate(template, fns);
 
     extend(this.cache[plural], template);
     return this;
@@ -929,7 +941,7 @@ Template.prototype.normalize = function(plural, template, options) {
   }
 
   forOwn(template, function (value, key) {
-    value.options = extend({ type: plural }, options, value.options);
+    value.options = extend({ subtype: plural }, options, value.options);
 
     var ext = utils.pickExt(value, value.options, this);
     this.lazyLayouts(ext, value.options);
@@ -1033,7 +1045,7 @@ Template.prototype.decorate = function(subtype, plural, options, fns) {
   options = extend({}, options);
 
   /**
-   * Add a method to `Engine` for `subtype`
+   * Add a method to `Template` for `subtype`
    */
 
   mixin(subtype, function (key, value, locals, opt) {
@@ -1041,7 +1053,7 @@ Template.prototype.decorate = function(subtype, plural, options, fns) {
   });
 
   /**
-   * Add a method to `Engine` for `plural`
+   * Add a method to `Template` for `plural`
    */
 
   mixin(plural, function (key, value, locals, opt) {
@@ -1049,7 +1061,7 @@ Template.prototype.decorate = function(subtype, plural, options, fns) {
   });
 
   /**
-   * Add a `get` method to `Engine` for `subtype`
+   * Add a `get` method to `Template` for `subtype`
    */
 
   mixin(decorate.methodName('get', subtype), function (key) {
@@ -1057,10 +1069,18 @@ Template.prototype.decorate = function(subtype, plural, options, fns) {
   });
 
   /**
-   * Add a `render` method to `Engine` for `subtype`
+   * Add a `render` method to `Template` for `subtype`
    */
 
   mixin(decorate.methodName('render', subtype), function () {
+    return this.renderSubtype(subtype);
+  });
+
+  /**
+   * Add a `handle` method for a template subtype
+   */
+
+  mixin(decorate.methodName('handle', subtype), function () {
     return this.renderSubtype(subtype);
   });
 };
@@ -1514,7 +1534,7 @@ Template.prototype.mergeFn = function(template, locals, async) {
 };
 
 /**
- * Extend the `Engine` prototype with a new method.
+ * Extend the `Template` prototype with a new method.
  *
  * @param  {String} `method` The method name.
  * @param  {Function} `fn`
@@ -1525,6 +1545,24 @@ function mixin(method, fn) {
   Template.prototype[method] = fn;
 }
 
+/**
+ * Utility method to define getters.
+ *
+ * @param  {Object} `obj`
+ * @param  {String} `name`
+ * @param  {Function} `getter`
+ * @return {Getter}
+ * @api private
+ */
+
+function defineGetter(obj, name, getter) {
+  Object.defineProperty(obj, name, {
+    configurable: false,
+    enumerable: false,
+    get: getter,
+    set: function() {}
+  });
+}
 
 /**
  * Utility for getting an own property from an object.

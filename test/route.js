@@ -15,10 +15,9 @@ var Template = require('..');
 var Route = Template.Route;
 var template = null;
 
-// Route tests from kerouac
-describe('engine route', function () {
+describe('template routes', function () {
 
-  describe('.handle', function () {
+  describe('.handle()', function () {
     beforeEach(function () {
       template = new Template();
 
@@ -88,7 +87,6 @@ describe('engine route', function () {
     });
   });
 
-
   describe('with path', function () {
     var route = new Route('/welcome').all([
       function () {}
@@ -104,6 +102,7 @@ describe('engine route', function () {
     });
   });
 
+  // Route tests from kerouac
 
   // describe('with parameterized path', function () {
   //   var route = new Route('/blog/:year/:month/:day/:slug').all([

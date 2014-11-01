@@ -1,4 +1,0 @@
----
-title: One
----
-This is a text file _a.txt_.

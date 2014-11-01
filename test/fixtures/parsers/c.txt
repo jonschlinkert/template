@@ -1,4 +1,0 @@
----
-title: Three
----
-This is a text file _c.txt_.

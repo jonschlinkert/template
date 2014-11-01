@@ -1,4 +1,0 @@
----
-title: Two
----
-This is a text file.

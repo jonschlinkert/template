@@ -261,14 +261,12 @@ Template.prototype.handle = function(file, done) {
  * Dispatch `template` through a middleware `stack`.
  *
  * @param  {Object} `template`
- * @param  {Array} `stack`
+ * @param  {Array} `fns`
  */
 
-Template.prototype.handleTemplate = function(template, stack) {
+Template.prototype.dispatch = function(template, fns) {
   forOwn(template, function (value, key) {
-    if (stack) {
-      this.route(value.path).all(stack);
-    }
+    if (fns) this.route(value.path).all(fns);
     this.handle(value, function (err) {
       if (err) {
         console.log(chalk.red('Error running middleware for', key));
@@ -324,15 +322,6 @@ Template.prototype.use = function (fn) {
     debug('.use engine under %s', path);
     fn.mountpath = path;
     fn.parent = this;
-
-    // // restore .app property on req and res
-    // router.use(path, function mounted_app(file, next) {
-    //   fn.handle(file, function (err) {
-    //     next(err);
-    //   });
-    // });
-    // mounted an app
-    // fn.emit('mount', this);
   }, this);
   return this;
 };
@@ -347,7 +336,7 @@ Template.prototype.use = function (fn) {
  * @api public
  */
 
-Template.prototype.route = function(path){
+Template.prototype.route = function(path) {
   this.lazyrouter();
   return this.router.route(path);
 };
@@ -364,7 +353,7 @@ Template.prototype.route = function(path){
  * @api public
  */
 
-Template.prototype.param = function(name, fn){
+Template.prototype.param = function(name, fn) {
   this.lazyrouter();
 
   if (Array.isArray(name)) {
@@ -388,7 +377,7 @@ Template.prototype.param = function(name, fn){
  * @api public
  */
 
-Template.prototype.all = function(path){
+Template.prototype.all = function(path) {
   this.lazyrouter();
 
   var route = this.router.route(path);
@@ -904,17 +893,14 @@ Template.prototype.load = function(plural, options, fns) {
   var loader = new Loader(opts);
 
   return function (key, value, locals) {
-    var loaded = null;
-    if (opts.loadFn) {
-      loaded = opts.loadFn.apply(this, arguments);
-    } else {
-      loaded = loader.load.apply(loader, arguments);
-    }
+    var loaded = opts.loadFn
+      ? opts.loadFn.apply(this, arguments)
+      : loader.load.apply(loader, arguments);
 
     var template = this.normalize(plural, loaded, options);
 
     // Handle middleware
-    this.handleTemplate(template, fns);
+    this.dispatch(template, fns);
 
     extend(this.cache[plural], template);
     return this;
@@ -1080,8 +1066,8 @@ Template.prototype.decorate = function(subtype, plural, options, fns) {
    * Add a `handle` method for a template subtype
    */
 
-  mixin(decorate.methodName('handle', subtype), function () {
-    return this.renderSubtype(subtype);
+  mixin(decorate.methodName('handle', plural), function () {
+    return this.handleType(plural);
   });
 };
 

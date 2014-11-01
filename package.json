@@ -48,11 +48,13 @@
     "lookup-path": "^0.3.0",
     "mocha": "*",
     "parser-utils": "^0.3.1",
+    "preserve": "^0.1.1",
     "should": "^4.1.0",
     "swig": "^1.4.2",
     "test-helpers": "^0.1.4",
     "through2": "^0.6.3",
     "verb": ">= 0.2.6",
+    "verb-prettify": "^0.1.0",
     "verb-tag-jscomments": ">= 0.2.0"
   },
   "dependencies": {

@@ -22,17 +22,16 @@ var Engines = require('engine-cache');
 var engineLodash = require('engine-lodash');
 var engineNoop = require('engine-noop');
 var parserMatter = require('parser-front-matter');
-var parserNoop = require('parser-noop');
 var Loader = require('load-templates');
 var slice = require('array-slice');
 var flatten = require('arr-flatten');
 
-var Router = routes.Router;
-var Route = routes.Route;
-var init = require('./lib/middleware/init');
 var decorate = require('./lib/decorate');
+var init = require('./lib/middleware/init');
 var utils = require('./lib/utils');
 var debug = require('./lib/debug');
+var Router = routes.Router;
+var Route = routes.Route;
 var extend = _.extend;
 
 
@@ -78,7 +77,7 @@ Template.prototype.initTemplate = function() {
   this.delims = this.delims || {};
 
   this._ = {};
-  this.subtypes = {};
+  this.subtype = {};
   this.type = {};
   this.type.partial = [];
   this.type.renderable = [];
@@ -127,18 +126,17 @@ Template.prototype.defaultOptions = function() {
 
   this.option('cwd', process.cwd());
   this.option('ext', '*');
-  this.option('defaultExts', ['md', 'html', 'hbs']);
   this.option('destExt', '.html');
-  this.option('delims', ['<%', '%>']);
-  this.option('viewEngine', '*');
-  this.option('layoutTag', 'body');
+  this.option('defaultExts', ['md', 'html', 'hbs']);
   this.option('layoutDelims', ['{%', '%}']);
+  this.option('delims', ['<%', '%>']);
+  this.option('layoutTag', 'body');
   this.option('layoutExt', null);
   this.option('layout', null);
+  this.option('viewEngine', '*');
   this.option('built-in:engines', true);
   this.option('preprocess', true);
   this.option('preferLocals', false);
-  this.option('partialLayout', null);
   this.option('mergePartials', true);
   this.option('mergeFunction', extend);
 
@@ -152,6 +150,14 @@ Template.prototype.defaultOptions = function() {
     return path.basename(fp);
   });
 };
+
+/**
+ * Set the current working directory
+ */
+
+defineGetter(Template.prototype, 'cwd', function () {
+  return this.option('cwd') || process.cwd();
+});
 
 /**
  * Load default routes / middleware
@@ -283,6 +289,7 @@ Template.prototype.dispatch = function(template, fns) {
  * If the _fn_ parameter is an engine, then it will be
  * mounted at the _route_ specified.
  *
+ * @param {Function} `fn`
  * @api public
  */
 
@@ -290,14 +297,12 @@ Template.prototype.use = function (fn) {
   var offset = 0;
   var path = '/';
 
-  // default path to '/', disambiguate `engine.use([fn])`
+  // default path to '/'
   if (typeof fn !== 'function') {
     var arg = fn;
-
     while (Array.isArray(arg) && arg.length !== 0) {
       arg = arg[0];
     }
-
     // first arg is the path
     if (typeof arg !== 'function') {
       offset = 1;
@@ -307,19 +312,19 @@ Template.prototype.use = function (fn) {
 
   var fns = flatten(slice(arguments, offset));
   if (fns.length === 0) {
-    throw new TypeError('engine.use() requires middleware functions');
+    throw new TypeError('Template.use() requires middleware functions');
   }
 
   this.lazyrouter();
   var router = this.router;
 
   fns.forEach(function (fn) {
-    // non-engine instance
+    // non-Template instance
     if (!fn || !fn.handle || !fn.set) {
       return router.use(path, fn);
     }
 
-    debug('.use engine under %s', path);
+    debug('.use template under %s', path);
     fn.mountpath = path;
     fn.parent = this;
   }, this);
@@ -441,7 +446,6 @@ Template.prototype.applyLayout = function(ext, template, locals) {
   }
 
   var obj = utils.pickContent(template);
-  obj = this.stashLocals('applyLayout', obj, locals);
 
   if (layoutEngine && !template.options.hasLayout) {
     debug.layout('#{applying layout} settings: ', layoutEngine);
@@ -508,17 +512,17 @@ Template.prototype.makeDelims = function(arr, options) {
  * @api public
  */
 
-Template.prototype.addDelims = function(ext, arr, layoutDelims, settings) {
+Template.prototype.addDelims = function(ext, arr, delims, settings) {
   debug.delims('#{adding delims} ext: %s, delims:', ext, arr);
   if (ext[0] !== '.') {
     ext = '.' + ext;
   }
 
-  if (Array.isArray(layoutDelims)) {
-    this.lazyLayouts(ext, {layoutDelims: layoutDelims}, settings || {});
+  if (Array.isArray(delims)) {
+    this.lazyLayouts(ext, {layoutDelims: delims}, settings || {});
   } else {
-    settings = layoutDelims;
-    layoutDelims = this.option('layoutDelims');
+    settings = delims;
+    delims = this.option('layoutDelims');
   }
 
   var delims = extend({}, this.makeDelims(arr, settings), settings);
@@ -539,11 +543,9 @@ Template.prototype.getDelims = function(ext) {
   if (ext && ext[0] !== '.') {
     ext = '.' + ext;
   }
-
   if(hasOwn(this.delims, ext)) {
     return this.delims[ext];
   }
-
   ext = this.currentDelims || '.default';
   return this.delims[ext];
 };
@@ -584,16 +586,12 @@ Template.prototype.registerEngine = function(ext, fn, options) {
   if (ext[0] !== '.') {
     ext = '.' + ext;
   }
-
-  debug.engine('#{register} args:', arguments);
   debug.engine('#{register} ext: %s', ext);
-
   this._.engines.setEngine(ext, fn, opts);
   if (opts.delims) {
     this.addDelims(ext, opts.delims);
     this.engines[ext].delims = this.getDelims(ext);
   }
-
   this.lazyLayouts(ext, opts);
   return this;
 };
@@ -613,7 +611,6 @@ Template.prototype.registerEngine = function(ext, fn, options) {
 
 Template.prototype.engine = function(exts, fn, options) {
   debug.engine('#{engine} args: ', arguments);
-
   utils.arrayify(exts).forEach(function(ext) {
     if (ext[0] !== '.') {
       ext = '.' + ext;
@@ -764,13 +761,8 @@ Template.prototype.helperAsync = function() {
 
 Template.prototype.createTypeHelper = function(type, plural) {
   var self = this;
-
   this.helper(type, function (key, locals) {
-    var partial = self.cache[plural][key];
-
-    partial = self.stashLocals('typeHelper', partial, locals);
-
-    var content = self.renderSync(partial, locals);
+    var content = self.renderSync(self.cache[plural][key], locals);
     if (content instanceof Error) {
       throw content;
     }
@@ -790,7 +782,7 @@ Template.prototype.createTypeHelperAsync = function(subtype, plural) {
   var template = this;
 
   this.helperAsync(subtype, function (name, locals, next) {
-    var last = _.last(arguments);
+    var last = arguments[arguments.length - 1];
 
     if (typeof locals === 'function') {
       next = locals;
@@ -806,10 +798,10 @@ Template.prototype.createTypeHelperAsync = function(subtype, plural) {
       return next(null, '');
     }
 
-    var loc = extend({}, partial.locals, partial.data, locals);
+    var locs = extend({}, partial.locals, partial.data, locals);
     var render = template.renderSubtype(subtype);
 
-    render(name, loc, function (err, content) {
+    render(name, locs, function (err, content) {
       if (err) return next(err);
       next(null, content);
       return;
@@ -832,7 +824,7 @@ Template.prototype.setType = function(subtype, plural, options) {
   var opts = extend({}, options);
 
   // Make an association between `subtype` and its `plural`
-  this.subtypes[subtype] = plural;
+  this.subtype[subtype] = plural;
 
   // Track the new template subtype by its parent `type`
   if (opts.isRenderable) {
@@ -867,13 +859,11 @@ Template.prototype.setType = function(subtype, plural, options) {
  */
 
 Template.prototype.getType = function(type) {
-  var arr = this.type[type];
-  var template = this;
-
-  return arr.reduce(function(acc, subtype) {
-    acc[subtype] = template.cache[subtype];
+  debug.template('#{getType}: %s', type);
+  return this.type[type].reduce(function(acc, subtype) {
+    acc[subtype] = this.cache[subtype];
     return acc;
-  }, {});
+  }.bind(this), {});
 };
 
 /**
@@ -888,7 +878,6 @@ Template.prototype.getType = function(type) {
 
 Template.prototype.load = function(plural, options, fns) {
   debug.template('#{load} args:', arguments);
-
   var opts = extend({}, this.options, options);
   var loader = new Loader(opts);
 
@@ -898,7 +887,6 @@ Template.prototype.load = function(plural, options, fns) {
       : loader.load.apply(loader, arguments);
 
     var template = this.normalize(plural, loaded, options);
-
     // Handle middleware
     this.dispatch(template, fns);
 
@@ -928,7 +916,6 @@ Template.prototype.normalize = function(plural, template, options) {
 
   forOwn(template, function (value, key) {
     value.options = extend({ subtype: plural }, options, value.options);
-
     var ext = utils.pickExt(value, value.options, this);
     this.lazyLayouts(ext, value.options);
 
@@ -936,7 +923,6 @@ Template.prototype.normalize = function(plural, template, options) {
     utils.determineLayout(value);
 
     template[key] = value;
-
     if (isLayout) {
       this.layoutSettings[ext].setLayout(template);
     }
@@ -1072,6 +1058,26 @@ Template.prototype.decorate = function(subtype, plural, options, fns) {
 };
 
 /**
+ * Convenience method for looking up a template on the cache,
+ * with or without a file extension.
+ *
+ * @param {String} `plural` The template cache to search.
+ * @param {String} `name` The name of the template.
+ * @api public
+ */
+
+Template.prototype.lookup = function(plural, name, ext) {
+  var cache = this.cache[plural];
+  if (hasOwn(cache, name)) {
+    return cache[name];
+  }
+  if (hasOwn(cache, name + ext || '.md')) {
+    return cache[name + ext || '.md'];
+  }
+  return name;
+};
+
+/**
  * Get partials from the cache. More specifically, all templates with
  * a `type` of `partial` defined. If `options.mergePartials` is `true`,
  * this object will keep custom partial types seperate - otherwise, all
@@ -1083,7 +1089,6 @@ Template.prototype.decorate = function(subtype, plural, options, fns) {
 
 Template.prototype.mergePartials = function(ext, locals, combine) {
   debug.template('#{merging partials} args:', arguments);
-
   combine = combine || this.option('mergePartials');
   var opts = extend({partials: {}}, locals);
 
@@ -1154,7 +1159,7 @@ Template.prototype.preprocess = function(template, locals, async) {
     content = template;
   }
 
-  // Get the extension to use for picking an engine
+  // Get the extension to use for picking a layout and engine
   var ext = utils.pickExt(template, locals, this);
 
   // if a layout is defined, wrap `content` with it
@@ -1182,7 +1187,7 @@ Template.prototype.preprocess = function(template, locals, async) {
     delims = this.getDelims(ext);
   }
 
-  locals = extend({}, this.mergePartials(locals), locals, delims);
+  locals = this.mergeLocals(this, template, locals, delims);
 
   // populate the state to pass back
   state.content = content;
@@ -1268,7 +1273,7 @@ Template.prototype.renderType = function(type, subtype) {
     }
 
     var content = template.content;
-    locals = _.extend({}, template.locals, locals);
+    locals = self.mergeLocals(self, template, locals);
 
     if (Boolean(template.engine)) {
       engine = self.getEngine(template.engine);
@@ -1303,7 +1308,7 @@ Template.prototype.renderSubtype = function(subtype) {
     }
 
     // Get the plural name of the cache to use
-    var plural = self.subtypes[subtype];
+    var plural = self.subtype[subtype];
     var template = self.cache[plural][name];
 
     // The user-defined, default engine to use
@@ -1315,7 +1320,7 @@ Template.prototype.renderSubtype = function(subtype) {
       throw new Error('Cannot find "' + name + '" on the cache.');
     }
 
-    locals = _.extend({}, self.cache.data, template.locals, locals);
+    locals = self.mergeLocals(self, template, locals);
 
     if (Boolean(template.engine)) {
       engine = self.getEngine(template.engine);
@@ -1429,7 +1434,6 @@ Template.prototype.render = function(content, locals, cb) {
   var helpers = _.cloneDeep(locals.helpers);
   o.root = this;
   o.context = locals;
-
   locals.helpers = {};
 
   _.forIn(helpers, function(fn, key) {
@@ -1484,6 +1488,20 @@ Template.prototype.stashLocals = function(name, template, locals) {
   template._locals = template._locals || {};
   template._locals[name] = locals;
   return template;
+};
+
+/**
+ * Merge locals with `cache.data`.
+ *
+ * @param  {String} `name`
+ * @param  {Object} `template`
+ * @param  {Object} `locals`
+ * @api private
+ */
+
+Template.prototype.mergeLocals = function(self, template, locals, delims) {
+  locals = extend({}, self.cache.data, template.locals, locals);
+  return extend({}, self.mergePartials(locals), locals, delims);
 };
 
 /**

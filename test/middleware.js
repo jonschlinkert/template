@@ -10,15 +10,17 @@
 var fs = require('fs');
 var path = require('path');
 var should = require('should');
-var tokens = require('preserve');
+var Tokens = require('preserve');
 var pretty = require('verb-prettify');
 var Template = require('..');
 var template;
+var tokens;
 
 
 describe('middleware', function () {
   beforeEach(function () {
     template = new Template();
+    tokens = new Tokens(/<%=\s*[^>]+%>/g);
   });
 
   it('should use middleware on cached templates:', function (done) {
@@ -53,10 +55,8 @@ describe('middleware', function () {
 
   describe('should use middleware on markdown files:', function () {
     it('should preserve templates:', function (done) {
-
       template.pages(__dirname + '/fixtures/md.md');
       var page = template.cache.pages['md.md'];
-      tokens = new tokens.Tokens(/<%=\s*[^>]+%>/g);
 
       template.route(/\.md/).all(function (file, next) {
         file.content = tokens.before(file.content);
@@ -90,7 +90,6 @@ describe('middleware', function () {
     it('should use middleware before and after render:', function (done) {
       template.pages(__dirname + '/fixtures/md.md');
       var page = template.cache.pages['md.md'];
-      tokens = new tokens.Tokens(/<%=\s*[^>]+%>/g);
 
       template.route(/\.md/).before(function (file, next) {
         file.content = tokens.before(file.content);

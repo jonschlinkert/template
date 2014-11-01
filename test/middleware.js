@@ -10,21 +10,22 @@
 var fs = require('fs');
 var path = require('path');
 var should = require('should');
-var helpers = require('test-helpers')({dir: 'test'});
 var Template = require('..');
 var template = new Template();
 
 
-describe('engine render', function () {
-  beforeEach(function () {
-    template = new Template();
-  });
-
-
+describe('middleware', function () {
   describe('when an un-cached string is passed to `.render()`:', function () {
     it('should prettify HTML when `options.pretty` is enabled:', function (done) {
-      template.pages(__dirname + '/fixtures/pretty/before.html');
-      template.option('pretty', true);
+      template.pages(__dirname + '/fixtures/prettify/before.html');
+
+      template.route(/\.html/).all(function (file, next) {
+        // console.log(file)
+      });
+
+      template.handle(template.getPage('before.html'), function (err) {
+        if (err) return done(err);
+      });
 
       template.render('before.html', {name: 'Jon Schlinkert'}, function (err, content) {
         if (err) console.log(err);

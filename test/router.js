@@ -9,7 +9,7 @@
 
 var should = require('should');
 var Template = require('..');
-var template = null;
+var template;
 
 
 // Router tests from kerouac

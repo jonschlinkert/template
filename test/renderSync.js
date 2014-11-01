@@ -11,7 +11,6 @@ var fs = require('fs');
 var path = require('path');
 var should = require('should');
 var forOwn = require('for-own');
-var helpers = require('test-helpers')({dir: 'test'});
 var engines = require('engines');
 var Template = require('..');
 var template = new Template();

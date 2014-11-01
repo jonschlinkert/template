@@ -17,6 +17,13 @@ describe('.addHelper():', function () {
     template = new Template();
   });
 
+  it('should register generic template helpers:', function () {
+    template.addHelper('a', function () {});
+    template.addHelper('b', function () {});
+
+    template._.helpers.should.have.properties(['a', 'b']);
+  });
+
   it('should register _bound_ helper functions by default:', function () {
     var helpers = template.helpers('*');
     helpers.addHelper('a', function () {});

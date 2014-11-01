@@ -1,13 +1,11 @@
 'use strict';
 
-var lookup = require('lookup-path');
-var path = require('path');
 var fs = require('fs');
+var path = require('path');
 
 module.exports = function (fp) {
-  var found = lookup(fp);
   var filename = path.basename(fp);
-  var ext = path.extname(found);
+  var ext = path.extname(fp);
   if (ext[0] === '.') {
     ext = ext.substring(1);
   }

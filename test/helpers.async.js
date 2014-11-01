@@ -11,38 +11,35 @@ var should = require('should');
 var Template = require('..');
 var template;
 
-
 describe('.addHelperAsync():', function () {
   beforeEach(function () {
     template = new Template();
   });
 
-
   it('should register _bound_ async helper functions by default:', function () {
     var helpers = template.helpers('md');
 
-    helpers.addHelperAsync('a', function (str, callback) {
-      callback(null, str.toLowerCase());
+    helpers.addHelperAsync('a', function (str, next) {
+      next(null, str.toLowerCase());
     });
 
-    helpers.addHelperAsync('b', function (str, callback) {
-      callback(null, str.toUpperCase());
+    helpers.addHelperAsync('b', function (str, next) {
+      next(null, str.toUpperCase());
     });
 
     helpers.should.have.properties(['a', 'b']);
     helpers._.helpersAsync.should.have.properties(['a', 'b']);
   });
 
-
   it('should use bound helpers in templates:', function (done) {
     var helpers = template.helpers('md');
 
-    helpers.addHelperAsync('a', function (str, callback) {
-      callback(null, str.toLowerCase());
+    helpers.addHelperAsync('a', function (str, next) {
+      next(null, str.toLowerCase());
     });
 
-    helpers.addHelperAsync('b', function (str, callback) {
-      callback(null, str.toUpperCase());
+    helpers.addHelperAsync('b', function (str, next) {
+      next(null, str.toUpperCase());
     });
 
     template.page('foo.md', {content: 'A: <%= a(name) %>\nB: <%= b(name) %>'});
@@ -59,11 +56,11 @@ describe('.addHelperAsync():', function () {
     var helpers = template.helpers('md');
 
     helpers
-      .addHelperAsync('a', function (str, callback) {
-        callback(null, str.toLowerCase());
+      .addHelperAsync('a', function (str, next) {
+        next(null, str.toLowerCase());
       })
-      .addHelperAsync('b', function (str, callback) {
-        callback(null, str.toUpperCase());
+      .addHelperAsync('b', function (str, next) {
+        next(null, str.toUpperCase());
       });
 
 
@@ -77,11 +74,11 @@ describe('.addHelperAsync():', function () {
     var helpers = template.helpers('md');
 
     helpers
-      .addHelperAsync('a', function (str, callback) {
-        callback(null, str.toLowerCase());
+      .addHelperAsync('a', function (str, next) {
+        next(null, str.toLowerCase());
       })
-      .addHelperAsync('b', function (str, callback) {
-        callback(null, str.toUpperCase());
+      .addHelperAsync('b', function (str, next) {
+        next(null, str.toUpperCase());
       });
 
     template.page('foo.md', {content: 'A: <%= a(name) %>\nB: <%= b(name) %>'});
@@ -94,11 +91,11 @@ describe('.addHelperAsync():', function () {
 
   it('should use helpers registered for all engines:', function (done) {
     template
-      .addHelperAsync('a', function (str, callback) {
-        callback(null, str.toLowerCase());
+      .addHelperAsync('a', function (str, next) {
+        next(null, str.toLowerCase());
       })
-      .addHelperAsync('b', function (str, callback) {
-        callback(null, str.toUpperCase());
+      .addHelperAsync('b', function (str, next) {
+        next(null, str.toUpperCase());
       });
 
     template._.asyncHelpers.should.have.properties(['a', 'b']);

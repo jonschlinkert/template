@@ -10,7 +10,6 @@
 var fs = require('fs');
 var path = require('path');
 var should = require('should');
-var helpers = require('test-helpers')({dir: 'test'});
 var Template = require('..');
 var template = new Template();
 

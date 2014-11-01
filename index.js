@@ -20,7 +20,6 @@ var Cache = require('config-cache');
 var Helpers = require('helper-cache');
 var Engines = require('engine-cache');
 var engineLodash = require('engine-lodash');
-var engineNoop = require('engine-noop');
 var parserMatter = require('parser-front-matter');
 var Loader = require('load-templates');
 var slice = require('array-slice');
@@ -197,10 +196,6 @@ Template.prototype.defaultEngines = function() {
       layoutDelims: ['{%', '%}'],
       destExt: '.html'
     });
-    this.engine('*', engineNoop, {
-      layoutDelims: ['{%', '%}'],
-      destExt: '.html'
-    });
   }
 };
 
@@ -286,8 +281,8 @@ Template.prototype.dispatch = function(template, fns) {
  * Proxy `Router#use()` to add middleware to the engine router.
  * See Router#use() documentation for details.
  *
- * If the _fn_ parameter is an engine, then it will be
- * mounted at the _route_ specified.
+ * If the `fn` parameter is an engine, then it will be
+ * mounted at the `route` specified.
  *
  * @param {Function} `fn`
  * @api public
@@ -333,7 +328,7 @@ Template.prototype.use = function (fn) {
 
 /**
  * Proxy to the engine `Router#route()`
- * Returns a new `Route` instance for the _path_.
+ * Returns a new `Route` instance for the `path`.
  *
  * Routes are isolated middleware stacks for specific paths.
  * See the Route api docs for details.
@@ -347,7 +342,7 @@ Template.prototype.route = function(path) {
 };
 
 /**
- * Proxy to `Router#param()` with one added api feature. The _name_ parameter
+ * Proxy to `Router#param()` with one added api feature. The `name` parameter
  * can be an array of names.
  *
  * See the Router#param() docs for more details.
@@ -664,28 +659,11 @@ Template.prototype.addMixin = function(name, fn) {
 };
 
 /**
- * Get and set _generic_ helpers on the `cache`.
+ * Get and set **generic** helpers on the `cache`.
  *
- * Helpers registered
- * using this method will be passed to every engine, so be sure to use
- * generic javascript functions - unless you want to see Lo-Dash
- * blow up from `Handlebars.SafeString`.
- *
- * @param {String} `name` The helper to cache or get.
- * @param {Function} `fn` The helper function.
- * @return {Object} Object of helpers for the specified engine.
- * @api public
- */
-
-Template.prototype.addHelper = function(name, fn) {
-  debug.helper('#{adding helper} name: %s', name);
-  return this._.helpers.addHelper(name, fn);
-};
-
-/**
- * Register a helper for the given `ext` (engine). Register the given view engine callback `fn` as `ext`. If only `ext`
- * is passed, the engine registered for `ext` is returned. If no `ext`
- * is passed, the entire cache is returned.
+ * Helpers registered using this method will be passed to every
+ * engine, so be sure to use generic javascript functions - unless
+ * you want to see Lo-Dash blow up from `Handlebars.SafeString`.
  *
  * ```js
  * template.helper('lower', function(str) {
@@ -693,15 +671,23 @@ Template.prototype.addHelper = function(name, fn) {
  * });
  * ```
  *
- * @param {String} `ext` The engine to register helpers with.
- * @return {Object} Object of helpers for the specified engine.
+ * @param {String} `name` The helper name
+ * @param {Function} `fn` The helper function.
  * @api public
  */
 
-Template.prototype.helper = function() {
-  debug.helper('#{helper}: %j', arguments);
-  return this.addHelper.apply(this, arguments);
+Template.prototype.helper = function(name, fn) {
+  debug.helper('#{adding helper} name: %s', name);
+  return this._.helpers.addHelper(name, fn);
 };
+
+/**
+ * Alias for `.helper()`.
+ *
+ * @api public
+ */
+
+Template.prototype.addHelper = Template.prototype.helper;
 
 /**
  * Register an object of helpers for the given `ext` (engine).
@@ -721,6 +707,26 @@ Template.prototype.helpers = function(ext) {
 };
 
 /**
+ * Register a helper for the given `ext` (engine).
+ *
+ * ```js
+ * template.helperAsync('lower', function(str, next) {
+ *   str = str.toLowerCase();
+ *   next();
+ * });
+ * ```
+ *
+ * @param {String} `ext` The engine to register helpers with.
+ * @return {Object} Object of helpers for the specified engine.
+ * @api public
+ */
+
+Template.prototype.helperAsync = function(name, fn) {
+  debug.helper('#{adding async helper} name: %s', name);
+  return this._.asyncHelpers.addHelperAsync(name, fn);
+};
+
+/**
  * Async version of `.addHelper()`.
  *
  * @param {String} `name` The helper to cache or get.
@@ -732,25 +738,6 @@ Template.prototype.helpers = function(ext) {
 Template.prototype.addHelperAsync = function(name, fn) {
   debug.helper('#{adding async helper} name: %s', name);
   return this._.asyncHelpers.addHelperAsync(name, fn);
-};
-
-/**
- * Register a helper for the given `ext` (engine).
- *
- * ```js
- * template.helperAsync('lower', function(str) {
- *   return str.toLowerCase();
- * });
- * ```
- *
- * @param {String} `ext` The engine to register helpers with.
- * @return {Object} Object of helpers for the specified engine.
- * @api public
- */
-
-Template.prototype.helperAsync = function() {
-  debug.helper('#{helper}: %j', arguments);
-  return this.addHelperAsync.apply(this, arguments);
 };
 
 /**

@@ -25,6 +25,7 @@ var Loader = require('load-templates');
 var slice = require('array-slice');
 var flatten = require('arr-flatten');
 
+var camelize = require('./lib/utils/camelize');
 var decorate = require('./lib/decorate');
 var init = require('./lib/middleware/init');
 var utils = require('./lib/utils');
@@ -868,7 +869,7 @@ Template.prototype.load = function(plural, options, fns) {
   var opts = extend({}, this.options, options);
   var loader = new Loader(opts);
 
-  return function (key, value, locals) {
+  return function (/*key, value, locals*/) {
     var loaded = opts.loadFn
       ? opts.loadFn.apply(this, arguments)
       : loader.load.apply(loader, arguments);
@@ -1007,7 +1008,7 @@ Template.prototype.decorate = function(subtype, plural, options, fns) {
    * Add a method to `Template` for `subtype`
    */
 
-  mixin(subtype, function (key, value, locals, opt) {
+  mixin(subtype, function (/*key, value, locals, opts*/) {
     this[plural].apply(this, arguments);
   });
 
@@ -1015,7 +1016,7 @@ Template.prototype.decorate = function(subtype, plural, options, fns) {
    * Add a method to `Template` for `plural`
    */
 
-  mixin(plural, function (key, value, locals, opt) {
+  mixin(plural, function (/*key, value, locals, opts*/) {
     this.load(plural, options, fns).apply(this, arguments);
   });
 
@@ -1023,7 +1024,7 @@ Template.prototype.decorate = function(subtype, plural, options, fns) {
    * Add a `get` method to `Template` for `subtype`
    */
 
-  mixin(decorate.methodName('get', subtype), function (key) {
+  mixin(methodName('get', subtype), function (key) {
     return this.cache[plural][key];
   });
 
@@ -1031,7 +1032,7 @@ Template.prototype.decorate = function(subtype, plural, options, fns) {
    * Add a `render` method to `Template` for `subtype`
    */
 
-  mixin(decorate.methodName('render', subtype), function () {
+  mixin(methodName('render', subtype), function () {
     return this.renderSubtype(subtype);
   });
 
@@ -1039,7 +1040,7 @@ Template.prototype.decorate = function(subtype, plural, options, fns) {
    * Add a `handle` method for a template subtype
    */
 
-  mixin(decorate.methodName('handle', plural), function () {
+  mixin(methodName('handle', plural), function () {
     return this.handleType(plural);
   });
 };
@@ -1120,7 +1121,6 @@ Template.prototype.preprocess = function(template, locals, async) {
   var delims = locals.delims;
   var content = template;
   var tmpl;
-  var key;
 
   if (this.option('cache')) {
     tmpl = utils.getRenderable(template, this);
@@ -1523,6 +1523,21 @@ Template.prototype.mergeFn = function(template, locals, async) {
 
   return extend(data, o, locals);
 };
+
+/**
+ * Create a camel-cased method name for the given
+ * `method` and `type`.
+ *
+ *     'get' + 'page' => `getPage`
+ *
+ * @param  {String} `type`
+ * @param  {String} `name`
+ * @return {String}
+ */
+
+function methodName(method, type) {
+  return camelize(method) + type[0].toUpperCase() + type.slice(1);
+}
 
 /**
  * Extend the `Template` prototype with a new method.

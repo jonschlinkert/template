@@ -10,12 +10,12 @@
 var assert = require('assert');
 var should = require('should');
 var Template = require('..');
-var template = new Template();
+var template;
 
 
 describe('engine get/set', function () {
-  afterEach(function() {
-    template.clear();
+  beforeEach(function() {
+    template = new Template();
   });
 
   describe('.set()', function () {
@@ -67,8 +67,8 @@ describe('engine get/set', function () {
   });
 
   describe('.get()', function () {
-    it('should return undefined when no set', function () {
-      assert(template.get('a') === undefined);
+    it('should return undefined when not set', function () {
+      (template.get('a') == null).should.be.true;
     });
 
     it('should otherwise return the value', function () {

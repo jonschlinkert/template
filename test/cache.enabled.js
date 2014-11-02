@@ -10,18 +10,18 @@
 var assert = require('assert');
 var should = require('should');
 var Template = require('..');
-var template = new Template();
+var template;
 
 
-describe('engine get/set', function () {
-  afterEach(function() {
-    template.clear();
+describe('engine enabled', function () {
+  beforeEach(function() {
+    template = new Template();
   });
 
   describe('.enable()', function () {
     it('should set the value to true', function () {
       template.enable('foo').should.equal(template);
-      template.get('foo').should.be.ok;
+      template.option('foo').should.be.true
     });
   });
 
@@ -31,12 +31,12 @@ describe('engine get/set', function () {
     });
 
     it('should return true when set', function () {
-      template.set('a', 'b');
-      template.enabled('a').should.be.ok;
+      template.option('a', 'b');
+      template.enabled('a').should.be.true
     });
 
     it('should return true when set', function () {
-      template.set('a', false);
+      template.option('a', false);
       template.enabled('a').should.be.false;
     });
   });
@@ -44,16 +44,16 @@ describe('engine get/set', function () {
   describe('.disable()', function () {
     it('should set the value to false', function () {
       template.disable('foo').should.equal(template);
-      template.get('foo').should.be.false;
+      template.option('foo').should.be.false;
     });
   });
   describe('.disabled()', function () {
     it('should default to true', function () {
-      template.disabled('xyz').should.be.ok;
+      template.disabled('xyz').should.be.true
     });
 
     it('should return false when set', function () {
-      template.set('abc', 'xyz');
+      template.option('abc', 'xyz');
       template.disabled('abc').should.be.false;
     });
   });

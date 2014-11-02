@@ -26,15 +26,6 @@ describe('Template', function () {
     it('nested property should exist.', function() {
       template.exists('a.b.c').should.be.ok;
     });
-    it('nested property should exist.', function() {
-      template.exists('a.b.d').should.be.ok;
-    });
-    it('nested property should exist.', function() {
-      template.exists('a.b.e').should.be.ok;
-    });
-    it('nested property should exist.', function() {
-      template.exists('a.b.f').should.be.ok;
-    });
     it('literal backslash should escape period in property name.', function() {
       template.exists('a.b.g\\.h\\.i').should.be.ok;
     });

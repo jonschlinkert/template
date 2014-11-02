@@ -104,37 +104,6 @@ describe('events:', function () {
       called.should.be.true;
     });
 
-    it('should emit `enabled` when a value is enabled', function () {
-      var template = new Template();
-      var called = false;
-
-      template.once('enable', function (key, value) {
-        called = true;
-        template.enable('hidden');
-      });
-
-      template.enable('option');
-      template.enabled('hidden').should.be.true;
-      called.should.be.true;
-    });
-
-    it('should emit `disable` when items on the cache are disabled.', function () {
-      var called = false;
-      var template = new Template();
-
-      template.enable('foo');
-      template.enabled('foo').should.be.true;
-
-      template.once('disable', function (key, value) {
-        called = true;
-      });
-
-      template.disable('foo');
-      called.should.be.true;
-
-      template.enabled('foo').should.be.false;
-    });
-
     it('should emit `clear` when an item is removed from the cache', function () {
       var called = false;
       var template = new Template();

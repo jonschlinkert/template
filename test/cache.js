@@ -100,7 +100,8 @@ describe('Template', function () {
       template.get('b', true).should.eql(template.cache.b);
     });
     it('should create nested properties.', function() {
-      template.get('c.d.e', true).should.eql(template.cache.c.d.e);
+      template.get('c.d.e', true);
+      template.cache.c.d.should.have.property('e');
     });
   });
 

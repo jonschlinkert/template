@@ -26,7 +26,6 @@ var slice = require('array-slice');
 var flatten = require('arr-flatten');
 
 var camelize = require('./lib/utils/camelize');
-var decorate = require('./lib/decorate');
 var init = require('./lib/middleware/init');
 var utils = require('./lib/utils');
 var debug = require('./lib/debug');

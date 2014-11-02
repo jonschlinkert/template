@@ -72,6 +72,7 @@ Template.Route = Route;
  */
 
 Template.prototype.initTemplate = function() {
+  this.loaders = this.loaders || {};
   this.engines = this.engines || {};
   this.delims = this.delims || {};
 
@@ -807,6 +808,7 @@ Template.prototype.setType = function(subtype, plural, options) {
 
   // Make an association between `subtype` and its `plural`
   this.subtype[subtype] = plural;
+
   if (opts.isRenderable) {
     this.type.renderable.push(plural);
   }
@@ -843,6 +845,28 @@ Template.prototype.getType = function(type) {
     acc[subtype] = this.cache[subtype];
     return acc;
   }.bind(this), {});
+};
+
+/**
+ * Validate a template object to ensure that it has the
+ * properties expected for applying layouts, and for
+ * choosing engines and renderers. Validation is used by
+ * default, but you can choose to bypass.
+ *
+ * @param  {[type]} type
+ * @return {[type]}
+ */
+
+Template.prototype.validate = function(key, value, locals, options) {
+
+  // todo
+};
+
+Template.prototype.loader = function (type) {
+  return function(key, value, locals, options) {
+
+    // todo
+  }
 };
 
 /**
@@ -1036,14 +1060,6 @@ Template.prototype.decorate = function(subtype, plural, options, fns) {
 
   mixin(methodName('render', subtype), function () {
     return this.renderSubtype(subtype);
-  });
-
-  /**
-   * Add a `handle` method for a template subtype
-   */
-
-  mixin(methodName('handle', plural), function () {
-    return this.handleType(plural);
   });
 };
 
@@ -1334,12 +1350,12 @@ Template.prototype.renderType = function(type, subtype) {
       locals = {};
     }
 
-    var cache = self.getType(type);
+    var obj = self.getType(type);
     var template;
     if (subtype == null) {
       template = utils.firstOfType(name, self, type);
     } else {
-      template = cache[subtype][name];
+      template = obj[subtype][name];
     }
 
     // The user-defined, default engine to use

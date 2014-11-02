@@ -38,7 +38,7 @@ and look for the following properties:
 ```js
 {
   type:
-   { partial: [ 'partials' ],
+   { partial: [ 'partials', 'posts', 'docs' ],
      renderable: [ 'pages' ],
      layout: [ 'layouts' ] },
   subtype:

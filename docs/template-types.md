@@ -1,0 +1,49 @@
+# Template types
+
+> Learn how to use custom template types and sub-types
+
+
+Templates are classified by three major `types`, **renderable**, **layout**, and **partial**, each of which may contain any number of custom template `subtypes`.
+
+## Types
+
+Types can be viewed as "buckets" for sub-types, where each `type` is descriptive of the major _role_ that its `subtypes` and the templates they stored are expected to play.
+
+**Types and built-in subtypes**
+
+  1. `renderable`: Templates that are expected to be rendered at some point. The default renderable `subtype` is `page`,
+  1. `layout`: Templates to be used as layouts (e.g. "wrappers") for other templates. The default layout `subtype` is `layout`, but examples of custom layout subtypes might be `block` or `section`.
+  1. `partial`: Templates to be used as partial views (e.g. includes) by helpers or other templates. The default partial `subtype` is `partial`.
+
+
+
+
+For example, the `renderable` type contains the subtype `page`
+  - `subtype`: template `subtypes` are generally use-case specific. For example, `post`, `page`, `document` and `file`
+
+
+  The purpose of this classification is to ensure that you can reliably expect templates when sub-types are created for a `type` consistently reflect the `type` in which they are categorized: "renderable", "layouts", or "partial"
+
+## Built-in subtypes
+
+Print out the `template` object:
+
+```js
+var template = new Template();
+console.log(template);
+```
+
+and look for the following properties:
+
+```js
+{
+  type:
+   { partial: [ 'partials' ],
+     renderable: [ 'pages' ],
+     layout: [ 'layouts' ] },
+  subtype:
+   { page: 'pages',
+     layout: 'layouts',
+     partial: 'partials' },
+}
+```

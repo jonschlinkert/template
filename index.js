@@ -134,6 +134,7 @@ Template.prototype.defaultOptions = function() {
   this.option('layout', null);
   this.option('viewEngine', '*');
   this.option('default engines', true);
+
   this.option('preprocess', true);
   this.option('preferLocals', false);
   this.option('mergePartials', true);
@@ -248,7 +249,7 @@ Template.prototype.lazyrouter = function() {
 Template.prototype.handle = function(file, done) {
   debug.routes('#routes:handle', file);
   if (!this.router) {
-    debug('no routes defined on engine');
+    debug.routes('no routes defined on engine');
     done();
     return;
   }
@@ -304,7 +305,7 @@ Template.prototype.use = function (fn) {
 
   var fns = flatten(slice(arguments, offset));
   if (fns.length === 0) {
-    throw new TypeError('Template.use() requires middleware functions');
+    throw new TypeError('Template#use() expects middleware functions');
   }
 
   this.lazyrouter();
@@ -316,7 +317,7 @@ Template.prototype.use = function (fn) {
       return router.use(path, fn);
     }
 
-    debug('.use template under %s', path);
+    debug.router('.use template under %s', path);
     fn.mountpath = path;
     fn.parent = this;
   }, this);
@@ -644,7 +645,7 @@ Template.prototype.getEngine = function(ext) {
  * @api private
  */
 
-Template.prototype.addMixin = function(name, fn) {
+Template.prototype.mixin = function(name, fn) {
   if (arguments.length === 1) {
     return this.cache.mixins[name];
   }

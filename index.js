@@ -133,7 +133,7 @@ Template.prototype.defaultOptions = function() {
   this.option('layoutExt', null);
   this.option('layout', null);
   this.option('viewEngine', '*');
-  this.option('built-in:engines', true);
+  this.option('default engines', true);
   this.option('preprocess', true);
   this.option('preferLocals', false);
   this.option('mergePartials', true);
@@ -163,9 +163,6 @@ defineGetter(Template.prototype, 'cwd', function () {
  *
  *   - `.md`: parse front matter in markdown files
  *   - `.hbs`: parse front matter in handlebars templates
- *   - `.*`: use the noop engine for any unclaimed extensions. This just
- *           passes files through but adds expected properties to the
- *           template object if they don't already exist.
  *
  * @api private
  */
@@ -191,7 +188,7 @@ Template.prototype.defaultRoutes = function() {
  */
 
 Template.prototype.defaultEngines = function() {
-  if (this.option('built-in:engines')) {
+  if (this.option('default engines')) {
     this.engine(this.option('defaultExts'), engineLodash, {
       layoutDelims: ['{%', '%}'],
       destExt: '.html'
@@ -616,8 +613,7 @@ Template.prototype.engine = function(exts, fn, options) {
 };
 
 /**
- * Get the engine object registered for the given `ext`. If no
- * `ext` is passed, the entire cache is returned.
+ * Get the engine settings registered for the given `ext`.
  *
  * ```js
  * template.getEngine('.html');
@@ -631,9 +627,7 @@ Template.prototype.engine = function(exts, fn, options) {
 
 Template.prototype.getEngine = function(ext) {
   debug.engine('#{getEngine} ext: %s', ext);
-  var engine = this._.engines.getEngine(ext);
-  engine.options.thisArg = null;
-  return engine;
+  return this._.engines.getEngine(ext);
 };
 
 /**
@@ -812,15 +806,12 @@ Template.prototype.setType = function(subtype, plural, options) {
 
   // Make an association between `subtype` and its `plural`
   this.subtype[subtype] = plural;
-
-  // Track the new template subtype by its parent `type`
   if (opts.isRenderable) {
     this.type.renderable.push(plural);
   }
   if (opts.isLayout) {
     this.type.layout.push(plural);
   }
-  // if it's not renderable or a layout, assume it's a partial
   if (opts.isPartial || (!opts.isRenderable && !opts.isLayout)) {
     this.type.partial.push(plural);
     opts.isPartial = true;
@@ -868,15 +859,18 @@ Template.prototype.load = function(plural, options, fns) {
   var opts = extend({}, this.options, options);
   var loader = new Loader(opts);
 
-  return function (/*key, value, locals*/) {
+  return function (/*key, value, locals, opts*/) {
     var loaded = opts.loadFn
       ? opts.loadFn.apply(this, arguments)
       : loader.load.apply(loader, arguments);
 
+    // console.log(loaded)
     var template = this.normalize(plural, loaded, options);
+
     // Handle middleware
     this.dispatch(template, fns);
 
+    // Add the template to the cache
     extend(this.cache[plural], template);
     return this;
   };
@@ -929,7 +923,7 @@ Template.prototype.normalize = function(plural, template, options) {
  * @return {Object} Normalized template object.
  */
 
-Template.prototype.format = function(key, value, locals) {
+Template.prototype.format = function(key, value, locals, options) {
   debug.template('#{format} args:', arguments);
 
   // Temporarily load a template onto the cache to normalize it.
@@ -937,20 +931,24 @@ Template.prototype.format = function(key, value, locals) {
   load.apply(this, arguments);
 
   // Get the normalized template and return it.
-  var template = this.cache['anonymous'][key];
-  return this.stashLocals('render', template, locals);
+  return this.cache['anonymous'][key];
 };
+
 
 /**
  * Add a new template `sub-type`, along with associated get/set methods.
- * You must specify both the singular and plural names for the type.
+ *
+ * When you only specify a name for the type, a plural form is created
+ * automatically (e.g. `page` and `pages`). However, you can define the
+ * `plural` form explicitly if necessary.
  *
  * @param {String} `subtype` Singular name of the sub-type to create, e.g. `page`.
  * @param {String} `plural` Plural name of the template type, e.g. `pages`.
  * @param {Object} `options` Options for the template type.
- *   @option {Boolean} [options] `isRenderable` Is the template a partial view?
- *   @option {Boolean} [options] `layout` Can the template be used as a layout?
- *   @option {Boolean} [options] `partial` Can the template be used as a partial?
+ *   @option {Boolean} [options] `isRenderable` Templates that may be rendered at some point
+ *   @option {Boolean} [options] `isLayout` Templates to be used as layouts
+ *   @option {Boolean} [options] `isPartial` Templates to be used as partial views or includes
+ * @param {Function|Array} `fns` Middleware function or functions to be run for every template of this type.
  * @return {Object} `Template` to enable chaining.
  * @api public
  */
@@ -959,8 +957,6 @@ Template.prototype.create = function(subtype, plural, options, fns) {
   debug.template('#{creating template subtype}: %s', subtype);
   var args = slice(arguments);
 
-  // If you need more than the following just define
-  // `plural` explicitly
   if (typeof plural !== 'string') {
     fns = options;
     options = plural;
@@ -976,7 +972,7 @@ Template.prototype.create = function(subtype, plural, options, fns) {
   options = this.setType(subtype, plural, options);
 
   // Add convenience methods for this sub-type
-  this.decorate(subtype, plural, options, utils.filterMiddleware(fns, args));
+  this.decorate(subtype, plural, options, fns);
 
   // Create a sync helper for this type
   if (!hasOwn(this._.helpers, subtype)) {
@@ -1004,12 +1000,10 @@ Template.prototype.decorate = function(subtype, plural, options, fns) {
   options = extend({}, options);
 
   /**
-   * Add a method to `Template` for `subtype`
+   * Middleware for this template type
    */
 
-  mixin(subtype, function (/*key, value, locals, opts*/) {
-    this[plural].apply(this, arguments);
-  });
+  utils.filterMiddleware(fns, slice(arguments));
 
   /**
    * Add a method to `Template` for `plural`
@@ -1017,6 +1011,14 @@ Template.prototype.decorate = function(subtype, plural, options, fns) {
 
   mixin(plural, function (/*key, value, locals, opts*/) {
     this.load(plural, options, fns).apply(this, arguments);
+  });
+
+  /**
+   * Add a method to `Template` for `subtype`
+   */
+
+  mixin(subtype, function (/*key, value, locals, opts*/) {
+    this[plural].apply(this, arguments);
   });
 
   /**
@@ -1074,26 +1076,28 @@ Template.prototype.lookup = function(plural, name, ext) {
  * @api private
  */
 
-Template.prototype.mergePartials = function(ext, locals, combine) {
-  debug.template('#{merging partials} args:', arguments);
-  combine = combine || this.option('mergePartials');
+Template.prototype.mergePartials = function(ext, locals, mergePartials) {
+  debug.template('#{merging partials} args: %j', arguments);
+  var self = this;
+
+  mergePartials = mergePartials || this.option('mergePartials');
   var opts = extend({partials: {}}, locals);
 
-  this.type['partial'].forEach(function (type) {
-    forOwn(this.cache[type], function (value, key) {
-      value.content = this.applyLayout(ext, value, value.locals);
+  self.type['partial'].forEach(function (type) {
+    forOwn(self.cache[type], function (value, key) {
       opts = extend({}, opts, value.locals);
 
-      if (combine) {
-        var fn = this.option('partialsKey');
-        key = fn(key);
+      // If a layout is defined, apply it to the partial
+      value.content = self.applyLayout(ext, value, value.locals);
 
-        opts.partials[key] = value.content;
+      // If `mergePartials` is true combine all `partial` subtypes
+      if (mergePartials === true) {
+        opts.partials[self.option('partialsKey')(key)] = value.content;
       } else {
         opts[type][key] = value.content;
       }
-    }.bind(this));
-  }.bind(this));
+    });
+  });
   return opts;
 };
 
@@ -1130,7 +1134,6 @@ Template.prototype.preprocess = function(template, locals, async) {
 
   if (tmpl) {
     template = tmpl;
-    template = this.stashLocals('render', template, locals);
   } else {
     // generate a unique, temporary id
     template = this.format(utils.generateId(), template, locals);
@@ -1201,13 +1204,13 @@ Template.prototype.renderBase = function(engine, content, locals, cb) {
   }
 
   if (!hasOwn(engine, 'render')) {
-    throw new Error('`.render()` method cannot be found on engine: "' + engine + '".');
+    throw new Error('`.render()` method not found on: "' + engine.name + '".');
   }
 
   try {
     engine.render(content, locals, function (err, res) {
       if (err) {
-        console.log(chalk.red(err));
+        debug.render('renderBase: %j', err);
         cb.call(self, err);
         return;
       }
@@ -1218,9 +1221,98 @@ Template.prototype.renderBase = function(engine, content, locals, cb) {
       });
     });
   } catch (err) {
-    console.log(chalk.red(err));
+    debug.render('renderBase [catch]: %j', err);
     cb.call(self, err);
   }
+};
+
+/**
+ * Render `content` with the given `options` and `callback`.
+ *
+ * @param  {Object|String} `file` String or normalized template object.
+ * @param  {Object} `options` Options to pass to registered view engines.
+ * @return {String}
+ * @api public
+ */
+
+Template.prototype.render = function(content, locals, cb) {
+  if (typeof locals === 'function') {
+    cb = locals;
+    locals = {};
+  }
+
+  var defaultExt = this.option('viewEngine');
+  var engine = this.getEngine(defaultExt);
+
+  if (this.option('preprocess')) {
+    var pre = this.preprocess(content, locals, true);
+    content = pre.content;
+    locals = extend({}, pre.locals, locals);
+    engine = pre.engine;
+  }
+
+  this.bindHelpers(locals);
+  this.renderBase(engine, content, locals, cb);
+};
+
+/**
+ * Render `content` with the given `locals`.
+ *
+ * @param  {Object|String} `file` String or normalized template object.
+ * @param  {Object} `options` Options to pass to registered view engines.
+ * @return {String}
+ * @api public
+ */
+
+Template.prototype.renderSync = function(content, locals) {
+  var ext = this.option('viewEngine');
+  var engine = this.getEngine(ext);
+
+  if (this.option('preprocess')) {
+    var pre = this.preprocess(content, locals);
+    content = pre.content;
+    locals = extend({}, pre.locals, locals);
+    engine = pre.engine;
+  }
+
+  if (!hasOwn(engine, 'renderSync')) {
+    throw new Error('`.renderSync()` method not found on engine: "' + engine + '".');
+  }
+
+  try {
+    return engine.renderSync(content, locals);
+  } catch (err) {
+    debug.render('renderSync: %j', err);
+    return err;
+  }
+};
+
+/**
+ * Render the given string with the specified `locals` and `callback`.
+ *
+ * @param  {String} `str` The string to render.
+ * @param  {Object} `locals` Locals and/or options to pass to registered view engines.
+ * @return {String}
+ * @api public
+ */
+
+Template.prototype.renderString = function(str, locals, cb) {
+  if (typeof locals === 'function') {
+    cb = locals;
+    locals = {};
+  }
+
+  // The user-defined, default engine to use
+  var ext = this.option('viewEngine');
+  var engine = this.getEngine(ext);
+
+  if (Boolean(locals.engine)) {
+    engine = this.getEngine(locals.engine);
+  } else if (Boolean(locals.ext)) {
+    engine = this.getEngine(locals.ext);
+  }
+
+  this.renderBase(engine, str, locals, cb);
 };
 
 /**
@@ -1250,8 +1342,8 @@ Template.prototype.renderType = function(type, subtype) {
     }
 
     // The user-defined, default engine to use
-    var viewEngine = self.option('viewEngine');
-    var engine = self.getEngine(viewEngine);
+    var ext = self.option('viewEngine');
+    var engine = self.getEngine(ext);
 
     // Attempt to get the template from the cache.
     if (template == null) {
@@ -1298,15 +1390,13 @@ Template.prototype.renderSubtype = function(subtype) {
     var template = self.cache[plural][name];
 
     // The user-defined, default engine to use
-    var viewEngine = self.option('viewEngine');
-    var engine = self.getEngine(viewEngine);
+    var ext = self.option('viewEngine');
+    var engine = self.getEngine(ext);
 
     // Attempt to get the template from the cache.
     if (template == null) {
       throw new Error('Cannot find "' + name + '" on the cache.');
     }
-
-    locals = self.mergeLocals(self, template, locals);
 
     if (Boolean(template.engine)) {
       engine = self.getEngine(template.engine);
@@ -1314,8 +1404,10 @@ Template.prototype.renderSubtype = function(subtype) {
       engine = self.getEngine(template.ext);
     }
 
+    locals = self.mergeLocals(self, template, locals);
+
     // // Get the extension to use for picking an engine
-    var ext = utils.pickExt(template, locals, self);
+    ext = utils.pickExt(template, locals, self);
 
     // if a layout is defined, wrap `content` with it
     var content = self.applyLayout(ext, template, locals);
@@ -1353,7 +1445,6 @@ Template.prototype.renderCached = function(name, locals, cb) {
   var content = template.content;
   locals = _.extend({}, template.locals, locals);
 
-
   if (Boolean(template.engine)) {
     engine = this.getEngine(template.engine);
   } else if (Boolean(template.ext)) {
@@ -1364,116 +1455,23 @@ Template.prototype.renderCached = function(name, locals, cb) {
 };
 
 /**
- * Render the given string with the specified `locals` and `callback`.
+ * Bind the current context to helpers.
  *
- * @param  {String} `str` The string to render.
- * @param  {Object} `locals` Locals and/or options to pass to registered view engines.
- * @return {String}
- * @api public
+ * @param  {Object} `locals`
+ * @return {Object}
  */
 
-Template.prototype.renderString = function(str, locals, cb) {
-  if (typeof locals === 'function') {
-    cb = locals;
-    locals = {};
-  }
-
-  // The user-defined, default engine to use
-  var viewEngine = this.option('viewEngine');
-  var engine = this.getEngine(viewEngine);
-
-  if (Boolean(locals.engine)) {
-    engine = this.getEngine(locals.engine);
-  } else if (Boolean(locals.ext)) {
-    engine = this.getEngine(locals.ext);
-  }
-
-  this.renderBase(engine, str, locals, cb);
-};
-
-/**
- * Render `content` with the given `options` and `callback`.
- *
- * @param  {Object|String} `file` String or normalized template object.
- * @param  {Object} `options` Options to pass to registered view engines.
- * @return {String}
- * @api public
- */
-
-Template.prototype.render = function(content, locals, cb) {
-  if (typeof locals === 'function') {
-    cb = locals;
-    locals = {};
-  }
-
-  var defaultExt = this.option('viewEngine');
-  var engine = this.getEngine(defaultExt);
-
-  if (this.option('preprocess')) {
-    var pre = this.preprocess(content, locals, true);
-    content = pre.content;
-    locals = extend({}, pre.locals, locals);
-    engine = pre.engine;
-  }
-
-  var o = {};
+Template.prototype.bindHelpers = function (locals) {
   var helpers = _.cloneDeep(locals.helpers);
-  o.root = this;
-  o.context = locals;
   locals.helpers = {};
 
-  _.forIn(helpers, function(fn, key) {
+  var o = {};
+  o.context = locals;
+  o.root = this;
+
+  forOwn(helpers, function(fn, key) {
     locals.helpers[key] = _.bind(fn, o);
   });
-
-  this.renderBase(engine, content, locals, cb);
-};
-
-/**
- * Render `content` with the given `locals`.
- *
- * @param  {Object|String} `file` String or normalized template object.
- * @param  {Object} `options` Options to pass to registered view engines.
- * @return {String}
- * @api public
- */
-
-Template.prototype.renderSync = function(content, locals) {
-  var ext = this.option('viewEngine');
-  var engine = this.getEngine(ext);
-
-  if (this.option('preprocess')) {
-    var pre = this.preprocess(content, locals);
-    content = pre.content;
-    locals = extend({}, pre.locals, locals);
-    engine = pre.engine;
-  }
-
-  if (!hasOwn(engine, 'renderSync')) {
-    throw new Error('`.renderSync()` method not found on engine: "' + engine + '".');
-  }
-
-  try {
-    return engine.renderSync(content, locals);
-  } catch (err) {
-    console.log(chalk.red(err));
-    return err;
-  }
-};
-
-/**
- * Store a copy of a `locals` object at a given `location`.
- *
- * @param  {String} `name`
- * @param  {Object} `template`
- * @param  {Object} `locals`
- * @api private
- */
-
-Template.prototype.stashLocals = function(name, template, locals) {
-  template._locals = template._locals || {};
-  template._locals[name] = locals;
-  return template;
 };
 
 /**

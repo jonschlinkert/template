@@ -218,11 +218,14 @@ Template.prototype.defaultDelimiters = function() {
  */
 
 Template.prototype.defaultTemplates = function() {
+  var self = this;
   this.create('page', { isRenderable: true }, [
-    function(key, value, locals, options, next) {
+    function() {
+      var args = slice(arguments);
+      var next = args.pop();
       var loader = new Loader();
-      var template = loader.load.apply(loader, arguments);
-      next(null, template);
+      var template = loader.load.apply(loader, args);
+      next(null, self.normalize('pages', template, {}));
     }
   ]);
   this.create('layout', { isLayout: true });

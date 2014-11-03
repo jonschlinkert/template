@@ -863,6 +863,12 @@ Template.prototype.validate = function(key, value, locals, options) {
   // todo
 };
 
+Template.prototype.loader = function (type) {
+  return function(key, value, locals, options) {
+    // todo
+  }
+};
+
 Template.prototype._loader = function (plural, options, fns, done) {
   var self = this;
   if (arguments.length !== 1) {
@@ -946,6 +952,28 @@ Template.prototype._loader = function (plural, options, fns, done) {
  * @return {Object}
  */
 
+Template.prototype.load = function(plural, options, fns) {
+  debug.template('#{load} args:', arguments);
+  var opts = extend({}, this.options, options);
+  var loader = new Loader(opts);
+
+  return function (/*key, value, locals, opts*/) {
+    var loaded = opts.loadFn
+      ? opts.loadFn.apply(this, arguments)
+      : loader.load.apply(loader, arguments);
+
+    // console.log(loaded)
+    var template = this.normalize(plural, loaded, options);
+
+    // Handle middleware
+    this.dispatch(template, fns);
+
+    // Add the template to the cache
+    extend(this.cache[plural], template);
+    return this;
+  };
+};
+
 Template.prototype._load = function(plural, options, fns, done) {
   debug.template('#{load} args:', arguments);
   var self = this;
@@ -976,23 +1004,6 @@ Template.prototype._load = function(plural, options, fns, done) {
     loader.apply(self, args);
     return self;
   };
-  // var loader = new Loader(opts);
-
-  // return function (/*key, value, locals, opts*/) {
-  //   var loaded = opts.loadFn
-  //     ? opts.loadFn.apply(this, arguments)
-  //     : loader.load.apply(loader, arguments);
-
-  //   // console.log(loaded)
-  //   var template = this.normalize(plural, loaded, options);
-
-  //   // Handle middleware
-  //   this.dispatch(template, fns);
-
-  //   // Add the template to the cache
-  //   extend(this.cache[plural], template);
-  //   return this;
-  // };
 };
 
 /**

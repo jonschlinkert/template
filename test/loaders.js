@@ -8,10 +8,10 @@
 'use strict';
 
 var should = require('should');
-var globber = require('./lib/globber');
 var _ = require('lodash');
 var Template = require('..');
-var template = new Template();
+var globber = require('./lib/globber');
+var template;
 
 describe('engine locals', function () {
 
@@ -46,14 +46,13 @@ describe('engine locals', function () {
     });
 
     it('should load templates from files using a custom function:', function (done) {
-      var options = {};
       template.create('post', { isRenderable: true }, [
-        function (patterns, next) {
-          next(null, globber(patterns, options));
+        function (patterns, opts, next) {
+          next(null, globber(patterns, opts));
         }
       ]);
 
-      template.post('test/fixtures/*.md', function () {
+      template.post('test/fixtures/*.md', {}, function () {
         template.cache.posts.should.have.property('md.md');
         done();
       });
@@ -86,6 +85,7 @@ describe('engine locals', function () {
       ], function (err, result) {
         if (!err) done('Expected an error');
       });
+
       template.post('test/fixtures/*.md', function (err) {
         if (err) done();
       });

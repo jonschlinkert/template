@@ -25,13 +25,13 @@ describe('detect engine', function() {
 
     it('should detect the template engine from the options.', function() {
       var template = new Template();
-      template.page('a', {content: 'This is content.'}, {a: 'b'}, {engine: '.foo'});
+      template.page('a', {content: 'This is content.', a: 'b', engine: '.foo'});
       template.cache.pages['a'].options.should.have.property('engine', '.foo');
     });
 
     it('should detect the template engine from the locals.', function() {
       var template = new Template();
-      template.page('a', {content: 'This is content.'}, {engine: '.foo'});
+      template.page('a', {content: 'This is content.', engine: '.foo'});
       template.cache.pages['a'].options.should.have.property('engine', '.foo');
     });
 

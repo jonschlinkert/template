@@ -1188,8 +1188,6 @@ Template.prototype.normalize = function(plural, template, options) {
     if (isLayout) {
       this.layoutSettings[ext].setLayout(template);
     }
-      console.log(template)
-
   }, this);
   return template;
 };

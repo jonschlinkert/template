@@ -1081,7 +1081,7 @@ Template.prototype.loader = function (plural, options, fns, done) {
       if (loaderStack.length === 0) {
         var loader = new Loader(options);
         results = loader.load.call(loader, key, value);
-        return self.normalize(plural, results, options);
+        return callback(null, self.normalize(plural, results, options));
       }
 
       // pass the loaderStack through the waterfall to get the templates
@@ -1475,7 +1475,7 @@ Template.prototype.renderCached = function(key, locals, cb) {
 
   // Bind context to helpers before passing to the engine.
   this.bindHelpers(locals);
-  this.bindHelpers(engine);
+  // this.bindHelpers(engine);
 
   // if a layout is defined, apply it before rendering
   var content = this.applyLayout(ext, template, locals);
@@ -1493,16 +1493,40 @@ Template.prototype.renderCached = function(key, locals, cb) {
  */
 
 Template.prototype.renderSubtype = function(subtype) {
-  return function (content, locals, cb) {
+  var self = this;
+  var plural = this.subtype[subtype];
+  return function (key, locals, cb) {
     if (typeof locals === 'function') {
       cb = locals;
       locals = {};
     }
 
-    var engine = {};
+    // Return the first matching template from a `renderable` subtype
+    var template = self.lookup(plural, key);
+    if (template == null) {
+      throw new Error('Cannot find "' + key + '" on the cache.');
+    }
 
 
-    this.renderBase(engine, content, locals, cb);
+    // Merge `.render()` locals with template locals
+    locals = extend({}, locals, self.cache.data, template.locals, template.data);
+
+    var ext = template.engine
+      || template.ext
+      || locals.engine
+      || locals.ext
+      || path.extname(template.path)
+      || self.option('viewEngine');
+
+    var engine = self.getEngine(ext);
+
+    // Bind context to helpers before passing to the engine.
+    self.bindHelpers(locals);
+    // self.bindHelpers(engine);
+
+    // if a layout is defined, apply it before rendering
+    var content = self.applyLayout(ext, template, locals);
+    self.renderBase(engine, template.content, locals, cb);
   }
 };
 

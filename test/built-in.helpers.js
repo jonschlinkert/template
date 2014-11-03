@@ -21,25 +21,33 @@ var async = require('async');
 describe('generated helpers:', function () {
   describe('helpers for built-in engines:', function () {
     it.only('should use the `partial` helper with a built-in engine.', function (done) {
-      template.partial('a.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}});
-      template.page('b.md', {path: 'b.md', content: 'foo <%= partial("a.md") %> bar'});
-
-      // console.log(template)
-      template.renderCached('b.md', function (err, content) {
+      async.series([
+        function (next) { template.partial('a.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}}, next); },
+        function (next) { template.page('b.md', {path: 'b.md', content: 'foo <%= partial("a.md") %> bar'}, next); },
+        function (next) {
+          template.renderCached('b.md', function (err, content) {
+            if (err) return next(err);
+            content.should.equal('foo AAA bar');
+            next();
+          });
+        },
+      ], function (err) {
         if (err) return done(err);
-        content.should.equal('foo AAA bar');
         done();
       });
+
     });
 
     it('should use the `partial` helper and locals with a built-in engine.', function (done) {
-      template.partial('abc.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}});
-      template.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("abc.md", { name: "CCC" }) %> bar'});
-
-      template.renderCached('xyz.md', {name: 'DDD'}, function (err, content) {
-        if (err) return done(err);
-        content.should.equal('foo CCC bar');
-        done();
+      async.series([
+        function (next) { template.partial('abc.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}}, next); },
+        function (next) { template.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("abc.md", { name: "CCC" }) %> bar'}, next); }
+      ], function (err) {
+        template.renderCached('xyz.md', {name: 'DDD'}, function (err, content) {
+          if (err) return done(err);
+          content.should.equal('foo CCC bar');
+          done();
+        });
       });
     });
   });

@@ -11,7 +11,7 @@ var should = require('should');
 var Template = require('..');
 var template;
 
-describe('layout usage:', function () {
+describe('template layout:', function () {
   beforeEach(function () {
     template = new Template();
   });

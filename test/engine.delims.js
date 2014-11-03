@@ -14,7 +14,7 @@ var Template = require('..');
 var template = new Template();
 
 
-describe('engine delimiters:', function () {
+describe('engine-specific delimiters:', function () {
   it('should use custom delimiters defined on the engine:', function (done) {
     template.engine('*', require('engine-lodash'), {
       delims: ['<<', '>>']

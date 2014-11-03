@@ -10,12 +10,12 @@
 var assert = require('assert');
 var should = require('should');
 var Template = require('..');
-var template = new Template();
+var template;
 
 
-describe('engine process', function () {
+describe('template.process()', function () {
   beforeEach(function() {
-    template.clear();
+    template = new Template();
     template.omit('abcdefghijklmnopqrstuvwxyz'.split(''));
   });
 

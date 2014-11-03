@@ -13,7 +13,7 @@ var Template = require('..');
 var template;
 
 
-describe('engine enabled', function () {
+describe('.enabled() / .enable()', function () {
   beforeEach(function() {
     template = new Template();
   });

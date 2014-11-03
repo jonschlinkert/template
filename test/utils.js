@@ -13,7 +13,7 @@ var Template = require('..');
 var template;
 
 
-describe('utils', function() {
+describe('template utils', function() {
   beforeEach(function() {
     template = new Template();
   });
@@ -21,7 +21,6 @@ describe('utils', function() {
   describe('.firstOfType:', function () {
     it('should get the first template of the subtype `renderable` by default:', function () {
       template.create('post', { isRenderable: true });
-
       template.page('aaa.md', '<%= abc %>');
       template.post('aaa.md', '<%= abc %>');
 
@@ -30,7 +29,6 @@ describe('utils', function() {
 
     it('should get the first template of the given subtype:', function () {
       template.create('include', { isPartial: true });
-
       template.partial('aaa.md', '<%= abc %>');
       template.include('aaa.md', '<%= abc %>');
 

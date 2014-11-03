@@ -12,7 +12,7 @@ var Template = require('..');
 var template;
 
 
-describe('subtypes', function() {
+describe('template subtypes', function() {
   beforeEach(function() {
     template = new Template();
   });

@@ -12,7 +12,7 @@ var Template = require('..');
 var template;
 
 
-describe('context', function() {
+describe('template context', function() {
   beforeEach(function() {
     template = new Template();
   });

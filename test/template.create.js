@@ -11,11 +11,10 @@ var should = require('should');
 var Template = require('..');
 var template;
 
-describe('engine create:', function () {
+describe('template create:', function () {
   beforeEach(function () {
     template = new Template();
   });
-
 
   describe('.create():', function () {
     it('should create a new template `type`:', function () {

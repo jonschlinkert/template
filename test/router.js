@@ -13,7 +13,7 @@ var template;
 
 
 // Router tests from kerouac
-describe('engine router', function() {
+describe('template.router()', function() {
   beforeEach(function () {
     template = new Template();
   });

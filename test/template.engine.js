@@ -16,7 +16,7 @@ var Template = require('..');
 var template;
 
 
-describe('engine delimiters:', function () {
+describe('template delimiters:', function () {
   beforeEach(function () {
     template = new Template();
   });

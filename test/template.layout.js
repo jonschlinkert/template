@@ -12,7 +12,7 @@ var should = require('should');
 var Template = require('..');
 var template;
 
-describe('engine layout', function () {
+describe('template layout', function () {
   beforeEach(function () {
     template = new Template();
   });

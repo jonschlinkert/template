@@ -15,7 +15,7 @@ var Template = require('..');
 var template = new Template();
 
 
-describe('engine engine', function() {
+describe('template engine', function() {
   beforeEach(function () {
     template = new Template();
   });

@@ -15,7 +15,7 @@ var Template = require('..');
 var template = new Template();
 
 
-describe('engine', function() {
+describe('detect engine', function() {
   describe('detect from `engine` property', function() {
     it('should detect the template engine from the options.', function() {
       var template = new Template();

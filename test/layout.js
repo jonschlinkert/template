@@ -11,7 +11,7 @@ var should = require('should');
 var Template = require('..');
 
 
-describe('engine layouts:', function () {
+describe('layouts:', function () {
   describe('default engine:', function () {
     it('should use layouts defined as objects', function (done) {
       var template = new Template();

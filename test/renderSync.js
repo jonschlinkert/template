@@ -16,7 +16,7 @@ var Template = require('..');
 var template = new Template();
 
 
-describe('engine render', function () {
+describe('.renderSync()', function () {
   beforeEach(function () {
     template = new Template();
   });

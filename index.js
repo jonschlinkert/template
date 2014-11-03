@@ -806,6 +806,206 @@ Template.prototype.defaultHelperAsync = function(subtype, plural) {
 };
 
 /**
+ * Define a custom loader for loading templates.
+ *
+ * @param  {String} `plural`
+ * @param  {Object} `options`
+ * @param  {Array} `fns`
+ * @param  {Function} `done`
+ */
+
+Template.prototype.loader = function (plural, options, fns, done) {
+  var self = this;
+
+  if (arguments.length !== 1) {
+    if (typeof options === 'function' || Array.isArray(options)) {
+      done = fns;
+      fns = options;
+      options = {};
+    }
+
+    if (typeof fns === 'function') {
+      done = fns;
+      fns = [];
+    }
+
+    var stack = fns || [];
+    done = done || function () {};
+
+    self.loaders[plural] = function(key, value, fns, callback) {
+      if (typeof key === 'object') {
+        callback = fns;
+        fns = value;
+        value = key;
+        key = null;
+      }
+      if (Array.isArray(value)) {
+        callback = fns;
+        fns = value;
+        value = null;
+      }
+      if (typeof value === 'function') {
+        callback = value;
+        fns = [];
+        value = null;
+      }
+      if (typeof fns === 'function') {
+        callback = fns;
+        fns = [];
+      }
+
+      if (typeof callback !== 'function') {
+        throw new Error('Template#loader() expects `callback` to be a function.');
+      }
+      if (!Array.isArray(fns)) {
+        throw new Error('Template#loader() expects `fns` to be an array.');
+      }
+
+      // find our stack to call
+      var results = {};
+      var loaderStack = stack.concat(fns);
+
+      // if no custom loader is defined, fallback to [jonschlinkert/load-templates]
+      if (loaderStack.length === 0) {
+        var loader = new Loader(options);
+        results = loader.load.call(loader, key, value);
+        return callback(null, self.normalize(plural, results, options));
+      }
+
+      // pass the loaderStack through the waterfall to get the templates
+      var first = loaderStack[0];
+
+      loaderStack[0] = function (next) {
+        if (key && value) {
+          return first.call(self, key, value, next);
+        }
+        if (key) {
+          return first.call(self, key, next);
+        }
+        if (value) {
+          return first.call(self, value, next);
+        }
+        next(new Error('No valid arguments'));
+      };
+
+      loaderStack = utils.bindAll(loaderStack, self);
+
+      return utils.runLoaderStack(loaderStack, function (err, template) {
+        var override = done(err, template);
+        results = override || template;
+        return callback(err, results);
+      });
+
+    };
+  }
+  return self.loaders[plural];
+};
+
+/**
+ * Default load function used for loading templates.
+ *
+ * @param  {String} `plural`
+ * @param  {Object} `options`
+ * @param  {Array} `fns`
+ * @param  {Function} `done`
+ */
+
+Template.prototype.load = function(plural, options, fns, done) {
+  debug.template('loading: %j', arguments);
+
+  var opts = extend({}, options);
+  var self = this;
+
+  var loader = function () {
+    if (opts.loadFn) {
+      var callback = arguments[arguments.length - 1];
+      var args = slice(arguments, 0, arguments.length - 1);
+      callback(null, opts.loadFn.apply(self, arguments));
+    } else {
+      self.loader(plural, opts, fns, done).apply(self, arguments);
+    }
+  };
+
+  return function (/*key, value, fns*/) {
+    var args = slice(arguments);
+    var last = args[args.length - 1];
+    var callback = function () {};
+
+    if (typeof last === 'function') {
+      callback = args.pop();
+    }
+
+    args = args.concat([function (err, loaded) {
+      if (err) return callback(err);
+      self.dispatch(loaded);
+      extend(self.cache[plural], loaded);
+      callback(null);
+    }]);
+
+    loader.apply(self, args);
+    return self;
+  };
+};
+
+/**
+ * Normalize a template object to ensure it has the necessary
+ * properties to be rendered by the current renderer.
+ *
+ * @param  {Object} `template` The template object to normalize.
+ * @param  {Object} `options` Options to pass to the renderer.
+ *     @option {Function} `renameKey` Override the default function for renaming
+ *             the key of normalized template objects.
+ * @return {Object} Normalized template.
+ */
+
+Template.prototype.normalize = function(plural, template, options) {
+  debug.template('normalizing: [%s]: %j', plural, template);
+  this.lazyrouter();
+
+  if (this.option('normalize')) {
+    return this.options.normalize.apply(this, arguments);
+  }
+
+  forOwn(template, function (value, key) {
+    value.options = extend({ subtype: plural }, options, value.options);
+    var ext = utils.pickExt(value, value.options, this);
+    this.lazyLayouts(ext, value.options);
+
+    var isLayout = utils.isLayout(value);
+    utils.determineLayout(value);
+
+    template[key] = value;
+    if (isLayout) {
+      this.layoutSettings[ext].setLayout(template);
+    }
+  }, this);
+  return template;
+};
+
+/**
+ * Temporarily cache a template that was passed directly to the [render]
+ * method.
+ *
+ * See [load-templates] for details on template formatting.
+ *
+ * @param  {String|Object|Function} `key`
+ * @param  {Object} `value`
+ * @param  {Object} `locals`
+ * @return {Object} Normalized template object.
+ */
+
+Template.prototype.format = function(key, value, locals, options) {
+  debug.template('formatting [%s]: %j', key, value);
+
+  // Temporarily load a template onto the cache to normalize it.
+  var load = this.load('anonymous', { isRenderable: true });
+  load.apply(this, arguments);
+
+  // Get the normalized template and return it.
+  return this.cache['anonymous'][key];
+};
+
+/**
  * Private method for tracking the `subtypes` created for each
  * template type, to make it easier to get/set templates and
  * pass them properly to registered engines.
@@ -1021,206 +1221,6 @@ Template.prototype.lookup = function(plural, name, ext) {
   if (this.enabled('strict errors')) {
     throw new Error('Cannot find ' + plural + ': "' + name + '"');
   }
-};
-
-/**
- * Define a custom loader for loading templates.
- *
- * @param  {String} `plural`
- * @param  {Object} `options`
- * @param  {Array} `fns`
- * @param  {Function} `done`
- */
-
-Template.prototype.loader = function (plural, options, fns, done) {
-  var self = this;
-
-  if (arguments.length !== 1) {
-    if (typeof options === 'function' || Array.isArray(options)) {
-      done = fns;
-      fns = options;
-      options = {};
-    }
-
-    if (typeof fns === 'function') {
-      done = fns;
-      fns = [];
-    }
-
-    var stack = fns || [];
-    done = done || function () {};
-
-    self.loaders[plural] = function(key, value, fns, callback) {
-      if (typeof key === 'object') {
-        callback = fns;
-        fns = value;
-        value = key;
-        key = null;
-      }
-      if (Array.isArray(value)) {
-        callback = fns;
-        fns = value;
-        value = null;
-      }
-      if (typeof value === 'function') {
-        callback = value;
-        fns = [];
-        value = null;
-      }
-      if (typeof fns === 'function') {
-        callback = fns;
-        fns = [];
-      }
-
-      if (typeof callback !== 'function') {
-        throw new Error('Template#loader() expects `callback` to be a function.');
-      }
-      if (!Array.isArray(fns)) {
-        throw new Error('Template#loader() expects `fns` to be an array.');
-      }
-
-      // find our stack to call
-      var results = {};
-      var loaderStack = stack.concat(fns);
-
-      // if no custom loader is defined, fallback to [jonschlinkert/load-templates]
-      if (loaderStack.length === 0) {
-        var loader = new Loader(options);
-        results = loader.load.call(loader, key, value);
-        return callback(null, self.normalize(plural, results, options));
-      }
-
-      // pass the loaderStack through the waterfall to get the templates
-      var first = loaderStack[0];
-
-      loaderStack[0] = function (next) {
-        if (key && value) {
-          return first.call(self, key, value, next);
-        }
-        if (key) {
-          return first.call(self, key, next);
-        }
-        if (value) {
-          return first.call(self, value, next);
-        }
-        next(new Error('No valid arguments'));
-      };
-
-      loaderStack = utils.bindAll(loaderStack, self);
-
-      return utils.runLoaderStack(loaderStack, function (err, template) {
-        var override = done(err, template);
-        results = override || template;
-        return callback(err, results);
-      });
-
-    };
-  }
-  return self.loaders[plural];
-};
-
-/**
- * Default load function used for loading templates.
- *
- * @param  {String} `plural`
- * @param  {Object} `options`
- * @param  {Array} `fns`
- * @param  {Function} `done`
- */
-
-Template.prototype.load = function(plural, options, fns, done) {
-  debug.template('loading: %j', arguments);
-
-  var opts = extend({}, options);
-  var self = this;
-
-  var loader = function () {
-    if (opts.loadFn) {
-      var callback = arguments[arguments.length - 1];
-      var args = slice(arguments, 0, arguments.length - 1);
-      callback(null, opts.loadFn.apply(self, arguments));
-    } else {
-      self.loader(plural, opts, fns, done).apply(self, arguments);
-    }
-  };
-
-  return function (/*key, value, fns*/) {
-    var args = slice(arguments);
-    var last = args[args.length - 1];
-    var callback = function () {};
-
-    if (typeof last === 'function') {
-      callback = args.pop();
-    }
-
-    args = args.concat([function (err, loaded) {
-      if (err) return callback(err);
-      self.dispatch(loaded);
-      extend(self.cache[plural], loaded);
-      callback(null);
-    }]);
-
-    loader.apply(self, args);
-    return self;
-  };
-};
-
-/**
- * Normalize a template object to ensure it has the necessary
- * properties to be rendered by the current renderer.
- *
- * @param  {Object} `template` The template object to normalize.
- * @param  {Object} `options` Options to pass to the renderer.
- *     @option {Function} `renameKey` Override the default function for renaming
- *             the key of normalized template objects.
- * @return {Object} Normalized template.
- */
-
-Template.prototype.normalize = function(plural, template, options) {
-  debug.template('#{normalize} args:', arguments);
-  this.lazyrouter();
-
-  if (this.option('normalize')) {
-    return this.options.normalize.apply(this, arguments);
-  }
-
-  forOwn(template, function (value, key) {
-    value.options = extend({ subtype: plural }, options, value.options);
-    var ext = utils.pickExt(value, value.options, this);
-    this.lazyLayouts(ext, value.options);
-
-    var isLayout = utils.isLayout(value);
-    utils.determineLayout(value);
-
-    template[key] = value;
-    if (isLayout) {
-      this.layoutSettings[ext].setLayout(template);
-    }
-  }, this);
-  return template;
-};
-
-/**
- * Temporarily cache a template that was passed directly to the [render]
- * method.
- *
- * See [load-templates] for details on template formatting.
- *
- * @param  {String|Object|Function} `key`
- * @param  {Object} `value`
- * @param  {Object} `locals`
- * @return {Object} Normalized template object.
- */
-
-Template.prototype.format = function(key, value, locals, options) {
-  debug.template('formatting [%s]: %j', key, value);
-
-  // Temporarily load a template onto the cache to normalize it.
-  var load = this.load('anonymous', { isRenderable: true });
-  load.apply(this, arguments);
-
-  // Get the normalized template and return it.
-  return this.cache['anonymous'][key];
 };
 
 /**
@@ -1503,6 +1503,7 @@ Template.prototype.renderCached = function(key, locals, cb) {
 Template.prototype.renderSubtype = function(subtype) {
   var self = this;
   var plural = this.subtype[subtype];
+
   return function (key, locals, cb) {
     if (typeof locals === 'function') {
       cb = locals;
@@ -1514,7 +1515,6 @@ Template.prototype.renderSubtype = function(subtype) {
     if (template == null) {
       throw new Error('Cannot find "' + key + '" on the cache.');
     }
-
 
     // Merge `.render()` locals with template locals
     locals = extend({}, locals, self.cache.data, template.locals, template.data);
@@ -1530,7 +1530,6 @@ Template.prototype.renderSubtype = function(subtype) {
 
     // Bind context to helpers before passing to the engine.
     self.bindHelpers(locals);
-    // self.bindHelpers(engine);
 
     // if a layout is defined, apply it before rendering
     var content = self.applyLayout(ext, template, locals);

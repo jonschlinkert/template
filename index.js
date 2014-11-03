@@ -1441,38 +1441,41 @@ Template.prototype.render = function(content, locals, cb) {
  * Render `content` from the given cached template with the
  * given `locals` and `callback`.
  *
- * @param  {String} `name` Name of the cached template.
+ * @param  {String} `key` Name of the cached template.
  * @param  {Object} `locals` Locals and/or options to pass to registered view engines.
  * @return {String}
  * @api public
  */
 
-Template.prototype.renderCached = function(name, locals, cb) {
-  debug.render('rendering cached: %s', name);
+Template.prototype.renderCached = function(key, locals, cb) {
+  debug.render('rendering cached: %s', key);
   if (typeof locals === 'function') {
     cb = locals;
     locals = {};
   }
 
   // Return the first matching template from a `renderable` subtype
-  var template = this.findRenderable(name);
+  var template = this.findRenderable(key);
   if (template == null) {
-    throw new Error('Cannot find "' + name + '" on the cache.');
+    throw new Error('Cannot find "' + key + '" on the cache.');
   }
 
+
   // Merge `.render()` locals with template locals
-  locals = extend({}, locals, template.locals);
+  locals = extend({}, locals, this.cache.data, template.locals, template.data);
 
   var ext = template.engine
     || template.ext
     || locals.engine
     || locals.ext
+    || path.extname(template.path)
     || this.option('viewEngine');
 
   var engine = this.getEngine(ext);
 
   // Bind context to helpers before passing to the engine.
   this.bindHelpers(locals);
+  this.bindHelpers(engine);
 
   // if a layout is defined, apply it before rendering
   var content = this.applyLayout(ext, template, locals);
@@ -1637,10 +1640,14 @@ Template.prototype.renderSync = function(content, locals) {
  * @return {Object}
  */
 
-Template.prototype.bindHelpers = function (locals) {
+Template.prototype.bindHelpers = function (locals, sync) {
   debug.helper('binding helpers: %j', locals);
 
-  var helpers = _.cloneDeep(this._.asyncHelpers);
+  // TODO: use or merge in locals.helpers instead
+  var helpers = _.cloneDeep(sync
+      ? this._.helpers
+      : this._.asyncHelpers);
+
   locals.helpers = {};
 
   var o = {};

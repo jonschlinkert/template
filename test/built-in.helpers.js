@@ -59,9 +59,9 @@ describe('generated helpers:', function () {
 
     it('should give preference to helper locals over template locals.', function (done) {
       template.partial({'abc.md': {content: '<%= name %>', name: 'BBB'}});
-      var obj = {path: 'xyz.md', content: 'foo <%= partial("abc.md", { name: "CCC" }) %> bar'};
+      template.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("abc.md", { name: "CCC" }) %> bar'});
 
-      template.render(obj, {name: 'DDD'}, function (err, content) {
+      template.render('xyz.md', {name: 'DDD'}, function (err, content) {
         if (err) return done(err);
         content.should.equal('foo CCC bar');
         done();
@@ -70,9 +70,9 @@ describe('generated helpers:', function () {
 
     it('should give preference to template locals over render locals.', function (done) {
       template.partial({'abc.md': {content: '<%= name %>', name: 'BBB'}});
-      var obj = {path: 'xyz.md', content: 'foo <%= partial("abc.md") %> bar'};
+      template.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("abc.md") %> bar'});
 
-      template.render(obj, {name: 'DDD'}, function (err, content) {
+      template.render('xyz.md', {name: 'DDD'}, function (err, content) {
         if (err) return done(err);
         content.should.equal('foo BBB bar');
         done();
@@ -81,9 +81,9 @@ describe('generated helpers:', function () {
 
     it('should use render locals when other locals are not defined.', function (done) {
       template.partial({'abc.md': {content: '<%= name %>'}});
-      var obj = {path: 'xyz.md', content: 'foo <%= partial("abc.md") %> bar'};
+      template.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("abc.md") %> bar'});
 
-      template.render(obj, {name: 'DDD'}, function (err, content) {
+      template.render('xyz.md', {name: 'DDD'}, function (err, content) {
         if (err) return done(err);
         content.should.equal('foo DDD bar');
         done();

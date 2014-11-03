@@ -17,6 +17,7 @@ describe('engine locals', function () {
 
   beforeEach(function () {
     template = new Template();
+    template.engine('md', require('engine-lodash'));
   });
 
   describe('when a custom loader function is set:', function () {
@@ -39,7 +40,7 @@ describe('engine locals', function () {
           next(null, globber(patterns, options));
         }
       ]);
-      template.posts(__dirname + '/fixtures/layouts/matter/*.md', function () {
+      template.posts(__dirname + '/fixtures/layouts/matter/*.md', function (a, b) {
         template.cache.posts.should.have.properties(['a.md', 'b.md', 'c.md', 'd.md']);
         done();
       });
@@ -75,6 +76,29 @@ describe('engine locals', function () {
         template.cache.posts.should.have.property('npm-load.json');
         done();
       });
+    });
+
+    it('should modify data:', function (done) {
+      var options = {};
+      template.data('test/fixtures/data/*.json');
+      template.create('post', { isRenderable: true }, [
+        function (patterns, next) {
+          next(null, globber(patterns, options));
+        },
+        function (template, next) {
+          _.transform(template, function (acc, value, key) {
+            value.options = value.options || {};
+            value.data = value.data || {};
+            value.data.a = 'b';
+          });
+          next(null, template);
+        }
+      ]);
+      template.post('test/fixtures/*.md', function () {
+        template.renderCached('md.md', function (err, content) {
+        });
+      });
+      done();
     });
 
     it('should expose `err`:', function (done) {

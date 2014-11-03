@@ -19,7 +19,7 @@ var async = require('async');
 
 
 describe('generated helpers:', function () {
-  describe('helpers for built-in engines:', function () {
+  describe.only('helpers for built-in engines:', function () {
     it('should use the `partial` helper with a built-in engine.', function (done) {
       template.partial('a.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}});
       template.page('b.md', {path: 'b.md', content: 'foo <%= partial("a.md") %> bar'});
@@ -31,11 +31,11 @@ describe('generated helpers:', function () {
       });
     });
 
-    it.only('should use the `partial` helper and locals with a built-in engine.', function (done) {
+    it('should use the `partial` helper and locals with a built-in engine.', function (done) {
       template.partial('abc.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}});
-      var obj = {path: 'xyz.md', content: 'foo <%= partial("abc.md", { name: "CCC" }) %> bar'};
+      template.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("abc.md", { name: "CCC" }) %> bar'});
 
-      template.render(obj, {name: 'DDD'}, function (err, content) {
+      template.renderCached('xyz.md', {name: 'DDD'}, function (err, content) {
         if (err) return done(err);
         content.should.equal('foo CCC bar');
         done();
@@ -47,9 +47,9 @@ describe('generated helpers:', function () {
   describe('helper context:', function () {
     it('should give preference to front-matter over template locals and helper locals.', function (done) {
       template.partial('a.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}});
-      var file = {path: 'a.md', content: 'foo <%= partial("a.md") %> bar'};
+      template.page('b.md', {path: 'b.md', content: 'foo <%= partial("a.md") %> bar'});
 
-      template.render(file, function (err, content) {
+      template.renderCached('b.md', function (err, content) {
         if (err) return done(err);
         content.should.equal('foo AAA bar');
         done();

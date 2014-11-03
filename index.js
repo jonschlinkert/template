@@ -668,17 +668,18 @@ Template.prototype.mixin = function(name, fn) {
   if (arguments.length === 1) {
     return this.cache.mixins[name];
   }
-  this.cache.mixins[name] = fn;
 
+  this.cache.mixins[name] = fn;
   return this;
 };
 
 /**
- * Get and set **generic** helpers on the `cache`.
+ * Register generic template helpers that are not specific to an
+ * engine.
  *
  * Helpers registered using this method will be passed to every
- * engine, so be sure to use generic javascript functions - unless
- * you want to see Lo-Dash blow up from `Handlebars.SafeString`.
+ * engine, so this method is best for generic javascript functions -
+ * unless you want to see Lo-Dash blow up from `Handlebars.SafeString`.
  *
  * ```js
  * template.helper('lower', function(str) {
@@ -691,18 +692,37 @@ Template.prototype.mixin = function(name, fn) {
  * @api public
  */
 
-Template.prototype.helper = function(name, fn) {
+Template.prototype.helper =
+Template.prototype.addHelper = function(name, fn) {
   debug.helper('adding [helper]: %s', name);
   return this._.helpers.addHelper(name, fn);
 };
 
 /**
- * Alias for `.helper()`.
+ * Register generic async template helpers that are not specific to an
+ * engine.
  *
+ * As with the sync version, helpers registered using this method will
+ * be passed to every engine, so this method is best for generic
+ * javascript functions.
+ *
+ * ```js
+ * template.helperAsync('lower', function(str, next) {
+ *   str = str.toLowerCase();
+ *   next();
+ * });
+ * ```
+ *
+ * @param {String} `ext` The engine to register helpers with.
+ * @return {Object} Object of helpers for the specified engine.
  * @api public
  */
 
-Template.prototype.addHelper = Template.prototype.helper;
+Template.prototype.helperAsync =
+Template.prototype.addHelperAsync = function(name, fn) {
+  debug.helper('adding async helper: %s', name);
+  return this._.asyncHelpers.addHelperAsync(name, fn);
+};
 
 /**
  * Register an object of helpers for the given `ext` (engine).
@@ -722,48 +742,16 @@ Template.prototype.helpers = function(ext) {
 };
 
 /**
- * Register a helper for the given `ext` (engine).
- *
- * ```js
- * template.helperAsync('lower', function(str, next) {
- *   str = str.toLowerCase();
- *   next();
- * });
- * ```
- *
- * @param {String} `ext` The engine to register helpers with.
- * @return {Object} Object of helpers for the specified engine.
- * @api public
- */
-
-Template.prototype.helperAsync = function(name, fn) {
-  debug.helper('adding async helper: %s', name);
-  return this._.asyncHelpers.addHelperAsync(name, fn);
-};
-
-/**
- * Async version of `.addHelper()`.
- *
- * @param {String} `name` The helper to cache or get.
- * @param {Function} `fn` The helper function.
- * @return {Object} Object of helpers for the specified engine.
- * @api public
- */
-
-Template.prototype.addHelperAsync = function(name, fn) {
-  debug.helper('adding async helper: %s', name);
-  return this._.asyncHelpers.addHelperAsync(name, fn);
-};
-
-/**
  * Create helpers for each default template `type`.
  *
+ * @param {String} `type` The type of template.
+ * @param {String} `plural` Plural form of `type`.
  * @api private
  */
 
-Template.prototype.createTypeHelper = function(type, plural) {
+Template.prototype.defaultHelper = function(subtype, plural) {
   var self = this;
-  this.helper(type, function (key, locals) {
+  this.helper(subtype, function (key, locals) {
     var content = self.renderSync(self.cache[plural][key], locals);
     if (content instanceof Error) {
       throw content;
@@ -780,16 +768,15 @@ Template.prototype.createTypeHelper = function(type, plural) {
  * @api private
  */
 
-Template.prototype.createTypeHelperAsync = function(subtype, plural) {
+Template.prototype.defaultHelperAsync = function(subtype, plural) {
   var self = this;
-
   this.helperAsync(subtype, function (name, locals, next) {
     var last = arguments[arguments.length - 1];
-
     if (typeof locals === 'function') {
       next = locals;
       locals = {};
     }
+
     if (typeof next !== 'function') {
       next = last;
     }
@@ -817,9 +804,9 @@ Template.prototype.createTypeHelperAsync = function(subtype, plural) {
 };
 
 /**
- * Keep an array of template sub-type for each template type, to
- * make it easier to get/set templates and pass them properly to
- * registered engines.
+ * Private method for tracking the `subtypes` created for each
+ * template type, to make it easier to get/set templates and
+ * pass them properly to registered engines.
  *
  * @param {String} `plural` e.g. `pages`
  * @param {Object} `options`
@@ -875,11 +862,12 @@ Template.prototype.getType = function(type) {
  * Merge all templates from the given `type` into a single
  * object.
  *
- * If an array of `subtypes` is passed, only templates from
- * the given `subtypes` will be merged and in the order
- * specified in the array.
+ * If an array of `subtypes` is passed, only those `subtypes`
+ * will be merged and the order in which the subtypes are defined
+ * in the array will be respected.
  *
  * @param {String} `type` The template type to search.
+ * @param {String} `subtypes` Optionally pass an array of subtypes
  * @api public
  */
 
@@ -919,7 +907,7 @@ Template.prototype.mergePartials = function(ext, locals, mergePartials) {
   mergePartials = mergePartials || this.option('mergePartials');
   var opts = extend({partials: {}}, locals);
 
-  self.type['partial'].forEach(function (type) {
+  self.type.partial.forEach(function (type) {
     forOwn(self.cache[type], function (value, key) {
       opts = extend({}, opts, value.locals);
 
@@ -938,11 +926,11 @@ Template.prototype.mergePartials = function(ext, locals, mergePartials) {
 };
 
 /**
- * Search all `subtypes` of the given `type` returning the
- * first template with the given `key`.
+ * Search all `subtype` objects in the given `type`, returning
+ * the first template found with the given `key`.
  *
- *   - If `key` is not found an error is thrown.
- *   - Optionally limit the search to the specified `subtypes`.
+ *   - If `key` is not found and `strict options` is enabled, an error will be thrown.
+ *   - Optionally pass an array an array of `subtypes` to limit the search
  *
  * @param {String} `type` The template type to search.
  * @param {String} `key` The template to find.
@@ -1034,18 +1022,32 @@ Template.prototype.lookup = function(plural, name, ext) {
 };
 
 /**
- * Validate a template object to ensure that it has the
- * properties expected for applying layouts, and for
- * choosing engines and renderers. Validation is used by
- * default, but you can choose to bypass.
+ * Validate a template object to ensure that it has the properties
+ * expected for applying layouts, and for choosing engines and
+ * renderers. Validation is used by default, but you can choose to
+ * bypass.
  *
- * @param  {[type]} type
- * @return {[type]}
+ * @param  {String} `key` Template key
+ * @param  {Object} `value` Template object
+ * @api public
  */
 
-Template.prototype.validate = function(key, value, locals, options) {
+Template.prototype.validate = function(key, value) {
+  if (key == null || typeof key !== 'string') {
+    throw new Error('template `key` must be a string.');
+  }
 
-  // todo
+  if (value == null || !utils.isObject(value)) {
+    throw new Error('template `value` must be an object.');
+  }
+
+  if (!hasOwn(value, 'path')) {
+    throw new Error('template `value` must have a `path` property.');
+  }
+
+  if (!hasOwn(value, 'content')) {
+    throw new Error('template `value` must have a `content` property.');
+  }
 };
 
 Template.prototype.loader = function (type) {
@@ -1062,7 +1064,7 @@ Template.prototype.loader = function (type) {
  * @param  {Object} `template` The template object to normalize.
  * @param  {Object} `options` Options to pass to the renderer.
  *     @option {Function} `renameKey` Override the default function for renaming
- *             the key of normalized template objects.
+ *                                    the key of normalized template objects.
  *
  * @return {Object} Normalized template.
  * @param {String|Array|Object}
@@ -1082,15 +1084,15 @@ Template.prototype.load = function(plural, options, fns) {
     // self.option('partialsKey')(key)
 
     value = value || {};
+    value.path = value.path || key;
+    value.ext = value.ext || path.extname(value.path);
     value.options = extend({ subtype: plural }, options, value.options);
 
-    value.ext = utils.pickExt(value, value.options, this);
     this.lazyLayouts(value.ext, value.options);
+    utils.determineLayout(value);
 
     var template = {};
     template[key] = value;
-
-    utils.determineLayout(value);
 
     // if the template is actually a layout, add it to the cache
     if (utils.isLayout(value)) {
@@ -1148,7 +1150,7 @@ Template.prototype.format = function(key, value, locals, options) {
  */
 
 Template.prototype.create = function(subtype, plural, options, fns) {
-  debug.template('creating subtype [%s/%s]:', subtype, plural);
+  debug.template('creating subtype: [%s / %s]', subtype, plural);
   var args = slice(arguments);
 
   if (typeof plural !== 'string') {
@@ -1170,12 +1172,12 @@ Template.prototype.create = function(subtype, plural, options, fns) {
 
   // Create a sync helper for this type
   if (!hasOwn(this._.helpers, subtype)) {
-    this.createTypeHelper(subtype, plural);
+    this.defaultHelper(subtype, plural);
   }
 
   // Create an async helper for this type
   if (!hasOwn(this._.asyncHelpers, subtype)) {
-    this.createTypeHelperAsync(subtype, plural);
+    this.defaultHelperAsync(subtype, plural);
   }
   return this;
 };
@@ -1190,7 +1192,7 @@ Template.prototype.create = function(subtype, plural, options, fns) {
  */
 
 Template.prototype.decorate = function(subtype, plural, options, fns) {
-  debug.template('decorating subtype [%s/%s]:', subtype, plural);
+  debug.template('decorating subtype: [%s / %s]', subtype, plural);
   options = extend({}, options);
 
   /**
@@ -1242,8 +1244,9 @@ Template.prototype.decorate = function(subtype, plural, options, fns) {
  */
 
 Template.prototype.renderBase = function(engine, content, locals, cb) {
-  var self = this;
+  debug.render('renderBase: %j', engine);
 
+  var self = this;
   if (typeof locals === 'function') {
     cb = locals;
     locals = {};
@@ -1256,21 +1259,21 @@ Template.prototype.renderBase = function(engine, content, locals, cb) {
   try {
     engine.render(content, locals, function (err, res) {
       if (err) {
-        debug.render('[renderBase]: %j', err);
+        debug.render('renderBase: %j', err);
         cb.call(self, err);
         return;
       }
 
       self._.asyncHelpers.resolve(res, function (err, res) {
         if (err) {
-          debug.err('[asyncHelpers]: %j', err);
+          debug.err('asyncHelpers: %j', err);
           return cb.call(self, err);
         }
         cb.call(self, null, res);
       });
     });
   } catch (err) {
-    debug.err('[renderBase/catch]: %j', err);
+    debug.err('renderBase [catch]: %j', err);
     cb.call(self, err);
   }
 };
@@ -1285,6 +1288,8 @@ Template.prototype.renderBase = function(engine, content, locals, cb) {
  */
 
 Template.prototype.render = function(content, locals, cb) {
+  debug.render('rendering: %s', content);
+
   if (typeof locals === 'function') {
     cb = locals;
     locals = {};
@@ -1305,6 +1310,39 @@ Template.prototype.render = function(content, locals, cb) {
 };
 
 /**
+ * Render `content` from the given cached template with the
+ * given `locals` and `callback`.
+ *
+ * @param  {String} `name` Name of the cached template.
+ * @param  {Object} `locals` Locals and/or options to pass to registered view engines.
+ * @return {String}
+ * @api public
+ */
+
+Template.prototype.renderCached = function(name, locals, cb) {
+  debug.render('rendering cached: %s', name);
+  if (typeof locals === 'function') {
+    cb = locals;
+    locals = {};
+  }
+
+  // Attempt to get the template from the cache.
+  var template = this.findRenderable(name);
+
+  var ext = template.engine || template.ext || this.option('viewEngine');
+  var engine = this.getEngine(ext);
+
+  if (template == null) {
+    throw new Error('Cannot find "' + name + '" on the cache.');
+  }
+
+  locals = extend({}, template.locals, locals);
+  this.bindHelpers(locals);
+
+  this.renderBase(engine, template.content, locals, cb);
+};
+
+/**
  * Render `content` with the given `locals`.
  *
  * @param  {Object|String} `file` String or normalized template object.
@@ -1314,15 +1352,10 @@ Template.prototype.render = function(content, locals, cb) {
  */
 
 Template.prototype.renderSync = function(content, locals) {
+  debug.render('render sync: %s', content);
+
   var ext = this.option('viewEngine');
   var engine = this.getEngine(ext);
-
-  // if (this.option('preprocess')) {
-  //   var pre = this.preprocess(content, locals);
-  //   content = pre.content;
-  //   locals = extend({}, pre.locals, locals);
-  //   engine = pre.engine;
-  // }
 
   if (!hasOwn(engine, 'renderSync')) {
     throw new Error('`.renderSync()` method not found on engine: "' + engine + '".');
@@ -1346,6 +1379,8 @@ Template.prototype.renderSync = function(content, locals) {
  */
 
 Template.prototype.renderString = function(str, locals, cb) {
+  debug.render('render string: %s', str);
+
   if (typeof locals === 'function') {
     cb = locals;
     locals = {};
@@ -1374,6 +1409,7 @@ Template.prototype.renderString = function(str, locals, cb) {
  */
 
 Template.prototype.renderType = function(type, subtype) {
+  debug.render('rendering type: [%s / %s]', type, subtype);
   var self = this;
 
   return function(name, locals, cb) {
@@ -1396,7 +1432,7 @@ Template.prototype.renderType = function(type, subtype) {
 
     // Attempt to get the template from the cache.
     if (template == null) {
-      throw new Error('Cannot find "' + name + '" on the cache.');
+      throw new Error('Cannot find template: "' + name + '".');
     }
 
     var content = template.content;
@@ -1426,6 +1462,7 @@ Template.prototype.renderType = function(type, subtype) {
  */
 
 Template.prototype.renderSubtype = function(subtype) {
+  debug.render('rendering subtype: %s', subtype);
   var self = this;
 
   return function(name, locals, cb) {
@@ -1444,7 +1481,7 @@ Template.prototype.renderSubtype = function(subtype) {
 
     // Attempt to get the template from the cache.
     if (template == null) {
-      throw new Error('Cannot find "' + name + '" on the cache.');
+      throw new Error('Cannot find template: "' + name + '".');
     }
 
     if (Boolean(template.engine)) {
@@ -1466,44 +1503,6 @@ Template.prototype.renderSubtype = function(subtype) {
 };
 
 /**
- * Render `content` from the given cached template with the
- * given `locals` and `callback`.
- *
- * @param  {String} `name` Name of the cached template.
- * @param  {Object} `locals` Locals and/or options to pass to registered view engines.
- * @return {String}
- * @api public
- */
-
-Template.prototype.renderCached = function(name, locals, cb) {
-  if (typeof locals === 'function') {
-    cb = locals;
-    locals = {};
-  }
-
-  // The user-defined, default engine to use
-  var viewEngine = this.option('viewEngine');
-  var engine = this.getEngine(viewEngine);
-
-  // Attempt to get the template from the cache.
-  var template = utils.firstOfType(name, this, ['renderable']);
-  if (template == null) {
-    throw new Error('Cannot find "' + name + '" on the cache.');
-  }
-
-  var content = template.content;
-  locals = _.extend({}, template.locals, locals);
-
-  if (Boolean(template.engine)) {
-    engine = this.getEngine(template.engine);
-  } else if (Boolean(template.ext)) {
-    engine = this.getEngine(template.ext);
-  }
-
-  this.renderBase(engine, content, locals, cb);
-};
-
-/**
  * Bind the current context to helpers.
  *
  * @param  {Object} `locals`
@@ -1511,7 +1510,9 @@ Template.prototype.renderCached = function(name, locals, cb) {
  */
 
 Template.prototype.bindHelpers = function (locals) {
-  var helpers = _.cloneDeep(locals.helpers);
+  debug.helper('binding helpers: %j', locals);
+
+  var helpers = _.cloneDeep(this._.asyncHelpers);
   locals.helpers = {};
 
   var o = {};
@@ -1547,6 +1548,7 @@ Template.prototype.mergeLocals = function(self, template, locals, delims) {
  */
 
 Template.prototype.mergeFn = function(template, locals, async) {
+  debug.template('merge function: %j', template);
   var data = this.get('data');
   var o = {};
 

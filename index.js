@@ -1037,11 +1037,17 @@ Template.prototype.loader = function (plural, options, fns, done) {
 
   if (arguments.length !== 1) {
     if (typeof options === 'function' || Array.isArray(options)) {
+      done = fns;
       fns = options;
       options = {};
     }
 
-    var stack = utils.arrayify(fns);
+    if (typeof fns === 'function') {
+      done = fns;
+      fns = [];
+    }
+
+    var stack = fns || [];
     done = done || function () {};
 
     self.loaders[plural] = function(key, value, fns, callback) {
@@ -1099,6 +1105,8 @@ Template.prototype.loader = function (plural, options, fns, done) {
         }
         next(new Error('No valid arguments'));
       };
+
+      loaderStack = utils.bindAll(loaderStack, self);
 
       async.waterfall(loaderStack, function (err, template) {
         var override = done(err, template);
@@ -1672,15 +1680,11 @@ Template.prototype.bindHelpers = function (locals, sync) {
       ? this._.helpers
       : this._.asyncHelpers);
 
-  locals.helpers = {};
-
   var o = {};
   o.context = locals;
   o.root = this;
 
-  forOwn(helpers, function(fn, key) {
-    locals.helpers[key] = _.bind(fn, o);
-  });
+  locals.helpers = utils.bindAll(helpers, o);
 };
 
 /**

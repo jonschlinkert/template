@@ -1,5 +1,5 @@
 /*!
- * layouts <https://github.com/jonschlinkert/layouts>
+ * template <https://github.com/jonschlinkert/template>
  *
  * Copyright (c) 2014 Jon Schlinkert, contributors
  * Licensed under the MIT License (MIT)

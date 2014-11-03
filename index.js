@@ -136,7 +136,6 @@ Template.prototype.defaultOptions = function() {
   this.option('viewEngine', '*');
   this.option('default engines', true);
 
-  this.option('preprocess', true);
   this.option('preferLocals', false);
   this.option('mergePartials', true);
   this.option('mergeFunction', extend);
@@ -519,8 +518,7 @@ Template.prototype.addDelims = function(ext, arr, delims, settings) {
     delims = this.option('layoutDelims');
   }
 
-  var delims = extend({}, this.makeDelims(arr, settings), settings);
-  this.delims[ext] = delims;
+  this.delims[ext] = extend({}, this.makeDelims(arr, settings), settings);
   return this;
 };
 
@@ -823,16 +821,14 @@ Template.prototype.setType = function(subtype, plural, options) {
 };
 
 /**
- * Get all cached templates of the given `type`. Types are:
- *
- *   - `renderable`: Templates that may be rendered at some point
- *   - `layout`: Templates to be used as layouts
- *   - `partial`: Templates to be used as partial views or includes
+ * Get all templates of the given `type`.
  *
  * ```js
  * var pages = template.getType('renderable');
  * //=> { pages: { 'home.hbs': { ... }, 'about.hbs': { ... }}, posts: { ... }}
  * ```
+ *
+ * See documentation for [types](./template-types)
  *
  * @param {String} `type`
  * @param {Object} `opts`
@@ -841,10 +837,113 @@ Template.prototype.setType = function(subtype, plural, options) {
 
 Template.prototype.getType = function(type) {
   debug.template('#{getType}: %s', type);
-  return this.type[type].reduce(function(acc, subtype) {
-    acc[subtype] = this.cache[subtype];
+  var arr = this.type[type];
+
+  return arr.reduce(function(acc, plural) {
+    acc[plural] = this.cache[plural];
     return acc;
   }.bind(this), {});
+};
+
+/**
+ * Merge all templates from the given `type` into a single
+ * object.
+ *
+ * If an array of `subtypes` is passed, only templates from
+ * the given `subtypes` will be merged and in the order
+ * specified in the array.
+ *
+ * @param {String} `type` The template type to search.
+ * @api public
+ */
+
+Template.prototype.mergeType = function(type, subtypes) {
+  var type = this.getType(type);
+  var keys = subtypes || Object.keys(type);
+  var len = keys.length;
+  var o = {};
+  var i = 0;
+
+  while (len--) {
+    var subtype = keys[i++];
+    for (var key in this.cache[subtype]) {
+      if (this.cache[subtype].hasOwnProperty(key)) {
+        o[key] = this.cache[subtype][key];
+      }
+    }
+  }
+  return o;
+};
+
+/**
+ * Search all `subtypes` of the given `type` returning the
+ * first template with the given `key`.
+ *
+ *   - If `key` is not found an error is thrown.
+ *   - Optionally limit the search to the specified `subtypes`.
+ *
+ * @param {String} `type` The template type to search.
+ * @param {String} `key` The template to find.
+ * @param {Array} `subtypes`
+ * @api private
+ */
+
+Template.prototype._find = function(type, key, subtypes) {
+  var o = this.mergeType(type, subtypes);
+
+  if (o && utils.isObject(o) && hasOwn(o, key)) {
+    return o[key];
+  }
+
+  throw new Error('Cannot find ' + type + ': "' + key + '"');
+};
+
+/**
+ * Search all layout `subtypes`, returning the first template
+ * with the given `key`.
+ *
+ *   - If `key` is not found an error is thrown.
+ *   - Optionally limit the search to the specified `subtypes`.
+ *
+ * @param {String} `key` The template to search for.
+ * @param {Array} `subtypes`
+ * @api public
+ */
+
+Template.prototype.findLayout = function(key, subtypes) {
+  return this._find('layout', key, subtypes);
+};
+
+/**
+ * Search all partial `subtypes`, returning the first template
+ * with the given `key`.
+ *
+ *   - If `key` is not found an error is thrown.
+ *   - Optionally limit the search to the specified `subtypes`.
+ *
+ * @param {String} `key` The template to search for.
+ * @param {Array} `subtypes`
+ * @api public
+ */
+
+Template.prototype.findPartial = function(key, subtypes) {
+  return this._find('partial', key, subtypes);
+};
+
+/**
+ * Search all renderable `subtypes`, returning the first template
+ * with the given `key`.
+ *
+ *   - If `key` is not found an error is thrown.
+ *   - Optionally limit the search to the specified `subtypes`.
+ *
+ * @param {String} `key` The template to search for.
+ * @param {Array} `subtypes`
+ * @api public
+ */
+
+Template.prototype.findRenderable = function(key, subtypes) {
+  return this._find('renderable', key, subtypes);
 };
 
 /**
@@ -866,31 +965,47 @@ Template.prototype.loader = function (type) {
   return function(key, value, locals, options) {
 
     // todo
-  }
+  };
 };
 
 /**
- * Load templates and normalize them to an object with consistent
- * properties.
+ * Load templates and normalize them to ensure it has the necessary
+ * properties to be rendered by the current engine.
  *
- * See [load-templates] for more details.
+ * @param  {Object} `template` The template object to normalize.
+ * @param  {Object} `options` Options to pass to the renderer.
+ *     @option {Function} `renameKey` Override the default function for renaming
+ *             the key of normalized template objects.
  *
+ * @return {Object} Normalized template.
  * @param {String|Array|Object}
  * @return {Object}
  */
 
 Template.prototype.load = function(plural, options, fns) {
   debug.template('#{load} args:', arguments);
-  var opts = extend({}, this.options, options);
-  var loader = new Loader(opts);
+  this.lazyrouter();
 
-  return function (/*key, value, locals, opts*/) {
-    var loaded = opts.loadFn
-      ? opts.loadFn.apply(this, arguments)
-      : loader.load.apply(loader, arguments);
+  return function (key, value, locals, opts) {
+    if (this.option('normalize')) {
+      return this.options.normalize.apply(this, arguments);
+    }
 
-    // console.log(loaded)
-    var template = this.normalize(plural, loaded, options);
+    value = value || {};
+    value.options = extend({ subtype: plural }, options, value.options);
+
+    value.ext = utils.pickExt(value, value.options, this);
+    this.lazyLayouts(value.ext, value.options);
+
+    var template = {};
+    template[key] = value;
+
+    utils.determineLayout(value);
+
+    // if the template is actually a layout, add it to the cache
+    if (utils.isLayout(value)) {
+      this.layoutSettings[value.ext].setLayout(template);
+    }
 
     // Handle middleware
     this.dispatch(template, fns);
@@ -899,41 +1014,6 @@ Template.prototype.load = function(plural, options, fns) {
     extend(this.cache[plural], template);
     return this;
   };
-};
-
-/**
- * Normalize a template object to ensure it has the necessary
- * properties to be rendered by the current renderer.
- *
- * @param  {Object} `template` The template object to normalize.
- * @param  {Object} `options` Options to pass to the renderer.
- *     @option {Function} `renameKey` Override the default function for renaming
- *             the key of normalized template objects.
- * @return {Object} Normalized template.
- */
-
-Template.prototype.normalize = function(plural, template, options) {
-  debug.template('#{normalize} args:', arguments);
-  this.lazyrouter();
-
-  if (this.option('normalize')) {
-    return this.options.normalize.apply(this, arguments);
-  }
-
-  forOwn(template, function (value, key) {
-    value.options = extend({ subtype: plural }, options, value.options);
-    var ext = utils.pickExt(value, value.options, this);
-    this.lazyLayouts(ext, value.options);
-
-    var isLayout = utils.isLayout(value);
-    utils.determineLayout(value);
-
-    template[key] = value;
-    if (isLayout) {
-      this.layoutSettings[ext].setLayout(template);
-    }
-  }, this);
-  return template;
 };
 
 /**
@@ -1119,91 +1199,6 @@ Template.prototype.mergePartials = function(ext, locals, mergePartials) {
 };
 
 /**
- * Preprocess `str` with the given `options` and `callback`. A few
- * things to note.
- *
- * @param  {Object|String} `file` String or normalized template object.
- * @param  {Object} `options` Options to pass to registered view engines.
- * @return {String}
- * @api public
- */
-
-Template.prototype.preprocess = function(template, locals, async) {
-  if (typeof locals === 'boolean') {
-    async = locals;
-    locals = {};
-  }
-
-  locals = locals || {};
-
-  var state = {};
-  var engine = locals.engine;
-  var delims = locals.delims;
-  var content = template;
-  var tmpl;
-
-  if (this.option('cache')) {
-    tmpl = utils.getRenderable(template, this);
-    if (!tmpl) {
-      tmpl = utils.getPartial(template, this);
-    }
-  }
-
-  if (tmpl) {
-    template = tmpl;
-  } else {
-    // generate a unique, temporary id
-    template = this.format(utils.generateId(), template, locals);
-  }
-
-  if (utils.isObject(template)) {
-    content = template.content;
-    locals = this.mergeFn(template, locals, async);
-    delims = delims || utils.pickDelims(template, locals);
-
-  } else {
-    content = template;
-  }
-
-  // Get the extension to use for picking a layout and engine
-  var ext = utils.pickExt(template, locals, this);
-
-  // if a layout is defined, wrap `content` with it
-  content = this.applyLayout(ext, template, locals);
-
-  // Ensure that `content` is a string.
-  if (utils.isObject(content)) {
-    content = content.content;
-  }
-
-  // Ensure that delimiters are cached, so we
-  // can pass them to the engine
-  if (Array.isArray(delims)) {
-    this.addDelims(ext, delims);
-  }
-
-  if (utils.isString(engine)) {
-    if (engine[0] !== '.') {
-      engine = '.' + engine;
-    }
-    engine = this.getEngine(engine);
-    delims = this.getDelims(engine);
-  } else {
-    engine = this.getEngine(ext);
-    delims = this.getDelims(ext);
-  }
-
-  locals = this.mergeLocals(this, template, locals, delims);
-
-  // populate the state to pass back
-  state.content = content;
-  state.engine = engine;
-  state.delims = delims;
-  state.locals = locals;
-  return state;
-};
-
-/**
  * Render `content` with the given `options` and `callback`.
  *
  * @param  {Object|String} `file` String or normalized template object.
@@ -1261,12 +1256,12 @@ Template.prototype.render = function(content, locals, cb) {
   var defaultExt = this.option('viewEngine');
   var engine = this.getEngine(defaultExt);
 
-  if (this.option('preprocess')) {
-    var pre = this.preprocess(content, locals, true);
-    content = pre.content;
-    locals = extend({}, pre.locals, locals);
-    engine = pre.engine;
-  }
+  // if (this.option('preprocess')) {
+  //   var pre = this.preprocess(content, locals, true);
+  //   content = pre.content;
+  //   locals = extend({}, pre.locals, locals);
+  //   engine = pre.engine;
+  // }
 
   this.bindHelpers(locals);
   this.renderBase(engine, content, locals, cb);
@@ -1285,12 +1280,12 @@ Template.prototype.renderSync = function(content, locals) {
   var ext = this.option('viewEngine');
   var engine = this.getEngine(ext);
 
-  if (this.option('preprocess')) {
-    var pre = this.preprocess(content, locals);
-    content = pre.content;
-    locals = extend({}, pre.locals, locals);
-    engine = pre.engine;
-  }
+  // if (this.option('preprocess')) {
+  //   var pre = this.preprocess(content, locals);
+  //   content = pre.content;
+  //   locals = extend({}, pre.locals, locals);
+  //   engine = pre.engine;
+  // }
 
   if (!hasOwn(engine, 'renderSync')) {
     throw new Error('`.renderSync()` method not found on engine: "' + engine + '".');
@@ -1534,7 +1529,6 @@ Template.prototype.mergeFn = function(template, locals, async) {
   o.helpers = extend({}, this._.helpers, (async
     ? this._.asyncHelpers
     : {}), o.helpers);
-
   return extend(data, o, locals);
 };
 
@@ -1568,15 +1562,15 @@ function mixin(method, fn) {
 /**
  * Utility method to define getters.
  *
- * @param  {Object} `obj`
+ * @param  {Object} `o`
  * @param  {String} `name`
  * @param  {Function} `getter`
  * @return {Getter}
  * @api private
  */
 
-function defineGetter(obj, name, getter) {
-  Object.defineProperty(obj, name, {
+function defineGetter(o, name, getter) {
+  Object.defineProperty(o, name, {
     configurable: false,
     enumerable: false,
     get: getter,

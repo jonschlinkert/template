@@ -1108,10 +1108,10 @@ Template.prototype.loader = function (plural, options, fns, done) {
 
       loaderStack = utils.bindAll(loaderStack, self);
 
-      async.waterfall(loaderStack, function (err, template) {
+      return utils.runLoaderStack(loaderStack, function (err, template) {
         var override = done(err, template);
         results = override || template;
-        callback(err, results);
+        return callback(err, results);
       });
 
     };

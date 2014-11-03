@@ -33,30 +33,26 @@ describe('engine locals', function () {
   });
 
   describe('when a custom loader stack is set:', function () {
-    it('should allow custom loader stack to be used:', function (done) {
+    it('should allow custom loader stack to be used:', function () {
       var options = {};
       template.create('post', { isRenderable: true }, [
         function (patterns, next) {
           next(null, globber(patterns, options));
         }
       ]);
-      template.posts(__dirname + '/fixtures/layouts/matter/*.md', function (a, b) {
-        template.cache.posts.should.have.properties(['a.md', 'b.md', 'c.md', 'd.md']);
-        done();
-      });
+      template.posts(__dirname + '/fixtures/layouts/matter/*.md');
+      template.cache.posts.should.have.properties(['a.md', 'b.md', 'c.md', 'd.md']);
     });
 
-    it('should load templates from files using a custom function:', function (done) {
+    it('should load templates from files using a custom function:', function () {
       template.create('post', { isRenderable: true }, [
         function (patterns, opts, next) {
           next(null, globber(patterns, opts));
         }
       ]);
 
-      template.post('test/fixtures/*.md', {}, function () {
-        template.cache.posts.should.have.property('md.md');
-        done();
-      });
+      template.post('test/fixtures/*.md', {});
+      template.cache.posts.should.have.property('md.md');
     });
 
     it('should load templates from files using a custom function:', function (done) {
@@ -105,6 +101,20 @@ describe('engine locals', function () {
       template.create('post', { isRenderable: true }, [
         function (patterns, next) {
           next(new Error('Something went wrong'));
+        }
+      ], function (err, result) {
+        if (!err) done('Expected an error');
+      });
+
+      template.post('test/fixtures/*.md', function (err) {
+        if (err) done();
+      });
+    });
+
+    it('should catch `err`:', function (done) {
+      template.create('post', { isRenderable: true }, [
+        function (patterns, next) {
+          throw new Error('Something went wrong');
         }
       ], function (err, result) {
         if (!err) done('Expected an error');

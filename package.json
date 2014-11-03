@@ -36,6 +36,7 @@
     "consolidate": "^0.10.0",
     "engine-handlebars": "^0.3.0",
     "engines": "^0.4.0",
+    "globby": "^0.1.1",
     "handlebars": "^2.0.0",
     "istanbul": "^0.3.2",
     "preserve": "^0.1.3",

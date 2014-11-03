@@ -11,6 +11,7 @@
 
 var _ = require('lodash');
 var path = require('path');
+var async = require('async');
 var chalk = require('chalk');
 var Delims = require('delims');
 var forOwn = require('for-own');
@@ -862,11 +863,77 @@ Template.prototype.validate = function(key, value, locals, options) {
   // todo
 };
 
-Template.prototype.loader = function (type) {
-  return function(key, value, locals, options) {
+Template.prototype._loader = function (plural, options, fns, done) {
+  var self = this;
+  if (arguments.length !== 1) {
 
-    // todo
+    if (typeof options === 'function' || Array.isArray(options)) {
+      fns = options;
+      options = {};
+    }
+    var stack = utils.arrayify(fns);
+    done = done || function () {};
+
+    self.loaders[plural] = function(key, value, fns, callback) {
+      if (typeof key === 'object') {
+        callback = fns;
+        fns = value;
+        value = key;
+        key = null;
+      }
+      if (Array.isArray(value)) {
+        callback = fns;
+        fns = value;
+        value = null;
+      }
+      if (typeof value === 'function') {
+        callback = value;
+        fns = [];
+        value = null;
+      }
+      if (typeof fns === 'function') {
+        callback = fns;
+        fns = [];
+      }
+
+      if (typeof callback !== 'function') throw new Error('Expected callback to be a function.');
+      if (!Array.isArray(fns)) throw new Error('Expected fns to be an array.');
+
+      // find our stack to call
+      var results = {};
+      var loaderStack = stack.concat(fns);
+
+      // if nothing custom is defined, then use the default loader
+      if (loaderStack.length === 0) {
+        var loader = new Loader(options);
+        results = loader.load.call(loader, key, value);
+        return self.normalize(plural, results, options);
+      }
+
+      // pass the loaderStack through the waterfall to get the templates
+      var first = loaderStack[0];
+      loaderStack[0] = function (next) {
+        if (key && value) {
+          return first.call(self, key, value, next);
+        }
+        if (key) {
+          return first.call(self, key, next);
+        }
+        if (value) {
+          return first.call(self, value, next);
+        }
+        next(new Error('No valid arguments'));
+      };
+
+      async.waterfall(loaderStack, function (err, template) {
+        var override = done(err, template);
+        results = override || template;
+        callback(err, results);
+      });
+
+    };
   }
+  return self.loaders[plural];
 };
 
 /**
@@ -879,26 +946,53 @@ Template.prototype.loader = function (type) {
  * @return {Object}
  */
 
-Template.prototype.load = function(plural, options, fns) {
+Template.prototype._load = function(plural, options, fns, done) {
   debug.template('#{load} args:', arguments);
+  var self = this;
   var opts = extend({}, this.options, options);
-  var loader = new Loader(opts);
-
-  return function (/*key, value, locals, opts*/) {
-    var loaded = opts.loadFn
-      ? opts.loadFn.apply(this, arguments)
-      : loader.load.apply(loader, arguments);
-
-    // console.log(loaded)
-    var template = this.normalize(plural, loaded, options);
-
-    // Handle middleware
-    this.dispatch(template, fns);
-
-    // Add the template to the cache
-    extend(this.cache[plural], template);
-    return this;
+  var loader = function () {
+    if (opts.loadFn) {
+      var callback = arguments[arguments.length - 1];
+      var args = slice(arguments, 0, arguments.length - 1);
+      callback(null, opts.loadFn.apply(self, args));
+    } else {
+      self._loader(plural, opts, fns, done).apply(self, arguments);
+    }
   };
+
+  return function (/*key, value, fns*/) {
+    var args = slice(arguments);
+    var callback = args.pop();
+    if (typeof callback !== 'function') {
+      args.push(callback);
+      callback = function () {};
+    }
+    args = args.concat([function (err, loaded) {
+      if (err) return callback(err);
+      self.dispatch(loaded);
+      extend(self.cache[plural], loaded);
+      callback(null);
+    }]);
+    loader.apply(self, args);
+    return self;
+  };
+  // var loader = new Loader(opts);
+
+  // return function (/*key, value, locals, opts*/) {
+  //   var loaded = opts.loadFn
+  //     ? opts.loadFn.apply(this, arguments)
+  //     : loader.load.apply(loader, arguments);
+
+  //   // console.log(loaded)
+  //   var template = this.normalize(plural, loaded, options);
+
+  //   // Handle middleware
+  //   this.dispatch(template, fns);
+
+  //   // Add the template to the cache
+  //   extend(this.cache[plural], template);
+  //   return this;
+  // };
 };
 
 /**
@@ -978,26 +1072,39 @@ Template.prototype.format = function(key, value, locals, options) {
  * @api public
  */
 
-Template.prototype.create = function(subtype, plural, options, fns) {
+Template.prototype.create = function(subtype, plural, options, fns, done) {
   debug.template('#{creating template subtype}: %s', subtype);
   var args = slice(arguments);
 
   if (typeof plural !== 'string') {
+    done = fns;
     fns = options;
     options = plural;
     plural = subtype + 's';
   }
 
   if (typeof options === 'function') {
+    done = options;
+    fns = [];
+    options = {};
+  }
+
+  if (Array.isArray(options)) {
+    done = fns;
     fns = options;
     options = {};
+  }
+
+  if (typeof fns === 'function') {
+    done = fns;
+    fns = [];
   }
 
   this.cache[plural] = this.cache[plural] || {};
   options = this.setType(subtype, plural, options);
 
   // Add convenience methods for this sub-type
-  this.decorate(subtype, plural, options, fns);
+  this.decorate(subtype, plural, options, fns, done);
 
   // Create a sync helper for this type
   if (!hasOwn(this._.helpers, subtype)) {
@@ -1020,7 +1127,7 @@ Template.prototype.create = function(subtype, plural, options, fns) {
  * @api private
  */
 
-Template.prototype.decorate = function(subtype, plural, options, fns) {
+Template.prototype.decorate = function(subtype, plural, options, fns, done) {
   debug.template('#{decorating template subtype}:', subtype);
   options = extend({}, options);
 
@@ -1034,8 +1141,9 @@ Template.prototype.decorate = function(subtype, plural, options, fns) {
    * Add a method to `Template` for `plural`
    */
 
-  mixin(plural, function (/*key, value, locals, opts*/) {
-    this.load(plural, options, fns).apply(this, arguments);
+  var load = this._load(plural, options, fns, done);
+  mixin(plural, function (/*key, value, fns*/) {
+    return load.apply(this, arguments);
   });
 
   /**
@@ -1043,7 +1151,7 @@ Template.prototype.decorate = function(subtype, plural, options, fns) {
    */
 
   mixin(subtype, function (/*key, value, locals, opts*/) {
-    this[plural].apply(this, arguments);
+    return this[plural].apply(this, arguments);
   });
 
   /**

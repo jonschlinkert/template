@@ -1123,7 +1123,7 @@ Template.prototype.loader = function (plural, options, fns, done) {
 Template.prototype.load = function(plural, options, fns, done) {
   debug.template('loading: %j', arguments);
 
-  var opts = extend({}, this.options, options);
+  var opts = extend({}, options);
   var self = this;
 
   var loader = function () {
@@ -1188,6 +1188,8 @@ Template.prototype.normalize = function(plural, template, options) {
     if (isLayout) {
       this.layoutSettings[ext].setLayout(template);
     }
+      console.log(template)
+
   }, this);
   return template;
 };

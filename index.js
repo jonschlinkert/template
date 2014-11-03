@@ -875,8 +875,8 @@ Template.prototype.getType = function(type) {
 
 Template.prototype.mergeType = function(type, subtypes) {
   debug.template('merging [type]: %s', type);
-  var type = this.getType(type);
-  var keys = subtypes || Object.keys(type);
+  var obj = this.getType(type);
+  var keys = subtypes || Object.keys(obj);
   var len = keys.length;
   var o = {};
   var i = 0;
@@ -1024,26 +1024,23 @@ Template.prototype.lookup = function(plural, name, ext) {
 };
 
 /**
- * Define a loader to be used on templates.
+ * Define a custom loader for loading templates.
  *
- * @param  {[type]} type
- * @return {[type]}
+ * @param  {String} `plural`
+ * @param  {Object} `options`
+ * @param  {Array} `fns`
+ * @param  {Function} `done`
  */
 
-Template.prototype.loader = function (type) {
-  return function(key, value, locals, options) {
-    // todo
-  };
-};
-
-Template.prototype._loader = function (plural, options, fns, done) {
+Template.prototype.loader = function (plural, options, fns, done) {
   var self = this;
-  if (arguments.length !== 1) {
 
+  if (arguments.length !== 1) {
     if (typeof options === 'function' || Array.isArray(options)) {
       fns = options;
       options = {};
     }
+
     var stack = utils.arrayify(fns);
     done = done || function () {};
 
@@ -1069,14 +1066,18 @@ Template.prototype._loader = function (plural, options, fns, done) {
         fns = [];
       }
 
-      if (typeof callback !== 'function') throw new Error('Expected callback to be a function.');
-      if (!Array.isArray(fns)) throw new Error('Expected fns to be an array.');
+      if (typeof callback !== 'function') {
+        throw new Error('Template#loader() expects `callback` to be a function.');
+      }
+      if (!Array.isArray(fns)) {
+        throw new Error('Template#loader() expects `fns` to be an array.');
+      }
 
       // find our stack to call
       var results = {};
       var loaderStack = stack.concat(fns);
 
-      // if nothing custom is defined, then use the default loader
+      // if no custom loader is defined, fallback to [jonschlinkert/load-templates]
       if (loaderStack.length === 0) {
         var loader = new Loader(options);
         results = loader.load.call(loader, key, value);
@@ -1085,6 +1086,7 @@ Template.prototype._loader = function (plural, options, fns, done) {
 
       // pass the loaderStack through the waterfall to get the templates
       var first = loaderStack[0];
+
       loaderStack[0] = function (next) {
         if (key && value) {
           return first.call(self, key, value, next);
@@ -1110,86 +1112,84 @@ Template.prototype._loader = function (plural, options, fns, done) {
 };
 
 /**
- * Load templates and normalize them to ensure it has the necessary
- * properties to be rendered by the current engine.
+ * Default load function used for loading templates.
  *
- * @param  {Object} `template` The template object to normalize.
- * @param  {Object} `options` Options to pass to the renderer.
- *     @option {Function} `renameKey` Override the default function for renaming
- *                                    the key of normalized template objects.
- *
- * @return {Object} Normalized template.
- * @param {String|Array|Object}
- * @return {Object}
+ * @param  {String} `plural`
+ * @param  {Object} `options`
+ * @param  {Array} `fns`
+ * @param  {Function} `done`
  */
 
-Template.prototype.load = function(plural, options, fns) {
-  debug.template('loading [%s]:', plural);
-  this.lazyrouter();
+Template.prototype.load = function(plural, options, fns, done) {
+  debug.template('loading: %j', arguments);
 
-  return function (key, value, locals, opts) {
-    if (this.option('normalize')) {
-      return this.options.normalize.apply(this, arguments);
-    }
-
-    key = this.option('renameKey').apply(this, arguments);
-    // self.option('partialsKey')(key)
-
-    value = value || {};
-    value.path = value.path || key;
-    value.ext = value.ext || path.extname(value.path);
-    value.options = extend({ subtype: plural }, options, value.options);
-
-    this.lazyLayouts(value.ext, value.options);
-    utils.determineLayout(value);
-
-    var template = {};
-    template[key] = value;
-
-    // if the template is actually a layout, add it to the cache
-    if (utils.isLayout(value)) {
-      this.layoutSettings[value.ext].setLayout(template);
-    }
-
-    // Handle middleware
-    this.dispatch(template, fns);
-
-    // Add the template to the cache
-    extend(this.cache[plural], template);
-    return this;
-  };
-};
-
-Template.prototype._load = function(plural, options, fns, done) {
-  debug.template('#{load} args:', arguments);
-  var self = this;
   var opts = extend({}, this.options, options);
+  var self = this;
+
   var loader = function () {
     if (opts.loadFn) {
       var callback = arguments[arguments.length - 1];
       var args = slice(arguments, 0, arguments.length - 1);
-      callback(null, opts.loadFn.apply(self, args));
+      callback(null, opts.loadFn.apply(self, arguments));
     } else {
-      self._loader(plural, opts, fns, done).apply(self, arguments);
+      self.loader(plural, opts, fns, done).apply(self, arguments);
     }
   };
 
   return function (/*key, value, fns*/) {
     var args = slice(arguments);
-    var callback = args.pop();
-    if (typeof callback !== 'function') {
-      args.push(callback);
-      callback = function () {};
+    var last = args[args.length - 1];
+    var callback = function () {};
+
+    if (typeof last === 'function') {
+      callback = args.pop();
     }
+
     args = args.concat([function (err, loaded) {
       if (err) return callback(err);
       self.dispatch(loaded);
       extend(self.cache[plural], loaded);
       callback(null);
     }]);
+
     loader.apply(self, args);
     return self;
   };
+};
+
+/**
+ * Normalize a template object to ensure it has the necessary
+ * properties to be rendered by the current renderer.
+ *
+ * @param  {Object} `template` The template object to normalize.
+ * @param  {Object} `options` Options to pass to the renderer.
+ *     @option {Function} `renameKey` Override the default function for renaming
+ *             the key of normalized template objects.
+ * @return {Object} Normalized template.
+ */
+
+Template.prototype.normalize = function(plural, template, options) {
+  debug.template('#{normalize} args:', arguments);
+  this.lazyrouter();
+
+  if (this.option('normalize')) {
+    return this.options.normalize.apply(this, arguments);
+  }
+
+  forOwn(template, function (value, key) {
+    value.options = extend({ subtype: plural }, options, value.options);
+    var ext = utils.pickExt(value, value.options, this);
+    this.lazyLayouts(ext, value.options);
+
+    var isLayout = utils.isLayout(value);
+    utils.determineLayout(value);
+
+    template[key] = value;
+    if (isLayout) {
+      this.layoutSettings[ext].setLayout(template);
+    }
+  }, this);
+  return template;
 };
 
 /**
@@ -1304,7 +1304,7 @@ Template.prototype.decorate = function(subtype, plural, options, fns, done) {
    * Add a method to `Template` for `plural`
    */
 
-  var load = this._load(plural, options, fns, done);
+  var load = this.load(plural, options, fns, done);
   mixin(plural, function (/*key, value, fns*/) {
     return load.apply(this, arguments);
   });
@@ -1433,7 +1433,7 @@ Template.prototype.render = function(content, locals, cb) {
   this.bindHelpers(locals);
 
   // Apply layout before rendering
-  var content = self.applyLayout(ext, {content: content}, locals);
+  content = this.applyLayout(ext, {content: content}, locals);
   this.renderBase(engine, content, locals, cb);
 };
 
@@ -1490,11 +1490,13 @@ Template.prototype.renderCached = function(name, locals, cb) {
  */
 
 Template.prototype.renderSubtype = function(subtype) {
-  return function (name, locals, cb) {
+  return function (content, locals, cb) {
     if (typeof locals === 'function') {
       cb = locals;
       locals = {};
     }
+
+    var engine = {};
 
 
     this.renderBase(engine, content, locals, cb);
@@ -1597,8 +1599,7 @@ Template.prototype.renderFile = function(filepath, locals, cb) {
     locals = {};
   }
 
-  var str = fs.readFileSync(filepath, 'utf8');
-
+  // var str = fs.readFileSync(filepath, 'utf8');
   // this.renderBase(engine, str, locals, cb);
 };
 

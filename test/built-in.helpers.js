@@ -19,11 +19,12 @@ var async = require('async');
 
 
 describe('generated helpers:', function () {
-  describe.only('helpers for built-in engines:', function () {
-    it('should use the `partial` helper with a built-in engine.', function (done) {
+  describe('helpers for built-in engines:', function () {
+    it.only('should use the `partial` helper with a built-in engine.', function (done) {
       template.partial('a.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}});
       template.page('b.md', {path: 'b.md', content: 'foo <%= partial("a.md") %> bar'});
 
+      // console.log(template)
       template.renderCached('b.md', function (err, content) {
         if (err) return done(err);
         content.should.equal('foo AAA bar');

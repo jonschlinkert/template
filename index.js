@@ -11,6 +11,7 @@
 
 var _ = require('lodash');
 var path = require('path');
+var arr = require('arr');
 var async = require('async');
 var chalk = require('chalk');
 var Delims = require('delims');
@@ -217,7 +218,13 @@ Template.prototype.defaultDelimiters = function() {
  */
 
 Template.prototype.defaultTemplates = function() {
-  this.create('page', { isRenderable: true });
+  this.create('page', { isRenderable: true }, [
+    function(key, value, locals, options, next) {
+      var loader = new Loader();
+      var template = loader.load.apply(loader, arguments);
+      next(null, template);
+    }
+  ]);
   this.create('layout', { isLayout: true });
   this.create('partial', { isPartial: true });
 };
@@ -787,14 +794,14 @@ Template.prototype.defaultHelperAsync = function(subtype, plural) {
     if (partial == null) {
       // TODO: use actual delimiters in messages
       var msg = chalk.red('helper {{' + subtype + ' "' + name + '"}} not found.');
-      if (this.enabled('strict errors')) {
+      if (self.enabled('strict errors')) {
         throw new Error(msg);
       }
       console.log(msg);
       return next(null, '');
     }
 
-    var locs = extend({}, partial.locals, partial.data, locals);
+    var locs = extend({}, this.context, partial.locals, partial.data, locals);
     var render = self.renderSubtype(subtype);
 
     render(name, locs, function (err, content) {
@@ -833,32 +840,27 @@ Template.prototype.loader = function (plural, options, fns, done) {
     done = done || function () {};
 
     self.loaders[plural] = function(key, value, fns, callback) {
-      if (typeof key === 'object') {
-        callback = fns;
-        fns = value;
-        value = key;
-        key = null;
+      var args = slice(arguments);
+      var first;
+
+      if (Array.isArray(args[0])) {
+        first = args.shift();
       }
-      if (Array.isArray(value)) {
-        callback = fns;
-        fns = value;
-        value = null;
-      }
-      if (typeof value === 'function') {
-        callback = value;
-        fns = [];
-        value = null;
-      }
-      if (typeof fns === 'function') {
-        callback = fns;
-        fns = [];
-      }
+
+      var fns = arr.first(args, 'array') || [];
+      var callback = arr.first(args, 'function');
 
       if (typeof callback !== 'function') {
         throw new Error('Template#loader() expects `callback` to be a function.');
       }
-      if (!Array.isArray(fns)) {
-        throw new Error('Template#loader() expects `fns` to be an array.');
+
+      // remove the arrays and functions from args
+      args = arr.filter(args, function (ele) {
+        return !Array.isArray(ele) && typeof ele !== 'function';
+      });
+
+      if (first != null) {
+        args.unshift(first);
       }
 
       // find our stack to call
@@ -868,24 +870,16 @@ Template.prototype.loader = function (plural, options, fns, done) {
       // if no custom loader is defined, fallback to [jonschlinkert/load-templates]
       if (loaderStack.length === 0) {
         var loader = new Loader(options);
-        results = loader.load.call(loader, key, value);
+        results = loader.load.apply(loader, args);
         return callback(null, self.normalize(plural, results, options));
       }
 
       // pass the loaderStack through the waterfall to get the templates
-      var first = loaderStack[0];
+      var firstFn = loaderStack[0];
 
       loaderStack[0] = function (next) {
-        if (key && value) {
-          return first.call(self, key, value, next);
-        }
-        if (key) {
-          return first.call(self, key, next);
-        }
-        if (value) {
-          return first.call(self, value, next);
-        }
-        next(new Error('No valid arguments'));
+        args.push(next);
+        return firstFn.apply(self, args);
       };
 
       loaderStack = utils.bindAll(loaderStack, self);
@@ -1465,12 +1459,11 @@ Template.prototype.renderCached = function(key, locals, cb) {
   // Return the first matching template from a `renderable` subtype
   var template = this.findRenderable(key);
   if (template == null) {
-    throw new Error('Cannot find "' + key + '" on the cache.');
+    throw new Error('Template#renderCached() Cannot find template: "' + key + '".');
   }
 
-
   // Merge `.render()` locals with template locals
-  locals = extend({}, locals, this.cache.data, template.locals, template.data);
+  locals = this.context(template, locals);
 
   var ext = template.engine
     || template.ext
@@ -1483,10 +1476,10 @@ Template.prototype.renderCached = function(key, locals, cb) {
 
   // Bind context to helpers before passing to the engine.
   this.bindHelpers(locals);
-  // this.bindHelpers(engine);
 
   // if a layout is defined, apply it before rendering
   var content = this.applyLayout(ext, template, locals);
+
   this.renderBase(engine, template.content, locals, cb);
 };
 
@@ -1513,11 +1506,11 @@ Template.prototype.renderSubtype = function(subtype) {
     // Return the first matching template from a `renderable` subtype
     var template = self.lookup(plural, key);
     if (template == null) {
-      throw new Error('Cannot find "' + key + '" on the cache.');
+      throw new Error('Template#renderSubtype() Cannot find template: "' + key + '".');
     }
 
     // Merge `.render()` locals with template locals
-    locals = extend({}, locals, self.cache.data, template.locals, template.data);
+    locals = self.context(template, locals);
 
     var ext = template.engine
       || template.ext
@@ -1729,6 +1722,34 @@ Template.prototype.mergeFn = function(template, locals, async) {
     : {}), o.helpers);
 
   return extend(data, o, locals);
+};
+
+/**
+ * Merge objects to build-up the context passed to templates.
+ *
+ * @param  {Object} `template` A template object
+ * @param  {Object} `locals`
+ * @return {Object}
+ */
+
+Template.prototype.context = function(template, locals) {
+  if (this.option('mergeContext')) {
+    return this.option('mergeContext').apply(this, arguments);
+  }
+  return this.mergeContext(template, locals);
+};
+
+/**
+ * Default merge function used if a function is
+ * not defined by the user.
+ *
+ * @param  {Object} `template` A template object
+ * @param  {Object} `locals`
+ * @return {Object}
+ */
+
+Template.prototype.mergeContext = function(template, locals) {
+  return extend({}, this.cache.data, template.locals, template.data, locals);
 };
 
 /**

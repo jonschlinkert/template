@@ -18,11 +18,11 @@ describe('template context', function() {
   });
 
   describe('context:', function () {
-    it('should pass data to templates in the `.render()` method:', function (done) {
+    it('should pass data to templates in the `.renderCached()` method:', function (done) {
       template.data({ abc: 'xyz'});
       template.page('aaa.md', '<%= abc %>');
 
-      template.render('aaa.md', function (err, content) {
+      template.renderCached('aaa.md', function (err, content) {
         if (err) console.log(err);
         content.should.equal('xyz');
         done();

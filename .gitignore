@@ -11,6 +11,7 @@ tmp
 vendor
 staging
 _gh_pages
+_test
 
 # OS or Editor folders
 .komodotools

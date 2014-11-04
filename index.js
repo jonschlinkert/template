@@ -1595,10 +1595,8 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   // Bind context to helpers before passing to the engine.
   this.bindHelpers(locals, typeof cb !== 'function');
 
-
   // if a layout is defined, apply it before rendering
   var content = this.applyLayout(ext, template, locals);
-  // console.log(engine)
   return this.renderBase(engine, content, locals, cb);
 };
 

@@ -21,7 +21,7 @@ describe('template.render()', function () {
     done();
   });
 
-  describe('engine object:', function () {
+  describe('`this` object:', function () {
     it('should expose `this` to the .render() method:', function (done) {
       template.render('<%= name %>', {name: 'Jon Schlinkert'}, function (err, content) {
         if (err) console.log(err);
@@ -33,16 +33,6 @@ describe('template.render()', function () {
 
   describe('when an un-cached string is passed to `.render()`:', function () {
     it('should render it with caching enabled:', function (done) {
-      template.render('<%= name %>', {name: 'Jon Schlinkert', ext: '.html'}, function (err, content) {
-        if (err) console.log(err);
-        content.should.equal('Jon Schlinkert');
-        done();
-      });
-    });
-
-    it('should render it with caching disabled:', function (done) {
-      template.option('cache', false);
-
       template.render('<%= name %>', {name: 'Jon Schlinkert', ext: '.html'}, function (err, content) {
         if (err) console.log(err);
         content.should.equal('Jon Schlinkert');

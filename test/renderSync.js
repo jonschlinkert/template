@@ -16,7 +16,7 @@ var Template = require('..');
 var template = new Template();
 
 
-describe('.render() use synchronously', function () {
+describe('.render() synchronously / without a callback:', function () {
   beforeEach(function () {
     template = new Template();
   });
@@ -66,7 +66,7 @@ describe('.render() use synchronously', function () {
     });
   });
 
-  describe('engine render:', function () {
+  describe('engine `.renderSync()`:', function () {
     it('should render content with an engine from [engines].', function () {
       template.engine('hbs', engines.handlebars);
       var hbs = template.getEngine('hbs');

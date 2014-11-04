@@ -101,7 +101,8 @@ describe('template loaders', function () {
         }
       ]);
       template.post('test/fixtures/*.md', function () {
-        template.renderCached('md.md', function (err, content) {
+        template.render('md.md', function (err, content) {
+          console.log(arguments)
         });
       });
       done();

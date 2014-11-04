@@ -71,6 +71,12 @@ describe('template create:', function () {
       it('should decorate the type with a `render` method:', function () {
         template.should.have.properties(['renderPage', 'renderPost', 'renderDoc']);
       });
+
+      it('should use a template subtype\'s `render` method to render the template:', function () {
+        template.post('abc.md', {content: 'aaa <%= name %> zzz'});
+        var render = template.renderPost()
+        render('abc.md', {name: 'Halle'}).should.equal('aaa Halle zzz');
+      });
     });
   });
 

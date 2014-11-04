@@ -32,8 +32,32 @@ describe('template.render()', function () {
   });
 
   describe('when an un-cached string is passed to `.render()`:', function () {
-    it('should render it with caching enabled:', function (done) {
+    it('should detect the engine from `ext` (with dot) on locals:', function (done) {
       template.render('<%= name %>', {name: 'Jon Schlinkert', ext: '.html'}, function (err, content) {
+        if (err) console.log(err);
+        content.should.equal('Jon Schlinkert');
+        done();
+      });
+    });
+
+    it('should detect the engine from `ext` (without dot) on locals:', function (done) {
+      template.render('<%= name %>', {name: 'Jon Schlinkert', ext: 'html'}, function (err, content) {
+        if (err) console.log(err);
+        content.should.equal('Jon Schlinkert');
+        done();
+      });
+    });
+
+    it('should detect the engine from `engine` (with dot) on locals:', function (done) {
+      template.render('<%= name %>', {name: 'Jon Schlinkert', engine: '.html'}, function (err, content) {
+        if (err) console.log(err);
+        content.should.equal('Jon Schlinkert');
+        done();
+      });
+    });
+
+    it('should detect the engine from `engine` (without dot) on locals:', function (done) {
+      template.render('<%= name %>', {name: 'Jon Schlinkert', engine: 'html'}, function (err, content) {
         if (err) console.log(err);
         content.should.equal('Jon Schlinkert');
         done();
@@ -42,7 +66,7 @@ describe('template.render()', function () {
   });
 
   describe('when the name of a cached template is passed to `.render()`:', function () {
-    it('should get the template and render it:', function (done) {
+    it('should find the template and render it:', function (done) {
       template.page('aaa.md', '<%= name %>', {name: 'Jon Schlinkert'});
 
       template.render('aaa.md', function (err, content) {
@@ -52,7 +76,7 @@ describe('template.render()', function () {
       });
     });
 
-    it('should render the first matching template is dupes are found:', function (done) {
+    it('should render the first matching template if dupes are found:', function (done) {
       template.page('aaa.md', '<%= name %>', {name: 'Brian Woodward'});
       template.create('post', 'posts', { isRenderable: true });
       template.post('aaa.md', '<%= name %>', {name: 'Jon Schlinkert'});

@@ -20,18 +20,20 @@ var routes = require('en-route');
 var Cache = require('config-cache');
 var Helpers = require('helper-cache');
 var Engines = require('engine-cache');
+var arrayify = require('arrayify-compact');
 var engineLodash = require('engine-lodash');
 var parserMatter = require('parser-front-matter');
 var arr = require('arr');
 var slice = require('array-slice');
 var flatten = require('arr-flatten');
 
-var defaultLoader = require('./lib/loaders');
 var init = require('./lib/middleware/init');
-var camelize = require('./lib/utils/camelize');
-var hasOwn = require('./lib/utils/has-own');
-var utils = require('./lib/utils');
+var defaultLoader = require('./lib/loaders');
+var camelize = require('./lib/camelize');
+var isObject = require('./lib/is-object');
+var hasOwn = require('./lib/has-own');
 var debug = require('./lib/debug');
+var utils = require('./lib');
 var Router = routes.Router;
 var Route = routes.Route;
 var extend = _.extend;
@@ -638,7 +640,7 @@ Template.prototype.registerEngine = function(ext, fn, options) {
 Template.prototype.engine = function(exts, fn, options) {
   debug.engine('engine %j:', exts);
 
-  utils.arrayify(exts).forEach(function(ext) {
+  arrayify(exts).forEach(function(ext) {
     if (ext[0] !== '.') {
       ext = '.' + ext;
     }
@@ -691,13 +693,16 @@ Template.prototype.getExt = function(template, locals) {
   if (typeof fn === 'function') {
     return fn.call(this, template, locals);
   }
-  return locals.engine
+
+  var ext = locals.engine
     || locals.ext
     || template.options.engine
     || template.engine
     || template.ext
     || path.extname(template.path)
     || this.option('viewEngine');
+
+  return ext ? utils.formatExt(ext) : null;
 };
 
 /**
@@ -912,7 +917,6 @@ Template.prototype.loader = function (plural, options, stack, done) {
 
       // find our stack to call
       var loaderStack = stack.concat(fns);
-      var results = {};
 
       // pass the loaderStack through the waterfall to get the templates
       var firstFn = loaderStack[0];
@@ -925,9 +929,7 @@ Template.prototype.loader = function (plural, options, stack, done) {
       loaderStack = utils.bindAll(loaderStack, self);
 
       return utils.runLoaderStack(loaderStack, function (err, template) {
-        var override = done(err, template);
-        results = override || template;
-        return callback(err, results);
+        return callback(err, done(err, template) || template);
       });
 
     };
@@ -948,25 +950,12 @@ Template.prototype.load = function(subtype, plural, options, fns, done) {
   debug.loader('loading: %j', arguments);
   var self = this;
 
-  if (typeof options === 'function') {
-    done = options; fns = []; options = {};
-  }
-
-  if (Array.isArray(options)) {
-    done = fns; fns = options; options = {};
-  }
-
-  if (typeof fns === 'function') {
-    done = fns; fns = [];
-  }
-
   // If the loader stack is empty, fallback to defaults
   if (fns == null || fns.length === 0) {
     fns = this.defaultLoader(plural, options);
   }
 
   var opts = extend({}, options);
-
   var getLoader = function () {
     if (opts.loadFn) {
       var callback = arguments[arguments.length - 1];
@@ -1035,7 +1024,7 @@ Template.prototype.validate = function(template) {
       debug.err('template `key` must be a string.');
     }
 
-    if (value == null || !utils.isObject(value)) {
+    if (value == null || !isObject(value)) {
       debug.err('template `value` must be an object.');
     }
 
@@ -1058,6 +1047,7 @@ Template.prototype.validate = function(template) {
  *     @option {Function} `renameKey` Override the default function for renaming
  *             the key of normalized template objects.
  * @return {Object} Normalized template.
+ * @api private
  */
 
 Template.prototype.normalize = function(plural, template, options) {
@@ -1070,8 +1060,9 @@ Template.prototype.normalize = function(plural, template, options) {
 
   forOwn(template, function (value, key) {
     value.options = extend({ subtype: plural }, options, value.options);
-    var ext = utils.pickExt(value, value.options, this);
-    this.lazyLayouts(ext, value.options);
+
+    var ext = this.getExt(value, options);
+    this.lazyLayouts(value.ext, value.options);
 
     value.layout = utils.getLayout(value);
     template[key] = value;
@@ -1114,14 +1105,15 @@ Template.prototype.setType = function(subtype, plural, options) {
 };
 
 /**
- * Get all templates of the given `type`.
+ * Get all templates of the given [type]. Valid values are
+ * `renderable`, `layout` or `partial`.
  *
  * ```js
  * var pages = template.getType('renderable');
  * //=> { pages: { 'home.hbs': { ... }, 'about.hbs': { ... }}, posts: { ... }}
  * ```
  *
- * See documentation for [types](./template-types)
+ * [type]: ./template-types
  *
  * @param {String} `type`
  * @param {Object} `opts`
@@ -1155,7 +1147,7 @@ Template.prototype.mergeType = function(type, subtypes) {
   debug.template('merging [type]: %s', type);
   var obj = this.getType(type);
 
-  subtypes = utils.arrayify(subtypes || Object.keys(obj));
+  subtypes = arrayify(subtypes || Object.keys(obj));
   var len = subtypes.length;
   var o = {};
   var i = len - 1;
@@ -1230,7 +1222,7 @@ Template.prototype.mergePartials = function(locals, mergePartials) {
 Template.prototype.find = function(type, key, subtypes) {
   var o = this.mergeType(type, subtypes);
 
-  if (o && utils.isObject(o) && hasOwn(o, key)) {
+  if (o && isObject(o) && hasOwn(o, key)) {
     return o[key];
   }
 

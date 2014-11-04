@@ -8,7 +8,7 @@
 'use strict';
 
 var should = require('should');
-var utils = require('../lib/utils');
+var utils = require('../lib');
 var Template = require('..');
 var template;
 

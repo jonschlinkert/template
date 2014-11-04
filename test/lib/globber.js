@@ -3,7 +3,7 @@
 var fs = require('fs');
 var _ = require('lodash');
 var path = require('path');
-var glob = require('globby');
+var glob = require('glob');
 
 module.exports = function globber(patterns, options) {
   var files = glob.sync(patterns, options);

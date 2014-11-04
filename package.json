@@ -1,6 +1,6 @@
 {
   "name": "template",
-  "description": "Render templates from any engine. Make custom template types, use layouts on pages an partials, use built-in or custom delimiters, helpers, routes, middleware, loaders, and lots more.",
+  "description": "Render templates from any engine. Make custom template types, use layouts on pages, partials or any custom template type, custom delimiters, helpers, middleware, routes, loaders, and lots more.",
   "version": "0.3.0",
   "homepage": "https://github.com/jonschlinkert/template",
   "author": {
@@ -37,7 +37,6 @@
     "engine-handlebars": "^0.3.0",
     "engines": "^0.4.0",
     "glob": "^4.0.6",
-    "globby": "^0.1.1",
     "handlebars": "^2.0.0",
     "istanbul": "^0.3.2",
     "preserve": "^0.1.3",
@@ -61,7 +60,7 @@
     "engine-lodash": "^0.3.3",
     "for-own": "^0.1.2",
     "has-value": "^0.1.0",
-    "helper-cache": "^0.2.4",
+    "helper-cache": "^0.3.0",
     "kind-of": "^0.1.2",
     "layouts": "^0.5.3",
     "load-templates": "^0.4.6",

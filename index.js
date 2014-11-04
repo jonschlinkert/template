@@ -7,13 +7,14 @@
 
 'use strict';
 
-// process.env.DEBUG = 'template:*';
+process.env.DEBUG = 'template:err';
 
 var _ = require('lodash');
 var path = require('path');
 var chalk = require('chalk');
 var Delims = require('delims');
 var forOwn = require('for-own');
+var typeOf = require('kind-of');
 var Layouts = require('layouts');
 var routes = require('en-route');
 var Cache = require('config-cache');
@@ -26,8 +27,10 @@ var arr = require('arr');
 var slice = require('array-slice');
 var flatten = require('arr-flatten');
 
-var camelize = require('./lib/utils/camelize');
 var init = require('./lib/middleware/init');
+var validation = require('./lib/validation');
+var camelize = require('./lib/utils/camelize');
+var hasOwn = require('./lib/utils/has-own');
 var utils = require('./lib/utils');
 var debug = require('./lib/debug');
 var Router = routes.Router;
@@ -122,7 +125,6 @@ Template.prototype.defaultConfig = function() {
 
 Template.prototype.defaultOptions = function() {
   this.enable('default engines');
-  this.disable('strict errors');
   this.enable('mergePartials', true);
   this.enable('cache');
 
@@ -782,24 +784,21 @@ Template.prototype.helpers = function(ext) {
  */
 
 Template.prototype.defaultHelper = function(subtype, plural) {
+  debug.helper('default helper: %s', subtype);
   var self = this;
 
   this.helper(subtype, function (key, locals) {
+    debug.helper('helper: [%s / %s]', subtype, key);
     var partial = self.cache[plural][key];
 
-    if (partial == null) {
+    if (!partial) {
       // TODO: use actual delimiters in messages
-      var msg = chalk.red('helper {{' + subtype + ' "' + key + '"}} not found.');
-      if (self.enabled('strict errors')) {
-        throw new Error(msg);
-      }
-      console.log(msg);
+      debug.err(chalk.red('helper {{' + subtype + ' "' + key + '"}} not found.'));
       return '';
     }
 
     var locs = extend({}, this.context, locals);
     var content = self.renderTemplate(partial, locs);
-
     if (content instanceof Error) {
       throw content;
     }
@@ -815,9 +814,13 @@ Template.prototype.defaultHelper = function(subtype, plural) {
  * @api private
  */
 
-Template.prototype.defaultHelperAsync = function(subtype, plural) {
+Template.prototype.defaultAsyncHelper = function(subtype, plural) {
+  debug.helper('default async helper: %s', subtype);
   var self = this;
+
   this.helperAsync(subtype, function (key, locals, next) {
+    debug.helper('async helper: [%s / %s]', subtype, key);
+
     var last = arguments[arguments.length - 1];
     if (typeof locals === 'function') {
       next = locals;
@@ -832,11 +835,7 @@ Template.prototype.defaultHelperAsync = function(subtype, plural) {
 
     if (!partial) {
       // TODO: use actual delimiters in messages
-      var msg = chalk.red('helper {{' + subtype + ' "' + key + '"}} not found.');
-      debug.err(msg);
-      if (self.enabled('strict errors')) {
-        throw new Error(msg);
-      }
+      debug.err(chalk.red('helper {{' + subtype + ' "' + key + '"}} not found.'));
       return next(null, '');
     }
 
@@ -861,6 +860,8 @@ Template.prototype.defaultHelperAsync = function(subtype, plural) {
  */
 
 Template.prototype.loader = function (plural, options, stack, done) {
+  debug.loader('loader: %j', arguments);
+
   var self = this;
 
   if (arguments.length !== 1) {
@@ -921,12 +922,12 @@ Template.prototype.loader = function (plural, options, stack, done) {
  *
  * @param  {String} `plural`
  * @param  {Object} `options`
- * @param  {Array} `fns`
+ * @param  {Array} `fns` Loader functions.
  * @param  {Function} `done`
  */
 
 Template.prototype.load = function(subtype, plural, options, fns, done) {
-  debug.template('loading: %j', arguments);
+  debug.loader('loading: %j', arguments);
   var self = this;
 
   if (typeof options === 'function') {
@@ -959,6 +960,8 @@ Template.prototype.load = function(subtype, plural, options, fns, done) {
   };
 
   return function (/*key, value, fns*/) {
+    debug.loader('loading template: %j', arguments);
+
     var args = slice(arguments);
     var last = args[args.length - 1];
     var callback = function () {};
@@ -998,42 +1001,31 @@ Template.prototype.load = function(subtype, plural, options, fns, done) {
  * Validate a template object to ensure that it has the properties
  * expected for applying layouts, choosing engines, and so on.
  *
- * Validation will throw errors when `strict errors` is enabled.
- *
  * @param  {String} `key` Template key
  * @param  {Object} `value` Template object
  * @api public
  */
 
 Template.prototype.validate = function(template) {
-  function notify(msg) {
-    if (this.enabled('strict errors')) {
-      throw new Error(msg);
-    } else {
-      console.log(chalk.red(msg));
-      return false;
-    }
-  }
-
-  if (template == null || utils.typeOf(template) !== 'object') {
-    return notify('`template` must be an object.');
+  if (template == null || typeOf(template) !== 'object') {
+    debug.err('`template` must be an object.');
   }
 
   forOwn(template, function (value, key) {
     if (key == null || typeof key !== 'string') {
-      return notify('template `key` must be a string.');
+      debug.err('template `key` must be a string.');
     }
 
     if (value == null || !utils.isObject(value)) {
-      return notify('template `value` must be an object.');
+      debug.err('template `value` must be an object.');
     }
 
     if (!hasOwn(value, 'path')) {
-      return notify('template `value` must have a `path` property.');
+      debug.err('template `value` must have a `path` property.');
     }
 
     if (!hasOwn(value, 'content')) {
-      return notify('template `value` must have a `content` property.');
+      debug.err('template `value` must have a `content` property.');
     }
   });
 };
@@ -1107,7 +1099,7 @@ Template.prototype.format = function(key, value, locals, options) {
  */
 
 Template.prototype.setType = function(subtype, plural, options) {
-  debug.template('setting [subtype]: %s', subtype);
+  debug.template('setting subtype: %s', subtype);
   var opts = extend({}, options);
 
   // Make an association between `subtype` and its `plural`
@@ -1142,7 +1134,7 @@ Template.prototype.setType = function(subtype, plural, options) {
  */
 
 Template.prototype.getType = function(type) {
-  debug.template('getting [type]: %s', type);
+  debug.template('getting type: %s', type);
   var arr = this.type[type];
 
   return arr.reduce(function(acc, plural) {
@@ -1231,10 +1223,8 @@ Template.prototype.mergePartials = function(locals, mergePartials) {
 
 /**
  * Search all `subtype` objects in the given `type`, returning
- * the first template found with the given `key`.
- *
- *   - If `key` is not found and `strict options` is enabled, an error will be thrown.
- *   - Optionally pass an array an array of `subtypes` to limit the search
+ * the first template found with the given `key`. Optionally pass
+ * an array an array of `subtypes` to limit the search;
  *
  * @param {String} `type` The template type to search.
  * @param {String} `key` The template to find.
@@ -1242,7 +1232,7 @@ Template.prototype.mergePartials = function(locals, mergePartials) {
  * @api private
  */
 
-Template.prototype._find = function(type, key, subtypes) {
+Template.prototype.find = function(type, key, subtypes) {
   var o = this.mergeType(type, subtypes);
 
   if (o && utils.isObject(o) && hasOwn(o, key)) {
@@ -1267,7 +1257,7 @@ Template.prototype._find = function(type, key, subtypes) {
  */
 
 Template.prototype.findRenderable = function(key, subtypes) {
-  return this._find('renderable', key, subtypes);
+  return this.find('renderable', key, subtypes);
 };
 
 /**
@@ -1283,7 +1273,7 @@ Template.prototype.findRenderable = function(key, subtypes) {
  */
 
 Template.prototype.findLayout = function(key, subtypes) {
-  return this._find('layout', key, subtypes);
+  return this.find('layout', key, subtypes);
 };
 
 /**
@@ -1299,7 +1289,7 @@ Template.prototype.findLayout = function(key, subtypes) {
  */
 
 Template.prototype.findPartial = function(key, subtypes) {
-  return this._find('partial', key, subtypes);
+  return this.find('partial', key, subtypes);
 };
 
 /**
@@ -1352,7 +1342,7 @@ Template.prototype.create = function(subtype, plural, options, fns, done) {
     args.unshift(name);
   }
 
-  if (utils.typeOf(args[2]) !== 'object') {
+  if (typeOf(args[2]) !== 'object') {
     args = slice(args, 0, 2).concat([{}]).concat(slice(args, 2));
   }
 
@@ -1375,7 +1365,7 @@ Template.prototype.create = function(subtype, plural, options, fns, done) {
 
   // Create an async helper for this type
   if (!hasOwn(this._.asyncHelpers, subtype)) {
-    this.defaultHelperAsync(subtype, plural);
+    this.defaultAsyncHelper(subtype, plural);
   }
   return this;
 };
@@ -1504,12 +1494,12 @@ Template.prototype.render = function(content, locals, cb) {
     throw new Error('Template#render() expects a string or object.');
   }
 
-  if (utils.typeOf(content) === 'object') {
+  if (typeOf(content) === 'object') {
     return this.renderTemplate(content, locals, cb);
   }
 
   var template = this.findRenderable(content);
-  if (utils.typeOf(template) === 'object') {
+  if (typeOf(template) === 'object') {
     return this.renderTemplate(template, locals, cb);
   }
 
@@ -1624,7 +1614,8 @@ Template.prototype.renderType = function(type, subtype) {
       cb = locals;
       locals = {};
     }
-    var template = self._find(type, key, subtype);
+
+    var template = self.find(type, key, subtype);
     return self.renderTemplate(template, locals, cb);
   };
 };
@@ -1647,8 +1638,8 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
     locals = {};
   }
 
-  if (utils.typeOf(template) !== 'object') {
-    throw new Error('Template#renderTemplate() expects an object, got: "' + utils.typeOf(template) + ' / ' + template + '".');
+  if (typeOf(template) !== 'object') {
+    throw new Error('Template#renderTemplate() expects an object, got: "' + typeOf(template) + ' / ' + template + '".');
   }
 
   template.options = template.options || {};
@@ -1682,6 +1673,7 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   }
 
   var engine = this.getEngine(ext);
+
   // Bind context to helpers before passing to the engine.
   this.bindHelpers(locals, typeof cb !== 'function');
 
@@ -1875,17 +1867,4 @@ function defineGetter(o, name, getter) {
     get: getter,
     set: function() {}
   });
-}
-
-/**
- * Utility for getting an own property from an object.
- *
- * @param  {Object} `o`
- * @param  {Object} `prop`
- * @return {Boolean}
- * @api true
- */
-
-function hasOwn(o, prop) {
-  return {}.hasOwnProperty.call(o, prop);
 }

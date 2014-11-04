@@ -13,7 +13,7 @@ var Template = require('..');
 var globber = require('./lib/globber');
 var template;
 
-describe('engine locals', function () {
+describe('template loaders', function () {
 
   beforeEach(function () {
     template = new Template();
@@ -38,6 +38,16 @@ describe('engine locals', function () {
       template.create('post', { isRenderable: true }, [
         function (patterns, next) {
           next(null, globber(patterns, options));
+        },
+        function (file, next) {
+          _.forIn(file, function (value, key) {
+            value.options = value.options || {};
+          });
+          next(null, file);
+        },
+        function (file, next) {
+          console.log(file);
+          next(null, file);
         }
       ]);
       template.posts(__dirname + '/fixtures/layouts/matter/*.md');
@@ -148,10 +158,11 @@ describe('engine locals', function () {
   });
 
   describe('when a custom loader function is set:', function () {
-    it.skip('should load using the custom loader', function () {
-      // template.create('page', { isRenderable: true }, [
+    it('should load using the custom loader', function () {
+      template.create('doc', { isRenderable: true });
+      // template.create('docs', { isRenderable: true }, [
       //   function (patterns, cwd, options, next) {
-      //     var files = glob.sync(patterns, options);
+      //     var files = globber(patterns, options);
       //     if (files.length === 0) {
       //       return next(null, null);
       //     }
@@ -171,11 +182,13 @@ describe('engine locals', function () {
       //    // result now equals 'done'
       // });
 
-      // template.pages('foo/*.md' [
-      //   function (file, next) {
-      //     // do stuff wit file
-      //   }
-      // ]);
+      template.pages('foo/*.md' [
+        function (file, next) {
+        console.log(file)
+          // do stuff with file
+          next(null, file)
+        }
+      ]);
     });
   });
 });

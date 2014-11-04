@@ -15,7 +15,7 @@ var Template = require('..');
 var Route = Template.Route;
 var template = null;
 
-describe('template routes', function () {
+describe('template.route()', function () {
 
   describe('.handle()', function () {
     beforeEach(function () {

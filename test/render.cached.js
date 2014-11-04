@@ -15,17 +15,17 @@ var Template = require('..');
 var template = new Template();
 
 
-describe('.renderCached()', function () {
+describe('.render() cached templates', function () {
   beforeEach(function (done) {
     template = new Template();
     done();
   });
 
-  describe('when the name of a cached template is passed to `.renderCached()`:', function () {
+  describe('when the name of a cached template is passed to `.render()`:', function () {
     it('should get the template from the cache and render it:', function (done) {
       template.page('aaa.md', '<%= name %>', {name: 'Jon Schlinkert'});
 
-      template.renderCached('aaa.md', function (err, content) {
+      template.render('aaa.md', function (err, content) {
         if (err) console.log(err);
         content.should.equal('Jon Schlinkert');
         done();
@@ -37,7 +37,7 @@ describe('.renderCached()', function () {
       template.create('post', 'posts', { isRenderable: true });
       template.post('aaa.md', '<%= name %>', {name: 'Jon Schlinkert'});
 
-      template.renderCached('aaa.md', function (err, content) {
+      template.render('aaa.md', function (err, content) {
         if (err) console.log(err);
         content.should.equal('Brian Woodward');
         done();
@@ -58,7 +58,7 @@ describe('.renderCached()', function () {
       Object.keys(template.cache.pages).forEach(function(name) {
         var ext = path.extname(name);
 
-        template.renderCached(name, function (err, content) {
+        template.render(name, function (err, content) {
           if (err) console.log(err);
 
           if (ext === '.hbs') {

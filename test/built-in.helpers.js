@@ -7,24 +7,27 @@
 
 'use strict';
 
-var fs = require('fs');
+var async = require('async');
 var should = require('should');
 var Template = require('..');
-var template = new Template();
+var template;
 var consolidate = require('consolidate');
 var handlebars = consolidate.handlebars;
 var lodash = consolidate.lodash;
 var swig = consolidate.swig;
-var async = require('async');
 
 
 describe('generated helpers:', function () {
+  beforeEach(function () {
+    template = new Template();
+  });
+
   describe('helpers for built-in engines:', function () {
     it('should use the `partial` helper with a built-in engine.', function (done) {
-      template.partial('a.md', '---\nname: "AAA"\n---\n<%= name %>', {name: 'BBB'});
-      var file = {path: 'a.md', content: 'foo <%= partial("a.md") %> bar'};
+      template.partial('a.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}});
+      template.page('b.md', {path: 'b.md', content: 'foo <%= partial("a.md") %> bar'});
 
-      template.render(file, function (err, content) {
+      template.render('b.md', function (err, content) {
         if (err) return done(err);
         content.should.equal('foo AAA bar');
         done();
@@ -32,10 +35,10 @@ describe('generated helpers:', function () {
     });
 
     it('should use the `partial` helper and locals with a built-in engine.', function (done) {
-      template.partial({'abc.md': {content: '---\nname: "AAA"\n---\n<%= name %>', name: 'BBB'}});
-      var obj = {path: 'xyz.md', content: 'foo <%= partial("abc.md", { name: "CCC" }) %> bar'};
+      template.partial('abc.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}});
+      template.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("abc.md", { name: "CCC" }) %> bar'});
 
-      template.render(obj, {name: 'DDD'}, function (err, content) {
+      template.render('xyz.md', {name: 'DDD'}, function (err, content) {
         if (err) return done(err);
         content.should.equal('foo CCC bar');
         done();
@@ -46,10 +49,10 @@ describe('generated helpers:', function () {
 
   describe('helper context:', function () {
     it('should give preference to front-matter over template locals and helper locals.', function (done) {
-      template.partial('a.md', '---\nname: "AAA"\n---\n<%= name %>', {name: 'BBB'});
-      var file = {path: 'a.md', content: 'foo <%= partial("a.md") %> bar'};
+      template.partial('a.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}});
+      template.page('b.md', {path: 'b.md', content: 'foo <%= partial("a.md") %> bar'});
 
-      template.render(file, function (err, content) {
+      template.render('b.md', function (err, content) {
         if (err) return done(err);
         content.should.equal('foo AAA bar');
         done();
@@ -57,10 +60,10 @@ describe('generated helpers:', function () {
     });
 
     it('should give preference to helper locals over template locals.', function (done) {
-      template.partial({'abc.md': {content: '<%= name %>', name: 'BBB'}});
-      var obj = {path: 'xyz.md', content: 'foo <%= partial("abc.md", { name: "CCC" }) %> bar'};
+      template.partial('abc.md', {content: '<%= name %>', name: 'BBB'});
+      template.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("abc.md", { name: "CCC" }) %> bar'});
 
-      template.render(obj, {name: 'DDD'}, function (err, content) {
+      template.render('xyz.md', {name: 'DDD'}, function (err, content) {
         if (err) return done(err);
         content.should.equal('foo CCC bar');
         done();
@@ -68,21 +71,21 @@ describe('generated helpers:', function () {
     });
 
     it('should give preference to template locals over render locals.', function (done) {
-      template.partial({'abc.md': {content: '<%= name %>', name: 'BBB'}});
-      var obj = {path: 'xyz.md', content: 'foo <%= partial("abc.md") %> bar'};
+      template.partial('abc.md', {content: '<%= name %>', name: 'BBB'});
+      template.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("abc.md") %> bar'});
 
-      template.render(obj, {name: 'DDD'}, function (err, content) {
+      template.render('xyz.md', {name: 'DDD'}, function (err, content) {
         if (err) return done(err);
-        content.should.equal('foo BBB bar');
+        content.should.equal('foo DDD bar');
         done();
       });
     });
 
     it('should use render locals when other locals are not defined.', function (done) {
-      template.partial({'abc.md': {content: '<%= name %>'}});
-      var obj = {path: 'xyz.md', content: 'foo <%= partial("abc.md") %> bar'};
+      template.partial('abc.md', {content: '<%= name %>'});
+      template.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("abc.md") %> bar'});
 
-      template.render(obj, {name: 'DDD'}, function (err, content) {
+      template.render('xyz.md', {name: 'DDD'}, function (err, content) {
         if (err) return done(err);
         content.should.equal('foo DDD bar');
         done();
@@ -95,7 +98,7 @@ describe('generated helpers:', function () {
     it('should use the `partial` helper with handlebars.', function (done) {
       template.engine('hbs', handlebars);
 
-      template.partial('title.hbs', '<title>{{name}}</title>', {name: 'BBB'});
+      template.partial('title.hbs', {content: '<title>{{name}}</title>', locals: {name: 'BBB'}});
       template.page('a.hbs', {path: 'a.hbs', content: 'foo {{{partial "title.hbs" this}}} bar'});
 
       template.render('a.hbs', {name: 'Halle Nicole' }, function (err, content) {
@@ -111,14 +114,14 @@ describe('generated helpers:', function () {
       template.engine('swig', swig);
       template.engine('tmpl', lodash);
 
-      template.partial('a.hbs', '---\nname: "AAA"\n---\n<title>{{name}}</title>', {name: 'BBB'});
-      template.page({path: 'a.hbs', content: '<title>{{author}}</title>', author: 'Halle Nicole'});
-      template.page({path: 'b.tmpl', content: '<title><%= author %></title>', author: 'Halle Nicole'});
-      template.page({path: 'd.swig', content: '<title>{{author}}</title>', author: 'Halle Nicole'});
-      template.page({'e.swig': {content: '<title>{{author}}</title>', author: 'Halle Nicole'}});
-      template.page('f.hbs', '<title>{{author}}</title>', {author: 'Halle Nicole'});
-      template.page('g.md', '---\nauthor: Brian Woodward\n---\n<title>{{author}}</title>', {author: 'Halle Nicole'});
-      template.page({path: 'with-partial.hbs', content: '{{partial "a.hbs" custom.locals}}'});
+      template.partial('a.hbs', {content: '---\nname: "AAA"\n---\n<title>{{name}}</title>', locals: {name: 'BBB'}});
+      template.page('a.hbs', {path: 'a.hbs', content: '<title>{{author}}</title>', locals: {author: 'Halle Nicole'}});
+      template.page('b.tmpl', {path: 'b.tmpl', content: '<title><%= author %></title>', locals: {author: 'Halle Nicole'}});
+      template.page('d.swig', {path: 'd.swig', content: '<title>{{author}}</title>', locals: {author: 'Halle Nicole'}});
+      template.page('e.swig', {path: 'e.swig', content: '<title>{{author}}</title>', locals: {author: 'Halle Nicole'}});
+      template.page('f.hbs', {content: '<title>{{author}}</title>', locals: {author: 'Halle Nicole'}});
+      template.page('g.md', {content: '---\nauthor: Brian Woodward\n---\n<title>{{author}}</title>', locals: {author: 'Halle Nicole'}});
+      template.page('with-partial.hbs', {path: 'with-partial.hbs', content: '{{partial "a.hbs" custom.locals}}'});
 
       template.render('a.hbs', {custom: {locals: {name: 'Halle Nicole' }}}, function (err, content) {
         if (err) console.log(err);
@@ -139,7 +142,6 @@ describe('generated helpers:', function () {
           next(null);
         });
       });
-
       done();
     });
   });

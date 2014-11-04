@@ -13,7 +13,7 @@ var should = require('should');
 var Template = require('..');
 var template = new Template();
 
-describe('engine locals', function () {
+describe('template locals', function () {
   beforeEach(function () {
     template = new Template();
   });

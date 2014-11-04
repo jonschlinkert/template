@@ -1,5 +1,5 @@
 /*!
- * layouts <https://github.com/jonschlinkert/layouts>
+ * template <https://github.com/jonschlinkert/template>
  *
  * Copyright (c) 2014 Jon Schlinkert, contributors
  * Licensed under the MIT License (MIT)
@@ -11,7 +11,7 @@ var should = require('should');
 var Template = require('..');
 
 
-describe('engine layouts:', function () {
+describe('layouts:', function () {
   describe('default engine:', function () {
     it('should use layouts defined as objects', function (done) {
       var template = new Template();
@@ -127,8 +127,8 @@ describe('engine layouts:', function () {
   describe('default engine:', function () {
     var template = new Template();
 
-    template.layout('sidebar', '<nav></nav>\n{% body %}', {layout: 'default'});
-    template.layout('default', 'default!\n{% body %}\ndefault!');
+    template.layout('sidebar', {content: '<nav></nav>\n{% body %}', layout: 'default'});
+    template.layout('default', {content: 'default!\n{% body %}\ndefault!'});
 
     it('should use layouts defined as strings:', function (done) {
 
@@ -148,13 +148,20 @@ describe('engine layouts:', function () {
   });
 
 
+  describe.skip('when an `ext` is defined on a template:', function () {
+    it('should use the layout define regardless of extension:', function () {
+      //
+    });
+  });
+
+
   describe('custom template types:', function () {
     var template = new Template();
-    template.create('doc', 'docs', { isRenderable: true });
+    template.create('doc', { isRenderable: true });
 
-    template.layout('sidebar', '<nav></nav>\n{% body %}', {layout: 'default'});
-    template.layout('default', 'default!\n{% body %}\ndefault!');
-    template.doc('home', 'This is the home page.', {layout: 'sidebar'}, {ext: '.html'});
+    template.layout('sidebar', { content: '<nav></nav>\n{% body %}', layout: 'default'});
+    template.layout('default', { content: 'default!\n{% body %}\ndefault!' });
+    template.doc('home', { content: 'This is the home page.', layout: 'sidebar'});
 
     it('should use layouts defined as strings:', function (done) {
       var expected = [

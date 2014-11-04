@@ -15,13 +15,13 @@ var Template = require('..');
 var template = new Template();
 
 
-describe('engine render', function () {
+describe('template.render()', function () {
   beforeEach(function (done) {
     template = new Template();
     done();
   });
 
-  describe('engine object:', function () {
+  describe('`this` object:', function () {
     it('should expose `this` to the .render() method:', function (done) {
       template.render('<%= name %>', {name: 'Jon Schlinkert'}, function (err, content) {
         if (err) console.log(err);
@@ -32,7 +32,7 @@ describe('engine render', function () {
   });
 
   describe('when an un-cached string is passed to `.render()`:', function () {
-    it('should render it with caching enabled:', function (done) {
+    it('should detect the engine from `ext` (with dot) on locals:', function (done) {
       template.render('<%= name %>', {name: 'Jon Schlinkert', ext: '.html'}, function (err, content) {
         if (err) console.log(err);
         content.should.equal('Jon Schlinkert');
@@ -40,10 +40,24 @@ describe('engine render', function () {
       });
     });
 
-    it('should render it with caching disabled:', function (done) {
-      template.option('cache', false);
+    it('should detect the engine from `ext` (without dot) on locals:', function (done) {
+      template.render('<%= name %>', {name: 'Jon Schlinkert', ext: 'html'}, function (err, content) {
+        if (err) console.log(err);
+        content.should.equal('Jon Schlinkert');
+        done();
+      });
+    });
 
-      template.render('<%= name %>', {name: 'Jon Schlinkert', ext: '.html'}, function (err, content) {
+    it('should detect the engine from `engine` (with dot) on locals:', function (done) {
+      template.render('<%= name %>', {name: 'Jon Schlinkert', engine: '.html'}, function (err, content) {
+        if (err) console.log(err);
+        content.should.equal('Jon Schlinkert');
+        done();
+      });
+    });
+
+    it('should detect the engine from `engine` (without dot) on locals:', function (done) {
+      template.render('<%= name %>', {name: 'Jon Schlinkert', engine: 'html'}, function (err, content) {
         if (err) console.log(err);
         content.should.equal('Jon Schlinkert');
         done();
@@ -52,7 +66,7 @@ describe('engine render', function () {
   });
 
   describe('when the name of a cached template is passed to `.render()`:', function () {
-    it('should get the template and render it:', function (done) {
+    it('should find the template and render it:', function (done) {
       template.page('aaa.md', '<%= name %>', {name: 'Jon Schlinkert'});
 
       template.render('aaa.md', function (err, content) {
@@ -62,7 +76,7 @@ describe('engine render', function () {
       });
     });
 
-    it('should render the first matching template is dupes are found:', function (done) {
+    it('should render the first matching template if dupes are found:', function (done) {
       template.page('aaa.md', '<%= name %>', {name: 'Brian Woodward'});
       template.create('post', 'posts', { isRenderable: true });
       template.post('aaa.md', '<%= name %>', {name: 'Jon Schlinkert'});
@@ -77,7 +91,7 @@ describe('engine render', function () {
 
   describe('engine render:', function () {
     it('should determine the engine from the `path` on the given object:', function (done) {
-      var file = {path: 'a/b/c.md', content: '<%= name %>', name: 'Jon Schlinkert'};
+      var file = {path: 'a/b/c.md', content: '<%= name %>', locals: {name: 'Jon Schlinkert'}};
 
       template.render(file, function (err, content) {
         if (err) console.log(err);
@@ -113,9 +127,9 @@ describe('engine render', function () {
       template.engine('tmpl', consolidate.lodash);
 
       var files = [
-        {path: 'fixture.hbs', content: '<title>{{title}}</title>', title: 'Handlebars'},
-        {path: 'fixture.tmpl', content: '<title><%= title %></title>', title: 'Lo-Dash'},
-        {path: 'fixture.swig', content: '<title>{{title}}</title>', title: 'Swig'}
+        {path: 'fixture.hbs', content: '<title>{{title}}</title>', locals: {title: 'Handlebars'}},
+        {path: 'fixture.tmpl', content: '<title><%= title %></title>', locals: {title: 'Lo-Dash'}},
+        {path: 'fixture.swig', content: '<title>{{title}}</title>', locals: {title: 'Swig'}}
       ];
 
       files.forEach(function(file) {

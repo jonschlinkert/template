@@ -12,23 +12,22 @@ var should = require('should');
 var Template = require('..');
 var template;
 
-describe('engine partial', function () {
+describe('template partial', function () {
   beforeEach(function () {
     template = new Template();
   });
 
   describe('when a partial has a layout defined:', function () {
-    it('should parse the partial sync.', function () {
+    it('should use render', function () {
       template.layout('default.md', 'bbb{% body %}bbb');
       template.layout('href.md', '<a href="{% body %}"><%= text %></a>');
       template.partials('link.md', '---\nlayout: href.md\ntext: Jon Schlinkert\n---\nhttps://github.com/jonschlinkert', {a: 'b'});
       template.page('home.md', '---\nname: Home Page\nlayout: default.md\n---\nThis is home page content.\n<%= partial("link.md", {c: "d"}) %>');
-
-      var content = template.renderSync('home.md');
+      var content = template.render('home.md');
       content.should.equal('bbbThis is home page content.\n<a href="https://github.com/jonschlinkert">Jon Schlinkert</a>bbb');
     });
 
-    it('should parse the partial.', function (done) {
+    it('should use render.', function (done) {
       template.layout('default.md', 'bbb{% body %}bbb');
       template.layout('href.md', '<a href="{% body %}"><%= text %></a>');
       template.partials('link.md', '---\nlayout: href.md\ntext: Jon Schlinkert\n---\nhttps://github.com/jonschlinkert', {a: 'b'});

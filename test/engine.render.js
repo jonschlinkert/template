@@ -14,7 +14,7 @@ var Template = require('..');
 var template = new Template();
 var consolidate = require('consolidate');
 
-describe('engine render:', function () {
+describe('engine render method:', function () {
   it('should render a file with the specified engine:', function (done) {
     var lodash = template.getEngine('md');
 

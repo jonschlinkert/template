@@ -12,7 +12,7 @@ var Template = require('..');
 var template;
 
 
-describe('context', function() {
+describe('template context', function() {
   beforeEach(function() {
     template = new Template();
   });
@@ -29,30 +29,30 @@ describe('context', function() {
       });
     });
 
-    it('should pass data to templates in the `.renderSync()` method:', function () {
+    it('should pass data to templates in the `.render()` method:', function () {
       template.data({ letter: 'b'});
       template.page('aaa.md', 'a<%= letter %>c');
-      template.renderSync('aaa.md').should.equal('abc');
+      template.render('aaa.md').should.equal('abc');
     });
 
     it('should give preference to locals over "global" data:', function () {
       template.data({ letter: 'b'});
       template.page('aaa.md', 'a<%= letter %>c', { letter: 'bbb'});
-      template.renderSync('aaa.md').should.equal('abbbc');
+      template.render('aaa.md').should.equal('abbbc');
     });
 
     it('should give preference to front matter over locals:', function () {
       template.data({ letter: 'b'});
       template.page('aaa.md', '---\nletter: zzz\n---\na<%= letter %>c', { letter: 'bbb'});
-      template.renderSync('aaa.md').should.equal('azzzc');
+      template.render('aaa.md').should.equal('azzzc');
     });
 
     describe('when `options.preferLocals` is defined:', function () {
       it('should give preference to locals over front matter:', function () {
-        template.option('preferLocals', true);
+        template.enable('preferLocals');
         template.data({ letter: 'b'});
         template.page('aaa.md', '---\nletter: zzz\n---\na<%= letter %>c', { letter: 'bbb'});
-        template.renderSync('aaa.md').should.equal('abbbc');
+        template.render('aaa.md').should.equal('abbbc');
       });
     });
   });

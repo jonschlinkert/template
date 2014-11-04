@@ -13,7 +13,7 @@ var should = require('should');
 var Template = require('..');
 var template;
 
-describe('engine layout', function () {
+describe('template layout', function () {
   beforeEach(function () {
     template = new Template();
   });
@@ -61,6 +61,7 @@ describe('engine layout', function () {
       });
 
       template.layouts(['test/fixtures/layouts/matter/*.md']);
+
       template.cache.layouts.should.have.property('a.md:string');
       template.cache.layouts.should.have.property('b.md:string');
       template.cache.layouts.should.have.property('c.md:string');

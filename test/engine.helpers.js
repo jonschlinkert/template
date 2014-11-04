@@ -15,7 +15,7 @@ var template = new Template();
 var consolidate = require('consolidate');
 
 
-describe('engine render:', function () {
+describe('engine-specific helpers:', function () {
   it('should register helpers for an engine:', function () {
     template.engine('hbs', {
       render: function () {}

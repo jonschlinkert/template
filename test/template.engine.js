@@ -16,7 +16,7 @@ var Template = require('..');
 var template;
 
 
-describe('engine delimiters:', function () {
+describe('template delimiters:', function () {
   beforeEach(function () {
     template = new Template();
   });
@@ -75,6 +75,7 @@ describe('engine delimiters:', function () {
   it('should allow the engine to be defined on templates:', function (done) {
     template.engine('handlebars', handlebars);
     template.engine('lodash', lodash);
+
     template.create('apple', 'apples', { isRenderable: true });
     template.create('orange', 'oranges', { isRenderable: true });
 

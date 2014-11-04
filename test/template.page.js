@@ -13,7 +13,7 @@ var Template = require('..');
 var template;
 
 
-describe('engine page', function () {
+describe('template page', function () {
   beforeEach(function () {
     template = new Template();
   });

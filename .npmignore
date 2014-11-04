@@ -20,3 +20,8 @@ _test
 # misc
 TODO.md
 benchmark
+
+
+# npmignore
+recipes
+docs

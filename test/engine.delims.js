@@ -11,10 +11,14 @@ var fs = require('fs');
 var path = require('path');
 var should = require('should');
 var Template = require('..');
-var template = new Template();
+var template;
 
 
-describe('engine delimiters:', function () {
+describe('engine-specific delimiters:', function () {
+  beforeEach(function () {
+    template = new Template();
+  });
+
   it('should use custom delimiters defined on the engine:', function (done) {
     template.engine('*', require('engine-lodash'), {
       delims: ['<<', '>>']

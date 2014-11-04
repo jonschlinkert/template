@@ -10,7 +10,7 @@
 var should = require('should');
 var Template = require('..');
 
-describe('Template', function () {
+describe('cache', function () {
   describe('constructor:', function () {
     it('when new Template() is defined:', function () {
       var template = new Template({

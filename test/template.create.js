@@ -11,11 +11,10 @@ var should = require('should');
 var Template = require('..');
 var template;
 
-describe('engine create:', function () {
+describe('template create:', function () {
   beforeEach(function () {
     template = new Template();
   });
-
 
   describe('.create():', function () {
     it('should create a new template `type`:', function () {
@@ -71,6 +70,12 @@ describe('engine create:', function () {
 
       it('should decorate the type with a `render` method:', function () {
         template.should.have.properties(['renderPage', 'renderPost', 'renderDoc']);
+      });
+
+      it('should use a template subtype\'s `render` method to render the template:', function () {
+        template.post('abc.md', {content: 'aaa <%= name %> zzz'});
+        var render = template.renderPost()
+        render('abc.md', {name: 'Halle'}).should.equal('aaa Halle zzz');
       });
     });
   });

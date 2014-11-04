@@ -9,6 +9,7 @@
 
 var should = require('should');
 var Template = require('..');
+var _ = require('lodash');
 var template;
 
 describe('template create:', function () {
@@ -20,6 +21,24 @@ describe('template create:', function () {
     it('should create a new template `type`:', function () {
       template.create('include', 'includes');
       template.should.have.properties('include', 'includes');
+    });
+  });
+
+  describe('override:', function () {
+    it('should override default template subtypes:', function () {
+      template.create('page', { isRenderable: true}, [
+        function (file, next) {
+          _.forOwn(file, function (value, key) {
+            value.zzz = 'yyy';
+          });
+          next(null, file);
+        }
+      ], function (err) {
+        if (err) console.log(err);
+      });
+      template.page({'foo.md': {path: 'foo.md', content: 'This is content.'}});
+      template.should.have.properties('page', 'pages');
+      template.cache.pages['foo.md'].should.have.property('zzz', 'yyy');
     });
   });
 

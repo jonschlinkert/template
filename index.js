@@ -22,7 +22,7 @@ var Helpers = require('helper-cache');
 var Engines = require('engine-cache');
 var arrayify = require('arrayify-compact');
 var engineLodash = require('engine-lodash');
-var parserMatter = require('parser-front-matter');
+var parser = require('parser-front-matter');
 var slice = require('array-slice');
 var flatten = require('arr-flatten');
 var arr = require('arr');
@@ -173,7 +173,7 @@ defineGetter(Template.prototype, 'cwd', function () {
 Template.prototype.defaultRoutes = function() {
   if (this.enabled('default routes')) {
     this.route(/\.*/).all(function route(file, next) {
-      parserMatter.parse(file, function(err) {
+      parser.parse(file, function(err) {
         if (err) return next(err);
         next();
       });
@@ -1468,32 +1468,8 @@ Template.prototype.renderBase = function(engine, content, locals, cb) {
     locals = {};
   }
 
-  if (typeof cb === 'function') {
-    if (!hasOwn(engine, 'render')) {
-      throw new Error('`.render()` method not found on: "' + engine.name + '".');
-    }
-
-    try {
-      engine.render(content, locals, function (err, res) {
-        if (err) {
-          debug.render('renderBase: %j', err);
-          cb.call(self, err);
-          return;
-        }
-
-        self._.asyncHelpers.resolve(res, function (err, res) {
-          if (err) {
-            debug.err('renderBase [async helpers]: %j', err);
-            return cb.call(self, err);
-          }
-          cb.call(self, null, res);
-        });
-      });
-    } catch (err) {
-      debug.err('renderBase [catch]: %j', err);
-      cb.call(self, err);
-    }
-  } else {
+  // if the last arg isn't a function, try sync
+  if (typeof cb !== 'function') {
     if (!hasOwn(engine, 'renderSync')) {
       throw new Error('`.renderSync()` method not found on: "' + engine.name + '".');
     }
@@ -1504,6 +1480,32 @@ Template.prototype.renderBase = function(engine, content, locals, cb) {
       debug.err('renderBase [sync]: %j', err);
       return err;
     }
+  }
+
+  // If we're here, it's async
+  if (!hasOwn(engine, 'render')) {
+    throw new Error('`.render()` method not found on: "' + engine.name + '".');
+  }
+
+  try {
+    engine.render(content, locals, function (err, res) {
+      if (err) {
+        debug.render('renderBase: %j', err);
+        cb.call(self, err);
+        return;
+      }
+
+      self._.asyncHelpers.resolve(res, function (err, res) {
+        if (err) {
+          debug.err('renderBase [async helpers]: %j', err);
+          return cb.call(self, err);
+        }
+        cb.call(self, null, res);
+      });
+    });
+  } catch (err) {
+    debug.err('renderBase [catch]: %j', err);
+    cb.call(self, err);
   }
 };
 
@@ -1581,7 +1583,7 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   var engine = this.getEngine(ext);
 
   // Bind context to helpers before passing to the engine.
-  this.bindHelpers(locals, typeof cb !== 'function');
+  this.bindHelpers(locals, typeof cb === 'function');
 
   // if a layout is defined, apply it before rendering
   var content = this.applyLayout(ext, template, locals);
@@ -1687,13 +1689,14 @@ Template.prototype.renderType = function(type, subtype) {
  * @return {Object}
  */
 
-Template.prototype.bindHelpers = function (locals, sync) {
+Template.prototype.bindHelpers = function (locals, async) {
   debug.helper('binding helpers: %j', locals);
 
   // TODO: use or merge in locals.helpers instead
-  var helpers = _.cloneDeep(sync
-      ? this._.helpers
-      : this._.asyncHelpers);
+  var helpers = _.cloneDeep(this._.helpers);
+  if (async) {
+    helpers = extend({}, helpers, this._.asyncHelpers);
+  }
 
   var o = {};
   o.context = locals;

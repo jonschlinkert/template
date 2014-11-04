@@ -77,7 +77,7 @@ describe('template.render()', function () {
 
   describe('engine render:', function () {
     it('should determine the engine from the `path` on the given object:', function (done) {
-      var file = {path: 'a/b/c.md', content: '<%= name %>', name: 'Jon Schlinkert'};
+      var file = {path: 'a/b/c.md', content: '<%= name %>', locals: {name: 'Jon Schlinkert'}};
 
       template.render(file, function (err, content) {
         if (err) console.log(err);
@@ -113,9 +113,9 @@ describe('template.render()', function () {
       template.engine('tmpl', consolidate.lodash);
 
       var files = [
-        {path: 'fixture.hbs', content: '<title>{{title}}</title>', title: 'Handlebars'},
-        {path: 'fixture.tmpl', content: '<title><%= title %></title>', title: 'Lo-Dash'},
-        {path: 'fixture.swig', content: '<title>{{title}}</title>', title: 'Swig'}
+        {path: 'fixture.hbs', content: '<title>{{title}}</title>', locals: {title: 'Handlebars'}},
+        {path: 'fixture.tmpl', content: '<title><%= title %></title>', locals: {title: 'Lo-Dash'}},
+        {path: 'fixture.swig', content: '<title>{{title}}</title>', locals: {title: 'Swig'}}
       ];
 
       files.forEach(function(file) {

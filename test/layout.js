@@ -148,13 +148,20 @@ describe('layouts:', function () {
   });
 
 
+  describe.skip('when an `ext` is defined on a template:', function () {
+    it('should use the layout define regardless of extension:', function () {
+      //
+    });
+  });
+
+
   describe('custom template types:', function () {
     var template = new Template();
     template.create('doc', { isRenderable: true });
 
     template.layout('sidebar', { content: '<nav></nav>\n{% body %}', layout: 'default'});
     template.layout('default', { content: 'default!\n{% body %}\ndefault!' });
-    template.doc('home', { content: 'This is the home page.', layout: 'sidebar', ext: '.html'});
+    template.doc('home', { content: 'This is the home page.', layout: 'sidebar'});
 
     it('should use layouts defined as strings:', function (done) {
       var expected = [

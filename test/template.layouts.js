@@ -61,6 +61,7 @@ describe('template layout', function () {
       });
 
       template.layouts(['test/fixtures/layouts/matter/*.md']);
+
       template.cache.layouts.should.have.property('a.md:string');
       template.cache.layouts.should.have.property('b.md:string');
       template.cache.layouts.should.have.property('c.md:string');

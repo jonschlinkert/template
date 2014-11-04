@@ -54,8 +54,8 @@ describe('.mergeType():', function () {
 
     it('should merge subtypes in the order specified in the array:', function () {
       var templates = template.mergeType('renderable', ['posts', 'pages']);
-      Object.keys(templates).should.eql(['a', 'c']);
-      Object.keys(templates).should.not.eql(['c', 'a']);
+      Object.keys(templates).should.eql(['c', 'a']);
+      Object.keys(templates).should.not.eql(['a', 'c']);
     });
   });
 });

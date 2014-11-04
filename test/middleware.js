@@ -24,13 +24,12 @@ describe('middleware', function () {
   });
 
   it('should use middleware on cached templates:', function (done) {
-    template.pages(__dirname + '/fixtures/html.html');
-
     template.route(/\.html/).all(function (file, next) {
       file.content = pretty(file.content, {protect: true});
       next()
     });
 
+    template.pages(__dirname + '/fixtures/html.html');
     var page = template.cache.pages['html.html'];
 
     template.render(page, {name: 'Halle'}, function (err, content) {
@@ -55,15 +54,15 @@ describe('middleware', function () {
 
   describe('should use middleware on markdown files:', function () {
     it('should preserve templates:', function (done) {
-      template.pages(__dirname + '/fixtures/md.md');
-      var page = template.cache.pages['md.md'];
-
       template.route(/\.md/).all(function (file, next) {
         file.content = tokens.before(file.content);
         next()
       });
 
-      template.render(page, function (err, content) {
+      template.pages(__dirname + '/fixtures/md.md');
+      var page = template.cache.pages['md.md'];
+
+      template.renderTemplate(page, function (err, content) {
         if (err) console.log(err);
         content.should.equal('__ID0__\n__ID1__\n__ID2__');
         tokens.after(content).should.equal('<%= a %>\n<%= b %>\n<%= c %>');

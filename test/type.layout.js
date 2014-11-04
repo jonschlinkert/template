@@ -28,7 +28,26 @@ describe('template layout:', function () {
         'default!'
       ].join('\n');
 
-      template.render({content: 'This is a page!', layout: 'sidebar'}, function(err, content) {
+      template.renderTemplate({content: 'This is a page!', layout: 'sidebar'}, function(err, content) {
+        if (err) return done(err);
+        content.should.eql(expected);
+        done();
+      });
+    });
+
+    it('should use layouts with `page`s:', function (done) {
+      template.layout('sidebar', '<nav></nav>\n{% body %}', {layout: 'default'});
+      template.layout('default', 'default!\n{% body %}\ndefault!');
+      template.page('home', {content: 'This is a page!', layout: 'sidebar'});
+
+      var expected = [
+        'default!',
+        '<nav></nav>',
+        'This is a page!',
+        'default!'
+      ].join('\n');
+
+      template.render('home', function(err, content) {
         if (err) return done(err);
         content.should.eql(expected);
         done();
@@ -76,14 +95,13 @@ describe('template layout:', function () {
     });
   });
 
-
   describe('custom template types:', function () {
     it('should use layouts with custom template types:', function (done) {
       template.create('doc', 'docs', { isRenderable: true });
 
       template.layout('sidebar', '<nav></nav>\n{% body %}', {layout: 'default'});
       template.layout('default', 'default!\n{% body %}\ndefault!');
-      template.doc('home', 'This is the home page.', {layout: 'sidebar'}, {ext: '.html'});
+      template.doc('home', 'This is the home page.', {layout: 'sidebar'});
 
       var expected = [
         'default!',
@@ -93,7 +111,7 @@ describe('template layout:', function () {
       ].join('\n');
 
       template.render('home', function(err, content) {
-        if (err) console.log(err);
+        if (err) return done(err);
         content.should.eql(expected);
         done();
       });

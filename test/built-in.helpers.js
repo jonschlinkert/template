@@ -27,7 +27,7 @@ describe('generated helpers:', function () {
       template.partial('a.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}});
       template.page('b.md', {path: 'b.md', content: 'foo <%= partial("a.md") %> bar'});
 
-      template.renderCached('b.md', function (err, content) {
+      template.render('b.md', function (err, content) {
         if (err) return done(err);
         content.should.equal('foo AAA bar');
         done();
@@ -38,7 +38,7 @@ describe('generated helpers:', function () {
       template.partial('abc.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}});
       template.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("abc.md", { name: "CCC" }) %> bar'});
 
-      template.renderCached('xyz.md', {name: 'DDD'}, function (err, content) {
+      template.render('xyz.md', {name: 'DDD'}, function (err, content) {
         if (err) return done(err);
         content.should.equal('foo CCC bar');
         done();
@@ -52,7 +52,7 @@ describe('generated helpers:', function () {
       template.partial('a.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}});
       template.page('b.md', {path: 'b.md', content: 'foo <%= partial("a.md") %> bar'});
 
-      template.renderCached('b.md', function (err, content) {
+      template.render('b.md', function (err, content) {
         if (err) return done(err);
         content.should.equal('foo AAA bar');
         done();
@@ -63,7 +63,7 @@ describe('generated helpers:', function () {
       template.partial('abc.md', {content: '<%= name %>', name: 'BBB'});
       template.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("abc.md", { name: "CCC" }) %> bar'});
 
-      template.renderCached('xyz.md', {name: 'DDD'}, function (err, content) {
+      template.render('xyz.md', {name: 'DDD'}, function (err, content) {
         if (err) return done(err);
         content.should.equal('foo CCC bar');
         done();
@@ -74,9 +74,9 @@ describe('generated helpers:', function () {
       template.partial('abc.md', {content: '<%= name %>', name: 'BBB'});
       template.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("abc.md") %> bar'});
 
-      template.renderCached('xyz.md', {name: 'DDD'}, function (err, content) {
+      template.render('xyz.md', {name: 'DDD'}, function (err, content) {
         if (err) return done(err);
-        content.should.equal('foo BBB bar');
+        content.should.equal('foo DDD bar');
         done();
       });
     });
@@ -85,7 +85,7 @@ describe('generated helpers:', function () {
       template.partial('abc.md', {content: '<%= name %>'});
       template.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("abc.md") %> bar'});
 
-      template.renderCached('xyz.md', {name: 'DDD'}, function (err, content) {
+      template.render('xyz.md', {name: 'DDD'}, function (err, content) {
         if (err) return done(err);
         content.should.equal('foo DDD bar');
         done();
@@ -101,7 +101,7 @@ describe('generated helpers:', function () {
       template.partial('title.hbs', {content: '<title>{{name}}</title>', locals: {name: 'BBB'}});
       template.page('a.hbs', {path: 'a.hbs', content: 'foo {{{partial "title.hbs" this}}} bar'});
 
-      template.renderCached('a.hbs', {name: 'Halle Nicole' }, function (err, content) {
+      template.render('a.hbs', {name: 'Halle Nicole' }, function (err, content) {
         if (err) return done(err);
         content.should.equal('foo <title>Halle Nicole</title> bar');
         done();
@@ -123,12 +123,12 @@ describe('generated helpers:', function () {
       template.page('g.md', {content: '---\nauthor: Brian Woodward\n---\n<title>{{author}}</title>', locals: {author: 'Halle Nicole'}});
       template.page('with-partial.hbs', {path: 'with-partial.hbs', content: '{{partial "a.hbs" custom.locals}}'});
 
-      template.renderCached('a.hbs', {custom: {locals: {name: 'Halle Nicole' }}}, function (err, content) {
+      template.render('a.hbs', {custom: {locals: {name: 'Halle Nicole' }}}, function (err, content) {
         if (err) console.log(err);
         content.should.equal('<title>Halle Nicole</title>');
       });
 
-      template.renderCached('with-partial.hbs', {custom: {locals: {name: 'Halle Nicole' }}}, function (err, content) {
+      template.render('with-partial.hbs', {custom: {locals: {name: 'Halle Nicole' }}}, function (err, content) {
         if (err) console.log(err);
         content.should.equal('<title>Halle Nicole</title>');
       });
@@ -136,7 +136,7 @@ describe('generated helpers:', function () {
       async.each(template.cache.pages, function (file, next) {
         var page = template.cache.pages[file];
 
-        template.renderCached(page, {custom: {locals: {name: 'Halle Nicole' }}}, function (err, content) {
+        template.render(page, {custom: {locals: {name: 'Halle Nicole' }}}, function (err, content) {
           if (err) return next(err);
           content.should.equal('<title>Halle Nicole</title>');
           next(null);

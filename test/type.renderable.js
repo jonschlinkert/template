@@ -83,15 +83,39 @@ describe('custom `renderable` types:', function () {
       template.create('post', 'posts', { isRenderable: true });
       template.create('include', 'includes');
 
-      template.include('sidebar', '<nav>sidebar stuff...{{a}}foo</nav>', {a: 'b'});
-      template.post('2014-08-31.md', '---\nauthor: Brian Woodward\n---\n<title>{{author}}</title>\n{{> sidebar }}', {
+      template.include('sidebar', '{{sidebar.a}}', {a: 'bbbbbb'});
+      template.post('2014-08-31.md', '---\nauthor: Brian Woodward\n---\n{{author}}\n{{> sidebar }}', {
         author: 'Jon Schlinkert'
       });
 
       forOwn(template.cache.posts, function(value, key) {
         template.render(key, function (err, content) {
           if (err) console.log(err);
-          content.should.equal('<title>Jon Schlinkert</title>\n<nav>sidebar stuff...bfoo</nav>');
+          content.should.equal('Jon Schlinkert\nbbbbbb');
+        });
+      });
+      done();
+    });
+  });
+
+  describe('when custom template types are passed to a non built-in engine:', function () {
+    it('should render them with the `.render()` method:', function (done) {
+      template.engine('hbs', consolidate.handlebars);
+      template.engine('md', consolidate.handlebars);
+
+      template.create('post', 'posts', { isRenderable: true });
+      template.create('include', 'includes');
+
+      template.include('sidebar', '{{a}}', {a: 'bbbbbb'});
+      template.include('navbar', '{{a}}', {a: 'zzzzzz'});
+      template.post('2014-08-31.md', '---\nauthor: Brian Woodward\n---\n{{author}}\n{{> sidebar navbar }}', {
+        author: 'Jon Schlinkert'
+      });
+
+      forOwn(template.cache.posts, function(value, key) {
+        template.render(key, function (err, content) {
+          if (err) console.log(err);
+          content.should.equal('Jon Schlinkert\nzzzzzz');
         });
       });
       done();

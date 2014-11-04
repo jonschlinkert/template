@@ -21,16 +21,59 @@ var content;
 describe('detect engine', function() {
   beforeEach(function () {
     template = new Template();
+
+    // load some data
     template.data({title: 'RENDERED'})
+
+    // define sync engines
     template.engine('handlebars', consolidate.handlebars);
     template.engine('hbs', engines.handlebars);
+
+    // define async engines
     template.engine('swig', engines.swig);
     template.engine(['tmpl', 'foo'], engines.lodash);
 
+    // create a custom template type
+    template.create('doc', { isRenderable: true, engine: 'tmpl'});
+
+    // default content to use on all tests
     content = '<title>{{title}}<%= title %></title>'
 
+    // add some pages
     template.page('aaa.hbs', {content: content, title: 'Handlebars'});
     template.page('bbb.tmpl', {content: content, title: 'Lo-Dash'});
+  });
+
+  describe('.create():', function() {
+    describe('when an engine is defined in the .create() method options:', function() {
+      it('should use the create-method engine on templates:', function() {
+        template.doc('doc-a', {content: content});
+        template.render('doc-a').should.equal('<title>{{title}}RENDERED</title>');
+      });
+
+      it('should prefer the create-method engine over `ext` defined on templates:', function() {
+        template.doc('doc-a', {content: content, options: {ext: '.hbs'}});
+        template.cache.docs['doc-a'].should.have.property('ext', '.hbs');
+        template.render('doc-a').should.equal('<title>{{title}}RENDERED</title>');
+      });
+
+      it('should prefer the create-method engine over `engine` defined on templates:', function() {
+        template.doc('doc-a', {content: content,  engine: '.hbs'});
+        template.render('doc-a').should.equal('<title>{{title}}RENDERED</title>');
+      });
+
+      it('should prefer the create-method engine over `engine` defined on template locals:', function() {
+        template.doc('doc-a', {content: content, locals: {engine: '.hbs'}});
+        template.cache.docs['doc-a'].locals.should.have.property('engine', '.hbs');
+        template.render('doc-a').should.equal('<title>{{title}}RENDERED</title>');
+      });
+
+      it('should prefer the create-method engine over `engine` defined on template options:', function() {
+        template.doc('doc-a', {content: content, options: {engine: '.hbs'}});
+        template.cache.docs['doc-a'].options.should.have.property('engine', '.hbs');
+        template.render('doc-a').should.equal('<title>{{title}}RENDERED</title>');
+      });
+    });
   });
 
 

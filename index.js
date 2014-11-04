@@ -23,9 +23,9 @@ var Engines = require('engine-cache');
 var arrayify = require('arrayify-compact');
 var engineLodash = require('engine-lodash');
 var parserMatter = require('parser-front-matter');
-var arr = require('arr');
 var slice = require('array-slice');
 var flatten = require('arr-flatten');
+var arr = require('arr');
 
 var init = require('./lib/middleware/init');
 var defaultLoader = require('./lib/loaders');
@@ -694,9 +694,9 @@ Template.prototype.getExt = function(template, locals) {
     return fn.call(this, template, locals);
   }
 
-  var ext = locals.engine
+  var ext = template.options.engine
+    || locals.engine
     || locals.ext
-    || template.options.engine
     || template.engine
     || template.ext
     || path.extname(template.path)
@@ -874,6 +874,41 @@ Template.prototype.defaultAsyncHelper = function(subtype, plural) {
 };
 
 /**
+ * Set a constant on the cache.
+ *
+ * **Example**
+ *
+ * ```js
+ * cache.constant('site.title', 'Foo');
+ * ```
+ *
+ * @param {String} `key`
+ * @param {*} `value`
+ * @chainable
+ * @api public
+ */
+
+// Template.prototype.constant = function(key, value) {
+//   this.options.__defineGetter__(key, function() {
+//     return value;
+//   });
+
+//   return this;
+// };
+// function defineGetter(o, name, getter) {
+//   Object.defineProperty(o, name, {
+//     configurable: false,
+//     enumerable: false,
+//     get: getter,
+//     set: function() {}
+//   });
+// }
+
+// defineGetter(Template.prototype, 'engine', function () {
+//   return this.option('cwd') || process.cwd();
+// });
+
+/**
  * Define a custom loader for loading templates.
  *
  * @param  {String} `plural`
@@ -884,7 +919,6 @@ Template.prototype.defaultAsyncHelper = function(subtype, plural) {
 
 Template.prototype.loader = function (plural, options, stack, done) {
   debug.loader('loader: %j', arguments);
-
   var self = this;
 
   if (arguments.length !== 1) {
@@ -969,7 +1003,6 @@ Template.prototype.load = function(subtype, plural, options, fns, done) {
 
   return function (/*key, value, fns*/) {
     debug.loader('loading template: %j', arguments);
-
     var args = slice(arguments);
     var last = args[args.length - 1];
     var cb = function () {};
@@ -1526,9 +1559,9 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
 
   // Merge `.render()` locals with template locals
   locals = this.context(template, locals);
-
   var ext = this.getExt(template, locals);
 
+  // See if delimiters are defined for the template
   var delims = template.delims || template.options.delims || locals.delims;
 
   // Ensure that delimiters are cached, so we
@@ -1573,8 +1606,6 @@ Template.prototype.renderString = function(str, locals, cb) {
 
   locals = extend({options: {}}, locals);
   var options = locals.options;
-
-  options.layout = locals.layout || options.layout;
 
   var template = { content: str, locals: locals, options: options };
   return this.renderTemplate(template, locals, cb);

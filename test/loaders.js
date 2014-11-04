@@ -46,7 +46,6 @@ describe('template loaders', function () {
           next(null, file);
         },
         function (file, next) {
-          console.log(file);
           next(null, file);
         }
       ]);

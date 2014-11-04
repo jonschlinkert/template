@@ -11,8 +11,6 @@
 
 var _ = require('lodash');
 var path = require('path');
-var arr = require('arr');
-var async = require('async');
 var chalk = require('chalk');
 var Delims = require('delims');
 var forOwn = require('for-own');
@@ -24,6 +22,7 @@ var Engines = require('engine-cache');
 var Loader = require('load-templates');
 var engineLodash = require('engine-lodash');
 var parserMatter = require('parser-front-matter');
+var arr = require('arr');
 var slice = require('array-slice');
 var flatten = require('arr-flatten');
 
@@ -122,11 +121,12 @@ Template.prototype.defaultConfig = function() {
  */
 
 Template.prototype.defaultOptions = function() {
-  this.disable('strict errors');
   this.enable('default engines');
-  this.enable('prefer locals');
+  this.disable('strict errors');
   this.enable('mergePartials', true);
   this.enable('cache');
+
+  this.disable('preferLocals', false);
 
   this.option('cwd', process.cwd());
   this.option('ext', '*');
@@ -226,7 +226,8 @@ Template.prototype.defaultLoader = function(plural, options) {
     var args = slice(arguments);
     var next = args.pop();
     var template = loader.load.apply(loader, args);
-    next(null, self.normalize(plural, template, options));
+    var res = self.normalize(plural, template, options);
+    next(null, res);
   }];
 };
 
@@ -796,9 +797,9 @@ Template.prototype.defaultHelper = function(subtype, plural) {
       return '';
     }
 
-    var locs = self.context(partial, locals);
-
+    var locs = extend({}, this.context, locals);
     var content = self.renderTemplate(partial, locs);
+
     if (content instanceof Error) {
       throw content;
     }
@@ -828,21 +829,19 @@ Template.prototype.defaultHelperAsync = function(subtype, plural) {
     }
 
     var partial = self.cache[plural][key];
-    if (partial == null) {
+
+    if (!partial) {
       // TODO: use actual delimiters in messages
       var msg = chalk.red('helper {{' + subtype + ' "' + key + '"}} not found.');
+      debug.err(msg);
       if (self.enabled('strict errors')) {
         throw new Error(msg);
       }
-      console.log(msg);
       return next(null, '');
     }
 
-    // locals = _.defaults({}, locals, this.context);
-    var locs = self.context(partial, locals);
+    var locs = extend({}, this.context, locals);
     var render = self.renderSubtype(subtype);
-
-    console.log(locs);
 
     render(key, locs, function (err, content) {
       if (err) return next(err);
@@ -931,20 +930,15 @@ Template.prototype.load = function(subtype, plural, options, fns, done) {
   var self = this;
 
   if (typeof options === 'function') {
-    done = options;
-    fns = [];
-    options = {};
+    done = options; fns = []; options = {};
   }
 
   if (Array.isArray(options)) {
-    done = fns;
-    fns = options;
-    options = {};
+    done = fns; fns = options; options = {};
   }
 
   if (typeof fns === 'function') {
-    done = fns;
-    fns = [];
+    done = fns; fns = [];
   }
 
   // If the loader stack is empty, fallback to defaults
@@ -958,7 +952,7 @@ Template.prototype.load = function(subtype, plural, options, fns, done) {
     if (opts.loadFn) {
       var callback = arguments[arguments.length - 1];
       var args = slice(arguments, 0, arguments.length - 1);
-      callback(null, opts.loadFn.apply(self, arguments));
+      callback(null, opts.loadFn.apply(self, args));
     } else {
       self.loader(plural, opts, fns, done).apply(self, arguments);
     }
@@ -979,6 +973,7 @@ Template.prototype.load = function(subtype, plural, options, fns, done) {
       // validate template object before moving on
       self.validate(template);
 
+      // Add a render method to the template
       // TODO: allow additional opts to be passed
       forOwn(template, function (value, key) {
         value.render = function (locals, cb) {
@@ -986,8 +981,10 @@ Template.prototype.load = function(subtype, plural, options, fns, done) {
         };
       });
 
+      // Run middleware
       self.dispatch(template);
 
+      // Add template to the cache
       extend(self.cache[plural], template);
       callback(null);
     }]);
@@ -1205,7 +1202,7 @@ Template.prototype.mergePartials = function(locals, mergePartials) {
   var self = this;
 
   if (mergePartials === undefined) {
-    mergePartials = this.option('mergePartials')
+    mergePartials = this.option('mergePartials');
   }
   var opts = extend({partials: {}}, locals);
 
@@ -1783,7 +1780,7 @@ Template.prototype.mergeFn = function(template, locals, async) {
   }
 
   if (utils.isObject(template)) {
-    o = this.enabled('prefer locals')
+    o = this.enabled('preferLocals')
       ? _.defaults({}, o, template.locals, template.data)
       : _.defaults({}, o, template.data, template.locals);
   }
@@ -1804,8 +1801,8 @@ Template.prototype.mergeFn = function(template, locals, async) {
  */
 
 Template.prototype.context = function(template, locals) {
-  if (this.option('contextFn')) {
-    return this.option('contextFn').apply(this, arguments);
+  if (this.option('mergeContext')) {
+    return this.option('mergeContext').apply(this, arguments);
   }
 
   locals = extend({}, this.mergePartials(locals), locals);
@@ -1822,14 +1819,15 @@ Template.prototype.context = function(template, locals) {
  */
 
 Template.prototype.mergeContext = function(template, locals) {
-  var data = this.enabled('prefer locals') ? extend : _.defaults;
-
+  if (this.enabled('preferLocals')) {
+    return extend({}, this.cache.data, this.cache.locals, template.data, template.locals, locals);
+  }
   var o = {};
-  data(o, this.cache.locals);
-  data(o, this.cache.data);
-  data(o, template.locals);
-  data(o, template.data);
-  data(o, locals);
+  extend(o, this.cache.data);
+  extend(o, this.cache.locals);
+  extend(o, template.locals);
+  extend(o, template.data);
+  extend(o, locals);
   return o;
 };
 

@@ -17,7 +17,7 @@ var template = new Template();
 
 describe('default engines', function() {
   it('should register default engines automatically.', function() {
-    template.engines.should.have.properties(['.md', '.html', '.*']);
+    template.engines.should.have.properties('.*');
   });
 });
 

@@ -47,3 +47,25 @@ and look for the following properties:
      partial: 'partials' },
 }
 ```
+
+
+## Template types
+
+One of the most powerful features of Template is the ability to define custom template "types", and "subtypes". Here's how it works:
+
+ - **types**: there are three template "types": `renderable`, `layout` and `partial`
+ - **subtypes**: an unlimited number of subtypes can be created for each _type_. For example, `page` and `post` are common "renderable" subtypes, `block` or `section` would make good "layout" subtypes, and `include` or `snippet` make sense as "partial" subtypes.
+
+### Template types
+
+ - `renderable`: templates that might be rendered at some point, like `pages`
+ - `layout`: used to wrap other templates with common code or content. Layouts can be used with any template type, including other layouts or partials.
+ - `partial`: partial views, or includes that can be inserted into other templates.
+
+
+### Template subtypes
+
+Create any kind of template you can imagine, for any use case. Out of the box, Template supports the following:
+
+  - `pages`: pages  default `renderable` what you might expect. This is the
+

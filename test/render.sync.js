@@ -22,8 +22,12 @@ describe('.render() synchronously:', function () {
   });
 
   describe('when a string is passed to `.render()` without a callback:', function () {
-    it('should return the string if no engine is detected:', function () {
-      template.render('<%= name %>', {name: 'Jon Schlinkert'}).should.equal('<%= name %>');
+    it('should render the string with the default engine:', function () {
+      template.render('<%= name %>{{ name }}', {name: 'Jon Schlinkert'}).should.equal('Jon Schlinkert{{ name }}');
+    });
+    it('should render the string with the defined engine:', function () {
+      template.engine('hbs', engines.handlebars);
+      template.render('<%= name %>{{ name }}', {name: 'Jon Schlinkert', engine: 'hbs'}).should.equal('<%= name %>Jon Schlinkert');
     });
     it('should render the template with the specified engine:', function () {
       template.render('<%= name %>', {name: 'Jon Schlinkert', engine: 'lodash'}).should.equal('Jon Schlinkert')

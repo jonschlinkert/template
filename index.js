@@ -128,6 +128,7 @@ Template.prototype.defaultConfig = function() {
 Template.prototype.defaultOptions = function() {
   this.disable('preferLocals');
   this.enable('default engines');
+  this.enable('default routes');
   this.option('cwd', process.cwd());
   this.option('ext', '*');
   this.option('destExt', '.html');
@@ -170,12 +171,14 @@ defineGetter(Template.prototype, 'cwd', function () {
  */
 
 Template.prototype.defaultRoutes = function() {
-  this.route(/\.(md|hbs)$/).all(function route(file, next) {
-    parserMatter.parse(file, function(err) {
-      if (err) return next(err);
-      next();
+  if (this.enabled('default routes')) {
+    this.route(/\.*/).all(function route(file, next) {
+      parserMatter.parse(file, function(err) {
+        if (err) return next(err);
+        next();
+      });
     });
-  });
+  }
 };
 
 /**
@@ -190,8 +193,8 @@ Template.prototype.defaultRoutes = function() {
  */
 
 Template.prototype.defaultEngines = function() {
-  if (this.option('default engines')) {
-    this.engine(this.option('defaultExts'), engineLodash, {
+  if (this.enabled('default engines')) {
+    this.engine('*', engineLodash, {
       layoutDelims: ['{%', '%}'],
       destExt: '.html'
     });

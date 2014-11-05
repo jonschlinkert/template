@@ -110,8 +110,9 @@ Template.prototype.defaultConfig = function() {
   this._.asyncHelpers = new Helpers({bind: false});
 
   // Prime the cache
-  this.set('mixins', {});
+  this.set('_data', {});
   this.set('locals', {});
+  this.set('mixins', {});
   this.set('imports', {});
   this.set('layouts', {});
   this.set('partials', {});
@@ -679,26 +680,33 @@ Template.prototype.getEngine = function(ext) {
  * This logic can be overridden by passing a custom
  * function on `options.getExt`, e.g.:
  *
+ * **Example:**
+ *
  * ```js
  * template.option('getExt', function(template, locals) {
- *   var ext = path.extname(template.path);
- *   return ext;
+ *   return path.extname(template.path);
  * });
  * ```
  *
- * @param {Object} `template` A template object
- * @param {Object} `locals` A locals object
- * @return {String} `ext` To determine the engine to use.
+ * @param {Object} `template` Template object
+ * @param {Object} `locals` Locals object
+ * @return {String} `ext` For determining the engine to use.
  * @api public
  */
 
 Template.prototype.getExt = function(template, locals) {
   var fn = this.option('getExt');
+
   if (typeof fn === 'function') {
     return fn.call(this, template, locals);
   }
 
-  var ext = template.options.engine
+  template.locals = template.locals || {};
+
+  // `_engine` is defined on the `.create()` method
+  var ext = template.options._engine
+    || template.locals.engine
+    || template.options.engine
     || locals.engine
     || locals.ext
     || template.engine
@@ -706,7 +714,11 @@ Template.prototype.getExt = function(template, locals) {
     || path.extname(template.path)
     || this.option('viewEngine');
 
-  return ext ? utils.formatExt(ext) : null;
+  if (ext == null) return null;
+  if (ext[0] !== '.') {
+    ext = '.' + ext;
+  }
+  return ext;
 };
 
 /**
@@ -911,6 +923,7 @@ Template.prototype.loader = function (plural, options, stack, done) {
   debug.loader('loader: %j', arguments);
   var self = this;
 
+
   if (arguments.length !== 1) {
     done = done || function () {};
     stack = stack || [];
@@ -980,6 +993,7 @@ Template.prototype.load = function(subtype, plural, options, fns, done) {
   }
 
   var opts = extend({}, options);
+
   var getLoader = function () {
     if (opts.loadFn) {
       var callback = arguments[arguments.length - 1];
@@ -1007,9 +1021,25 @@ Template.prototype.load = function(subtype, plural, options, fns, done) {
       // validate the template object before moving on
       self.validate(template);
 
+
+
       // Add a render method to the template
       // TODO: allow additional opts to be passed
       forOwn(template, function (value) {
+
+        // this engine logic is temporary until we decide
+        // how we want to allow users to control this.
+        // for now, this allows the user to change the engine
+        // preference in the the `getExt()` method.
+        value.options = value.options || {};
+        if (hasOwn(opts, 'engine')) {
+          var ext = opts.engine;
+          if (ext[0] !== '.') {
+            ext = '.' + ext;
+          }
+          value.options._engine = ext;
+        }
+
         value.render = function (locals, cb) {
           return self.renderTemplate(this, locals, cb);
         };
@@ -1212,8 +1242,8 @@ Template.prototype.mergePartials = function(locals, mergePartials) {
     var template = self.cache[plural];
 
     forOwn(template, function (value, key) {
-      self.cache.locals[key] = value.locals;
-      self.cache.data[key] = value.data;
+      self.cache.locals[key] = value.locals || {};
+      self.cache._data[key] = value.data || {};
 
       // If a layout is defined, apply it to the partial
       var data = extend({}, value.locals, value.data);

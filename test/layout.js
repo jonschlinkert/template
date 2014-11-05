@@ -149,7 +149,7 @@ describe('layouts:', function () {
 
 
   describe.skip('when an `ext` is defined on a template:', function () {
-    it('should use the layout define regardless of extension:', function () {
+    it('should use the layout defined regardless of extension:', function () {
       //
     });
   });

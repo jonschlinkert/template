@@ -126,10 +126,10 @@ Template.prototype.defaultConfig = function() {
  */
 
 Template.prototype.defaultOptions = function() {
+  this.option('cwd', process.cwd());
   this.disable('preferLocals');
   this.enable('default engines');
   this.enable('default routes');
-  this.option('cwd', process.cwd());
   this.option('ext', '*');
   this.option('destExt', '.html');
   this.option('defaultExts', ['md', 'html', 'hbs', 'lodash']);
@@ -194,7 +194,7 @@ Template.prototype.defaultRoutes = function() {
 
 Template.prototype.defaultEngines = function() {
   if (this.enabled('default engines')) {
-    this.engine('*', engineLodash, {
+    this.engine(['*', 'md'], engineLodash, {
       layoutDelims: ['{%', '%}'],
       destExt: '.html'
     });
@@ -222,7 +222,7 @@ Template.prototype.defaultDelimiters = function() {
  */
 
 Template.prototype.defaultLoader = function(plural, options) {
-  return [defaultLoader.call(this, plural, options).bind(this)];
+  return [defaultLoader.call(this, plural, options)];
 };
 
 /**
@@ -330,13 +330,14 @@ Template.prototype.use = function (fn) {
   fns.forEach(function (fn) {
     // non-Template instance
     if (!fn || !fn.handle || !fn.set) {
-      return router.use(path, fn);
+      return router.use(path, fn.bind(this));
     }
 
     debug.routes('use: %s', path);
     fn.mountpath = path;
     fn.parent = this;
   }, this);
+
   return this;
 };
 
@@ -747,15 +748,36 @@ Template.prototype.mixin = function(name, fn) {
  * });
  * ```
  *
- * @param {String} `name` The helper name
- * @param {Function} `fn` The helper function.
+ * @param {String} `key` Helper name
+ * @param {Function} `fn` Helper function.
  * @api public
  */
 
 Template.prototype.helper =
 Template.prototype.addHelper = function(name, fn) {
-  debug.helper('adding [helper]: %s', name);
+  debug.helper('adding helper: %s', name);
   return this._.helpers.addHelper(name, fn);
+};
+
+/**
+ * Register multiple helpers.
+ *
+ * ```js
+ * template.addHelpers({
+ *   a: function() {},
+ *   b: function() {},
+ *   c: function() {},
+ * });
+ * ```
+ *
+ * @param {Object|Array} `helpers` Object, array of objects, or glob patterns.
+ * @api public
+ */
+
+Template.prototype.addHelpers = function(helpers) {
+  debug.helper('adding helpers: %s', helpers);
+  var loader = this._.helpers.addHelpers;
+  return loader.apply(loader, arguments);
 };
 
 /**
@@ -773,8 +795,8 @@ Template.prototype.addHelper = function(name, fn) {
  * });
  * ```
  *
- * @param {String} `ext` The engine to register helpers with.
- * @return {Object} Object of helpers for the specified engine.
+ * @param {String} `name` Helper name.
+ * @param {Function} `fn` Helper function
  * @api public
  */
 
@@ -875,41 +897,6 @@ Template.prototype.defaultAsyncHelper = function(subtype, plural) {
     });
   });
 };
-
-/**
- * Set a constant on the cache.
- *
- * **Example**
- *
- * ```js
- * cache.constant('site.title', 'Foo');
- * ```
- *
- * @param {String} `key`
- * @param {*} `value`
- * @chainable
- * @api public
- */
-
-// Template.prototype.constant = function(key, value) {
-//   this.options.__defineGetter__(key, function() {
-//     return value;
-//   });
-
-//   return this;
-// };
-// function defineGetter(o, name, getter) {
-//   Object.defineProperty(o, name, {
-//     configurable: false,
-//     enumerable: false,
-//     get: getter,
-//     set: function() {}
-//   });
-// }
-
-// defineGetter(Template.prototype, 'engine', function () {
-//   return this.option('cwd') || process.cwd();
-// });
 
 /**
  * Define a custom loader for loading templates.

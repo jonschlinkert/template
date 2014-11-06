@@ -832,6 +832,28 @@ Template.prototype.addHelpers = function(helpers) {
 };
 
 /**
+ * Register multiple async helpers.
+ *
+ * ```js
+ * template.addAsyncHelpers({
+ *   a: function() {},
+ *   b: function() {},
+ *   c: function() {},
+ * });
+ * ```
+ *
+ * @param {Object|Array} `helpers` Object, array of objects, or glob patterns.
+ * @api public
+ */
+
+Template.prototype.asyncHelpers = 
+Template.prototype.addAsyncHelpers = function(helpers) {
+  debug.helper('adding async helpers: %s', helpers);
+  var loader = this._.asyncHelpers.addAsyncHelpers;
+  return loader.apply(loader, arguments);
+};
+
+/**
  * Register generic async template helpers that are not specific to an
  * engine.
  *
@@ -840,7 +862,7 @@ Template.prototype.addHelpers = function(helpers) {
  * javascript functions.
  *
  * ```js
- * template.helperAsync('lower', function(str, next) {
+ * template.asyncHelper('lower', function(str, next) {
  *   str = str.toLowerCase();
  *   next();
  * });
@@ -851,10 +873,10 @@ Template.prototype.addHelpers = function(helpers) {
  * @api public
  */
 
-Template.prototype.helperAsync =
-Template.prototype.addHelperAsync = function(name, fn) {
+Template.prototype.asyncHelper =
+Template.prototype.addAsyncHelper = function(name, fn) {
   debug.helper('adding async helper: %s', name);
-  return this._.asyncHelpers.addHelperAsync(name, fn);
+  return this._.asyncHelpers.addAsyncHelper(name, fn);
 };
 
 /**
@@ -918,7 +940,7 @@ Template.prototype.defaultAsyncHelper = function(subtype, plural) {
   debug.helper('default async helper: %s', subtype);
   var self = this;
 
-  this.helperAsync(subtype, function (key, locals, next) {
+  this.asyncHelper(subtype, function (key, locals, next) {
     debug.helper('async helper: [%s / %s]', subtype, key);
 
     var last = arguments[arguments.length - 1];

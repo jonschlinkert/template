@@ -81,6 +81,7 @@ Template.prototype.initTemplate = function() {
   this.engines = this.engines || {};
   this.delims = this.delims || {};
   this.layoutSettings = {};
+  this.transforms = {};
 
   this.type = {};
   this.type.partial = [];
@@ -102,6 +103,7 @@ Template.prototype.initTemplate = function() {
   this.defaultRoutes();
   this.defaultTemplates();
   this.defaultEngines();
+  this.runTransforms(this.transforms);
 };
 
 /**
@@ -121,6 +123,18 @@ Template.prototype.defaultConfig = function() {
   });
   this._.asyncHelpers = new Helpers({
     bind: false
+  });
+};
+
+/**
+ * Run the default transforms.
+ *
+ * @api private
+ */
+
+Template.prototype.defaultTransforms = function() {
+  this.transform('foo', function () {
+    this.cache.data.foo = 'bar';
   });
 };
 
@@ -242,6 +256,59 @@ Template.prototype.defaultTemplates = function() {
   this.create('page', { isRenderable: true });
   this.create('layout', { isLayout: true });
   this.create('partial', { isPartial: true });
+};
+
+/**
+ * Assign transform `fn` to `name` or return the value of `name`
+ * if no other arguments are passed.
+ *
+ * This method adds transforms to be run immediately during
+ * init. Transforms are used to extend, modify, or otherwise
+ * _transform_ the `this` object.
+ *
+ * @param {String} `name` The name of the transform to add.
+ * @param {Function} `fn` The actual transform function.
+ * @return {Object} Returns `Template` for chaining.
+ * @api private
+ */
+
+Template.prototype.transform = function(name, fn) {
+  debug.engine('adding [transform]: %s', name);
+
+  if (arguments.length === 0) {
+    return this.transforms;
+  }
+
+  if (arguments.length === 1) {
+    return this.transforms[name];
+  }
+
+  this.transforms[name] = fn;
+  return this;
+};
+
+/**
+ * Called first thing in the constructor to run all transform
+ * functions before anything else is done.
+ *
+ * @api private
+ */
+
+Template.prototype.runTransforms = function(transforms) {
+  transforms = transforms || this.transforms;
+  var keys = Object.keys(transforms);
+
+  for (var i = 0; i < keys.length; i++) {
+    var fn = transforms[keys[i]];
+
+    if (!fn || typeof fn !== 'object') {
+      continue;
+    }
+
+    if (typeof fn === 'function') {
+      fn.apply(this, [this].concat(arguments));
+    }
+  }
 };
 
 /**
@@ -846,7 +913,7 @@ Template.prototype.addHelpers = function(helpers) {
  * @api public
  */
 
-Template.prototype.asyncHelpers = 
+Template.prototype.asyncHelpers =
 Template.prototype.addAsyncHelpers = function(helpers) {
   debug.helper('adding async helpers: %s', helpers);
   var loader = this._.asyncHelpers.addAsyncHelpers;

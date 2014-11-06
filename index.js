@@ -103,6 +103,7 @@ Template.prototype.initTemplate = function() {
   this.defaultRoutes();
   this.defaultTemplates();
   this.defaultEngines();
+  this.defaultTransforms();
   this.runTransforms(this.transforms);
 };
 
@@ -284,8 +285,14 @@ Template.prototype.transform = function(name, fn) {
   }
 
   this.transforms[name] = fn;
+
+  if (fn && typeof fn === 'function') {
+    fn.apply(this, [this].concat(arguments));
+  }
+
   return this;
 };
+
 
 /**
  * Called first thing in the constructor to run all transform

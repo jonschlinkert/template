@@ -7,7 +7,6 @@ var _ = require('lodash');
 
 template.transform('username', function (app) {
   app.cache.data.username = 'jonschlinkert';
-  console.log(app.cache);
 });
 
 template.create('doc', { isRenderable: true }, [
@@ -39,5 +38,4 @@ template.create('foo', { isRenderable: true }, [
 template.foos('test/fixtures/layouts/matter/*.md');
 template.docs('aaa', {content: 'this is content'});
 
-
-// console.log(template);
+console.log(template.cache.data);

@@ -104,7 +104,6 @@ Template.prototype.initTemplate = function() {
   this.defaultTemplates();
   this.defaultEngines();
   this.defaultTransforms();
-  this.runTransforms(this.transforms);
 };
 
 /**
@@ -291,31 +290,6 @@ Template.prototype.transform = function(name, fn) {
   }
 
   return this;
-};
-
-
-/**
- * Called first thing in the constructor to run all transform
- * functions before anything else is done.
- *
- * @api private
- */
-
-Template.prototype.runTransforms = function(transforms) {
-  transforms = transforms || this.transforms;
-  var keys = Object.keys(transforms);
-
-  for (var i = 0; i < keys.length; i++) {
-    var fn = transforms[keys[i]];
-
-    if (!fn || typeof fn !== 'object') {
-      continue;
-    }
-
-    if (typeof fn === 'function') {
-      fn.apply(this, [this].concat(arguments));
-    }
-  }
 };
 
 /**

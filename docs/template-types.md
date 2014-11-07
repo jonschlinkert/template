@@ -1,6 +1,33 @@
 # Template types
 
-> Learn how to use custom template types and sub-types
+> Learn about template types and sub-types, and how to use them
+
+In a nutshell:
+
+ - **types** are used by Template as a way of simplifying the logic for things like applying layouts, rendering, and injecting partials. There are only three `types` of templates: [renderable], [layout], and [partial].
+ - **subtypes** sub-types are use-case specific, like `page`, `post`, and `doc`. Each of these describes a certain use cases for `renderable` templates.
+
+This will all make more sense as you scan the examples!
+
+## types
+
+This section describes the three built-in template `types`, their associated `subtypes`,
+and how they're used.
+
+### renderable
+
+The default `renderable` subtype is `page`. Here is an example of how a `page` is defined:
+
+If you expect to render a template at some point, that qualifies is as a `renderable` template.
+
+
+
+ - `layout`: templates to be used as layouts (wrappers for other templates)
+ - `partial`: templates to be used as includes or partial views
+
+**subtypes**
+
+Template `subtypes` can belong to one or more `types`. It's easiest to understand by way of example.
 
 
 Templates are classified by three major `types`, **renderable**, **layout**, and **partial**, each of which may contain any number of custom template `subtypes`.

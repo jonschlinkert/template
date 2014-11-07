@@ -9,6 +9,7 @@
 
 var _ = require('lodash');
 var path = require('path');
+var glob = require('globby');
 var chalk = require('chalk');
 var Delims = require('delims');
 var forOwn = require('for-own');
@@ -851,10 +852,10 @@ Template.prototype.imports = function(name, fn) {
  * @api public
  */
 
-Template.prototype.helper =
-Template.prototype.addHelper = function(name, fn) {
+Template.prototype.helper = function(name, fn) {
   debug.helper('adding helper: %s', name);
-  return this._.helpers.addHelper(name, fn);
+  this._.helpers.addHelper(name, fn);
+  return this;
 };
 
 /**
@@ -872,32 +873,28 @@ Template.prototype.addHelper = function(name, fn) {
  * @api public
  */
 
-Template.prototype.addHelpers = function(helpers) {
+Template.prototype.helpers = function(helpers, options) {
   debug.helper('adding helpers: %s', helpers);
-  var loader = this._.helpers.addHelpers;
-  return loader.apply(loader, arguments);
-};
+  var files;
 
-/**
- * Register multiple async helpers.
- *
- * ```js
- * template.addAsyncHelpers({
- *   a: function() {},
- *   b: function() {},
- *   c: function() {},
- * });
- * ```
- *
- * @param {Object|Array} `helpers` Object, array of objects, or glob patterns.
- * @api public
- */
-
-Template.prototype.asyncHelpers =
-Template.prototype.addAsyncHelpers = function(helpers) {
-  debug.helper('adding async helpers: %s', helpers);
-  var loader = this._.asyncHelpers.addAsyncHelpers;
-  return loader.apply(loader, arguments);
+  if (isObject(helpers)) {
+    extend(this._.helpers, helpers);
+  } else if (Array.isArray(helpers) || typeof helpers === 'string') {
+    // sniff tests: if it's an object, it's not a glob
+    if (isObject(helpers[0])) {
+      _.reduce(helpers, function (acc, o) {
+        return extend(acc, o);
+      }, this._.helpers);
+    } else {
+       var files = glob.sync(helpers, options);
+      _.reduce(files, function (acc, fp) {
+        var name = path.basename(fp, path.extname(fp));
+        acc[name] = require(path.resolve(fp));
+        return acc;
+      }, this._.helpers);
+    }
+  }
+  return this;
 };
 
 /**
@@ -920,10 +917,31 @@ Template.prototype.addAsyncHelpers = function(helpers) {
  * @api public
  */
 
-Template.prototype.asyncHelper =
-Template.prototype.addAsyncHelper = function(name, fn) {
+Template.prototype.asyncHelper = function(name, fn) {
   debug.helper('adding async helper: %s', name);
-  return this._.asyncHelpers.addAsyncHelper(name, fn);
+  this._.asyncHelpers.addAsyncHelper(name, fn);
+  return this;
+};
+
+/**
+ * Register multiple async helpers.
+ *
+ * ```js
+ * template.addAsyncHelpers({
+ *   a: function() {},
+ *   b: function() {},
+ *   c: function() {},
+ * });
+ * ```
+ *
+ * @param {Object|Array} `helpers` Object, array of objects, or glob patterns.
+ * @api public
+ */
+
+Template.prototype.asyncHelpers = function(helpers) {
+  debug.helper('adding async helpers: %s', helpers);
+  var loader = this._.asyncHelpers.addAsyncHelpers;
+  return loader.apply(loader, arguments);
 };
 
 /**
@@ -938,7 +956,7 @@ Template.prototype.addAsyncHelper = function(name, fn) {
  * @api public
  */
 
-Template.prototype.helpers = function(ext) {
+Template.prototype.engineHelpers = function(ext) {
   debug.helper('helpers for engine: %s', ext);
   return this.getEngine(ext).helpers;
 };

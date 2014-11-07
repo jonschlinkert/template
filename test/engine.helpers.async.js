@@ -17,7 +17,7 @@ describe('.addAsyncHelper():', function () {
   });
 
   it('should register _bound_ async helper functions by default:', function () {
-    var helpers = template.helpers('md');
+    var helpers = template.engineHelpers('md');
 
     helpers.addAsyncHelper('a', function (str, next) {
       next(null, str.toLowerCase());
@@ -32,7 +32,7 @@ describe('.addAsyncHelper():', function () {
   });
 
   it('should use bound helpers in templates:', function (done) {
-    var helpers = template.helpers('md');
+    var helpers = template.engineHelpers('md');
 
     helpers.addAsyncHelper('a', function (str, next) {
       next(null, str.toLowerCase());
@@ -53,7 +53,7 @@ describe('.addAsyncHelper():', function () {
 
   it('should register _un-bound_ async helpers when `bindHelpers` is false:', function () {
     template.option('bindHelpers', false);
-    var helpers = template.helpers('md');
+    var helpers = template.engineHelpers('md');
 
     helpers
       .addAsyncHelper('a', function (str, next) {
@@ -71,7 +71,7 @@ describe('.addAsyncHelper():', function () {
 
   it('should use _un-bound_ helpers in templates:', function (done) {
     template.option('bindHelpers', false);
-    var helpers = template.helpers('md');
+    var helpers = template.engineHelpers('md');
 
     helpers
       .addAsyncHelper('a', function (str, next) {
@@ -91,10 +91,10 @@ describe('.addAsyncHelper():', function () {
 
   it('should use helpers registered for all engines:', function (done) {
     template
-      .addAsyncHelper('a', function (str, next) {
+      .asyncHelper('a', function (str, next) {
         next(null, str.toLowerCase());
       })
-      .addAsyncHelper('b', function (str, next) {
+      .asyncHelper('b', function (str, next) {
         next(null, str.toUpperCase());
       });
 

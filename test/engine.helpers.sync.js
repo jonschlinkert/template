@@ -12,20 +12,13 @@ var Template = require('..');
 var template;
 
 
-describe('.addHelper():', function () {
+describe('engineHelpers().addHelper():', function () {
   beforeEach(function () {
     template = new Template();
   });
 
-  it('should register generic template helpers:', function () {
-    template.addHelper('a', function () {});
-    template.addHelper('b', function () {});
-
-    template._.helpers.should.have.properties(['a', 'b']);
-  });
-
   it('should register _bound_ helper functions by default:', function () {
-    var helpers = template.helpers('*');
+    var helpers = template.engineHelpers('*');
     helpers.addHelper('a', function () {});
     helpers.addHelper('b', function () {});
 
@@ -34,7 +27,7 @@ describe('.addHelper():', function () {
 
   it('should register _un-bound_ helpers when `bindHelpers` is false:', function () {
     template.option('bindHelpers', false);
-    var helpers = template.helpers('*');
+    var helpers = template.engineHelpers('*');
 
     helpers.addHelper('a', function () {});
     helpers.addHelper('b', function () {});
@@ -43,7 +36,7 @@ describe('.addHelper():', function () {
 
   it('should use helpers in templates:', function (done) {
     template.option('bindHelpers', false);
-    var helpers = template.helpers('md');
+    var helpers = template.engineHelpers('md');
 
     helpers.addHelper('upper', function (str) {
       return str.toUpperCase();

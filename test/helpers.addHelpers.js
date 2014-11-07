@@ -17,7 +17,7 @@ describe('.addHelperAsync():', function () {
   });
 
   it('should register multiple sync helpers from an object:', function () {
-    template.addHelpers({
+    template.helpers({
       a: function() {},
       b: function() {},
       c: function() {},
@@ -25,21 +25,24 @@ describe('.addHelperAsync():', function () {
     });
     template._.helpers.should.have.properties('a', 'b', 'c', 'd');
   });
-  it('should register multiple sync helpers from an array:', function () {
-    template.addHelpers([
-      {
-        a: function() {},
-        b: function() {},
-        c: function() {},
-        d: function() {},
-      }
-    ]);
 
-    template.addHelpers([
+  it('should register multiple sync helpers from an array:', function () {
+    template.helpers([{
+      a: function() {},
+      b: function() {},
+      c: function() {},
+      d: function() {},
+    }]);
+
+    template.helpers([
       {e: function() {}},
       {f: function() {}}
     ]);
     template._.helpers.should.have.properties('a', 'b', 'c', 'd', 'e', 'f');
   });
 
+  it('should register multiple sync helpers from a glob pattern:', function () {
+    template.helpers('test/fixtures/helpers/*.js');
+    template._.helpers.should.have.properties('a', 'b', 'c');
+  });
 });

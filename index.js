@@ -7,8 +7,6 @@
 
 'use strict';
 
-// process.env.DEBUG = 'template:render';
-
 var _ = require('lodash');
 var path = require('path');
 var chalk = require('chalk');
@@ -37,7 +35,6 @@ var utils = require('./lib');
 var Router = routes.Router;
 var Route = routes.Route;
 var extend = _.extend;
-
 
 /**
  * Create a new instance of `Template`, optionally passing
@@ -83,6 +80,9 @@ Template.prototype.initTemplate = function() {
   this.layoutSettings = {};
   this.transforms = {};
 
+  this._ = {};
+  this._.mixins = {};
+  this._.imports = {};
   this.type = {};
   this.type.partial = [];
   this.type.renderable = [];
@@ -113,17 +113,10 @@ Template.prototype.initTemplate = function() {
  */
 
 Template.prototype.defaultConfig = function() {
-  this._ = {};
-  this._.mixins = {};
-  this._.imports = {};
   this._.delims = new Delims(this.options);
   this._.engines = new Engines(this.engines);
-  this._.helpers = new Helpers({
-    bind: false
-  });
-  this._.asyncHelpers = new Helpers({
-    bind: false
-  });
+  this._.helpers = new Helpers({bind: false});
+  this._.asyncHelpers = new Helpers({bind: false});
 };
 
 /**

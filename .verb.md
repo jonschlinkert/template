@@ -145,7 +145,7 @@ Pass an array of functions, each can take any arguments, but the last must pass 
 
 ```js
 template.create('component', { isPartial: true }, [
-  return function (filepath, next) {
+  function (filepath, next) {
     var str = fs.readFileSync(filepath, 'utf8');
     var file = {};
     file[filepath] = {path: filepath, content: str};
@@ -169,7 +169,7 @@ When the last argument passed to a template is an array, or more specifically an
 
 ```js
 template.component('components/navbar.html', [
-  return function(file, next) {
+  function(file, next) {
     file.data = {foo: 'bar'};
     next(null, file);
   }

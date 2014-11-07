@@ -9,6 +9,7 @@ template.transform('username', function (app) {
   app.cache.data.username = 'jonschlinkert';
 });
 
+
 template.create('doc', { isRenderable: true }, [
   function (file, next) {
     next(null, file);

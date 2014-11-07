@@ -133,9 +133,7 @@ Template.prototype.defaultConfig = function() {
  */
 
 Template.prototype.defaultTransforms = function() {
-  this.transform('foo', function () {
-    this.cache.data.foo = 'bar';
-  });
+  this.transform('placeholder', function () {});
 };
 
 /**
@@ -262,9 +260,16 @@ Template.prototype.defaultTemplates = function() {
  * Assign transform `fn` to `name` or return the value of `name`
  * if no other arguments are passed.
  *
- * This method adds transforms to be run immediately during
- * init. Transforms are used to extend, modify, or otherwise
- * _transform_ the `this` object.
+ * Transforms are run immediately during init, and are used to
+ * extend or modify the `cache.data` object, but really anything
+ * on the `this` object can be tranformed.
+ *
+ * ```js
+ * template.transform('username', function(app) {
+ *   var url = app.cache.data.author.url.split('/');
+ *   app.cache.data.username = url[2];
+ * });
+ * ```
  *
  * @param {String} `name` The name of the transform to add.
  * @param {Function} `fn` The actual transform function.
@@ -1755,7 +1760,6 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   }
 
   var engine = this.getEngine(ext);
-
 
   // Bind context to helpers before passing to the engine.
   this.bindHelpers(locals, typeof cb === 'function');

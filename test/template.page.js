@@ -26,7 +26,7 @@ describe('template page', function () {
 
     it('should `.get()` a page from the cache.', function () {
       template.page('a.md', 'b');
-      template.get('pages.a\\.md').content.should.equal('b'); // escaped for [getobject]
+      template.get('pages.a\\.md', true).content.should.equal('b');
     });
 
     it('should add the template string to the `content` property.', function () {

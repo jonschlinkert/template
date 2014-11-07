@@ -91,7 +91,7 @@ describe('cache', function () {
       (typeof template.get('a.b.f')).should.be.undefined;
     });
     it('literal backslash should escape period in property name.', function() {
-      template.get('a.b.g\\.h\\.i').should.equal(2);
+      template.get('a.b.g\\.h\\.i', true).should.equal(2);
     });
     it('should just return existing properties.', function() {
       template.get('a', true).should.eql(template.cache.a);
@@ -131,7 +131,7 @@ describe('cache', function () {
     });
     it('literal backslash should escape period in property name.', function() {
       template.set('e\\.f\\.g', 1);
-      template.get('e\\.f\\.g').should.eql(1);
+      template.get('e\\.f\\.g', true).should.eql(1);
       template.cache['e.f.g'].should.eql(1);
     });
   });

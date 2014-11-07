@@ -25,7 +25,7 @@ describe('template partial', function () {
 
     it('should `.get()` a partial from the cache.', function () {
       template.partial('a.md', 'b');
-      template.get('partials.a\\.md').content.should.equal('b'); // escaped for [getobject]
+      template.get('partials.a\\.md', true).content.should.equal('b'); // escaped for [get-value]
     });
 
     it('should add the template string to the `content` property.', function () {

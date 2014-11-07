@@ -25,7 +25,7 @@ describe('template layout', function () {
 
     it('should `.get()` a layout from the cache.', function () {
       template.layout('a.md', 'b');
-      template.get('layouts.a\\.md').content.should.equal('b'); // escaped for [getobject]
+      template.get('layouts.a\\.md', true).content.should.equal('b'); // escaped for [get-value]
     });
 
     it('should add the template string to the `content` property.', function () {

@@ -143,6 +143,7 @@ Template.prototype.defaultTransforms = function() {
  */
 
 Template.prototype.defaultOptions = function() {
+  this.disable('debugEngine');
   this.disable('preferLocals');
   this.enable('default helpers');
   this.enable('default routes');
@@ -1763,6 +1764,8 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
 
   // Bind context to helpers before passing to the engine.
   this.bindHelpers(locals, typeof cb === 'function');
+
+  locals.debugEngine = this.option('debugEngine');
 
   // if a layout is defined, apply it before rendering
   var content = this.applyLayout(ext, template, locals);

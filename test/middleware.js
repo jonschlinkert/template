@@ -98,7 +98,6 @@ describe('middleware', function () {
 
       template.render(page, {name: 'Halle'}, function (err, content) {
         if (err) return done(err);
-        console.log(content)
         content.should.equal('__ID0__\n__ID1__\n__ID2__');
 
         template.after(/\.md/, function (file, next) {
@@ -108,7 +107,6 @@ describe('middleware', function () {
 
         template.render(page, {name: 'Halle'}, function (err, content) {
           if (err) return done(err);
-          console.log(content)
           content.should.equal('<%= a %>\n<%= b %>\n<%= c %>');
           done();
         });

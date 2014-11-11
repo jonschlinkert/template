@@ -36,6 +36,7 @@ var utils = require('./lib');
 var Router = routes.Router;
 var Route = routes.Route;
 var extend = _.extend;
+var merge = _.merge;
 
 /**
  * Create a new instance of `Template`, optionally passing
@@ -473,7 +474,7 @@ Template.prototype.all = function(path) {
 
 Template.prototype.lazyLayouts = function(ext, options) {
   if (!hasOwn(this.layoutSettings, ext)) {
-    var opts = extend({}, this.options, options);
+    var opts = merge({}, this.options, options);
 
     debug.layout('lazy layouts: %s', ext);
 
@@ -560,11 +561,11 @@ Template.prototype.makeDelims = function(arr, options) {
   debug.delims('making delims: %j', arr);
 
   if (!Array.isArray(arr)) {
-    return extend(options, this.getDelims('*'));
+    return merge(options, this.getDelims('*'));
   }
 
   var delims = this._.delims.templates(arr, settings);
-  return extend({}, delims, options);
+  return merge({}, delims, options);
 };
 
 /**
@@ -604,7 +605,7 @@ Template.prototype.addDelims = function(ext, arr, delims, settings) {
     delims = this.option('layoutDelims');
   }
 
-  this.delims[ext] = extend({}, this.makeDelims(arr, settings), settings);
+  this.delims[ext] = merge({}, this.makeDelims(arr, settings), settings);
   return this;
 };
 
@@ -877,12 +878,12 @@ Template.prototype.helpers = function(helpers, options) {
   debug.helper('adding helpers: %s', helpers);
 
   if (isObject(helpers)) {
-    extend(this._.helpers, helpers);
+    merge(this._.helpers, helpers);
   } else if (Array.isArray(helpers) || typeof helpers === 'string') {
     // sniff tests: if it's an object, it's not a glob
     if (isObject(helpers[0])) {
       _.reduce(helpers, function (acc, o) {
-        return extend(acc, o);
+        return merge(acc, o);
       }, this._.helpers);
     } else {
        var files = glob.sync(helpers, options);
@@ -983,7 +984,7 @@ Template.prototype.defaultHelper = function(subtype, plural) {
       return '';
     }
 
-    var locs = extend({}, this.ctx, locals);
+    var locs = merge({}, this.ctx, locals);
 
     var content = self.renderTemplate(partial, locs);
     if (content instanceof Error) {
@@ -1026,7 +1027,7 @@ Template.prototype.defaultAsyncHelper = function(subtype, plural) {
       return next(null, '');
     }
 
-    var locs = extend({}, this.ctx, locals);
+    var locs = merge({}, this.ctx, locals);
     var render = self.renderSubtype(subtype);
 
     render(key, locs, function (err, content) {
@@ -1174,7 +1175,7 @@ Template.prototype.load = function(subtype, plural, options, fns, done) {
       self.dispatch(template);
 
       // Add template to the cache
-      extend(self.cache[plural], template);
+      merge(self.cache[plural], template);
       cb(null);
     }]);
 
@@ -1342,46 +1343,55 @@ Template.prototype.mergeType = function(type, subtypes) {
 };
 
 /**
- * Get partials from the cache. More specifically, all templates with
- * a `type` of `partial` defined.
+ * Default method for determining how partials are to be passed to
+ * engines. By default, all `partial` subtypes are merged onto a
+ * single `partials` object. To keep each subtype on a separate
+ * object, you can do `template.disable('mergePartials')`.
  *
- * If `options.mergePartials` is `true`, this object will keep custom
- * partial types seperate - otherwise, all templates with the type `partials`
- * will be merged onto the same object. This is useful when necessary for
- * the engine being used.
+ * If you want to control how partials are merged, you can also
+ * pass a function to the `mergePartials` option:
  *
+ * ```js
+ * template.option('mergePartials', function(locals) {
+ *   // do stuff
+ * });
+ * ```
  *
+ * @param  {Object} `locals`
+ * @return {Object}
  * @api private
  */
 
-Template.prototype.mergePartials = function(locals, mergePartials) {
+Template.prototype.mergePartials = function(locals) {
   debug.template('merging partials [%s]: %j', arguments);
-  var self = this;
 
-  if (mergePartials === undefined) {
-    mergePartials = this.option('mergePartials');
-  }
+  var mergePartials = this.option('mergePartials');
   var opts = extend({partials: {}}, locals);
 
-  self.type.partial.forEach(function (plural) {
-    var template = self.cache[plural];
+  // loop over each `partial` subtype
+  this.type.partial.forEach(function (plural) {
+    var collection = this.cache[plural];
 
-    forOwn(template, function (value, key) {
+    // Loop over the templates in the collection
+    forOwn(collection, function (value, key/*, template*/) {
       var data = extend({}, value.locals, value.data);
-      self.cache._locals[key] = data;
+      this.cache._locals[key] = data;
 
       // If a layout is defined, apply it to the partial
-      value.content = self.applyLayout(null, value, data);
+      value.content = this.applyLayout(null, value, data);
 
       // If `mergePartials` is true combine all `partial` subtypes
       if (mergePartials === true) {
         opts.partials[key] = value.content;
+
+      // Otherwise, each partial subtype on a separate object
       } else {
         opts[plural] = opts[plural] || {};
         opts[plural][key] = value.content;
       }
-    });
-  });
+    }, this);
+  }, this);
+
   return opts;
 };
 
@@ -1618,7 +1628,6 @@ Template.prototype.decorate = function(subtype, plural/*, options, fns, done*/) 
 
 Template.prototype.renderBase = function(engine, content, options, cb) {
   debug.render('renderBase: %j', arguments);
-
   if (typeof options === 'function') {
     cb = options;
     options = {};
@@ -1629,6 +1638,64 @@ Template.prototype.renderBase = function(engine, content, options, cb) {
   }
 
   return this.renderAsync(engine, content, options, cb);
+};
+
+/**
+ * Render content on the given `template` object with the specified
+ * engine `options` and `callback`.
+ *
+ * @param  {Object} `template` The template object with content to render.
+ * @param  {Object} `locals` Locals and/or options to pass to registered view engines.
+ * @return {String}
+ * @api public
+ */
+
+Template.prototype.renderTemplate = function(template, locals, cb) {
+  debug.render('renderTemplate: %j', template);
+  if (typeof locals === 'function') {
+    cb = locals;
+    locals = {};
+  }
+
+  if (typeOf(template) !== 'object') {
+    throw new Error('Template#renderTemplate() expects an object, got: "'
+      + typeOf(template) + ' / '+ template + '".');
+  }
+
+  template.options = template.options || {};
+
+  if (hasOwn(template, 'layout')) {
+    template.options.layout = template.layout;
+  }
+
+  // Merge `.render()` locals with template locals
+  locals = this.mergeContext(template, locals);
+  var ext = this.getExt(template, locals);
+
+  // See if delimiters are defined for the template
+  var delims = template.delims || template.options.delims || locals.delims;
+
+  // Ensure that delimiters are cached, so we
+  // can pass them to the engine
+  if (Array.isArray(delims)) {
+    this.addDelims(ext, delims);
+  }
+
+  var settings = this.getDelims(ext);
+  if (settings != null) {
+    locals = extend({}, locals, settings);
+  }
+
+  var engine = this.getEngine(ext);
+
+  // Bind context to helpers before passing to the engine.
+  this.bindHelpers(locals, typeof cb === 'function');
+
+  locals.debugEngine = this.option('debugEngine');
+
+  // if a layout is defined, apply it before rendering
+  var content = this.applyLayout(ext, template, locals);
+  return this.renderBase(engine, content, locals, cb);
 };
 
 /**
@@ -1719,65 +1786,6 @@ Template.prototype.render = function(content, locals, cb) {
   }
 
   return this.renderString(content, locals, cb);
-};
-
-/**
- * Render content on the given `template` object with the specified
- * engine `options` and `callback`.
- *
- * @param  {Object} `template` The template object with content to render.
- * @param  {Object} `locals` Locals and/or options to pass to registered view engines.
- * @return {String}
- * @api public
- */
-
-Template.prototype.renderTemplate = function(template, locals, cb) {
-  debug.render('renderTemplate: %j', template);
-
-  if (typeof locals === 'function') {
-    cb = locals;
-    locals = {};
-  }
-
-  if (typeOf(template) !== 'object') {
-    throw new Error('Template#renderTemplate() expects an object, got: "'
-      + typeOf(template) + ' / '+ template + '".');
-  }
-
-  template.options = template.options || {};
-
-  if (hasOwn(template, 'layout')) {
-    template.options.layout = template.layout;
-  }
-
-  // Merge `.render()` locals with template locals
-  locals = this.context(template, locals);
-  var ext = this.getExt(template, locals);
-
-  // See if delimiters are defined for the template
-  var delims = template.delims || template.options.delims || locals.delims;
-
-  // Ensure that delimiters are cached, so we
-  // can pass them to the engine
-  if (Array.isArray(delims)) {
-    this.addDelims(ext, delims);
-  }
-
-  var settings = this.getDelims(ext);
-  if (settings != null) {
-    locals = extend({}, locals, settings);
-  }
-
-  var engine = this.getEngine(ext);
-
-  // Bind context to helpers before passing to the engine.
-  this.bindHelpers(locals, typeof cb === 'function');
-
-  locals.debugEngine = this.option('debugEngine');
-
-  // if a layout is defined, apply it before rendering
-  var content = this.applyLayout(ext, template, locals);
-  return this.renderBase(engine, content, locals, cb);
 };
 
 /**
@@ -1873,9 +1881,13 @@ Template.prototype.renderType = function(type, subtype) {
 };
 
 /**
- * Bind the current context to helpers.
+ * Expose the current context as `this` in helpers.
+ *
+ *   - Exposes `locals` on the `ctx` property
+ *   - Exposes `Template` on the `app` property
  *
  * @param  {Object} `locals`
+ * @param  {Boolean} `async` Is the helper async?
  * @return {Object}
  */
 
@@ -1898,46 +1910,44 @@ Template.prototype.bindHelpers = function (locals, async) {
 };
 
 /**
- * Merge objects to build-up the context passed to templates.
+ * Build the context to be passed to templates. This can be
+ * overridden by passing a function to the `mergeContext`
+ * option.
  *
- * @param  {Object} `template` A template object
- * @param  {Object} `locals`
- * @return {Object}
- */
-
-Template.prototype.context = function(template, locals) {
-  if (this.option('mergeContext')) {
-    return this.option('mergeContext').apply(this, arguments);
-  }
-
-  locals = extend({}, this.mergePartials(locals), locals);
-  return this.mergeContext(template, locals);
-};
-
-/**
- * Default merge function used if a function is
- * not defined by the user.
+ * ```js
+ * template.option('mergeContext', function(template, locals) {
+ *   return _.merge(template.data, template.locals, locals);
+ * });
+ * ```
  *
- * @param  {Object} `template` A template object
+ * @param  {Object} `template` Template object
  * @param  {Object} `locals`
- * @return {Object}
+ * @return {Object} The object to be passed to engines/templates as context.
  */
 
 Template.prototype.mergeContext = function(template, locals) {
+  if (typeof this.option('mergeContext') === 'function') {
+    return this.option('mergeContext').apply(this, arguments);
+  }
+
   var context = {};
-  extend(context, this.cache.data);
+  merge(context, this.cache.data);
 
   // control the order in which `locals` and `data` are merged
   if (this.enabled('preferLocals')) {
-    extend(context, template.data);
-    extend(context, template.locals);
+    merge(context, template.data);
+    merge(context, template.locals);
   } else {
-    extend(context, template.locals);
-    extend(context, template.data);
+    merge(context, template.locals);
+    merge(context, template.data);
   }
 
-  extend(context, this.cache._locals);
-  extend(context, locals);
+  // Merge in partials to pass to engines
+  merge(context, this.mergePartials(context));
+
+  // Merge in `_locals` from templates
+  merge(context, this.cache._locals);
+  merge(context, locals);
   return context;
 };
 

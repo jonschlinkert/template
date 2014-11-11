@@ -1773,21 +1773,22 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
 
   // if a layout is defined, apply it before rendering
   var content = self.applyLayout(ext, template, locals);
+  var cloned = _.cloneDeep(template);
 
   // when a callback is passed, render and handle middleware in callback
   if (typeof cb === 'function') {
     return this.renderBase(engine, content, locals, function (err, content) {
       if (err) return cb.call(self, err);
-      template.content = content;
-      self.handle('after', template, handleError('after'));
-      return cb.call(self, null, template.content);
+      cloned.content = content;
+      self.handle('after', cloned, handleError('after'));
+      return cb.call(self, null, cloned.content);
     });
   }
 
   // when a callback is not passed, render and handle middleware
-  template.content = this.renderBase(engine, content, locals, cb);
-  this.handle('after', template, handleError('after'));
-  return template.content;
+  cloned.content = this.renderBase(engine, content, locals, cb);
+  this.handle('after', cloned, handleError('after'));
+  return cloned.content;
 };
 
 /**

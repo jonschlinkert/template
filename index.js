@@ -983,7 +983,7 @@ Template.prototype.defaultHelper = function(subtype, plural) {
       return '';
     }
 
-    var locs = extend({}, this.context, locals);
+    var locs = extend({}, this.ctx, locals);
 
     var content = self.renderTemplate(partial, locs);
     if (content instanceof Error) {
@@ -1026,7 +1026,7 @@ Template.prototype.defaultAsyncHelper = function(subtype, plural) {
       return next(null, '');
     }
 
-    var locs = extend({}, this.context, locals);
+    var locs = extend({}, this.ctx, locals);
     var render = self.renderSubtype(subtype);
 
     render(key, locs, function (err, content) {
@@ -1906,8 +1906,8 @@ Template.prototype.bindHelpers = function (locals, async) {
   }
 
   var o = {};
-  o.context = locals;
-  o.root = this;
+  o.ctx = locals;
+  o.app = this;
 
   locals.helpers = utils.bindAll(helpers, o);
 };

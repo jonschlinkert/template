@@ -699,14 +699,9 @@ Template.prototype.registerEngine = function(ext, fn, options) {
 
 Template.prototype.engine = function(exts, fn, options) {
   debug.engine('engine %j:', exts);
-
   arrayify(exts).forEach(function(ext) {
-    if (ext[0] !== '.') {
-      ext = '.' + ext;
-    }
     this.registerEngine(ext, fn, options);
   }.bind(this));
-
   return this;
 };
 

@@ -90,7 +90,7 @@ describe('middleware', function () {
       template.pages(__dirname + '/fixtures/md.md');
       var page = template.cache.pages['md.md'];
 
-      template.route(/\.md/).before(function (file, next) {
+      template.before(/\.md/, function (file, next) {
         file.content = tokens.before(file.content);
         next();
       });
@@ -101,7 +101,7 @@ describe('middleware', function () {
         console.log(content)
         content.should.equal('__ID0__\n__ID1__\n__ID2__');
 
-        template.route(/\.md/).after(function (file, next) {
+        template.after(/\.md/, function (file, next) {
           file.content = tokens.after(file.content);
           next();
         });

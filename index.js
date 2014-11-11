@@ -156,7 +156,7 @@ Template.prototype.defaultOptions = function() {
   this.option('layoutTag', 'body');
   this.option('layoutExt', null);
   this.option('layout', null);
-  this.option('router methods', ['onLoad', 'before', 'after']);
+  this.option('router methods', []);
 
   // Custom function for naming partial keys
   this.option('partialsKey', function (fp) {
@@ -306,7 +306,7 @@ Template.prototype.lazyrouter = function() {
     this.router = new Router({
       caseSensitive: this.enabled('case sensitive routing'),
       strict: this.enabled('strict routing'),
-      methods: this.option('router methods')
+      methods: utils.methods.concat(this.option('router methods'))
     });
     this.router.use(init(this));
   }
@@ -449,6 +449,27 @@ Template.prototype.param = function(name, fn) {
   this.router.param(name, fn);
   return this;
 };
+
+/**
+ * Delegate `.METHOD(...)` calls to `router.METHOD(...)`
+ *
+ * @param {String} `path`
+ * @param {Function} Callback
+ * @return {Object} `Template` for chaining
+ * @api public
+ */
+
+utils.methods.forEach(function(method) {
+  Template.prototype[method] = function(path) {
+    debug.routes('$s: $s', method, path);
+    this.lazyrouter();
+
+    var route = this.router.route(path);
+    var args = slice(arguments, 1);
+    route[method].apply(route, args);
+    return this;
+  };
+});
 
 /**
  * Special-cased "all" method, applying the given route `path`,

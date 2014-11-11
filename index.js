@@ -875,7 +875,6 @@ Template.prototype.helper = function(name, fn) {
 
 Template.prototype.helpers = function(helpers, options) {
   debug.helper('adding helpers: %s', helpers);
-  var files;
 
   if (isObject(helpers)) {
     extend(this._.helpers, helpers);
@@ -894,6 +893,7 @@ Template.prototype.helpers = function(helpers, options) {
       }, this._.helpers);
     }
   }
+
   return this;
 };
 
@@ -1148,8 +1148,6 @@ Template.prototype.load = function(subtype, plural, options, fns, done) {
       // validate the template object before moving on
       self.validate(template);
 
-
-
       // Add a render method to the template
       // TODO: allow additional opts to be passed
       forOwn(template, function (value) {
@@ -1369,11 +1367,10 @@ Template.prototype.mergePartials = function(locals, mergePartials) {
     var template = self.cache[plural];
 
     forOwn(template, function (value, key) {
-      self.cache.locals[key] = value.locals || {};
-      self.cache._data[key] = value.data || {};
+      var data = extend({}, value.locals, value.data);
+      self.cache._data[key] = data;
 
       // If a layout is defined, apply it to the partial
-      var data = extend({}, value.locals, value.data);
       value.content = self.applyLayout(null, value, data);
 
       // If `mergePartials` is true combine all `partial` subtypes
@@ -1470,13 +1467,28 @@ Template.prototype.findPartial = function(key, subtypes) {
  */
 
 Template.prototype.lookup = function(plural, name, ext) {
+  debug('lookup [plural]: %s, [name]: %s', plural, name);
+
+  var base = path.basename(name, path.extname(name));
   var cache = this.cache[plural];
 
+  var ext = this.option('ext');
+  if (ext[0] !== '.') {
+    ext = '.' + ext;
+  }
+
   if (hasOwn(cache, name)) {
+    debug('lookup name: %s', name);
     return cache[name];
   }
 
-  if (hasOwn(cache, name + ext || '.md')) {
+  if (/\./.test(name) && hasOwn(cache, base)) {
+    debug('lookup base: %s', base);
+    return cache[base];
+  }
+
+  if (hasOwn(cache, name + ext)) {
+    debug('lookup name + ext: %s', name + ext || '.md');
     return cache[name + ext || '.md'];
   }
 
@@ -1929,8 +1941,8 @@ Template.prototype.context = function(template, locals) {
 Template.prototype.mergeContext = function(template, locals) {
   var context = {};
   extend(context, this.cache.data);
-  extend(context, this.cache.locals);
 
+  // control the order in which `locals` and `data` are merged
   if (this.enabled('preferLocals')) {
     extend(context, template.data);
     extend(context, template.locals);
@@ -1938,6 +1950,7 @@ Template.prototype.mergeContext = function(template, locals) {
     extend(context, template.locals);
     extend(context, template.data);
   }
+
   extend(context, locals);
   return context;
 };

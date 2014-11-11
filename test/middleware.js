@@ -97,7 +97,6 @@ describe('middleware', function () {
 
       template.render(page, {name: 'Halle'}, function (err, content) {
         if (err) console.log(err);
-        console.log(content)
         content.should.equal('__ID1__\n__ID2__');
         done();
       });
@@ -109,7 +108,6 @@ describe('middleware', function () {
 
       template.render(page, {name: 'Halle'}, function (err, content) {
         if (err) console.log(err);
-        console.log(content)
         content.should.equal('<%= name %>\n<%= name %>');
         done();
       });

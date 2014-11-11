@@ -1359,13 +1359,17 @@ Template.prototype.mergeType = function(type, subtypes) {
  *
  * @param  {Object} `locals`
  * @return {Object}
- * @api private
+ * @api public
  */
 
 Template.prototype.mergePartials = function(locals) {
   debug.template('merging partials [%s]: %j', arguments);
 
   var mergePartials = this.option('mergePartials');
+  if (typeof mergePartials === 'function') {
+    return mergePartials.call(this, locals);
+  }
+
   var opts = extend({partials: {}}, locals);
 
   // loop over each `partial` subtype

@@ -984,7 +984,7 @@ Template.prototype.defaultHelper = function(subtype, plural) {
       return '';
     }
 
-    var locs = merge({}, this.ctx, locals);
+    var locs = merge({}, this.context, locals);
 
     var content = self.renderTemplate(partial, locs);
     if (content instanceof Error) {
@@ -1027,7 +1027,7 @@ Template.prototype.defaultAsyncHelper = function(subtype, plural) {
       return next(null, '');
     }
 
-    var locs = merge({}, this.ctx, locals);
+    var locs = merge({}, this.context, locals);
     var render = self.renderSubtype(subtype);
 
     render(key, locs, function (err, content) {
@@ -1887,7 +1887,7 @@ Template.prototype.renderType = function(type, subtype) {
 /**
  * Expose the current context as `this` in helpers.
  *
- *   - Exposes `locals` on the `ctx` property
+ *   - Exposes `locals` on the `context` property
  *   - Exposes `Template` on the `app` property
  *
  * @param  {Object} `locals`
@@ -1907,7 +1907,7 @@ Template.prototype.bindHelpers = function (locals, async) {
   }
 
   var o = {};
-  o.ctx = locals;
+  o.context = locals;
   o.app = this;
 
   locals.helpers = utils.bindAll(helpers, o);

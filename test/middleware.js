@@ -85,32 +85,34 @@ describe('middleware', function () {
    */
 
 
-  describe.skip('should use middleware before and after render:', function () {
+  describe('should use middleware before and after render:', function () {
     it('should use middleware before and after render:', function (done) {
       template.pages(__dirname + '/fixtures/md.md');
       var page = template.cache.pages['md.md'];
 
-      template.route(/\.md/).before(function (file, next) {
+      template.before(/\.md/, function (file, next) {
         file.content = tokens.before(file.content);
-        next()
+        next();
       });
+
 
       template.render(page, {name: 'Halle'}, function (err, content) {
-        if (err) console.log(err);
-        content.should.equal('__ID1__\n__ID2__');
-        done();
+        if (err) return done(err);
+        content.should.equal('__ID0__\n__ID1__\n__ID2__');
+
+        template.after(/\.md/, function (file, next) {
+          file.content = tokens.after(file.content);
+          next();
+        });
+
+        template.render(page, {name: 'Halle'}, function (err, content) {
+          if (err) return done(err);
+          content.should.equal('<%= a %>\n<%= b %>\n<%= c %>');
+          done();
+        });
+
       });
 
-      template.route(/\.md/).after(function (file, next) {
-        file.content = tokens.after(file.content);
-        next()
-      });
-
-      template.render(page, {name: 'Halle'}, function (err, content) {
-        if (err) console.log(err);
-        content.should.equal('<%= name %>\n<%= name %>');
-        done();
-      });
     });
   });
 });

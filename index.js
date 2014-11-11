@@ -315,6 +315,7 @@ Template.prototype.lazyrouter = function() {
 /**
  * Dispatch `file` through its middleware stack
  *
+ * @param {String} `method` method to dispatch files to (undefined will dispatch to `all`)
  * @param  {Object} `file` File object to be passed through the middleware stack
  * @api private
  */

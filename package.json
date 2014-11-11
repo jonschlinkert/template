@@ -55,7 +55,7 @@
     "delims": "^0.4.0",
     "en-route": "^0.3.0",
     "engine-cache": "^0.6.0",
-    "engine-lodash": "^0.3.3",
+    "engine-lodash": "^0.4.0",
     "escape-delims": "^0.4.0",
     "for-own": "^0.1.2",
     "globby": "^0.1.1",

@@ -709,7 +709,8 @@ Template.prototype.handleDelims = function(ext, engine, template, locals) {
   var escapeDelims = template.escapeDelims
     || template.options.escapeDelims
     || locals.escapeDelims
-    || engine.options && engine.options.escapeDelims;
+    || engine.options && engine.options.escapeDelims
+    || this.option('escapeDelims');
 
   if (escapeDelims && typeof escapeDelims === 'object') {
     if (Array.isArray(escapeDelims)) {

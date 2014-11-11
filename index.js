@@ -156,6 +156,7 @@ Template.prototype.defaultOptions = function() {
   this.option('layoutTag', 'body');
   this.option('layoutExt', null);
   this.option('layout', null);
+  this.option('router methods', ['onLoad', 'before', 'after']);
 
   // Custom function for naming partial keys
   this.option('partialsKey', function (fp) {
@@ -187,7 +188,7 @@ defineGetter(Template.prototype, 'cwd', function () {
 
 Template.prototype.defaultRoutes = function() {
   if (this.enabled('default routes')) {
-    this.route(/\.*/).all(function route(file, next) {
+    this.route(/\.*/).onLoad(function route(file, next) {
       parser.parse(file, function(err) {
         if (err) return next(err);
         next();
@@ -304,7 +305,8 @@ Template.prototype.lazyrouter = function() {
   if (!this.router) {
     this.router = new Router({
       caseSensitive: this.enabled('case sensitive routing'),
-      strict: this.enabled('strict routing')
+      strict: this.enabled('strict routing'),
+      methods: this.option('router methods')
     });
     this.router.use(init(this));
   }
@@ -317,7 +319,13 @@ Template.prototype.lazyrouter = function() {
  * @api private
  */
 
-Template.prototype.handle = function(file, done) {
+Template.prototype.handle = function(method, file, done) {
+  if (typeof method === 'object') {
+    done = file;
+    file = method;
+    method = file.method || undefined;
+  }
+  file.method = method;
   debug.routes('handling: %s', file.path);
   if (!this.router) {
     debug.routes('no routes defined on engine');
@@ -338,7 +346,7 @@ Template.prototype.handle = function(file, done) {
 Template.prototype.dispatch = function(file, fns) {
   forOwn(file, function (value, key) {
     if (fns) this.route(value.path).all(fns);
-    this.handle(value, function (err) {
+    this.handle('onLoad', value, function (err) {
       if (err) {
         console.log(chalk.red('Error running middleware for', key));
         console.log(chalk.red(err));
@@ -1650,6 +1658,7 @@ Template.prototype.renderBase = function(engine, content, options, cb) {
  */
 
 Template.prototype.renderTemplate = function(template, locals, cb) {
+  var self = this;
   debug.render('renderTemplate: %j', template);
   if (typeof locals === 'function') {
     cb = locals;
@@ -1692,9 +1701,36 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
 
   locals.debugEngine = this.option('debugEngine');
 
+  // middleware error handler
+  var handleError = function (method) {
+    return function (err) {
+      if (err) {
+        console.log(chalk.red('Error running ' + method + ' middleware for', template.path));
+        console.log(chalk.red(err));
+      }
+    };
+  };
+
+  // handle the before middleware routes
+  this.handle('before', template, handleError('before'));
+
   // if a layout is defined, apply it before rendering
-  var content = this.applyLayout(ext, template, locals);
-  return this.renderBase(engine, content, locals, cb);
+  var content = self.applyLayout(ext, template, locals);
+
+  // when a callback is passed, render and handle middleware in callback
+  if (typeof cb === 'function') {
+    return this.renderBase(engine, content, locals, function (err, content) {
+      if (err) return cb.call(self, err);
+      template.content = content;
+      self.handle('after', template, handleError('after'));
+      return cb.call(self, null, template.content);
+    });
+  }
+
+  // when a callback is not passed, render and handle middleware
+  template.content = this.renderBase(engine, content, locals, cb);
+  this.handle('after', template, handleError('after'));
+  return template.content;
 };
 
 /**

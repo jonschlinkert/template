@@ -1769,7 +1769,7 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
     };
   };
 
-  // handle the before middleware routes
+  // handle pre-render middleware routes
   this.handle('before', template, handleError('before'));
 
   // if a layout is defined, apply it before rendering
@@ -1788,6 +1788,8 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
 
   // when a callback is not passed, render and handle middleware
   cloned.content = this.renderBase(engine, content, locals, cb);
+
+  // handle post-render middleware routes
   this.handle('after', cloned, handleError('after'));
   return cloned.content;
 };
@@ -1808,21 +1810,7 @@ Template.prototype.renderSync = function(engine, content, options) {
     throw new Error('`.renderSync()` method not found on: "' + engine.name + '".');
   }
   try {
-    // escape delimiters if defined by the user
-    var delims = options.escapeDelims;
-    var escapeDelims;
-
-    if (delims) {
-      escapeDelims = new EscapeDelims();
-      content = escapeDelims.escape(content, delims.from);
-    }
-
-    var res = engine.renderSync(content, options);
-    // un-escape previously escaped delimiters
-    if (delims) {
-      return escapeDelims.unescape(res, delims.to);
-    }
-    return res;
+    return engine.renderSync(content, options);
   } catch (err) {
     debug.err('renderSync: %j', err);
     return err;
@@ -1847,14 +1835,6 @@ Template.prototype.renderAsync = function(engine, content, options, cb) {
   }
 
   try {
-    // escape delimiters if defined by the user
-    var delims = options.escapeDelims;
-    var escapeDelims;
-    if (delims) {
-      escapeDelims = new EscapeDelims();
-      content = escapeDelims.escape(content, delims.from);
-    }
-
     var self = this;
     engine.render(content, options, function (err, res) {
       if (err) {
@@ -1867,11 +1847,6 @@ Template.prototype.renderAsync = function(engine, content, options, cb) {
         if (err) {
           debug.err('renderAsync [helpers]: %j', err);
           return cb.call(self, err);
-        }
-
-        // un-escape previously escaped delimiters
-        if (delims) {
-          res = escapeDelims.unescape(res, delims.to);
         }
 
         cb.call(self, null, res);

@@ -21,7 +21,6 @@ _test
 TODO.md
 benchmark
 
-
 # npmignore
-recipes
+test
 docs

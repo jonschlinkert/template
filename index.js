@@ -325,9 +325,10 @@ Template.prototype.handle = function(method, file, done) {
   if (typeof method === 'object') {
     done = file;
     file = method;
-    method = file.method || undefined;
+    method = (file.options && file.options.method) || undefined;
   }
-  file.method = method;
+  file.options = file.options || {};
+  file.options.method = method;
   debug.routes('handling: %s', file.path);
   if (!this.router) {
     debug.routes('no routes defined on engine');

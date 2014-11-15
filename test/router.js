@@ -154,15 +154,15 @@ describe('template.router()', function() {
     beforeEach(function () {
 
       template.route('/blog/:year/:month/:day/:slug').all(function(file, next) {
-        file.gotParams = [];
-        file.gotParams.push(file.options.params['year']);
-        file.gotParams.push(file.options.params['month']);
-        file.gotParams.push(file.options.params['day']);
-        file.gotParams.push(file.options.params['slug']);
+        file.arbitraryCustomArray = [];
+        file.arbitraryCustomArray.push(file.options.params['year']);
+        file.arbitraryCustomArray.push(file.options.params['month']);
+        file.arbitraryCustomArray.push(file.options.params['day']);
+        file.arbitraryCustomArray.push(file.options.params['slug']);
         next();
       });
 
-      template.route('/blog/2013/04/20/foo').all(function(file, next) {
+      template.route('/blog/2015/04/20/foo').all(function(file, next) {
         file.blogPage = true;
         next();
       });
@@ -170,15 +170,15 @@ describe('template.router()', function() {
 
     it('should dispatch /blog', function(done) {
       var file = {};
-      file.path = '/blog/2013/04/20/foo'
+      file.path = '/blog/2015/04/20/foo'
 
       template.handle(file, function(err) {
         if (err) return done(err);
-        file.gotParams.should.have.length(4);
-        file.gotParams[0].should.equal('2013');
-        file.gotParams[1].should.equal('04');
-        file.gotParams[2].should.equal('20');
-        file.gotParams[3].should.equal('foo');
+        file.arbitraryCustomArray.should.have.length(4);
+        file.arbitraryCustomArray[0].should.equal('2015');
+        file.arbitraryCustomArray[1].should.equal('04');
+        file.arbitraryCustomArray[2].should.equal('20');
+        file.arbitraryCustomArray[3].should.equal('foo');
         file.blogPage.should.be.true;
         done();
       });

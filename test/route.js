@@ -123,16 +123,16 @@ describe('template.route()', function () {
   //   });
 
   //   it('should match correctly', function () {
-  //     route.match('/blog/2013/04/18/hello-world').should.be.true;
+  //     route.match('/blog/2015/04/18/hello-world').should.be.true;
   //     route.params.should.be.instanceof(Object);
   //     Object.keys(route.params).should.have.length(4);
-  //     route.params.year.should.equal('2013');
+  //     route.params.year.should.equal('2015');
   //     route.params.month.should.equal('04');
   //     route.params.day.should.equal('18');
   //     route.params.slug.should.equal('hello-world');
 
-  //     route.match('/blog/2013/04/18').should.be.false;
-  //     route.match('/not-blog/2013/04/18/hello-world').should.be.false;
+  //     route.match('/blog/2015/04/18').should.be.false;
+  //     route.match('/not-blog/2015/04/18/hello-world').should.be.false;
   //   });
   // });
 });

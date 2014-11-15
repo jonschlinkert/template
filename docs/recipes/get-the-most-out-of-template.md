@@ -18,28 +18,27 @@ This document isn't meant to be comprehensive, just a starting point to get you 
 
 ## .transform
 
-> **Data transformation**. Good for executing a function **once** to update global data and options.
+> Good for updating global data and options.
 
 Transforms are executed immediately and passed the current app ([`template`](https://github.com/jonschlinkert/template)) upon initialization so data and options can be updated.
 
 **Example**
 
 ```js
-// adds package.json data to the app
+// loads package.json data onto `app.cache.data`
 app.transform('load-package-data', function(app) {
   app.data('package.json');
 });
 ```
 
-
 ## .create
 
-> **Custom templates types**. Good for building collections of templates that may need [custom loaders](#loaders), [custom engines](#engines), or to be rendered at different times.
+> Good for building collections of templates that may need [custom loaders](#loaders), [custom engines](#engines), or to be rendered at different times.
 
 **Usage**
 
  - template types can be created along with options specifying the [engine](#engines) and/or [loader](#loaders) to use
- - each template type is stored in its own collection, making it easy to keep templates with the same name separated
+ - each template type is stored in its own collection
 
 **Example**
 

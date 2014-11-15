@@ -155,10 +155,10 @@ describe('template.router()', function() {
 
       template.route('/blog/:year/:month/:day/:slug').all(function(file, next) {
         file.gotParams = [];
-        file.gotParams.push(file.params['year']);
-        file.gotParams.push(file.params['month']);
-        file.gotParams.push(file.params['day']);
-        file.gotParams.push(file.params['slug']);
+        file.gotParams.push(file.options.params['year']);
+        file.gotParams.push(file.options.params['month']);
+        file.gotParams.push(file.options.params['day']);
+        file.gotParams.push(file.options.params['slug']);
         next();
       });
 

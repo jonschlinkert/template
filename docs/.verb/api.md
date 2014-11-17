@@ -1,0 +1,1 @@
+{%= comments("index.js", {cwd: __dirname}) %}

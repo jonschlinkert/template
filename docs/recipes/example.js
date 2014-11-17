@@ -1,14 +1,13 @@
 'uses strict';
 
-var Template = require('./');
+var Template = require('../..');
 var template = new Template();
-var globber = require('./test/lib/globber');
-var _ = require('lodash');
+var globber = require('../../test/lib/globber');
+
 
 template.transform('username', function (app) {
   app.cache.data.username = 'jonschlinkert';
 });
-
 
 template.create('doc', { isRenderable: true }, [
   function (file, next) {

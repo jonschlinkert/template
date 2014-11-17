@@ -50,7 +50,7 @@
     "array-slice": "^0.2.2",
     "arrayify-compact": "^0.1.0",
     "chalk": "^0.5.1",
-    "config-cache": "^0.3.1",
+    "config-cache": "^0.3.4",
     "debug": "^2.1.0",
     "delims": "^0.4.0",
     "en-route": "^0.3.0",

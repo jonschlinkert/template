@@ -37,24 +37,13 @@ template.create('apidoc', [
 
 // add a new helper that adds `apidoc` contents to the cache
 template.asyncHelper('apidoc', function (name, options, next) {
-  var fn = null;
   var ctx = this && this.context;
-  if (typeof options === 'function') {
-    // for lodash templates
-    fn = options;
-  } else if (typeof options === 'object') {
-    // for handlebars templates
-    fn = options.fn;
-  }
-
-  // call the function to "render" the content
-  var content = fn(ctx);
-
+   // call the function to "render" the content
+  var content = options.fn(ctx);
   // add content as a partial
-  template.partial(name, content);
-
-  // don't return anything
-  next(null, '');
+  template.partial(name, content, function (err) {
+    next(err, '');
+  });
 });
 
 

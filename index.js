@@ -2018,13 +2018,14 @@ Template.prototype.renderType = function(type, subtype) {
 Template.prototype.bindHelpers = function (locals, async) {
   debug.helper('binding helpers: %j', locals);
 
-  // TODO: use or merge in locals.helpers instead/as well
-  var helpers = _.cloneDeep(this._.helpers);
+  var helpers = _.cloneDeep(this.options.helpers || {});
+  extend(helpers, _.cloneDeep(this._.helpers));
   extend(helpers, _.cloneDeep(this._.imports));
 
   if (async) {
     helpers = extend({}, helpers, this._.asyncHelpers);
   }
+  extend(helpers, _.cloneDeep(locals.helpers || {}));
 
   var o = {};
   o.context = locals;

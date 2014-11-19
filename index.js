@@ -16,7 +16,7 @@ var chalk = require('chalk');
 var Delims = require('delims');
 var forOwn = require('for-own');
 var typeOf = require('kind-of');
-var Layouts = require('layouts');
+var layouts = require('layouts');
 var routes = require('en-route');
 var Cache = require('config-cache');
 var Helpers = require('helper-cache');
@@ -61,6 +61,7 @@ var Template = module.exports = Cache.extend({
   constructor: function(options) {
     Template.__super__.constructor.call(this, options);
     this.initTemplate();
+    this.loadDefaults();
   }
 });
 
@@ -85,36 +86,42 @@ Template.prototype.initTemplate = function() {
   this.layoutSettings = {};
   this.transforms = {};
 
+  // Engine properties
   this._ = {};
   this._.mixins = {};
   this._.imports = {};
+
+  // View types (categories)
   this.type = {};
   this.type.partial = [];
   this.type.renderable = [];
   this.type.layout = [];
-  this.subtype = {};
+
+  // View collections
   this.views = {};
-
-  // Prime the cache
-  this.set('_locals', {});
-  this.set('locals', {});
-  this.set('layouts', {});
-  this.set('partials', {});
-  this.set('anonymous', {});
-  this.set('pages', {});
-
   this.view('layouts', {});
   this.view('partials', {});
   this.view('anonymous', {});
   this.view('pages', {});
+  this.inflection = {};
 
+  this.set('locals', {});
+};
+
+/**
+ * Load all defaults
+ *
+ * @api private
+ */
+
+Template.prototype.loadDefaults = function() {
   this.defaultConfig();
   this.defaultOptions();
-  this.defaultDelimiters();
   this.defaultRoutes();
+  this.defaultTransforms();
+  this.defaultDelimiters();
   this.defaultTemplates();
   this.defaultEngines();
-  this.defaultTransforms();
 };
 
 /**
@@ -332,19 +339,21 @@ Template.prototype.lazyrouter = function() {
  */
 
 Template.prototype.handle = function(method, file, done) {
+  debug.routes('handling: %j', arguments);
+
   if (typeof method === 'object') {
-    done = file;
-    file = method;
-    method = (file.options && file.options.method) || undefined;
+    done = file; file = method; method = null;
   }
+
   file.options = file.options || {};
   file.options.method = method;
-  debug.routes('handling: %s', file.path);
+
   if (!this.router) {
     debug.routes('no routes defined on engine');
     done();
     return;
   }
+
   this.router.handle(file, done);
 };
 
@@ -386,9 +395,11 @@ Template.prototype.use = function (fn) {
   // default path to '/'
   if (typeof fn !== 'function') {
     var arg = fn;
+
     while (Array.isArray(arg) && arg.length !== 0) {
       arg = arg[0];
     }
+
     // first arg is the path
     if (typeof arg !== 'function') {
       offset = 1;
@@ -432,6 +443,7 @@ Template.prototype.use = function (fn) {
 Template.prototype.route = function(path) {
   debug.routes('route: %s', path);
   this.lazyrouter();
+
   return this.router.route(path);
 };
 
@@ -479,6 +491,7 @@ utils.methods.forEach(function(method) {
 
     var route = this.router.route(path);
     var args = slice(arguments, 1);
+
     route[method].apply(route, args);
     return this;
   };
@@ -500,33 +513,9 @@ Template.prototype.all = function(path) {
 
   var route = this.router.route(path);
   var args = slice(arguments, 1);
+
   route.all.apply(route, args);
   return this;
-};
-
-/**
- * Lazily add a `Layout` instance if it has not yet been added.
- * Also normalizes settings to pass to the `layouts` library.
- *
- * We can't instantiate `Layout` in the defaultConfig because
- * it reads settings which might not be set until after init.
- *
- * @api private
- */
-
-Template.prototype.lazyLayouts = function(ext, options) {
-  if (!hasOwn(this.layoutSettings, ext)) {
-    var opts = merge({}, this.options, options);
-
-    debug.layout('lazy layouts: %s', ext);
-
-    this.layoutSettings[ext] = new Layouts({
-      delims: opts.layoutDelims,
-      layouts: opts.layouts,
-      locals: opts.locals,
-      tag: opts.layoutTag,
-    });
-  }
 };
 
 /**
@@ -538,48 +527,34 @@ Template.prototype.lazyLayouts = function(ext, options) {
  * @api private
  */
 
-Template.prototype.applyLayout = function(ext, template, locals) {
-  debug.layout('applying layout [ext]: %s', ext);
+Template.prototype.applyLayout = function(template, locals) {
+  debug.layout('applying layout: %j', arguments);
 
-  // Get the name of the (starting) layout to be used
-  var layout = utils.getLayout(template, locals);
-  var extname = path.extname(layout);
-  var layoutEngine;
-
-  if (hasOwn(this.layoutSettings, extname)) {
-    layoutEngine = this.layoutSettings[extname];
-  } else if (ext != null) {
-    if (ext[0] !== '.') {
-      ext = '.' + ext;
-    }
-    layoutEngine = this.layoutSettings[ext];
-  }
-
-  // If no layout settings are found, or a layout has already
-  // been applied, just return the content as-is
-  if (layoutEngine == null || template.options.layoutApplied) {
+  // If a layout has already been applied, return the content
+  if (template.options.layoutApplied) {
     return template.content;
   }
 
   template.options.layoutApplied = true;
-  debug.layout('applying layout: %j', layoutEngine);
-
   var opts = {};
   if (template.options.isPartial) {
     opts.defaultLayout = false;
   }
 
+  // Get the name of the (starting) layout to be used
+  var layout = utils.getLayout(template, locals);
+
   // If `layoutExt` is defined on the options, append
-  // it to the layout name before passing to `layouts`
-  var optsExt = this.option('layoutExt');
-  if (optsExt) {
-    if (optsExt[0] !== '.') {
-      optsExt = '.' + optsExt;
+  // it to the layout name before passing the name to [layouts]
+  var ext = this.option('layoutExt');
+  if (ext) {
+    if (ext[0] !== '.') {
+      ext = '.' + ext;
     }
-    layout = layout + optsExt;
+    layout = layout + ext;
   }
-  var result = layoutEngine.render(template.content, layout, opts);
-  return result.content;
+
+  return layouts(template.content, layout, this.views.layouts);
 };
 
 /**
@@ -639,15 +614,20 @@ Template.prototype.addDelims = function(ext, arr, delims, settings) {
   }
 
   debug.delims('adding delims [ext]: %s', ext, arr);
+  var opts = {};
+
 
   if (Array.isArray(delims)) {
-    this.lazyLayouts(ext, {layoutDelims: delims}, settings || {});
+    opts.layout = delims;
   } else {
     settings = delims;
     delims = this.option('layoutDelims');
   }
 
-  this.delims[ext] = merge({}, this.makeDelims(arr, settings), settings);
+  extend(opts, this.makeDelims(arr, settings));
+  extend(opts, settings);
+
+  this.delims[ext] = opts;
   return this;
 };
 
@@ -764,7 +744,7 @@ Template.prototype.registerEngine = function(ext, fn, options) {
     this.engines[ext].delims = this.getDelims(ext);
   }
 
-  this.lazyLayouts(ext, opts);
+  // this.lazyLayouts(ext, opts);
   return this;
 };
 
@@ -1130,7 +1110,6 @@ Template.prototype.loader = function (plural, options, stack, done) {
   debug.loader('loader: %j', arguments);
   var self = this;
 
-
   if (arguments.length !== 1) {
     done = done || function () {};
     stack = stack || [];
@@ -1160,19 +1139,19 @@ Template.prototype.loader = function (plural, options, stack, done) {
       }
 
       // find our stack to call
-      var loaderStack = stack.concat(fns);
+      var loaders = stack.concat(fns);
 
-      // pass the loaderStack through the waterfall to get the templates
-      var firstFn = loaderStack[0];
+      // pass the loaders through the waterfall to get the templates
+      var firstFn = loaders[0];
 
-      loaderStack[0] = function (next) {
+      loaders[0] = function (next) {
         args.push(next);
         return firstFn.apply(self, args);
       };
 
-      loaderStack = utils.bindAll(loaderStack, self);
+      loaders = utils.bindAll(loaders, self);
 
-      return utils.runLoaderStack(loaderStack, function (err, template) {
+      return utils.runLoaderStack(loaders, function (err, template) {
         return callback(err, done(err, template) || template);
       });
 
@@ -1318,16 +1297,10 @@ Template.prototype.normalize = function(plural, template, options) {
 
   forOwn(template, function (value, key) {
     value.options = extend({ subtype: plural }, options, value.options);
-
     var ext = this.getExt(value, options);
-    this.lazyLayouts(value.ext, value.options);
 
-    value.layout = utils.getLayout(value);
+    value.layout = value.layout || value.locals.layout;
     template[key] = value;
-
-    if (value.options.isLayout) {
-      this.layoutSettings[ext].setLayout(template);
-    }
   }, this);
   return template;
 };
@@ -1369,7 +1342,7 @@ Template.prototype.setType = function(subtype, plural, options) {
   var opts = extend({}, options);
 
   // Make an association between `subtype` and its `plural`
-  this.subtype[subtype] = plural;
+  this.inflection[subtype] = plural;
 
   if (opts.isRenderable) {
     this.type.renderable.push(plural);
@@ -1482,10 +1455,9 @@ Template.prototype.mergePartials = function(locals) {
     // Loop over the templates in the collection
     forOwn(collection, function (value, key/*, template*/) {
       var data = extend({}, value.locals, value.data);
-      this.cache._locals[key] = data;
+      this.cache.locals[key] = data;
 
-      // If a layout is defined, apply it to the partial
-      value.content = this.applyLayout(null, value, data);
+      value.content = this.applyLayout(value, data);
 
       // If `mergePartials` is true combine all `partial` subtypes
       if (mergePartials === true) {
@@ -1771,10 +1743,7 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   }
 
   template.options = template.options || {};
-
-  if (hasOwn(template, 'layout')) {
-    template.options.layout = template.layout;
-  }
+  template.options.layout = template.layout;
 
   // Merge `.render()` locals with template locals
   locals = this.mergeContext(template, locals);
@@ -1785,7 +1754,7 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   locals = this.handleDelims(ext, engine, template, locals);
 
   var settings = this.getDelims(ext);
-  if (settings != null) {
+  if (settings) {
     locals = extend({}, locals, settings);
   }
 
@@ -1798,7 +1767,9 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   this.handle('before', template, handleError('before'));
 
   // if a layout is defined, apply it before rendering
-  var content = self.applyLayout(ext, template, locals);
+  var content = template.content;
+  content = this.applyLayout(template, locals)
+
   var cloned = _.cloneDeep(template);
 
   // when a callback is passed, render and handle middleware in callback
@@ -1956,7 +1927,7 @@ Template.prototype.renderSubtype = function(subtype) {
   debug.render('render subtype: [%s / %s]', subtype);
 
   // get the plural name of the given subtype
-  var plural = this.subtype[subtype];
+  var plural = this.inflection[subtype];
   var self = this;
 
   return function (key, locals, cb) {
@@ -2069,8 +2040,8 @@ Template.prototype.mergeContext = function(template, locals) {
   // Merge in partials to pass to engines
   merge(context, this.mergePartials(context));
 
-  // Merge in `_locals` from templates
-  merge(context, this.cache._locals);
+  // Merge in `locals` from templates
+  merge(context, this.cache.locals);
   merge(context, locals);
   return context;
 };

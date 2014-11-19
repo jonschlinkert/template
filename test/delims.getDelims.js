@@ -19,7 +19,8 @@ describe('.getDelims():', function () {
     template.getDelims().should.eql({
       escape: /\<\%-([\s\S]+?)\%\>/g,
       evaluate: /\<\%([\s\S]+?)\%\>/g,
-      interpolate: /\<\%=([\s\S]+?)\%\>/g
+      interpolate: /\<\%=([\s\S]+?)\%\>/g,
+      layout: ['{%', '%}']
     });
   });
 

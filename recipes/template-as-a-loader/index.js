@@ -6,6 +6,7 @@ var template = new Template();
 template.enable('debugEngine');
 template.engine('.hbs', handlebars);
 
+
 // add a new template type 'apidoc' with a custom loader function
 template.create('apidoc', [
   // add the docs to the pages collection and pass the keys along

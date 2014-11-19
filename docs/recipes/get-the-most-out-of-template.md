@@ -15,6 +15,13 @@ If you need to extend Template in some way, you have a number of options, each w
 
 This document isn't meant to be comprehensive, just a starting point to get you headed in the right direction. Click on the links below each section to learn more.
 
+## Getting started
+
+Other useful information to help you get started with Template:
+
+ - [the-template-object](#the-template-object)
+ - [](#the-template-object)
+
 
 ## .transform
 

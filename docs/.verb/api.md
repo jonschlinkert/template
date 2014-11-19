@@ -1,1 +1,1 @@
-{%= comments("index.js", {cwd: __dirname}) %}
+{%= comments("index.js", {cwd: dest.dirname}) %}

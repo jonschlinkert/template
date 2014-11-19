@@ -1795,7 +1795,7 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   locals.debugEngine = this.option('debugEngine');
 
   // handle pre-render middleware routes
-  this.handle('before', template, handleError('before'));
+  this.handle('before', template, handleError(template, 'before'));
 
   // if a layout is defined, apply it before rendering
   var content = self.applyLayout(ext, template, locals);
@@ -1806,7 +1806,7 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
     return this.renderBase(engine, content, locals, function (err, content) {
       if (err) return cb.call(self, err);
       cloned.content = content;
-      self.handle('after', cloned, handleError('after'));
+      self.handle('after', cloned, handleError(template, 'after'));
       return cb.call(self, null, cloned.content);
     });
   }
@@ -1815,7 +1815,7 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   cloned.content = this.renderBase(engine, content, locals, cb);
 
   // handle post-render middleware routes
-  this.handle('after', cloned, handleError('after'));
+  this.handle('after', cloned, handleError(template, 'after'));
   return cloned.content;
 };
 

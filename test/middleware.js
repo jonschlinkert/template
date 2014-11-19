@@ -112,7 +112,38 @@ describe('middleware', function () {
         });
 
       });
+    });
 
+    it('should handle errors in before and after render middleware:', function (done) {
+      template.pages(__dirname + '/fixtures/md.md');
+      var page = template.cache.pages['md.md'];
+
+      template.before(/\.md/, function (file, next) {
+        file.content = tokens.before(file.content);
+        throw new Error('before error, should get handled');
+      }, function (err, file, next) {
+        if (err) return next();
+        done(new Error('Should have handled the before error'));
+      });
+
+      template.render(page, {name: 'Halle'}, function (err, content) {
+        if (err) return done(err);
+        content.should.equal('__ID0__\n__ID1__\n__ID2__');
+
+        template.after(/\.md/, function (file, next) {
+          file.content = tokens.after(file.content);
+          throw new Error('after error, should get handled');
+        }, function (err, file, next) {
+          if (err) return next();
+          done(new Error('should have handled the after error'));
+        });
+
+        template.render(page, {name: 'Halle'}, function (err, content) {
+          if (err) return done(err);
+          content.should.equal('<%= a %>\n<%= b %>\n<%= c %>');
+          done();
+        });
+      });
     });
   });
 });

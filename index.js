@@ -554,7 +554,10 @@ Template.prototype.applyLayout = function(template, locals) {
     layout = layout + ext;
   }
 
-  return layouts(template.content, layout, this.views.layouts);
+  var delims = (locals && locals.layoutDelims) || template.layoutDelims;
+  var opts = {delims: delims};
+
+  return layouts(template.content, layout, this.views.layouts, opts);
 };
 
 /**
@@ -618,7 +621,7 @@ Template.prototype.addDelims = function(ext, arr, delims, settings) {
 
 
   if (Array.isArray(delims)) {
-    opts.layout = delims;
+    opts.layoutDelims = delims;
   } else {
     settings = delims;
     delims = this.option('layoutDelims');
@@ -743,8 +746,6 @@ Template.prototype.registerEngine = function(ext, fn, options) {
     this.addDelims(ext, opts.delims);
     this.engines[ext].delims = this.getDelims(ext);
   }
-
-  // this.lazyLayouts(ext, opts);
   return this;
 };
 
@@ -1768,7 +1769,7 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
 
   // if a layout is defined, apply it before rendering
   var content = template.content;
-  content = this.applyLayout(template, locals)
+  content = this.applyLayout(template, locals);
 
   var cloned = _.cloneDeep(template);
 

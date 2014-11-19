@@ -93,6 +93,7 @@ Template.prototype.initTemplate = function() {
   this.type.renderable = [];
   this.type.layout = [];
   this.subtype = {};
+  this.views = {};
 
   // Prime the cache
   this.set('_locals', {});
@@ -101,6 +102,11 @@ Template.prototype.initTemplate = function() {
   this.set('partials', {});
   this.set('anonymous', {});
   this.set('pages', {});
+
+  this.view('layouts', {});
+  this.view('partials', {});
+  this.view('anonymous', {});
+  this.view('pages', {});
 
   this.defaultConfig();
   this.defaultOptions();
@@ -234,9 +240,11 @@ Template.prototype.defaultDelimiters = function() {
 };
 
 /**
- * Default loader to use when a loader is not defined
- * for a template subtype.
+ * Default loader to use when a user-defined loader is
+ * not given for a template collection.
  *
+ * @param {String} `plural` The collection name, e.g. `pages`
+ * @param {Object} `options`
  * @api private
  */
 
@@ -1193,7 +1201,7 @@ Template.prototype.load = function(subtype, plural, options, fns, done) {
 
   var opts = extend({}, options);
 
-  var getLoader = function () {
+  function getLoader() {
     if (opts.loadFn) {
       var callback = arguments[arguments.length - 1];
       var args = slice(arguments, 0, arguments.length - 1);
@@ -1202,7 +1210,7 @@ Template.prototype.load = function(subtype, plural, options, fns, done) {
     } else {
       self.loader(plural, opts, fns, done).apply(self, arguments);
     }
-  };
+  }
 
   return function (/*key, value, fns*/) {
     debug.loader('loading template: %j', arguments);
@@ -1325,9 +1333,31 @@ Template.prototype.normalize = function(plural, template, options) {
 };
 
 /**
+ * Get the given `collection` from views. Optionally
+ * pass a `name` to get a specific template from the
+ * collection.
+ *
+ * @param {String} `collection`
+ * @param {String} `name`
+ * @return {Object}
+ * @api public
+ */
+
+Template.prototype.view = function(collection, name) {
+  if (this.views.hasOwnProperty(collection)) {
+    var collection = this.views[collection];
+    if (!name) {
+      return collection;
+    }
+    return collection[name];
+  }
+  return null;
+};
+
+/**
  * Private method for tracking the `subtypes` created for each
- * template type, to make it easier to get/set templates and
- * pass them properly to registered engines.
+ * template collection type, to make it easier to get/set templates
+ * and pass them properly to registered engines.
  *
  * @param {String} `plural` e.g. `pages`
  * @param {Object} `options`
@@ -1344,9 +1374,11 @@ Template.prototype.setType = function(subtype, plural, options) {
   if (opts.isRenderable) {
     this.type.renderable.push(plural);
   }
+
   if (opts.isLayout) {
     this.type.layout.push(plural);
   }
+
   if (opts.isPartial || (!opts.isRenderable && !opts.isLayout)) {
     this.type.partial.push(plural);
     opts.isPartial = true;
@@ -1355,7 +1387,7 @@ Template.prototype.setType = function(subtype, plural, options) {
 };
 
 /**
- * Get all templates of the given [type]. Valid values are
+ * Get all views of the given [type]. Valid values are
  * `renderable`, `layout` or `partial`.
  *
  * ```js
@@ -1381,8 +1413,8 @@ Template.prototype.getType = function(type) {
 };
 
 /**
- * Merge all templates from the given `type` into a single
- * object.
+ * Merge all collections of the given `type` into a single
+ * collection. e.g. `partials` and `includes` would be merged.
  *
  * If an array of `subtypes` is passed, only those `subtypes`
  * will be merged and the order in which the subtypes are defined
@@ -1471,9 +1503,9 @@ Template.prototype.mergePartials = function(locals) {
 };
 
 /**
- * Search all `subtype` objects in the given `type`, returning
+ * Search all `subtype` objects of the given `type`, returning
  * the first template found with the given `key`. Optionally pass
- * an array an array of `subtypes` to limit the search;
+ * an array of `subtypes` to limit the search;
  *
  * @param {String} `type` The template type to search.
  * @param {String} `key` The template to find.
@@ -1543,7 +1575,7 @@ Template.prototype.findPartial = function(key, subtypes) {
 
 /**
  * Convenience method for finding a template by `name` on
- * the given `plural` cache, with or without a file extension.
+ * the given collection. Optionally specify a file extension.
  *
  * @param {String} `plural` The template cache to search.
  * @param {String} `name` The name of the template.
@@ -1571,9 +1603,9 @@ Template.prototype.lookup = function(plural, name, ext) {
 };
 
 /**
- * Add a new template `sub-type`, along with associated get/set methods.
+ * Create a new view collection and associated convience methods.
  *
- * When you only specify a name for the type, a plural form is created
+ * Note that when you only specify a name for the type, a plural form is created
  * automatically (e.g. `page` and `pages`). However, you can define the
  * `plural` form explicitly if necessary.
  *
@@ -1592,7 +1624,7 @@ Template.prototype.create = function(subtype, plural/*, options, fns, done*/) {
   var args = slice(arguments);
 
   /**
-   * Normalize args make loader args more predictable
+   * Normalize args to make them more predictable for loaders
    */
 
   if (typeof plural !== 'string') {
@@ -1761,16 +1793,6 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   this.bindHelpers(locals, typeof cb === 'function');
 
   locals.debugEngine = this.option('debugEngine');
-
-  // middleware error handler
-  var handleError = function (method) {
-    return function (err) {
-      if (err) {
-        console.log(chalk.red('Error running ' + method + ' middleware for', template.path));
-        console.log(chalk.red(err));
-      }
-    };
-  };
 
   // handle pre-render middleware routes
   this.handle('before', template, handleError('before'));
@@ -2052,6 +2074,23 @@ Template.prototype.mergeContext = function(template, locals) {
   merge(context, locals);
   return context;
 };
+
+/**
+ * Middleware error handler
+ *
+ * @param {Object} `template`
+ * @param {String} `method` name
+ * @api private
+ */
+
+function handleError(template, method) {
+  return function (err) {
+    if (err) {
+      console.log(chalk.red('Error running ' + method + ' middleware for', template.path));
+      console.log(chalk.red(err));
+    }
+  };
+}
 
 /**
  * Create a camel-cased method name for the given

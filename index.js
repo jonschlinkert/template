@@ -25,8 +25,8 @@ var arrayify = require('arrayify-compact');
 var engineLodash = require('engine-lodash');
 var EscapeDelims = require('escape-delims');
 var parser = require('parser-front-matter');
-var slice = require('array-slice');
 var flatten = require('arr-flatten');
+var slice = require('array-slice');
 var arr = require('arr');
 
 var init = require('./lib/middleware/init');
@@ -537,9 +537,9 @@ Template.prototype.applyLayout = function(template, locals) {
   }
 
   template.options.layoutApplied = true;
-  var opts = {};
+
   if (template.options.isPartial) {
-    opts.defaultLayout = false;
+    locals.defaultLayout = false;
   }
 
   // Get the name of the (starting) layout to be used
@@ -558,7 +558,7 @@ Template.prototype.applyLayout = function(template, locals) {
   // Merge `layout` collections based on settings
   var stack = this.mergeLayouts(locals);
 
-  return layouts(template.content, layout, stack);
+  return layouts(template.content, layout, stack, locals);
 };
 
 /**

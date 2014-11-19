@@ -1,40 +1,13 @@
 var handlebars = require('engine-handlebars');
+var fs = require('fs');
 var Template = require('../..');
 var template = new Template();
 
 template.enable('debugEngine');
 template.engine('.hbs', handlebars);
-template.data({
-  foo: 'foo value',
-  bar: 'bar value',
-  baz: 'baz value',
-  bang: 'bang value'
-});
 
-// add a new helper that adds `apidoc` contents to the cache
-template.helper('apidoc', function (name, options) {
-  var fn = null;
-  var ctx = this && this.context;
-  if (typeof options === 'function') {
-    // for lodash templates
-    fn = options;
-  } else if (typeof options === 'object') {
-    // for handlebars templates
-    fn = options.fn;
-  }
-
-  // call the function to "render" the content
-  var content = fn(ctx);
-
-  // add content as a partial
-  template.partial(name, content);
-
-  // don't return anything
-});
-
-
-// add a new template type 'api-docs' with a custom loader function
-template.create('api-doc', [
+// add a new template type 'apidoc' with a custom loader function
+template.create('apidoc', [
   // add the docs to the pages collection and pass the keys along
   function (patterns, next) {
     var docs = [];
@@ -61,13 +34,38 @@ template.create('api-doc', [
   }
 ]);
 
-template['api-doc']('./api-docs.hbs', function () {
+
+// add a new helper that adds `apidoc` contents to the cache
+template.asyncHelper('apidoc', function (name, options, next) {
+  var fn = null;
+  var ctx = this && this.context;
+  if (typeof options === 'function') {
+    // for lodash templates
+    fn = options;
+  } else if (typeof options === 'object') {
+    // for handlebars templates
+    fn = options.fn;
+  }
+
+  // call the function to "render" the content
+  var content = fn(ctx);
+
+  // add content as a partial
+  template.partial(name, content);
+
+  // don't return anything
+  next(null, '');
+});
+
+
+
+template.apidocs('./api-docs.hbs', function () {
   // now that this is loaded, we can use the partials in the markdown file
   var keys = Object.keys(template.cache.pages);
   keys.forEach(function (key) {
     var page = template.cache.pages[key];
     page.render(function (err, content) {
-      console.log(arguments);
+      fs.writeFileSync('README.md', content);
     });
   });
 });

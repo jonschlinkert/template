@@ -12,18 +12,18 @@ var should = require('should');
 var Template = require('..');
 var template;
 
-describe('template get', function () {
+describe('template view', function () {
   beforeEach(function () {
     template = new Template();
   });
 
-  it('should `.get()` default template types from the cache.', function () {
-    template.get('partials').should.be.an.object;
-    template.get('layouts').should.be.an.object;
-    template.get('pages').should.be.an.object;
+  it('should `.view()` default template types from the cache.', function () {
+    template.view('partials').should.be.an.object;
+    template.view('layouts').should.be.an.object;
+    template.view('pages').should.be.an.object;
   });
 
-  it('should `.get()` custom template types:', function () {
+  it('should `.view()` custom template types:', function () {
     template.create('doc', 'docs');
     template.doc('abc', {content: 'This is a document'});
     template.getDoc('abc').should.be.an.object;

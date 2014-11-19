@@ -116,7 +116,7 @@ describe('middleware', function () {
 
     it('should handle errors in before and after render middleware:', function (done) {
       template.pages(__dirname + '/fixtures/md.md');
-      var page = template.cache.pages['md.md'];
+      var page = template.views.pages['md.md'];
 
       template.before(/\.md/, function (file, next) {
         file.content = tokens.before(file.content);

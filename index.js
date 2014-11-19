@@ -557,7 +557,7 @@ Template.prototype.applyLayout = function(template, locals) {
   var delims = (locals && locals.layoutDelims) || template.layoutDelims;
   var opts = {delims: delims};
 
-  return layouts(template.content, layout, this.views.layouts, opts);
+  return layouts(template.content, layout, this.mergeType('layout'), opts);
 };
 
 /**

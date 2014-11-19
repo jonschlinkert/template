@@ -29,7 +29,7 @@ describe('template.option()', function() {
       template.page('b.tmpl', {content: '<title><%= title %></title>', title: 'Lo-Dash'});
       template.page('d.swig', {content: '<title>{{title}}</title>', title: 'Swig'});
 
-      Object.keys(template.cache.pages).forEach(function(name) {
+      Object.keys(template.views.pages).forEach(function(name) {
         var ext = path.extname(name);
 
         template.render(name, function (err, content) {

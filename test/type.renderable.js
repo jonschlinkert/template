@@ -34,7 +34,7 @@ describe('custom `renderable` types:', function () {
     template.page('f.hbs', '<title>{{author}}</title>', {author: 'Jon Schlinkert'});
     template.page('g.md', '---\nauthor: Brian Woodward\n---\n<title>{{author}}</title>', {author: 'Jon Schlinkert'});
 
-    forOwn(template.cache.pages, function (value, key) {
+    forOwn(template.views.pages, function (value, key) {
       template.render(key, function (err, content) {
         if (err) console.log(err);
         content.should.equal('<title>Jon Schlinkert</title>');
@@ -48,7 +48,7 @@ describe('custom `renderable` types:', function () {
     template.engine('md', consolidate.handlebars);
     template.page('fixture.md', '---\nauthor: Brian Woodward\n---\n<title>{{author}}</title>', {author: 'Jon Schlinkert'});
 
-    forOwn(template.cache.pages, function (value, key) {
+    forOwn(template.views.pages, function (value, key) {
       template.render(key, function (err, content) {
         if (err) console.log(err);
         content.should.equal('<title>Jon Schlinkert</title>');
@@ -88,7 +88,7 @@ describe('custom `renderable` types:', function () {
         author: 'Jon Schlinkert'
       });
 
-      forOwn(template.cache.posts, function(value, key) {
+      forOwn(template.views.posts, function(value, key) {
         template.render(key, function (err, content) {
           if (err) console.log(err);
           content.should.equal('Jon Schlinkert\nbbbbbb');
@@ -112,7 +112,7 @@ describe('custom `renderable` types:', function () {
         author: 'Jon Schlinkert'
       });
 
-      forOwn(template.cache.posts, function(value, key) {
+      forOwn(template.views.posts, function(value, key) {
         template.render(key, function (err, content) {
           if (err) console.log(err);
           content.should.equal('Jon Schlinkert\nzzzzzz');

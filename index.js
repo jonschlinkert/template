@@ -253,7 +253,7 @@ Template.prototype.defaultLoader = function(plural, options) {
 };
 
 /**
- * Register default template types.
+ * Register default view collections.
  *
  * @api private
  */
@@ -1055,7 +1055,7 @@ Template.prototype.defaultHelper = function(subtype, plural) {
 
   this.helper(subtype, function (key, locals) {
     debug.helper('helper: [%s / %s]', subtype, key);
-    var partial = self.cache[plural][key];
+    var partial = self.views[plural][key];
 
     if (!partial) {
       // TODO: use actual delimiters in messages
@@ -1098,7 +1098,7 @@ Template.prototype.defaultAsyncHelper = function(subtype, plural) {
       next = last;
     }
 
-    var partial = self.cache[plural][key];
+    var partial = self.views[plural][key];
 
     if (!partial) {
       // TODO: use actual delimiters in messages
@@ -1254,7 +1254,7 @@ Template.prototype.load = function(subtype, plural, options, fns, done) {
       self.dispatch(template);
 
       // Add template to the cache
-      merge(self.cache[plural], template);
+      merge(self.views[plural], template);
       cb(null);
     }]);
 
@@ -1407,7 +1407,7 @@ Template.prototype.getType = function(type) {
   var arr = this.type[type];
 
   return arr.reduce(function(acc, plural) {
-    acc[plural] = this.cache[plural];
+    acc[plural] = this.views[plural];
     return acc;
   }.bind(this), {});
 };
@@ -1416,29 +1416,29 @@ Template.prototype.getType = function(type) {
  * Merge all collections of the given `type` into a single
  * collection. e.g. `partials` and `includes` would be merged.
  *
- * If an array of `subtypes` is passed, only those `subtypes`
- * will be merged and the order in which the subtypes are defined
+ * If an array of `collections` is passed, only those collections
+ * will be merged and the order in which the collections are defined
  * in the array will be respected.
  *
  * @param {String} `type` The template type to search.
- * @param {String} `subtypes` Optionally pass an array of subtypes
+ * @param {String} `collections` Optionally pass an array of collections
  * @api public
  */
 
-Template.prototype.mergeType = function(type, subtypes) {
+Template.prototype.mergeType = function(type, collections) {
   debug.template('merging [type]: %s', type);
   var obj = this.getType(type);
 
-  subtypes = arrayify(subtypes || Object.keys(obj));
-  var len = subtypes.length;
+  collections = arrayify(collections || Object.keys(obj));
+  var len = collections.length;
   var o = {};
   var i = len - 1;
 
   while (len--) {
-    var subtype = subtypes[i--];
-    for (var key in this.cache[subtype]) {
-      if (this.cache[subtype].hasOwnProperty(key)) {
-        o[key] = this.cache[subtype][key];
+    var colection = collections[i--];
+    for (var key in this.views[colection]) {
+      if (this.views[colection].hasOwnProperty(key)) {
+        o[key] = this.views[colection][key];
       }
     }
   }
@@ -1447,8 +1447,8 @@ Template.prototype.mergeType = function(type, subtypes) {
 
 /**
  * Default method for determining how partials are to be passed to
- * engines. By default, all `partial` subtypes are merged onto a
- * single `partials` object. To keep each subtype on a separate
+ * engines. By default, all `partial` collections are merged onto a
+ * single `partials` object. To keep each collection on a separate
  * object, you can do `template.disable('mergePartials')`.
  *
  * If you want to control how partials are merged, you can also
@@ -1475,9 +1475,9 @@ Template.prototype.mergePartials = function(locals) {
 
   var opts = extend({partials: {}}, locals);
 
-  // loop over each `partial` subtype
+  // loop over each `partial` collection
   this.type.partial.forEach(function (plural) {
-    var collection = this.cache[plural];
+    var collection = this.views[plural];
 
     // Loop over the templates in the collection
     forOwn(collection, function (value, key/*, template*/) {
@@ -1577,21 +1577,21 @@ Template.prototype.findPartial = function(key, subtypes) {
  * Convenience method for finding a template by `name` on
  * the given collection. Optionally specify a file extension.
  *
- * @param {String} `plural` The template cache to search.
+ * @param {String} `plural` The view collection to search.
  * @param {String} `name` The name of the template.
  * @param {String} `ext` Optionally pass a file extension to append to `name`
  * @api public
  */
 
 Template.prototype.lookup = function(plural, name, ext) {
-  var cache = this.cache[plural];
+  var views = this.views[plural];
 
-  if (hasOwn(cache, name)) {
-    return cache[name];
+  if (hasOwn(views, name)) {
+    return views[name];
   }
 
-  if (hasOwn(cache, name + ext || '.md')) {
-    return cache[name + ext || '.md'];
+  if (hasOwn(views, name + ext || '.md')) {
+    return views[name + ext || '.md'];
   }
 
   if (this.enabled('strict errors')) {
@@ -1603,15 +1603,15 @@ Template.prototype.lookup = function(plural, name, ext) {
 };
 
 /**
- * Create a new view collection and associated convience methods.
+ * Create a new `view` collection and associated convience methods.
  *
  * Note that when you only specify a name for the type, a plural form is created
  * automatically (e.g. `page` and `pages`). However, you can define the
  * `plural` form explicitly if necessary.
  *
- * @param {String} `subtype` Singular name of the sub-type to create, e.g. `page`.
- * @param {String} `plural` Plural name of the template type, e.g. `pages`.
- * @param {Object} `options` Options for the template type.
+ * @param {String} `subtype` Singular name of the collection to create, e.g. `page`.
+ * @param {String} `plural` Plural name of the collection, e.g. `pages`.
+ * @param {Object} `options` Options for the collection.
  *   @option {Boolean} [options] `isRenderable` Templates that may be rendered at some point
  *   @option {Boolean} [options] `isLayout` Templates to be used as layouts
  *   @option {Boolean} [options] `isPartial` Templates to be used as partial views or includes
@@ -1643,7 +1643,7 @@ Template.prototype.create = function(subtype, plural/*, options, fns, done*/) {
 
   debug.template('creating subtype: [%s / %s]', subtype, plural);
 
-  this.cache[plural] = this.cache[plural] || {};
+  this.views[plural] = this.views[plural] || {};
   args[2] = this.setType(subtype, plural, args[2]);
 
   // Add convenience methods for this sub-type
@@ -1709,7 +1709,7 @@ Template.prototype.decorate = function(subtype, plural/*, options, fns, done*/) 
    */
 
   mixin(methodName('get', subtype), function (key) {
-    return this.cache[plural][key];
+    return this.views[plural][key];
   });
 
   /**

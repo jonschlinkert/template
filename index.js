@@ -167,6 +167,7 @@ Template.prototype.defaultOptions = function() {
   this.option('delims', ['<%', '%>']);
   this.option('viewEngine', '*');
   this.enable('mergePartials');
+  this.enable('mergeLayouts');
   this.option('defaultLayout', null);
   this.option('layoutDelims', ['{%', '%}']);
   this.option('layoutTag', 'body');
@@ -554,10 +555,10 @@ Template.prototype.applyLayout = function(template, locals) {
     layout = layout + ext;
   }
 
-  var delims = (locals && locals.layoutDelims) || template.layoutDelims;
-  var opts = {delims: delims};
+  // Merge `layout` collections based on settings
+  var stack = this.mergeLayouts(locals);
 
-  return layouts(template.content, layout, this.mergeType('layout'), opts);
+  return layouts(template.content, layout, stack);
 };
 
 /**
@@ -1417,6 +1418,36 @@ Template.prototype.mergeType = function(type, collections) {
     }
   }
   return o;
+};
+
+/**
+ * Merge all `layout` collections based on user-defined options.
+ *
+ * ```js
+ *
+ *
+ * @param {String} `type` The template type to search.
+ * @param {String} `collections` Optionally pass an array of collections
+ * @api public
+ */
+
+Template.prototype.mergeLayouts = function(options) {
+  debug.template('merging layouts: %j', options);
+
+  var mergeLayouts = this.option('mergeLayouts');
+  if (Array.isArray(mergeLayouts)) {
+    return this.mergeType('layout', mergeLayouts);
+  }
+
+  if (mergeLayouts === false) {
+    return this.views.layouts;
+  }
+
+  if (typeof mergeLayouts === 'function') {
+    return mergeLayouts.call(this, arguments);
+  }
+
+  return this.mergeType('layout');
 };
 
 /**

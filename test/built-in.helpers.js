@@ -133,8 +133,8 @@ describe('generated helpers:', function () {
         content.should.equal('<title>Halle Nicole</title>');
       });
 
-      async.each(template.cache.pages, function (file, next) {
-        var page = template.cache.pages[file];
+      async.each(template.views.pages, function (file, next) {
+        var page = template.views.pages[file];
 
         template.render(page, {custom: {locals: {name: 'Halle Nicole' }}}, function (err, content) {
           if (err) return next(err);

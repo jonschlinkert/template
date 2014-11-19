@@ -30,7 +30,7 @@ describe('middleware', function () {
     });
 
     template.pages(__dirname + '/fixtures/html.html');
-    var page = template.cache.pages['html.html'];
+    var page = template.views.pages['html.html'];
 
     template.render(page, {name: 'Halle'}, function (err, content) {
       if (err) console.log(err);
@@ -60,7 +60,7 @@ describe('middleware', function () {
       });
 
       template.pages(__dirname + '/fixtures/md.md');
-      var page = template.cache.pages['md.md'];
+      var page = template.views.pages['md.md'];
 
       template.renderTemplate(page, function (err, content) {
         if (err) console.log(err);
@@ -88,7 +88,7 @@ describe('middleware', function () {
   describe('should use middleware before and after render:', function () {
     it('should use middleware before and after render:', function (done) {
       template.pages(__dirname + '/fixtures/md.md');
-      var page = template.cache.pages['md.md'];
+      var page = template.views.pages['md.md'];
 
       template.before(/\.md/, function (file, next) {
         file.content = tokens.before(file.content);

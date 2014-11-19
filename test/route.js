@@ -43,7 +43,7 @@ describe('template.route()', function () {
       template.page('g.md', '---\nauthor: Brian Woodward\n---\n<title>{{author}}</title>', {author: 'Jon Schlinkert'});
 
       var doneCalled = false;
-      forOwn(template.cache.pages, function (value, key) {
+      forOwn(template.views.pages, function (value, key) {
         template.handle(value, function (err) {
           if (err) {
             doneCalled = true;

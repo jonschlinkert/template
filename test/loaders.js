@@ -28,7 +28,7 @@ describe('template loaders', function () {
       template.npm(__dirname + '/fixtures/loaders/npm-load.js');
       template.npm(__dirname + '/fixtures/loaders/npm-load.css');
 
-      template.cache.npms.should.have.properties(['npm-load.js', 'npm-load.json', 'npm-load.css']);
+      template.views.npms.should.have.properties(['npm-load.js', 'npm-load.json', 'npm-load.css']);
     });
   });
 
@@ -50,7 +50,7 @@ describe('template loaders', function () {
         }
       ]);
       template.posts(__dirname + '/fixtures/layouts/matter/*.md');
-      template.cache.posts.should.have.properties(['a.md', 'b.md', 'c.md', 'd.md']);
+      template.views.posts.should.have.properties(['a.md', 'b.md', 'c.md', 'd.md']);
     });
 
     it('should load templates from files using a custom function:', function () {
@@ -61,7 +61,7 @@ describe('template loaders', function () {
       ]);
 
       template.post('test/fixtures/*.md', {});
-      template.cache.posts.should.have.property('md.md');
+      template.views.posts.should.have.property('md.md');
     });
 
     it('should load templates from files using a custom function:', function (done) {
@@ -78,7 +78,7 @@ describe('template loaders', function () {
         }
       ]);
       template.post('test/fixtures/loaders/npm-load.json', function () {
-        template.cache.posts.should.have.property('npm-load.json');
+        template.views.posts.should.have.property('npm-load.json');
         done();
       });
     });
@@ -150,7 +150,7 @@ describe('template loaders', function () {
         }
       ], function (err) {
         if (err) return done(err);
-        template.cache.posts.should.have.property('md.md');
+        template.views.posts.should.have.property('md.md');
         done();
       });
     });

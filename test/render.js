@@ -160,7 +160,7 @@ describe('template.render()', function () {
       template.page('b.tmpl', {content: '<title><%= title %></title>', title: 'Lo-Dash'});
       template.page('d.swig', {content: '<title>{{title}}</title>', title: 'Swig'});
 
-      Object.keys(template.cache.pages).forEach(function(file) {
+      Object.keys(template.views.pages).forEach(function(file) {
         template.render(file, function (err, content) {
           if (err) console.log(err);
 

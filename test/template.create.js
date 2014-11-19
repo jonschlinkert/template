@@ -38,7 +38,7 @@ describe('template create:', function () {
       });
       template.page({'foo.md': {path: 'foo.md', content: 'This is content.'}});
       template.should.have.properties('page', 'pages');
-      template.cache.pages['foo.md'].should.have.property('zzz', 'yyy');
+      template.views.pages['foo.md'].should.have.property('zzz', 'yyy');
     });
   });
 
@@ -55,8 +55,8 @@ describe('template create:', function () {
       template.apple('b', 'two');
       template.apple('c', 'three');
 
-      template.cache.should.have.property('apples');
-      template.cache.apples.should.have.properties('a', 'b', 'c');
+      template.views.should.have.property('apples');
+      template.views.apples.should.have.properties('a', 'b', 'c');
     });
 
     describe('.decorate()', function () {

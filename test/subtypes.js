@@ -19,42 +19,42 @@ describe('template subtypes', function() {
 
   it('should have templates of built-in `subtype: pages`:', function () {
     template.page('abc.md', '<%= abc %>');
-    template.cache.pages.should.be.an.object;
-    template.cache.pages.should.have.property('abc.md');
+    template.views.pages.should.be.an.object;
+    template.views.pages.should.have.property('abc.md');
   });
 
   it('should have templates of custom `subtype: posts`:', function () {
     template.create('post', { isRenderable: true });
     template.post('xyz.md', '<%= abc %>');
-    template.cache.posts.should.be.an.object;
-    template.cache.posts.should.have.property('xyz.md');
+    template.views.posts.should.be.an.object;
+    template.views.posts.should.have.property('xyz.md');
   });
 
   it('should have templates of built-in `subtype: partials`:', function () {
     template.partial('abc.md', '<%= abc %>');
-    template.cache.partials.should.be.an.object;
-    template.cache.partials.should.have.property('abc.md');
+    template.views.partials.should.be.an.object;
+    template.views.partials.should.have.property('abc.md');
   });
 
   it('should have templates of custom `subtype: includes`:', function () {
     template.create('include', { isPartial: true });
     template.include('xyz.md', '<%= abc %>');
 
-    template.cache.includes.should.be.an.object;
-    template.cache.includes.should.have.property('xyz.md');
+    template.views.includes.should.be.an.object;
+    template.views.includes.should.have.property('xyz.md');
   });
 
   it('should have templates of built-in `subtype: layouts`:', function () {
     template.layout('abc.md', '<%= abc %>');
-    template.cache.layouts.should.be.an.object;
-    template.cache.layouts.should.have.property('abc.md');
+    template.views.layouts.should.be.an.object;
+    template.views.layouts.should.have.property('abc.md');
   });
 
   it('should have templates of custom `subtype: blocks`:', function () {
     template.create('block', { isLayout: true });
     template.block('xyz.md', '<%= abc %>');
 
-    template.cache.blocks.should.be.an.object;
-    template.cache.blocks.should.have.property('xyz.md');
+    template.views.blocks.should.be.an.object;
+    template.views.blocks.should.have.property('xyz.md');
   });
 });

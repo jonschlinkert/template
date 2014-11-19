@@ -100,7 +100,7 @@ describe('.render() synchronously:', function () {
       template.page('b.tmpl', '<title><%= author %></title>', {author: 'Jon Schlinkert'});
       template.page('d.swig', '<title>{{author}}</title>', {author: 'Jon Schlinkert'});
 
-      forOwn(template.cache.pages, function (value, key) {
+      forOwn(template.views.pages, function (value, key) {
         template.render(key).should.equal('<title>Jon Schlinkert</title>');
       });
     });
@@ -114,7 +114,7 @@ describe('.render() synchronously:', function () {
       template.page('b', '<title><%= author %></title>', {author: 'Jon Schlinkert', ext: 'tmpl'});
       template.page('d', '<title>{{author}}</title>', {author: 'Jon Schlinkert', ext: 'swig'});
 
-      forOwn(template.cache.pages, function (value, key) {
+      forOwn(template.views.pages, function (value, key) {
         template.render(key).should.equal('<title>Jon Schlinkert</title>');
       });
     });
@@ -128,7 +128,7 @@ describe('.render() synchronously:', function () {
       template.page('b', '<title><%= author %></title>', {author: 'Jon Schlinkert', engine: 'tmpl'});
       template.page('d', '<title>{{author}}</title>', {author: 'Jon Schlinkert', engine: 'swig'});
 
-      forOwn(template.cache.pages, function (value, key) {
+      forOwn(template.views.pages, function (value, key) {
         template.render(key).should.equal('<title>Jon Schlinkert</title>');
       });
     });

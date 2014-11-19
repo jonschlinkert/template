@@ -18,84 +18,94 @@ describe('template partial', function () {
   });
 
   describe('.partial() strings', function () {
-    it('should add partials to the cache.', function () {
+    it('should add partials to views.', function () {
       template.partials('a.md', 'b');
-      template.cache.partials.should.have.property('a.md');
+      template.views.partials.should.have.property('a.md');
     });
 
-    it('should `.get()` partials from the cache.', function () {
+    it('should put partials on the `views.partials` object.', function () {
       template.partials('a.md', 'b');
-      template.get('partials.a\\.md', true).content.should.equal('b'); // escaped for [get-value]
+      template.views.partials['a.md'].should.have.property('content', 'b');
+    });
+
+    it('should get partials with the `.getPartial()` method', function () {
+      template.partials('a.md', 'b');
+      template.getPartial('a.md').content.should.equal('b');
+    });
+
+    it('should get partials with the `.view()` collection method', function () {
+      template.partials('a.md', 'b');
+      template.view('partials', 'a.md').content.should.equal('b');
     });
 
     it('should add the template string to the `content` property.', function () {
       template.partials('a.md', 'this is content.');
-      template.cache.partials['a.md'].content.should.equal('this is content.');
+      template.views.partials['a.md'].content.should.equal('this is content.');
     });
 
     it('should add locals to the `locals` property.', function () {
       template.partials('a.md', 'b', {c: 'c'});
-      template.cache.partials['a.md'].locals.should.have.property('c');
+      template.views.partials['a.md'].locals.should.have.property('c');
     });
 
     it('should add locals to the `locals` property.', function () {
       template.partials('a.md', 'b', {c: 'c'});
-      template.cache.partials['a.md'].locals.should.have.property('c');
+      template.views.partials['a.md'].locals.should.have.property('c');
     });
 
     it('should add the third arg to the `locals` property.', function () {
       template.partials('a.md', 'b', {title: 'c'});
-      template.cache.partials['a.md'].locals.should.have.property('title');
+      template.views.partials['a.md'].locals.should.have.property('title');
     });
   });
 
   describe('.partials() objects', function () {
-    it('should add partials to the cache.', function () {
+    it('should add partials to views.', function () {
       template.partials({'a.md': {content: 'b', data: {c: 'c'}}});
-      template.cache.partials.should.have.property('a.md');
+      template.views.partials.should.have.property('a.md');
     });
 
     it('should add the template string to the `content` property.', function () {
       template.partials({'a.md': {content: 'b', data: {c: 'c'}}});
-      template.cache.partials['a.md'].content.should.equal('b');
+      template.views.partials['a.md'].content.should.equal('b');
     });
 
     it('should add locals to the `data` property.', function () {
       template.partials({'a.md': {content: 'b', data: {c: 'c'}}});
-      template.cache.partials['a.md'].data.should.have.property('c');
+      template.views.partials['a.md'].data.should.have.property('c');
     });
 
     it('should add locals to the `data` property.', function () {
       template.partials({'a.md': {content: 'b', data: {c: 'c'}}});
-      template.cache.partials['a.md'].data.should.have.property('c');
+      template.views.partials['a.md'].data.should.have.property('c');
     });
   });
 
   describe('when a partial has front matter', function () {
     it('should parse the partial.', function () {
       template.partials('a.md', '---\nname: AAA\n---\nThis is content.');
-      template.cache.partials['a.md'].should.have.property('content', 'This is content.');
+      template.views.partials['a.md'].should.have.property('content', 'This is content.');
     });
 
     it('should parse the `content` value.', function () {
       template.partials({'a.md': {path: 'a.md', content: '---\nname: AAA\n---\nThis is content.'}});
-      template.cache.partials.should.have.property('a.md');
+      template.views.partials.should.have.property('a.md');
     });
 
     it('should merge locals and front-matter data.', function () {
       template.partials({'a.md': {content: '---\nname: AAA\n---\nThis is content.', data: {c: 'c'}}});
-      template.cache.partials['a.md'].should.have.property('data', { c: 'c', name: 'AAA' });
+      template.views.partials['a.md'].should.have.property('data', { c: 'c', name: 'AAA' });
     });
 
     it('should save both locals and front-matter data to the `file` object.', function () {
       template.partials({'a.md': {content: '---\nname: AAA\n---\nThis is content.', name: 'BBB'}});
-      template.cache.partials['a.md'].should.have.property('data', { name: 'AAA' });
-      template.cache.partials['a.md'].should.have.property('locals', { name: 'BBB' });
+      template.views.partials['a.md'].should.have.property('data', { name: 'AAA' });
+      template.views.partials['a.md'].should.have.property('locals', { name: 'BBB' });
     });
 
     it('should use the key as `file.path` if one does not exist.', function () {
       template.partials({'a.md': {content: '---\nname: AAA\n---\nThis is content.', data: {c: 'c'}}});
-      template.cache.partials['a.md'].path.should.equal('a.md');
+      template.views.partials['a.md'].path.should.equal('a.md');
     });
   });
 

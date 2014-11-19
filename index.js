@@ -103,7 +103,7 @@ Template.prototype.initTemplate = function() {
   this.view('partials', {});
   this.view('anonymous', {});
   this.view('pages', {});
-  this.inflection = {};
+  this.collection = {};
 
   this.set('locals', {});
 };
@@ -1342,7 +1342,7 @@ Template.prototype.setType = function(subtype, plural, options) {
   var opts = extend({}, options);
 
   // Make an association between `subtype` and its `plural`
-  this.inflection[subtype] = plural;
+  this.collection[subtype] = plural;
 
   if (opts.isRenderable) {
     this.type.renderable.push(plural);
@@ -1927,7 +1927,7 @@ Template.prototype.renderSubtype = function(subtype) {
   debug.render('render subtype: [%s / %s]', subtype);
 
   // get the plural name of the given subtype
-  var plural = this.inflection[subtype];
+  var plural = this.collection[subtype];
   var self = this;
 
   return function (key, locals, cb) {

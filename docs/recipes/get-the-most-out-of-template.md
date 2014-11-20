@@ -42,6 +42,54 @@ app.transform('load-package-data', function(app) {
 
 > Good for building collections of templates that may need [custom loaders](#loaders), [custom engines](#engines), or to be rendered at different times.
 
+**Summary**
+
+ - the `.create()` method is used for creating custom template types, along with any options specifying the [engine](#engines) and/or [loader](#loaders) to use
+ - each template type is stored in its own collection
+
+**Creating template types**
+
+For example, let's say you have a special kind of template that you like to refer to as **widgets**. Here is how you would create a template type to handle them:
+
+```js
+assemble.create('widget', { isPartial: true });
+```
+
+Assemble now recognizes the `widget` (and `widgets`) template type, and has created special methods for loading them:
+
+```js
+assemble.widget('foo', {content: "I'm a widget"});
+assemble.widgets('templates/*.hbs');
+```
+
+Both of the above methods will work with object formatted templates, glob patterns or file paths, and both will load widgets and store them on the `assemble.views.widgets` object.
+
+In addition, since we told Assemble that this template type can be used as partials in the `.create()` method. To load the partials, you would use the automatically created `widget` helper method that assemble created for this template type.
+
+```
+{{widget "foo"}}
+```
+
+You can of course override the helper method, like this:
+
+```js
+assemble.helper('widget', function (name, context) {
+  // assemble also creates a special `get` method for widget
+  var template = assemble.getWidget(name);
+
+  // `template` is an object with whatever properties you add, but
+  // by default templates are normalized to have `path` and `content`
+  // properties
+
+  // @doowb's example as async, this is the sync version
+  return template.render(context);
+});
+```
+
+## .create
+
+> Good for building collections of templates that may need [custom loaders](#loaders), [custom engines](#engines), or to be rendered at different times.
+
 **Usage**
 
  - template types can be created along with options specifying the [engine](#engines) and/or [loader](#loaders) to use

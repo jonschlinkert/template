@@ -101,7 +101,7 @@ describe('template loaders', function () {
       ]);
       template.post('test/fixtures/*.md', function () {
         template.render('md.md', function (err, content) {
-          console.log(arguments)
+          // console.log(arguments)
         });
       });
       done();
@@ -184,7 +184,7 @@ describe('template loaders', function () {
 
       template.pages('foo/*.md' [
         function (file, next) {
-        console.log(file)
+        // console.log(file)
           // do stuff with file
           next(null, file)
         }

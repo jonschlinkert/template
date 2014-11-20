@@ -612,23 +612,23 @@ Template.prototype.makeDelims = function(arr, options) {
  * @api public
  */
 
-Template.prototype.addDelims = function(ext, arr, delims, settings) {
+Template.prototype.addDelims = function(ext, delims1, delims2, settings) {
   if (ext[0] !== '.') {
     ext = '.' + ext;
   }
 
-  debug.delims('adding delims [ext]: %s', ext, arr);
+  debug.delims('adding delims [ext]: %s', ext, delims1);
   var opts = {};
 
 
-  if (Array.isArray(delims)) {
-    opts.layoutDelims = delims;
+  if (Array.isArray(delims2)) {
+    opts.layoutDelims = delims2;
   } else {
-    settings = delims;
-    delims = this.option('layoutDelims');
+    settings = delims2;
+    delims2 = this.option('layoutDelims');
   }
 
-  extend(opts, this.makeDelims(arr, settings));
+  extend(opts, this.makeDelims(delims1, settings));
   extend(opts, settings);
 
   this.delims[ext] = opts;
@@ -719,6 +719,7 @@ Template.prototype.handleDelims = function(ext, engine, template, locals) {
   if (Array.isArray(delims)) {
     this.addDelims(ext, delims);
   }
+
   return locals;
 };
 
@@ -1792,7 +1793,6 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
 
   // Bind context to helpers before passing to the engine.
   this.bindHelpers(locals, typeof cb === 'function');
-
   locals.debugEngine = this.option('debugEngine');
 
   // handle pre-render middleware routes
@@ -1804,22 +1804,30 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
 
   var cloned = _.cloneDeep(template);
 
-  // when a callback is passed, render and handle middleware in callback
-  if (typeof cb === 'function') {
-    return this.renderBase(engine, content, locals, function (err, content) {
-      if (err) return cb.call(self, err);
-      cloned.content = content;
-      self.handle('after', cloned, handleError(template, 'after'));
-      return cb.call(self, null, cloned.content);
-    });
-  }
+  /**
+   * sync
+   */
 
   // when a callback is not passed, render and handle middleware
-  cloned.content = this.renderBase(engine, content, locals, cb);
+  if (typeof !cb === 'function') {
+    cloned.content = this.renderBase(engine, content, locals, cb);
 
-  // handle post-render middleware routes
-  this.handle('after', cloned, handleError(template, 'after'));
-  return cloned.content;
+    // handle post-render middleware routes
+    this.handle('after', cloned, handleError(template, 'after'));
+    return cloned.content;
+  }
+
+  /**
+   * async
+   */
+
+  // when a callback is passed, render and handle middleware in callback
+  return this.renderBase(engine, content, locals, function (err, content) {
+    if (err) return cb.call(self, err);
+    cloned.content = content;
+    self.handle('after', cloned, handleError(template, 'after'));
+    return cb.call(self, null, cloned.content);
+  });
 };
 
 /**

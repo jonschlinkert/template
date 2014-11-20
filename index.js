@@ -1809,7 +1809,7 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
    */
 
   // when a callback is not passed, render and handle middleware
-  if (typeof !cb === 'function') {
+  if (typeof cb !== 'function') {
     cloned.content = this.renderBase(engine, content, locals, cb);
 
     // handle post-render middleware routes

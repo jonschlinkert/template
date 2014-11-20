@@ -105,7 +105,7 @@ Template.prototype.initTemplate = function() {
   this.view('pages', {});
   this.collection = {};
 
-  this.set('locals', {});
+  this.set('_context', {});
 };
 
 /**
@@ -1435,20 +1435,24 @@ Template.prototype.mergeType = function(type, collections) {
 Template.prototype.mergeLayouts = function(options) {
   debug.template('merging layouts: %j', options);
 
+  var layouts = {};
   var mergeLayouts = this.option('mergeLayouts');
-  if (Array.isArray(mergeLayouts)) {
-    return this.mergeType('layout', mergeLayouts);
-  }
-
-  if (mergeLayouts === false) {
-    return this.views.layouts;
-  }
 
   if (typeof mergeLayouts === 'function') {
     return mergeLayouts.call(this, arguments);
   }
 
-  return this.mergeType('layout');
+  if (Array.isArray(mergeLayouts)) {
+    layouts = this.mergeType('layout', mergeLayouts);
+  } else if (mergeLayouts === false) {
+    layouts = this.views.layouts;
+  } else {
+    layouts = this.mergeType('layout');
+  }
+  forOwn(layouts, function (value, key) {
+    this.mergeTypeContext('layouts', key, value.locals, value.data);
+  }, this);
+  return layouts;
 };
 
 /**
@@ -1487,10 +1491,8 @@ Template.prototype.mergePartials = function(locals) {
 
     // Loop over the templates in the collection
     forOwn(collection, function (value, key/*, template*/) {
-      var data = extend({}, value.locals, value.data);
-      this.cache.locals[key] = data;
-
-      value.content = this.applyLayout(value, data);
+      this.mergeTypeContext('partials', key, value.locals, value.data);
+      value.content = this.applyLayout(value, this.cache._context._partials[key].data);
 
       // If `mergePartials` is true combine all `partial` subtypes
       if (mergePartials === true) {
@@ -2081,9 +2083,30 @@ Template.prototype.mergeContext = function(template, locals) {
   merge(context, this.mergePartials(context));
 
   // Merge in `locals` from templates
-  merge(context, this.cache.locals);
+  merge(context, this.cache._context);
   merge(context, locals);
   return context;
+};
+
+/**
+ * Build the context for a specific template and type.
+ *
+ * ```js
+ * template.mergeTypeContext('partials', 'sidenav', locals, data);
+ * ```
+ *
+ * @param  {String} `type` Template type to merge
+ * @param  {String} `key` Key of template to use
+ * @param  {Object} `locals` Locals object from template
+ * @param  {Object} `data` Data object from template
+ * @api private
+ */
+
+Template.prototype.mergeTypeContext = function(type, key, locals, data) {
+  type = '_' + type;
+  this.cache._context[type] = this.cache._context[type] || {};
+  this.cache._context[type][key] = this.cache._context[type][key] || {};
+  this.cache._context[type][key].data = extend({}, locals, data);
 };
 
 /**

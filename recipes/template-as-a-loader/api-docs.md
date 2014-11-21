@@ -1,36 +1,36 @@
 
 > a bunch of stuff above the docs
 
- - <%= partial('foo') %>
- - <%= partial('bar') %>
- - <%= partial('baz') %>
- - <%= partial('bang') %>
+ - <%= apidoc('foo') %>
+ - <%= apidoc('bar') %>
+ - <%= apidoc('baz') %>
+ - <%= apidoc('bang') %>
 
 
-{{#apidoc 'foo'}}
+{{#definedoc 'foo'}}
 ---
 msg: foo message
 ---
 Here's some content for <%= msg %>.
-{{/apidoc}}
+{{/definedoc}}
 
-{{#apidoc 'bar'}}
+{{#definedoc 'bar'}}
 ---
 msg: bar message
 ---
 Here's some content for <%= msg %>.
-{{/apidoc}}
+{{/definedoc}}
 
-{{#apidoc 'baz'}}
+{{#definedoc 'baz'}}
 ---
 msg: baz message
 ---
 Here's some content for <%= msg %>.
-{{/apidoc}}
+{{/definedoc}}
 
-{{#apidoc 'bang'}}
+{{#definedoc 'bang'}}
 ---
 msg: bang message
 ---
 Here's some content for <%= msg %>.
-{{/apidoc}}
+{{/definedoc}}

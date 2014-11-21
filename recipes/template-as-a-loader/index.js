@@ -1,5 +1,8 @@
+'use strict';
+
 var handlebars = require('engine-handlebars');
 var fs = require('fs');
+var path = require('path');
 var Template = require('../..');
 var template = new Template();
 
@@ -22,7 +25,7 @@ template.create('apidoc', [
   function (docs, next) {
     // render the pages so partials are added to the context through the helper
     docs.forEach(function (doc) {
-      var page = template.cache.pages[doc];
+      var page = template.views.pages[doc];
       if (!page) return;
       page.render(function (err, content) {
         // update the content on the page
@@ -36,11 +39,12 @@ template.create('apidoc', [
 ]);
 
 
-// add a new helper that adds `apidoc` contents to the cache
+// add a new helper that adds `apidoc` contents to views
 template.asyncHelper('apidoc', function (name, options, next) {
   var ctx = this && this.context;
    // call the function to "render" the content
   var content = options.fn(ctx);
+
   // add content as a partial
   template.partial(name, content, function (err) {
     next(err, '');
@@ -48,14 +52,15 @@ template.asyncHelper('apidoc', function (name, options, next) {
 });
 
 
-
 template.apidocs('./api-docs.hbs', function () {
   // now that this is loaded, we can use the partials in the markdown file
-  var keys = Object.keys(template.cache.pages);
+  var keys = Object.keys(template.views.pages);
   keys.forEach(function (key) {
-    var page = template.cache.pages[key];
+    var page = template.views.pages[key];
     page.render(function (err, content) {
-      fs.writeFileSync('README.md', content);
+      var fp = path.relative(process.cwd(), path.join(__dirname, 'README.md'));
+      fs.writeFileSync(fp, content);
+      console.log('Created: ', fp);
     });
   });
 });

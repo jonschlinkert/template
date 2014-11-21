@@ -1662,7 +1662,7 @@ Template.prototype.create = function(subtype, plural/*, options, fns, done*/) {
 
   var opts = args[2] || {};
 
-  if (this.enabled('default helpers') && !opts.disableHelpers) {
+  if (this.enabled('default helpers') && opts.isPartial && !opts.disableHelpers) {
     // Create a sync helper for this type
     if (!hasOwn(this._.helpers, subtype)) {
       this.defaultHelper(subtype, plural);

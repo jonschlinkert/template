@@ -1,7 +1,6 @@
 'use strict';
 
 var verb = require('verb');
-verb.data('package.json');
 
 verb.task('readme', function() {
   verb.src('.verb.md')

@@ -226,10 +226,10 @@ Template.prototype.defaultRoutes = function() {
 
 Template.prototype.defaultEngines = function() {
   if (this.enabled('default engines')) {
-    // this.engine(['*', 'md'], engineLodash, {
-    //   layoutDelims: ['{%', '%}'],
-    //   destExt: '.html'
-    // });
+    this.engine(['*', 'md'], engineLodash, {
+      layoutDelims: ['{%', '%}'],
+      destExt: '.html'
+    });
   }
 };
 

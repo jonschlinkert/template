@@ -52,15 +52,14 @@ template.asyncHelper('apidoc', function (name, options, next) {
 });
 
 
-template.apidocs('./api-docs.hbs', function () {
+template.apidocs(__dirname + '/api-docs.hbs', function () {
   // now that this is loaded, we can use the partials in the markdown file
   var keys = Object.keys(template.views.pages);
   keys.forEach(function (key) {
     var page = template.views.pages[key];
     page.render(function (err, content) {
-      var fp = path.relative(process.cwd(), path.join(__dirname, 'README.md'));
-      fs.writeFileSync(fp, content);
-      console.log('Created: ', fp);
+      fs.writeFileSync(__dirname + '/README.md', content);
+      console.log('Created: ', __dirname + '/README.md');
     });
   });
 });

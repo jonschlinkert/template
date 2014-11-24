@@ -54,7 +54,7 @@
     "debug": "^2.1.0",
     "delims": "^0.4.0",
     "en-route": "^0.3.0",
-    "engine-cache": "^0.6.0",
+    "engine-cache": "jonschlinkert/engine-cache#compile",
     "engine-lodash": "^0.4.0",
     "escape-delims": "^0.4.0",
     "for-own": "^0.1.2",

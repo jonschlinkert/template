@@ -12,7 +12,7 @@ var should = require('should');
 var Template = require('..');
 var template;
 var consolidate = require('consolidate');
-var handlebars = consolidate.handlebars;
+var handlebars = require('engine-handlebars');
 var lodash = consolidate.lodash;
 var swig = consolidate.swig;
 
@@ -121,7 +121,7 @@ describe('generated helpers:', function () {
       template.page('e.swig', {path: 'e.swig', content: '<title>{{author}}</title>', locals: {author: 'Halle Nicole'}});
       template.page('f.hbs', {content: '<title>{{author}}</title>', locals: {author: 'Halle Nicole'}});
       template.page('g.md', {content: '---\nauthor: Brian Woodward\n---\n<title>{{author}}</title>', locals: {author: 'Halle Nicole'}});
-      template.page('with-partial.hbs', {path: 'with-partial.hbs', content: '{{partial "a.hbs" custom.locals}}'});
+      template.page('with-partial.hbs', {path: 'with-partial.hbs', content: '{{{partial "a.hbs" custom.locals}}}'});
 
       template.render('a.hbs', {custom: {locals: {name: 'Halle Nicole' }}}, function (err, content) {
         if (err) console.log(err);

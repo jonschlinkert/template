@@ -49,9 +49,11 @@ describe('.option():', function () {
 
     var locals = {
       bar: 'this is a message',
-      helpers: {
-        a: function(str) { return 'A-' + str + '-A'; },
-        b: function(str) { return 'B-' + str + '-B'; }
+      options: {
+        helpers: {
+          a: function(str) { return 'A-' + str + '-A'; },
+          b: function(str) { return 'B-' + str + '-B'; }
+        }
       }
     };
     template.render('foo', locals, function (err, content) {
@@ -77,11 +79,13 @@ describe('.option():', function () {
 
     var locals = {
       bar: 'this is a message',
-      helpers: {
-        a: function(str) { return 'A-' + str + '-A'; },
-        b: function(str) { return 'B-' + str + '-B'; },
-        c: function(str) { return 'C-' + str + '-C'; },
-        d: function(str) { return 'D-' + str + '-D'; }
+      options: {
+        helpers: {
+          a: function(str) { return 'A-' + str + '-A'; },
+          b: function(str) { return 'B-' + str + '-B'; },
+          c: function(str) { return 'C-' + str + '-C'; },
+          d: function(str) { return 'D-' + str + '-D'; }
+        }
       }
     };
     template.render('foo', locals, function (err, content) {

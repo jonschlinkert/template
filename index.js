@@ -1784,7 +1784,7 @@ Template.prototype.compileTemplate = function(template, options, async) {
   template.options.layout = template.layout;
 
   // find ext and engine to use
-  var ext = this.getExt(template, opts);
+  var ext = this.getExt(template, context);
   var engine = this.getEngine(ext);
 
   // Handle custom template delimiters and escaping

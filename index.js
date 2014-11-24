@@ -555,9 +555,10 @@ Template.prototype.applyLayout = function(template, locals) {
     layout = layout + ext;
   }
 
+  locals.delims = locals.layoutDelims || locals.delims;
+
   // Merge `layout` collections based on settings
   var stack = this.mergeLayouts(locals);
-
   return layouts(template.content, layout, stack, locals);
 };
 
@@ -1777,6 +1778,7 @@ Template.prototype.compileTemplate = function(template, options, async) {
   // reference to options in case helpers are needed later
   var opts = options || {};
   var context = opts.context || {};
+  delete opts.context;
 
   template.options = template.options || {};
   template.options.layout = template.layout;
@@ -1933,8 +1935,8 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   if (!template.fn) {
     opts.context = opts.context || locals;
     opts.delims = opts.delims || opts.context.delims;
+    opts.layoutDelims = opts.layoutDelims || opts.context.layoutDelims;
     this.compileTemplate(template, opts, typeof cb === 'function');
-    delete opts.context;
   }
 
   var cloned = _.cloneDeep(template);

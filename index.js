@@ -1808,6 +1808,62 @@ Template.prototype.compileTemplate = function(template, options, async) {
 };
 
 /**
+ * Compile `content` with the given `options`.
+ *
+ * @param  {Object|String} `file` String or normalized template object.
+ * @param  {Object} `options`
+ * @param  {Boolean} `async` Load async helpers
+ * @return {Function} Compiled function.
+ * @api public
+ */
+
+Template.prototype.compile = function(content, options, async) {
+  debug.render('compile: %j', arguments);
+
+  if (content == null) {
+    throw new Error('Template#compile() expects a string or object.');
+  }
+
+  if (typeOf(content) === 'object') {
+    return this.compileTemplate(content, options, async);
+  }
+
+  var template = this.findRenderable(content);
+  if (typeOf(template) === 'object') {
+    return this.compileTemplate(template, options, async);
+  }
+
+  return this.compileString(content, options, async);
+};
+
+/**
+ * Compile the given string with the specified `options`.
+ *
+ * The primary purpose of this method is to get the engine before
+ * passing args to `.compileBase()`.
+ *
+ * @param  {String} `str` The string to compile.
+ * @param  {Object} `options` Options to pass to registered view engines.
+ * @param  {Boolean} `async` Load async helpers
+ * @return {Function}
+ * @api public
+ */
+
+Template.prototype.compileString = function(str, options, async) {
+  debug.render('render string: %s', str);
+  if (typeof options === 'function') {
+    cb = options;
+    options = {};
+  }
+
+  options = extend({locals: {}}, options);
+  var locals = options.locals;
+
+  var template = { content: str, locals: locals, options: options };
+  return this.compileTemplate(template, options, async);
+};
+
+/**
  * Base render method. Use `engine` to render `content` with the
  * given `options` and `callback`.
  *

@@ -83,7 +83,7 @@ describe('custom `renderable` types:', function () {
       template.create('post', 'posts', { isRenderable: true });
       template.create('include', 'includes');
 
-      template.include('sidebar', '{{partials.sidebar.data.a}}', {a: 'bbbbbb'});
+      template.include('sidebar', '{{sidebar.a}}', {a: 'bbbbbb'});
       template.post('2014-08-31.md', '---\nauthor: Brian Woodward\n---\n{{author}}\n{{> sidebar }}', {
         author: 'Jon Schlinkert'
       });
@@ -108,7 +108,7 @@ describe('custom `renderable` types:', function () {
 
       template.include('sidebar', '{{a}}', {a: 'bbbbbb'});
       template.include('navbar', '{{a}}', {a: 'zzzzzz'});
-      template.post('2014-08-31.md', '---\nauthor: Brian Woodward\n---\n{{author}}\n{{log this}}{{> sidebar partials.navbar.data }}', {
+      template.post('2014-08-31.md', '---\nauthor: Brian Woodward\n---\n{{author}}\n{{log this}}{{> sidebar navbar }}', {
         author: 'Jon Schlinkert'
       });
 

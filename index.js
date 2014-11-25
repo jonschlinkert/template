@@ -1494,7 +1494,7 @@ Template.prototype.mergePartials = function(locals) {
     // Loop over the templates in the collection
     forOwn(collection, function (value, key/*, template*/) {
       this.mergeTypeContext('partials', key, value.locals, value.data);
-      value.content = this.applyLayout(value, this.cache._context.partials[key].data);
+      value.content = this.applyLayout(value, this.cache._context.partials[key]);
 
       // If `mergePartials` is true combine all `partial` subtypes
       if (mergePartials === true) {
@@ -1508,7 +1508,6 @@ Template.prototype.mergePartials = function(locals) {
     }, this);
   }, this);
 
-  locals.partials = extend({}, this.cache._context.partials);
   locals.options = extend({}, locals.options, opts);
   return locals;
 };
@@ -2224,8 +2223,9 @@ Template.prototype.mergeContext = function(template, locals) {
   // Merge in partials to pass to engines
   merge(context, this.mergePartials(context));
 
-  // Merge in `locals` from templates
-  merge(context, this.cache._context);
+  // Merge in `locals/data` from templates
+  merge(context, this.cache._context.partials);
+  merge(context.layouts || {}, this.cache.layouts);
   merge(context, locals);
   return context;
 };
@@ -2246,8 +2246,7 @@ Template.prototype.mergeContext = function(template, locals) {
 
 Template.prototype.mergeTypeContext = function(type, key, locals, data) {
   this.cache._context[type] = this.cache._context[type] || {};
-  this.cache._context[type][key] = this.cache._context[type][key] || {};
-  this.cache._context[type][key].data = extend({}, locals, data);
+  this.cache._context[type][key] = extend({}, locals, data);
 };
 
 /**

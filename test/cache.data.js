@@ -29,7 +29,7 @@ describe('template data', function() {
 
     it('should read files and merge data onto `cache.data`', function() {
       template.data('package.json');
-      template.get('data.name').should.equal(pkg.name);
+      template.get('data.package.name').should.equal(pkg.name);
     });
 
     it('should read files and merge data onto `cache.data`', function() {
@@ -100,29 +100,29 @@ describe('template data', function() {
     var template = new Template();
     it('should read JSON files and return an object.', function() {
       var data = template.plasma('package.json');
-      data.name.should.equal(pkg.name);
+      data.package.name.should.equal(pkg.name);
     });
 
     it('should read YAML files and return an object.', function() {
       var data = template.plasma('test/fixtures/a.yml');
-      data.a.should.equal('b');
+      data.a.should.eql({a: 'b'});
     });
 
     it('should read an array of YAML and JSON files and return an object.', function() {
       var data = template.plasma(['package.json', 'test/fixtures/a.yml']);
-      data.name.should.equal(pkg.name);
-      data.a.should.equal('b');
+      data.package.name.should.equal(pkg.name);
+      data.a.should.eql({a: 'b'});
     });
 
     it('should expand a glob pattern, read JSON/YAML files and return an object.', function() {
       var data = template.plasma('p*.json');
-      data.name.should.equal(pkg.name);
+      data.package.name.should.equal(pkg.name);
     });
 
     it('should expand an array of glob patterns, read the JSON/YAML files and return an object.', function() {
       var data = template.plasma(['p*.json', 'test/fixtures/*.yml']);
-      data.name.should.equal(pkg.name);
-      data.a.should.equal('b');
+      data.package.name.should.equal(pkg.name);
+      data.a.should.eql({a: 'b'});
     });
 
     it('should accept an object and return an object.', function() {

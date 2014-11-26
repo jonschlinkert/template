@@ -7,8 +7,6 @@
 
 'use strict';
 
-// require('require-progress');
-
 var _ = require('lodash');
 var path = require('path');
 var glob = require('globby');

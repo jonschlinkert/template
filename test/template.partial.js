@@ -120,4 +120,15 @@ describe('template partial', function () {
       template.views.partials['a.md'].path.should.equal('a.md');
     });
   });
+
+  describe('partialsKey', function () {
+    it('should use the partialsKey function on options', function () {
+      // TODO: should this be removed?
+      template.options.partialsKey('a.md').should.eql('a');
+      // template.partial('a.md', '---\nname: AAA\n---\nThis is content.');
+      // template.views.partials.should.have.property.a;
+      // template.views.partials['a'].should.have.property.content;
+      // template.views.partials['a'].content.should.equal('This is content.');
+    });
+  });
 });

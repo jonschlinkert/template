@@ -20,6 +20,11 @@ describe('cwd:', function () {
     template.cwd.should.equal(process.cwd());
   });
 
+  it('should be process.cwd when cwd is false', function () {
+    template.disable('cwd');
+    template.cwd.should.equal(process.cwd());
+  });
+
   it('should set the cwd from options.cwd.', function () {
     template.option('cwd', __dirname);
     template.cwd.should.equal(__dirname);

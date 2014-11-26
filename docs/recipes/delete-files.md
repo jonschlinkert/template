@@ -3,9 +3,9 @@
 
 ```js
 var del = require('del');
-var verb = require('verb4');
+var app = require('app4');
 
-verb.task('default', function(done) {
+app.task('default', function(done) {
   del('tmp/**', done);
 });
 ```

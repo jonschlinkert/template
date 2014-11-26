@@ -102,7 +102,7 @@ Template.prototype.initTemplate = function() {
   this.view('pages', {});
   this.collection = {};
 
-  this.set('locals', {});
+  this.set('_context', {});
 };
 
 /**
@@ -552,9 +552,10 @@ Template.prototype.applyLayout = function(template, locals) {
     layout = layout + ext;
   }
 
+  locals.delims = locals.layoutDelims || locals.delims;
+
   // Merge `layout` collections based on settings
   var stack = this.mergeLayouts(locals);
-
   return layouts(template.content, layout, stack, locals);
 };
 
@@ -716,8 +717,6 @@ Template.prototype.handleDelims = function(ext, engine, template, locals) {
   if (Array.isArray(delims)) {
     this.addDelims(ext, delims);
   }
-
-  return locals;
 };
 
 /**
@@ -1210,7 +1209,6 @@ Template.prototype.load = function(subtype, plural, options, fns, done) {
       // Add a render method to the template
       // TODO: allow additional opts to be passed
       forOwn(template, function (value) {
-
         // this engine logic is temporary until we decide
         // how we want to allow users to control this.
         // for now, this allows the user to change the engine
@@ -1222,6 +1220,9 @@ Template.prototype.load = function(subtype, plural, options, fns, done) {
             ext = '.' + ext;
           }
           value.options._engine = ext;
+        }
+        if (hasOwn(opts, 'delims')) {
+          value.options.delims = opts.delims;
         }
 
         value.render = function (locals, cb) {
@@ -1432,20 +1433,24 @@ Template.prototype.mergeType = function(type, collections) {
 Template.prototype.mergeLayouts = function(options) {
   debug.template('merging layouts: %j', options);
 
+  var layouts = {};
   var mergeLayouts = this.option('mergeLayouts');
-  if (Array.isArray(mergeLayouts)) {
-    return this.mergeType('layout', mergeLayouts);
-  }
-
-  if (mergeLayouts === false) {
-    return this.views.layouts;
-  }
 
   if (typeof mergeLayouts === 'function') {
     return mergeLayouts.call(this, arguments);
   }
 
-  return this.mergeType('layout');
+  if (Array.isArray(mergeLayouts)) {
+    layouts = this.mergeType('layout', mergeLayouts);
+  } else if (mergeLayouts === false) {
+    layouts = this.views.layouts;
+  } else {
+    layouts = this.mergeType('layout');
+  }
+  forOwn(layouts, function (value, key) {
+    this.mergeTypeContext('layouts', key, value.locals, value.data);
+  }, this);
+  return layouts;
 };
 
 /**
@@ -1476,7 +1481,8 @@ Template.prototype.mergePartials = function(locals) {
     return mergePartials.call(this, locals);
   }
 
-  var opts = extend({partials: {}}, locals);
+  var opts = {};
+  opts.partials = _.cloneDeep(locals.partials || {});
 
   // loop over each `partial` collection
   this.type.partial.forEach(function (plural) {
@@ -1484,10 +1490,8 @@ Template.prototype.mergePartials = function(locals) {
 
     // Loop over the templates in the collection
     forOwn(collection, function (value, key/*, template*/) {
-      var data = extend({}, value.locals, value.data);
-      this.cache.locals[key] = data;
-
-      value.content = this.applyLayout(value, data);
+      this.mergeTypeContext('partials', key, value.locals, value.data);
+      value.content = this.applyLayout(value, this.cache._context.partials[key]);
 
       // If `mergePartials` is true combine all `partial` subtypes
       if (mergePartials === true) {
@@ -1501,7 +1505,8 @@ Template.prototype.mergePartials = function(locals) {
     }, this);
   }, this);
 
-  return opts;
+  locals.options = extend({}, locals.options, opts);
+  return locals;
 };
 
 /**
@@ -1724,6 +1729,139 @@ Template.prototype.decorate = function(subtype, plural/*, options, fns, done*/) 
 };
 
 /**
+ * Base compile method. Use `engine` to compile `content` with the
+ * given `options`
+ *
+ * @param  {Object} `engine` Engine object, with `.compile()` method
+ * @param  {Object} `content` The content string to compile.
+ * @param  {Object} `options` options to pass to registered view engines.
+ * @return {Function} The compiled template string.
+ * @api private
+ */
+
+Template.prototype.compileBase = function(engine, content, options) {
+  debug.render('compileBase: %j', arguments);
+  if (!hasOwn(engine, 'compile')) {
+    throw new Error('`.compile()` method not found on: "' + engine.name + '".');
+  }
+  try {
+    return engine.compile(content, options);
+  } catch (err) {
+    debug.err('compile: %j', err);
+    return err;
+  }
+};
+
+/**
+ * Compile content on the given `template` object with the specified
+ * engine `options`.
+ *
+ * @param  {Object} `template` The template object with content to compile.
+ * @param  {Object} `options` Options to pass along to the engine when compile. May include a `context` property to bind to helpers.
+ * @return {Object} Template object to enable chaining.
+ * @api public
+ */
+
+Template.prototype.compileTemplate = function(template, options, async) {
+  var self = this;
+  debug.render('compileTemplate: %j', template);
+
+  if (typeOf(template) !== 'object') {
+    throw new Error('Template#compileTemplate() expects an object, got: "'
+      + typeOf(template) + ' / '+ template + '".');
+  }
+
+  // reference to options in case helpers are needed later
+  var opts = options || {};
+  var context = opts.context || {};
+  delete opts.context;
+
+  template.options = template.options || {};
+  template.options.layout = template.layout;
+
+  // find ext and engine to use
+  var ext = this.getExt(template, context);
+  var engine = this.getEngine(ext);
+
+  // Handle custom template delimiters and escaping
+  this.handleDelims(ext, engine, template, opts);
+
+  // additional delim settings
+  var settings = this.getDelims(ext);
+  if (settings) {
+    extend(opts, settings);
+  }
+
+  // Bind context to helpers before passing to the engine.
+  this.bindHelpers(opts, context, async);
+  opts.debugEngine = this.option('debugEngine');
+
+  // if a layout is defined, apply it before compiling
+  var content = template.content;
+  content = this.applyLayout(template, extend({}, context, opts));
+
+  // compile template
+  template.fn = this.compileBase(engine, content, opts);
+  return this;
+};
+
+/**
+ * Compile `content` with the given `options`.
+ *
+ * @param  {Object|String} `file` String or normalized template object.
+ * @param  {Object} `options`
+ * @param  {Boolean} `async` Load async helpers
+ * @return {Function} Compiled function.
+ * @api public
+ */
+
+Template.prototype.compile = function(content, options, async) {
+  debug.render('compile: %j', arguments);
+
+  if (content == null) {
+    throw new Error('Template#compile() expects a string or object.');
+  }
+
+  if (typeOf(content) === 'object') {
+    return this.compileTemplate(content, options, async);
+  }
+
+  var template = this.findRenderable(content);
+  if (typeOf(template) === 'object') {
+    return this.compileTemplate(template, options, async);
+  }
+
+  return this.compileString(content, options, async);
+};
+
+/**
+ * Compile the given string with the specified `options`.
+ *
+ * The primary purpose of this method is to get the engine before
+ * passing args to `.compileBase()`.
+ *
+ * @param  {String} `str` The string to compile.
+ * @param  {Object} `options` Options to pass to registered view engines.
+ * @param  {Boolean} `async` Load async helpers
+ * @return {Function}
+ * @api public
+ */
+
+Template.prototype.compileString = function(str, options, async) {
+  debug.render('render string: %s', str);
+  if (typeof options === 'function') {
+    cb = options;
+    options = {};
+  }
+
+  options = extend({locals: {}}, options);
+  var locals = options.locals;
+
+  var template = { content: str, locals: locals, options: options };
+  return this.compileTemplate(template, options, async);
+};
+
+/**
  * Base render method. Use `engine` to render `content` with the
  * given `options` and `callback`.
  *
@@ -1766,7 +1904,6 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
     cb = locals;
     locals = {};
   }
-
   if (typeOf(template) !== 'object') {
     throw new Error('Template#renderTemplate() expects an object, got: "'
       + typeOf(template) + ' / '+ template + '".');
@@ -1775,31 +1912,36 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   template.options = template.options || {};
   template.options.layout = template.layout;
 
+  // find any options passed in on locals
+  locals = locals || {};
+  var opts = extend({}, locals.options);
+
   // Merge `.render()` locals with template locals
   locals = this.mergeContext(template, locals);
-  var ext = this.getExt(template, locals);
+  extend(opts, locals.options);
+
+  // find the engine to use to render
+  var ext = this.getExt(template, opts);
   var engine = this.getEngine(ext);
-
-  // Handle custom template delimiters and escaping
-  locals = this.handleDelims(ext, engine, template, locals);
-
-  var settings = this.getDelims(ext);
-  if (settings) {
-    locals = extend({}, locals, settings);
-  }
-
-  // Bind context to helpers before passing to the engine.
-  this.bindHelpers(locals, typeof cb === 'function');
-  locals.debugEngine = this.option('debugEngine');
 
   // handle pre-render middleware routes
   this.handle('before', template, handleError(template, 'before'));
 
-  // if a layout is defined, apply it before rendering
-  var content = template.content;
-  content = this.applyLayout(template, locals);
+  // compile the template if it hasn't been already
+  if (!template.fn) {
+    opts.context = opts.context || locals;
+    opts.delims = opts.delims || opts.context.delims;
+    opts.layoutDelims = opts.layoutDelims || opts.context.layoutDelims;
+    this.compileTemplate(template, opts, typeof cb === 'function');
+  }
 
   var cloned = _.cloneDeep(template);
+  var content = template.fn;
+
+  // backwards compatibility for engines that don't support compile
+  if (typeof content === 'string') {
+    locals = extend(locals, opts);
+  }
 
   /**
    * sync
@@ -2017,13 +2159,14 @@ Template.prototype.renderType = function(type, subtype) {
  *   - Exposes `locals` on the `context` property
  *   - Exposes `Template` on the `app` property
  *
- * @param  {Object} `locals`
+ * @param  {Object} `options` Additional options that may contain helpers
+ * @param  {Object} `context` Used as the context to bind to helpers
  * @param  {Boolean} `async` Is the helper async?
  * @return {Object}
  */
 
-Template.prototype.bindHelpers = function (locals, async) {
-  debug.helper('binding helpers: %j', locals);
+Template.prototype.bindHelpers = function (options, context, async) {
+  debug.helper('binding helpers: %j %j', context, options);
 
   var helpers = _.cloneDeep(this.options.helpers || {});
   extend(helpers, _.cloneDeep(this._.helpers));
@@ -2032,13 +2175,13 @@ Template.prototype.bindHelpers = function (locals, async) {
   if (async) {
     helpers = extend({}, helpers, this._.asyncHelpers);
   }
-  extend(helpers, _.cloneDeep(locals.helpers || {}));
+  extend(helpers, _.cloneDeep(options.helpers || {}));
 
   var o = {};
-  o.context = locals;
+  o.context = context || {};
   o.app = this;
 
-  locals.helpers = utils.bindAll(helpers, o);
+  options.helpers = utils.bindAll(helpers, o);
 };
 
 /**
@@ -2077,10 +2220,30 @@ Template.prototype.mergeContext = function(template, locals) {
   // Merge in partials to pass to engines
   merge(context, this.mergePartials(context));
 
-  // Merge in `locals` from templates
-  merge(context, this.cache.locals);
+  // Merge in `locals/data` from templates
+  merge(context, this.cache._context.partials);
+  merge(context.layouts || {}, this.cache.layouts);
   merge(context, locals);
   return context;
+};
+
+/**
+ * Build the context for a specific template and type.
+ *
+ * ```js
+ * template.mergeTypeContext('partials', 'sidenav', locals, data);
+ * ```
+ *
+ * @param  {String} `type` Template type to merge
+ * @param  {String} `key` Key of template to use
+ * @param  {Object} `locals` Locals object from template
+ * @param  {Object} `data` Data object from template
+ * @api private
+ */
+
+Template.prototype.mergeTypeContext = function(type, key, locals, data) {
+  this.cache._context[type] = this.cache._context[type] || {};
+  this.cache._context[type][key] = extend({}, locals, data);
 };
 
 /**

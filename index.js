@@ -7,8 +7,6 @@
 
 'use strict';
 
-// require('require-progress');
-
 var _ = require('lodash');
 var path = require('path');
 var glob = require('globby');
@@ -32,7 +30,6 @@ var arr = require('arr');
 var init = require('./lib/middleware/init');
 var defaultLoader = require('./lib/loaders');
 var camelize = require('./lib/camelize');
-var isObject = require('./lib/is-object');
 var hasOwn = require('./lib/has-own');
 var debug = require('./lib/debug');
 var utils = require('./lib');
@@ -156,9 +153,9 @@ Template.prototype.defaultTransforms = function() {
 Template.prototype.defaultOptions = function() {
   this.disable('debugEngine');
   this.disable('preferLocals');
+  this.enable('default engines');
   this.enable('default helpers');
   this.enable('default routes');
-  this.enable('default engines');
 
   this.option('cwd', process.cwd());
   this.option('ext', '*');
@@ -938,11 +935,11 @@ Template.prototype.helper = function(name, fn) {
 Template.prototype.helpers = function(helpers, options) {
   debug.helper('adding helpers: %s', helpers);
 
-  if (isObject(helpers)) {
+  if (typeOf(helpers) === 'object') {
     merge(this._.helpers, helpers);
   } else if (Array.isArray(helpers) || typeof helpers === 'string') {
     // sniff tests: if it's an object, it's not a glob
-    if (isObject(helpers[0])) {
+    if (typeOf(helpers[0]) === 'object') {
       _.reduce(helpers, function (acc, o) {
         return merge(acc, o);
       }, this._.helpers);
@@ -1265,7 +1262,7 @@ Template.prototype.validate = function(template) {
       debug.err('template `key` must be a string.');
     }
 
-    if (value == null || !isObject(value)) {
+    if (value == null || !typeOf(value) === 'object') {
       debug.err('template `value` must be an object.');
     }
 
@@ -1322,11 +1319,11 @@ Template.prototype.normalize = function(plural, template, options) {
 
 Template.prototype.view = function(collection, name) {
   if (this.views.hasOwnProperty(collection)) {
-    var collection = this.views[collection];
+    var obj = this.views[collection];
     if (!name) {
-      return collection;
+      return obj;
     }
-    return collection[name];
+    return obj[name];
   }
   return null;
 };
@@ -1526,7 +1523,7 @@ Template.prototype.mergePartials = function(locals) {
 Template.prototype.find = function(type, key, subtypes) {
   var o = this.mergeType(type, subtypes);
 
-  if (o && isObject(o) && hasOwn(o, key)) {
+  if (o && typeOf(o) === 'object' && hasOwn(o, key)) {
     return o[key];
   }
 

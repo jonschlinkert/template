@@ -11,7 +11,7 @@ npm test
 ## Usage
 
 ```js
-var verb = require('{%= name %}');
+var app = require('{%= name %}');
 ```
 
 ## Contributing

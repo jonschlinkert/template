@@ -17,6 +17,7 @@ var template;
 
 
 describe('template delimiters:', function () {
+  /* deps: engine-handlebars */
   beforeEach(function () {
     template = new Template();
   });

@@ -26,17 +26,17 @@ describe('template data', function () {
 
     it('should load data from a JSON file:', function () {
       template.data('test/fixtures/data/a.json');
-      template.cache.data.should.eql({ a: 'a', b: 'b', c: 'c' });
+      template.cache.data.should.eql({ a: { a: 'a', b: 'b', c: 'c' } });
     });
 
     it('should load data from a YAML file:', function () {
       template.data('test/fixtures/data/x.yml');
-      template.cache.data.should.eql({ x: 'x', y: 'y', z: 'z' });
+      template.cache.data.should.eql({ x: { x: 'x', y: 'y', z: 'z' } });
     });
 
     it('should load data from a glob pattern:', function () {
       template.data('test/fixtures/data/{a,x}.*');
-      template.cache.data.should.eql({ a: 'a', b: 'b', c: 'c', x: 'x', y: 'y', z: 'z' });
+      template.cache.data.should.eql({a: { a: 'a', b: 'b', c: 'c' }, x: { x: 'x', y: 'y', z: 'z' }});
     });
 
     it('should merge data from `data` into the root of the context:', function () {
@@ -64,24 +64,6 @@ describe('template data', function () {
     it('should `.set()` data on the cache:', function () {
       template.set('data', { a: 'a', b: 'b', c: 'c' });
       template.get('data').should.have.property('a', 'a');
-    });
-  });
-
-  describe('.namespace():', function () {
-    describe('when an arbitrary string is passed as the key:', function () {
-      it('should use the key to namespace data from a file:', function () {
-        template.namespace('abc', 'test/fixtures/data/x.yml');
-        template.cache.data.should.eql({abc: { x: 'x', y: 'y', z: 'z' }});
-      });
-    });
-
-    describe('when a node.js `path` method is passed as the key:', function () {
-      it('should use the method on the path to get the key:', function () {
-        template.namespace(':basename', 'test/fixtures/data/a.json');
-        template.namespace(':basename', 'test/fixtures/data/x.yml');
-        template.cache.data.should.have.property('a', { a: 'a', b: 'b', c: 'c' });
-        template.cache.data.should.have.property('x', { x: 'x', y: 'y', z: 'z' });
-      });
     });
   });
 });

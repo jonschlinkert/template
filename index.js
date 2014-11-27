@@ -1262,7 +1262,7 @@ Template.prototype.validate = function(template) {
       debug.err('template `key` must be a string.');
     }
 
-    if (value == null || !typeOf(value) === 'object') {
+    if (value == null || typeOf(value) !== 'object') {
       debug.err('template `value` must be an object.');
     }
 
@@ -1849,10 +1849,6 @@ Template.prototype.compile = function(content, options, async) {
 
 Template.prototype.compileString = function(str, options, async) {
   debug.render('render string: %s', str);
-  if (typeof options === 'function') {
-    cb = options;
-    options = {};
-  }
 
   options = extend({locals: {}}, options);
   var locals = options.locals;

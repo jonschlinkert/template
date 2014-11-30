@@ -154,6 +154,29 @@ describe('layouts:', function () {
     });
   });
 
+  describe('option layoutExt', function () {
+    it('should append layout ext to layout when applying layout stack', function (done) {
+      var template = new Template();
+      template.option('layoutExt', 'hbs');
+      template.layout('sidebar.hbs', { content: '<nav></nav>\n{% body %}', layout: 'default.hbs' });
+      template.layout('default.hbs', { content: 'default!\n{% body %}\ndefault!' });
+      template.page('home', { content: 'This is the home page.', layout: 'sidebar' });
+
+      var expected = [
+        'default!',
+        '<nav></nav>',
+        'This is the home page.',
+        'default!'
+      ].join('\n');
+
+      template.render('home', function (err, content) {
+        if (err) return done(err);
+        content.should.eql(expected);
+        done();
+      });
+    });
+  });
+
 
   describe('custom template types:', function () {
     var template = new Template();

@@ -329,3 +329,134 @@ describe('template.router()', function() {
 
   });
 });
+
+describe('template.use()', function () {
+  beforeEach(function () {
+    template = new Template();
+  });
+
+  it('should support .use of other routers', function(done) {
+    var page = { path: '/foo/bar' };
+    var another = new Template.Router();
+    another.all('/bar', function(file, next) {
+      file.path.should.equal('/bar');
+      file.options.basePath.should.equal('/foo');
+      file.options.originalPath.should.equal('/foo/bar');
+      file.data = file.data || {};
+      file.data.another = true;
+      next();
+    });
+    template.use('/foo', another);
+    template.handle(page, function (err) {
+      if (err) return done(err);
+      page.data.another.should.be.true;
+      done();
+    });
+  });
+
+  it('should support .use with multiple middleware', function(done) {
+    var page = { path: '/foo/bar' };
+    function first (file, next) {
+      file.data = file.data || {};
+      file.data.first = true;
+      next();
+    }
+    function second (file, next) {
+      file.data = file.data || {};
+      file.data.second = true;
+      next();
+    }
+
+    template.use('/foo/bar', first, second);
+    template.handle(page, function (err) {
+      if (err) return done(err);
+      page.data.first.should.be.true;
+      page.data.second.should.be.true;
+      done();
+    });
+  });
+
+  it('should throw error when no middleware is passed', function(done) {
+    var page = { path: '/foo/bar' };
+    try {
+      template.use('/foo/bar');
+      done(new Error('Expected an error to be thrown.'));
+    } catch (err) {
+      if (err) return done();
+      done(new Error('Expected an error to be thrown'));
+    }
+  });
+
+  it('should handle an array as the first argument', function(done) {
+    var page = { path: '/foo/bar' };
+    function first (file, next) {
+      file.data = file.data || {};
+      file.data.first = true;
+      next();
+    }
+    function second (file, next) {
+      file.data = file.data || {};
+      file.data.second = true;
+      next();
+    }
+
+    template.use(['/foo/bar'], first, second);
+    template.handle(page, function (err) {
+      if (err) return done(err);
+      page.data.first.should.be.true;
+      page.data.second.should.be.true;
+      done();
+    });
+  });
+
+  it('should use child template objects', function() {
+    var child = new Template();
+    var page = { path: '/foo/bar' };
+    child.all('/bar', function(file, next) {
+      file.path.should.equal('/bar');
+      file.options.basePath.should.equal('/foo');
+      file.options.originalPath.should.equal('/foo/bar');
+      file.data = file.data || {};
+      file.data.another = true;
+      next();
+    });
+    template.use('/foo', child);
+    child.mountpath.should.equal('/foo');
+    child.parent.should.equal(template);
+  });
+});
+
+describe('template.param()', function () {
+  beforeEach(function () {
+    template = new Template();
+  });
+
+  it('should support .param', function (done) {
+    var page = { path: '/posts/tests/2014-11-30' };
+    template.param(['category', 'posted'], function (file, next, value) {
+      file.data = file.data || {};
+      if (file.options.params.category === value) {
+        file.data.relatedCategories = ['coverage', 'benchmarks'];
+      }
+      if (file.options.params.posted === value) {
+        file.data.archived = file.data.archived || {};
+        var month = new Date(value).getMonth() + 1;
+        var year = new Date(value).getYear() + 2000 - 100;
+        file.data.archived['' + year + '-' + month] = ['2014-11-01', '2014-11-15', '2014-11-20'];
+      }
+      next();
+    });
+    template.all('/posts/:category/:posted', function (file, next) {
+      var posted = file.options.params.posted;
+      var month = new Date(posted).getMonth() + 1;
+      var year = new Date(posted).getYear() + 2000 - 100;
+      file.data.relatedCategories.length.should.eql(2);
+      file.data.archived['' + year + '-' + month].length.should.eql(3);
+      next();
+    });
+    template.handle(page, function (err) {
+      if (err) return done(err);
+      done();
+    });
+  });
+});

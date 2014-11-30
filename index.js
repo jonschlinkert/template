@@ -1262,7 +1262,7 @@ Template.prototype.validate = function(template) {
       debug.err('template `key` must be a string.');
     }
 
-    if (value == null || !typeOf(value) === 'object') {
+    if (value == null || typeOf(value) !== 'object') {
       debug.err('template `value` must be an object.');
     }
 

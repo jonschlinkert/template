@@ -147,6 +147,12 @@ describe('middleware', function () {
     });
 
     it('should handle errors in before and after render middleware:', function (done) {
+      var stdout = process.stdout.write;
+      var output = [];
+      process.stdout.write = function (msg) {
+        output.push(msg);
+      };
+
       template.pages(__dirname + '/fixtures/md.md');
       var page = template.views.pages['md.md'];
 
@@ -167,6 +173,8 @@ describe('middleware', function () {
         template.render(page, {name: 'Halle'}, function (err, content) {
           if (err) return done(err);
           content.should.equal('<%= a %>\n<%= b %>\n<%= c %>');
+
+          process.stdout.write = stdout;
           done();
         });
       });

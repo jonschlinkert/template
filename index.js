@@ -1801,8 +1801,7 @@ Template.prototype.compileTemplate = function(template, options, async) {
   content = this.applyLayout(template, extend({}, context, opts));
 
   // compile template
-  template.fn = this.compileBase(engine, content, opts);
-  return this;
+  return this.compileBase(engine, content, opts);
 };
 
 /**
@@ -1849,8 +1848,8 @@ Template.prototype.compile = function(content, options, async) {
 
 Template.prototype.compileString = function(str, options, async) {
   debug.render('render string: %s', str);
-  if (typeof options === 'function') {
-    cb = options;
+  if (typeof options === 'boolean') {
+    async = options;
     options = {};
   }
 
@@ -1932,7 +1931,7 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
     opts.context = opts.context || locals;
     opts.delims = opts.delims || opts.context.delims;
     opts.layoutDelims = opts.layoutDelims || opts.context.layoutDelims;
-    this.compileTemplate(template, opts, typeof cb === 'function');
+    template.fn = this.compileTemplate(template, opts, typeof cb === 'function');
   }
 
   var cloned = _.cloneDeep(template);

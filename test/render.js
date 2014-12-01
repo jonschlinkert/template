@@ -179,4 +179,62 @@ describe('template.render()', function () {
       done();
     });
   });
+
+  describe('error handling and validation', function () {
+    it('should throw error when template is not an object', function (done) {
+      try {
+        return template.renderTemplate('foo', function (err, content) {
+          if (!err) return done(new Error('Expected an error'));
+          return done();
+        });
+        return done(new Error('Expected an error'));
+      } catch (err) {
+        if (!err) return done(new Error('Expected an error'));
+        return done();
+      }
+    });
+
+    it('should throw error when content is undefined', function (done) {
+      try {
+        template.render();
+        return done(new Error('Expected an error'));
+      } catch (err) {
+        if (!err) return done(new Error('Expected an error'));
+        return done();
+      }
+    });
+
+    it('should throw error when engine does not have a render method', function (done) {
+      try {
+        var engine = {};
+        template.renderBase(engine, 'foo', function () {});
+        return done(new Error('Expected an error'));
+      } catch (err) {
+        if (!err) return done(new Error('Expected an error'));
+        return done();
+      }
+    });
+
+    it('should return error when engine.render has an error', function (done) {
+      var engine = {
+        render: function () {
+          throw new Error('Error during render.');
+        }
+      };
+      template.renderBase(engine, 'foo', function (err) {
+        if (!err) return done(new Error('Expected an error'));
+        return done();
+      });
+    });
+  });
+
+  describe('no locals', function () {
+    it('should handle not having locals', function (done) {
+      template.renderString('foo', function (err, content) {
+        if (err) return done(err);
+        content.should.eql('foo');
+        done();
+      });
+    });
+  });
 });

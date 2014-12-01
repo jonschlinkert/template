@@ -1597,8 +1597,8 @@ Template.prototype.lookup = function(plural, name, ext) {
     return views[name];
   }
 
-  if (hasOwn(views, name + ext || '.md')) {
-    return views[name + ext || '.md'];
+  if (hasOwn(views, name + (ext || '.md'))) {
+    return views[name + (ext || '.md')];
   }
 
   if (this.enabled('strict errors')) {

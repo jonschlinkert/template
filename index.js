@@ -1234,7 +1234,7 @@ Template.prototype.load = function(subtype, plural, options, fns, done) {
       self.dispatch(template);
 
       // Add template to the cache
-      merge(self.views[plural], template);
+      extend(self.views[plural], template);
       cb(null);
     }]);
 

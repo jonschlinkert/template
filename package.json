@@ -30,7 +30,8 @@
   },
   "scripts": {
     "test": "mocha -R spec",
-    "cover": "istanbul cover node_modules/.bin/_mocha && open coverage/lcov-report/index.html"
+    "cover": "istanbul cover node_modules/.bin/_mocha && open coverage/lcov-report/index.html",
+    "ci": "istanbul cover ./node_modules/mocha/bin/_mocha --report lcovonly -- -R spec && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage"
   },
   "devDependencies": {
     "async": "^0.9.0",

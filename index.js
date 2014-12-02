@@ -1234,7 +1234,7 @@ Template.prototype.load = function(subtype, plural, options, fns, done) {
       self.dispatch(template);
 
       // Add template to the cache
-      merge(self.views[plural], template);
+      extend(self.views[plural], template);
       cb(null);
     }]);
 
@@ -1597,8 +1597,8 @@ Template.prototype.lookup = function(plural, name, ext) {
     return views[name];
   }
 
-  if (hasOwn(views, name + ext || '.md')) {
-    return views[name + ext || '.md'];
+  if (hasOwn(views, name + (ext || '.md'))) {
+    return views[name + (ext || '.md')];
   }
 
   if (this.enabled('strict errors')) {
@@ -1801,8 +1801,7 @@ Template.prototype.compileTemplate = function(template, options, async) {
   content = this.applyLayout(template, extend({}, context, opts));
 
   // compile template
-  template.fn = this.compileBase(engine, content, opts);
-  return this;
+  return this.compileBase(engine, content, opts);
 };
 
 /**
@@ -1849,6 +1848,10 @@ Template.prototype.compile = function(content, options, async) {
 
 Template.prototype.compileString = function(str, options, async) {
   debug.render('render string: %s', str);
+  if (typeof options === 'boolean') {
+    async = options;
+    options = {};
+  }
 
   options = extend({locals: {}}, options);
   var locals = options.locals;
@@ -1928,7 +1931,7 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
     opts.context = opts.context || locals;
     opts.delims = opts.delims || opts.context.delims;
     opts.layoutDelims = opts.layoutDelims || opts.context.layoutDelims;
-    this.compileTemplate(template, opts, typeof cb === 'function');
+    template.fn = this.compileTemplate(template, opts, typeof cb === 'function');
   }
 
   var cloned = _.cloneDeep(template);

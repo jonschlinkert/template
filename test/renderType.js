@@ -83,6 +83,39 @@ describe('.renderType()', function () {
         done();
       });
     });
+
+    it('should throw an error when the template is not found', function (done) {
+      try {
+        template.renderType('renderable')('nothing.md', function (err, content) {
+          if (!err) return done(new Error('Expected an error.'));
+          return done();
+        });
+      } catch (err) {
+        if (!err) return done(new Error('Expected an error.'));
+        return done();
+      }
+    });
   });
 
+  describe('renderSubtype', function () {
+    it('should render a subtype', function (done) {
+      template.renderSubtype('page')('aaa.md', function(err, content) {
+        if (err) return done(err);
+        content.should.equal('Jon Schlinkert');
+        done();
+      });
+    });
+
+    it('should throw an error when the template is not found', function (done) {
+      try {
+        template.renderSubtype('page')('nothing.md', function (err, content) {
+          if (!err) return done(new Error('Expected an error.'));
+          return done();
+        });
+      } catch (err) {
+        if (!err) return done(new Error('Expected an error.'));
+        return done();
+      }
+    });
+  });
 });

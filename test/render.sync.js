@@ -133,4 +133,48 @@ describe('.render() synchronously:', function () {
       });
     });
   });
+
+  describe('error handling and validation', function () {
+    it('should throw error when template is not an object', function () {
+      try {
+        template.renderTemplate('foo');
+        throw new Error('Expected an error');
+      } catch (err) {
+        if (!err) throw new Error('Expected an error');
+      }
+    });
+
+    it('should throw error when content is undefined', function () {
+      try {
+        template.render();
+        throw new Error('Expected an error');
+      } catch (err) {
+        if (!err) throw new Error('Expected an error');
+      }
+    });
+
+    it('should throw error when engine does not have a renderSync method', function () {
+      try {
+        var engine = {};
+        template.renderBase(engine, 'foo');
+        throw new Error('Expected an error');
+      } catch (err) {
+        if (!err) throw new Error('Expected an error');
+      }
+    });
+
+    it('should return error when engine.renderSync has an error', function () {
+      var engine = {
+        renderSync: function () {
+          throw new Error('Error during render.');
+        }
+      };
+      try {
+        template.renderBase(engine, 'foo');
+        throw new Error('Expected an error');
+      } catch (err) {
+        if (!err) throw new Error('Expected an error');
+      }
+    });
+  });
 });

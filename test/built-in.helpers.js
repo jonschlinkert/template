@@ -18,11 +18,12 @@ var swig = consolidate.swig;
 
 
 describe('generated helpers:', function () {
-  beforeEach(function () {
-    template = new Template();
-  });
 
   describe('helpers for built-in engines:', function () {
+    beforeEach(function () {
+      template = new Template();
+    });
+
     it('should use the `partial` helper with a built-in engine.', function (done) {
       template.partial('a.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}});
       template.page('b.md', {path: 'b.md', content: 'foo <%= partial("a.md") %> bar'});
@@ -44,10 +45,50 @@ describe('generated helpers:', function () {
         done();
       });
     });
+
+    it('should return an empty string when the partial is missing.', function (done) {
+      template.partial('abc.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}});
+      template.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("def.md", { name: "CCC" }) %> bar'});
+
+      template.render('xyz.md', {name: 'DDD'}, function (err, content) {
+        if (err) return done(err);
+        content.should.equal('foo  bar');
+        done();
+      });
+    });
+
+    it('should return an empty string when the partial is missing.', function () {
+      template.partial('abc.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}});
+      template.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("def.md", { name: "CCC" }) %> bar'});
+      template.render('xyz.md', {name: 'DDD'}).should.eql('foo  bar');
+    });
+
+    it('should throw an error when something is wrong in a partial', function (done) {
+      template.partial('abc.md', {content: '---\nname: "AAA"\n---\n<%= name %> - <%= foo(name) %>', locals: {name: 'BBB'}});
+      template.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("abc.md", { name: "CCC" }) %> bar'});
+      template.render('xyz.md', {name: 'DDD'}, function (err, content) {
+        if (!err) return done('Expected an error.');
+        done();
+      });
+    });
+
+    it('should throw an error when something is wrong in a partial', function () {
+      template.partial('abc.md', {content: '---\nname: "AAA"\n---\n<%= name %> - <%= foo(name) %>', locals: {name: 'BBB'}});
+      template.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("abc.md", { name: "CCC" }) %> bar'});
+      try {
+        template.render('xyz.md', {name: 'DDD'}).should.eql('foo CCC bar');
+      } catch (err) {
+        if (!err) throw new Error('Expected an error.');
+      }
+    });
   });
 
 
   describe('helper context:', function () {
+    beforeEach(function () {
+      template = new Template();
+    });
+
     it('should give preference to front-matter over template locals and helper locals.', function (done) {
       template.partial('a.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}});
       template.page('b.md', {path: 'b.md', content: 'foo <%= partial("a.md") %> bar'});
@@ -95,6 +136,10 @@ describe('generated helpers:', function () {
 
 
   describe('user-defined engines:', function () {
+    beforeEach(function () {
+      template = new Template();
+    });
+
     it('should use the `partial` helper with handlebars.', function (done) {
       template.engine('hbs', handlebars);
 

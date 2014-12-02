@@ -20,13 +20,11 @@ describe('template.route()', function () {
   describe('.handle()', function () {
     beforeEach(function () {
       template = new Template();
+    });
 
-      template.route(/\.*/).all(function (file, next) {
-        parser.parse(file, function (err) {
-          if (err) return next(err);
-          next();
-        });
-      });
+    it('should do nothing when the router is null', function (done) {
+      template.router = null;
+      template.handle({}, done);
     });
 
     it('should run default routes', function (done) {
@@ -99,6 +97,20 @@ describe('template.route()', function () {
     it('should have stack property', function () {
       route.stack.should.be.instanceof(Array);
       route.stack.should.have.length(1);
+    });
+  });
+
+  describe('.dispatch()', function () {
+    beforeEach(function () {
+      template = new Template();
+    });
+    it('should add a middleware stack before dispatching', function () {
+      var page = {foo: {path: 'foo.md', options: {}}};
+      template.dispatch(page, [function (file, next) {
+        file.data.foo = 'bar';
+        next();
+      }]);
+      page.foo.data.foo.should.eql('bar');
     });
   });
 

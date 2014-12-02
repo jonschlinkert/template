@@ -33,11 +33,37 @@ describe('.mergePartials():', function () {
     template.include('g', {content: 'g'});
   });
 
-  describe.skip('should merge partials onto one object:', function () {
-    // todo
+  it('should merge partials onto one object:', function () {
+    var locals = template.mergePartials({});
+    locals.options.should.have.property('partials');
+    locals.options.should.not.have.property('includes');
+    locals.options.partials.should.have.property('f');
+    locals.options.partials.should.have.property('g');
+    locals.options.partials.f.should.eql('f');
+    locals.options.partials.g.should.eql('g');
   });
 
-  describe.skip('should return partials on separate objects:', function () {
-    // todo
+  it('should return partials on separate objects:', function () {
+    template.disable('mergePartials');
+    var locals = template.mergePartials({});
+    locals.options.should.have.property('partials');
+    locals.options.should.have.property('includes');
+    locals.options.partials.should.have.property('f');
+    locals.options.includes.should.have.property('g');
+    locals.options.partials.f.should.eql('f');
+    locals.options.includes.g.should.eql('g');
   });
+
+  it('should use a custom function as mergePartials', function () {
+    template.option('mergePartials', function (locals) {
+      locals = locals || {};
+      locals.options = locals.options || {};
+      locals.options.partials = locals.options.partials || {};
+      locals.options.partials.foo = 'bar';
+      return locals;
+    });
+
+    var locals = template.mergePartials();
+    locals.options.partials.foo.should.eql('bar');
+  })
 });

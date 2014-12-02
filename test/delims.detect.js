@@ -59,6 +59,32 @@ describe('custom delimiters:', function () {
     done();
   });
 
+  it('should use custom escape delimiters defined on an actual template:', function (done) {
+    var template = new Template();
+    template.engine('*', require('engine-lodash'));
+    template.create('doc', 'docs', { isRenderable: true })
+
+    template.doc('foo', {content: '<<= name >>{{= name }}', name: 'Jon Schlinkert'}, {
+      delims: ['<<', '>>'],
+      escapeDelims: ['<<!!=', '>>']
+    });
+    template.doc('bar', {content: '<<= name >>{{= name }}', name: 'Brian Woodward'}, {
+      delims: ['{{', '}}'],
+      escapeDelims: ['{{!!=', '}}']
+    });
+
+    template.render('foo', function (err, content) {
+      if (err) console.log(err);
+      content.should.equal('Jon Schlinkert{{= name }}');
+    });
+
+    template.render('bar', function (err, content) {
+      if (err) console.log(err);
+      content.should.equal('<<= name >>Brian Woodward');
+    });
+    done();
+  });
+
   it('should use custom delimiters defined on partials:', function (done) {
     var template = new Template();
     template.engine('*', require('engine-lodash'));

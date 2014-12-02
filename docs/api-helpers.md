@@ -1,3 +1,4 @@
+
 ## Helpers
 
 ### Example helper
@@ -28,3 +29,4 @@ template.helper('include', function include(name, locals) {
   });
 });
 ```
+

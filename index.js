@@ -935,6 +935,10 @@ Template.prototype.helper = function(name, fn) {
 Template.prototype.helpers = function(helpers, options) {
   debug.helper('adding helpers: %s', helpers);
 
+  if (typeof options === 'function') {
+    throw new Error('Template#helpers expects `options` to be an object.');
+  }
+
   if (typeOf(helpers) === 'object') {
     merge(this._.helpers, helpers);
   } else if (Array.isArray(helpers) || typeof helpers === 'string') {

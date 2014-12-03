@@ -19,6 +19,7 @@ var routes = require('en-route');
 var Cache = require('config-cache');
 var Helpers = require('helper-cache');
 var Engines = require('engine-cache');
+var Loaders = require('loader-cache');
 var arrayify = require('arrayify-compact');
 var engineLodash = require('engine-lodash');
 var EscapeDelims = require('escape-delims');
@@ -113,6 +114,7 @@ Template.prototype.initTemplate = function() {
 
 Template.prototype.loadDefaults = function() {
   this.defaultConfig();
+  this.defaultLoaders();
   this.defaultOptions();
   this.defaultRoutes();
   this.defaultTransforms();
@@ -131,6 +133,7 @@ Template.prototype.defaultConfig = function() {
   this._.delims = new Delims(this.options);
   this._.engines = new Engines(this.engines);
   this._.helpers = new Helpers({bind: false});
+  this._.loaders = new Loaders(this.loaders);
   this._.asyncHelpers = new Helpers({bind: false});
 };
 
@@ -180,6 +183,11 @@ Template.prototype.defaultOptions = function() {
   // Custom function for all other template keys
   this.option('renameKey', function (fp) {
     return path.basename(fp);
+  });
+
+  // Custom function for matchLoader
+  this.option('matchLoader', function () {
+    return 'default';
   });
 };
 
@@ -245,16 +253,26 @@ Template.prototype.defaultDelimiters = function() {
 };
 
 /**
- * Default loader to use when a user-defined loader is
- * not given for a template collection.
- *
- * @param {String} `plural` The collection name, e.g. `pages`
- * @param {Object} `options`
+ * Add methods for loaders and register default loaders.
+ * 
  * @api private
  */
 
-Template.prototype.defaultLoader = function(plural, options) {
-  return [defaultLoader.call(this, plural, options)];
+Template.prototype.defaultLoaders = function() {
+  // register methods
+  utils.extension(Template.prototype, this._.loaders, 'loader', 'register');
+  utils.extension(Template.prototype, this._.loaders, 'loaderAsync', 'registerAsync');
+  utils.extension(Template.prototype, this._.loaders, 'loaderPromise', 'registerPromise');
+  utils.extension(Template.prototype, this._.loaders, 'loaderStream', 'registerStream');
+
+  // load methods
+  utils.extension(Template.prototype, this._.loaders, 'load');
+  utils.extension(Template.prototype, this._.loaders, 'loadAsync');
+  utils.extension(Template.prototype, this._.loaders, 'loadPromise');
+  utils.extension(Template.prototype, this._.loaders, 'loadStream');
+
+  // register default loader methods
+  this.loader('default', defaultLoader(this));
 };
 
 /**
@@ -1097,153 +1115,6 @@ Template.prototype.defaultAsyncHelper = function(subtype, plural) {
 };
 
 /**
- * Define a custom loader for loading templates.
- *
- * @param  {String} `plural`
- * @param  {Object} `options`
- * @param  {Array} `fns`
- * @param  {Function} `done`
- */
-
-Template.prototype.loader = function (plural, options, stack, done) {
-  debug.loader('loader: %j', arguments);
-  var self = this;
-
-  if (arguments.length !== 1) {
-    done = done || function () {};
-    stack = stack || [];
-
-    self.loaders[plural] = function (/*key, value, fns, callback*/) {
-      var args = slice(arguments);
-      var first;
-
-      if (Array.isArray(args[0])) {
-        first = args.shift();
-      }
-
-      var fns = arr.first(args, 'array') || [];
-      var callback = arr.first(args, 'function');
-
-      if (typeof callback !== 'function') {
-        throw new Error('Template#loader() expects `callback` to be a function.');
-      }
-
-      // remove the arrays and functions from args
-      args = arr.filter(args, function (ele) {
-        return !Array.isArray(ele) && typeof ele !== 'function';
-      });
-
-      if (first != null) {
-        args.unshift(first);
-      }
-
-      // find our stack to call
-      var loaders = stack.concat(fns);
-
-      // pass the loaders through the waterfall to get the templates
-      var firstFn = loaders[0];
-
-      loaders[0] = function (next) {
-        args.push(next);
-        return firstFn.apply(self, args);
-      };
-
-      loaders = utils.bindAll(loaders, self);
-
-      return utils.runLoaderStack(loaders, function (err, template) {
-        return callback(err, done(err, template) || template);
-      });
-
-    };
-  }
-  return self.loaders[plural];
-};
-
-/**
- * Default load function used for loading templates.
- *
- * @param  {String} `plural`
- * @param  {Object} `options`
- * @param  {Array} `fns` Loader functions.
- * @param  {Function} `done`
- */
-
-Template.prototype.load = function(subtype, plural, options, fns, done) {
-  debug.loader('loading: %j', arguments);
-  var self = this;
-
-  // If the loader stack is empty, fallback to defaults
-  if (fns == null || fns.length === 0) {
-    fns = this.defaultLoader(plural, options);
-  }
-
-  var opts = extend({}, options);
-
-  function getLoader() {
-    if (opts.loadFn) {
-      var callback = arguments[arguments.length - 1];
-      var args = slice(arguments, 0, arguments.length - 1);
-
-      callback(null, opts.loadFn.apply(self, args));
-    } else {
-      self.loader(plural, opts, fns, done).apply(self, arguments);
-    }
-  }
-
-  return function (/*key, value, fns*/) {
-    debug.loader('loading template: %j', arguments);
-    var args = slice(arguments);
-    var last = args[args.length - 1];
-    var cb = function () {};
-
-    if (typeof last === 'function') {
-      cb = args.pop();
-    }
-
-    args = args.concat([function (err, template) {
-      if (err) return cb(err);
-
-      // validate the template object before moving on
-      self.validate(template);
-
-      // Add a render method to the template
-      // TODO: allow additional opts to be passed
-      forOwn(template, function (value) {
-        // this engine logic is temporary until we decide
-        // how we want to allow users to control this.
-        // for now, this allows the user to change the engine
-        // preference in the the `getExt()` method.
-        value.options = value.options || {};
-        if (hasOwn(opts, 'engine')) {
-          var ext = opts.engine;
-          if (ext[0] !== '.') {
-            ext = '.' + ext;
-          }
-          value.options._engine = ext;
-        }
-        if (hasOwn(opts, 'delims')) {
-          value.options.delims = opts.delims;
-        }
-
-        value.render = function (locals, cb) {
-          return self.renderTemplate(this, locals, cb);
-        };
-      });
-
-      // Run middleware
-      self.dispatch(template);
-
-      // Add template to the cache
-      extend(self.views[plural], template);
-      cb(null);
-    }]);
-
-    getLoader.apply(self, args);
-    return self;
-  };
-};
-
-/**
  * Validate a template object to ensure that it has the properties
  * expected for applying layouts, choosing engines, and so on.
  *
@@ -1685,29 +1556,58 @@ Template.prototype.create = function(subtype, plural/*, options, fns, done*/) {
  * @api private
  */
 
-Template.prototype.decorate = function(subtype, plural/*, options, fns, done*/) {
+Template.prototype.decorate = function(subtype, plural, options) {
   debug.template('decorating subtype: [%s / %s]', subtype, plural);
 
-  /**
-   * Ininiatlize the loader to be used. If `fns` is empty,
-   * we fallback to the default loader stack.
-   */
-
-  var load = this.load.apply(this, arguments);
+  var opts = extend({}, options);
 
   /**
    * Add a method to `Template` for `plural`
    */
 
-  mixin(plural, function (/*key, value, fns*/) {
-    return load.apply(this, arguments);
+  mixin(plural, function (template) {
+    var self = this;
+
+    template = self.normalize(plural, template, options);
+    // validate the template object before moving on
+    self.validate(template);
+
+    // Add a render method to the template
+    // TODO: allow additional opts to be passed
+    forOwn(template, function (value) {
+      // this engine logic is temporary until we decide
+      // how we want to allow users to control this.
+      // for now, this allows the user to change the engine
+      // preference in the the `getExt()` method.
+      value.options = value.options || {};
+      if (hasOwn(opts, 'engine')) {
+        var ext = opts.engine;
+        if (ext[0] !== '.') {
+          ext = '.' + ext;
+        }
+        value.options._engine = ext;
+      }
+      if (hasOwn(opts, 'delims')) {
+        value.options.delims = opts.delims;
+      }
+
+      value.render = function (locals, cb) {
+        return self.renderTemplate(this, locals, cb);
+      };
+    });
+
+    // Run middleware
+    self.dispatch(template);
+
+    // Add template to the cache
+    extend(self.views[plural], template);
   });
 
   /**
    * Add a method to `Template` for `subtype`
    */
 
-  mixin(subtype, function (/*key, value, locals, opts*/) {
+  mixin(subtype, function (template) {
     return this[plural].apply(this, arguments);
   });
 
@@ -1725,6 +1625,25 @@ Template.prototype.decorate = function(subtype, plural/*, options, fns, done*/) 
 
   mixin(methodName('render', subtype), function () {
     return this.renderSubtype(subtype);
+  });
+
+  /**
+   * Add a `load` method to `Template` for `subtype`
+   */
+  
+  mixin(methodName('load', subtype), function () {
+    return this[methodName('load', plural)].apply(this, arguments);
+  });
+
+  /**
+   * Add a `load` method to `Template` for `plural`
+   */
+  
+  mixin(methodName('load', plural), function () {
+    var args = slice(arguments);
+    var opts = {};
+    opts.matchLoader = this.option('matchLoader');
+    return this[plural](this.load(args, opts));
   });
 };
 

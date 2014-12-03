@@ -69,6 +69,7 @@
     "kind-of": "^0.1.2",
     "layouts": "^0.6.0",
     "load-templates": "^0.4.6",
+    "loader-cache": "^0.2.4",
     "lodash": "^2.4.1",
     "parser-front-matter": "^0.3.0"
   },

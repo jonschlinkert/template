@@ -19,13 +19,11 @@ var routes = require('en-route');
 var Cache = require('config-cache');
 var Helpers = require('helper-cache');
 var Engines = require('engine-cache');
-var arrayify = require('arrayify-compact');
+var Loaders = require('loader-cache');
 var engineLodash = require('engine-lodash');
-var EscapeDelims = require('escape-delims');
 var parser = require('parser-front-matter');
 var flatten = require('arr-flatten');
 var slice = require('array-slice');
-var arr = require('arr');
 
 var init = require('./lib/middleware/init');
 var defaultLoader = require('./lib/loaders');
@@ -114,6 +112,7 @@ Template.prototype.initTemplate = function() {
 Template.prototype.loadDefaults = function() {
   this.defaultConfig();
   this.defaultOptions();
+  this.defaultLoaders();
   this.defaultRoutes();
   this.defaultTransforms();
   this.defaultDelimiters();
@@ -129,6 +128,7 @@ Template.prototype.loadDefaults = function() {
 
 Template.prototype.defaultConfig = function() {
   this._.delims = new Delims(this.options);
+  this._.loaders = new Loaders(this.loaders);
   this._.engines = new Engines(this.engines);
   this._.helpers = new Helpers({bind: false});
   this._.asyncHelpers = new Helpers({bind: false});
@@ -141,7 +141,7 @@ Template.prototype.defaultConfig = function() {
  */
 
 Template.prototype.defaultTransforms = function() {
-  this.transform('placeholder', function () {});
+  this.transform('noop', function () {});
 };
 
 /**
@@ -181,6 +181,11 @@ Template.prototype.defaultOptions = function() {
   this.option('renameKey', function (fp) {
     return path.basename(fp);
   });
+
+  // Custom function for matchLoader
+  this.option('matchLoader', function () {
+    return 'default';
+  });
 };
 
 /**
@@ -190,6 +195,20 @@ Template.prototype.defaultOptions = function() {
 defineGetter(Template.prototype, 'cwd', function () {
   return this.option('cwd') || process.cwd();
 });
+
+/**
+ * Default loaders to use for loading templates.
+ *
+ * @param {String} `plural` The collection name, e.g. `pages`
+ * @param {Object} `options`
+ * @api private
+ */
+
+Template.prototype.defaultLoaders = function() {
+  this.loader('default', function (plural, options) {
+    return defaultLoader(plural, options);
+  });
+};
 
 /**
  * Load default routes / middleware
@@ -245,19 +264,6 @@ Template.prototype.defaultDelimiters = function() {
 };
 
 /**
- * Default loader to use when a user-defined loader is
- * not given for a template collection.
- *
- * @param {String} `plural` The collection name, e.g. `pages`
- * @param {Object} `options`
- * @api private
- */
-
-Template.prototype.defaultLoader = function(plural, options) {
-  return [defaultLoader.call(this, plural, options)];
-};
-
-/**
  * Register default view collections.
  *
  * @api private
@@ -267,6 +273,35 @@ Template.prototype.defaultTemplates = function() {
   this.create('page', { isRenderable: true });
   this.create('layout', { isLayout: true });
   this.create('partial', { isPartial: true });
+};
+
+/**
+ * Define a custom loader for loading templates.
+ *
+ * @param  {String} `plural`
+ * @param  {Object} `options`
+ * @param  {Array} `fns`
+ * @param  {Function} `done`
+ */
+
+Template.prototype.loader = function(ext, fn, type) {
+  this._.loaders._register(ext, fn, type);
+  return this;
+};
+
+/**
+ * Default load function used for loading templates.
+ *
+ * @param  {String} `plural`
+ * @param  {Object} `options`
+ * @param  {Array} `fns` Loader functions.
+ * @param  {Function} `done`
+ */
+
+Template.prototype.load = function(val, opts, stack, cb) {
+  var type = methodName(opts && opts.type || 'sync');
+  this._.loaders[type](val, opts, stack, cb);
+  return this;
 };
 
 /**
@@ -1003,8 +1038,8 @@ Template.prototype.asyncHelper = function(name, fn) {
 
 Template.prototype.asyncHelpers = function(helpers) {
   debug.helper('adding async helpers: %s', helpers);
-  var loader = this._.asyncHelpers.addAsyncHelpers;
-  return loader.apply(loader, arguments);
+  var helpers = this._.asyncHelpers.addAsyncHelpers;
+  return helpers.apply(helpers, arguments);
 };
 
 /**
@@ -1101,153 +1136,6 @@ Template.prototype.defaultAsyncHelper = function(subtype, plural) {
 };
 
 /**
- * Define a custom loader for loading templates.
- *
- * @param  {String} `plural`
- * @param  {Object} `options`
- * @param  {Array} `fns`
- * @param  {Function} `done`
- */
-
-Template.prototype.loader = function (plural, options, stack, done) {
-  debug.loader('loader: %j', arguments);
-  var self = this;
-
-  if (arguments.length !== 1) {
-    done = done || function () {};
-    stack = stack || [];
-
-    self.loaders[plural] = function (/*key, value, fns, callback*/) {
-      var args = slice(arguments);
-      var first;
-
-      if (Array.isArray(args[0])) {
-        first = args.shift();
-      }
-
-      var fns = arr.first(args, 'array') || [];
-      var callback = arr.first(args, 'function');
-
-      if (typeof callback !== 'function') {
-        throw new Error('Template#loader() expects `callback` to be a function.');
-      }
-
-      // remove the arrays and functions from args
-      args = arr.filter(args, function (ele) {
-        return !Array.isArray(ele) && typeof ele !== 'function';
-      });
-
-      if (first != null) {
-        args.unshift(first);
-      }
-
-      // find our stack to call
-      var loaders = stack.concat(fns);
-
-      // pass the loaders through the waterfall to get the templates
-      var firstFn = loaders[0];
-
-      loaders[0] = function (next) {
-        args.push(next);
-        return firstFn.apply(self, args);
-      };
-
-      loaders = utils.bindAll(loaders, self);
-
-      return utils.runLoaderStack(loaders, function (err, template) {
-        return callback(err, done(err, template) || template);
-      });
-
-    };
-  }
-  return self.loaders[plural];
-};
-
-/**
- * Default load function used for loading templates.
- *
- * @param  {String} `plural`
- * @param  {Object} `options`
- * @param  {Array} `fns` Loader functions.
- * @param  {Function} `done`
- */
-
-Template.prototype.load = function(subtype, plural, options, fns, done) {
-  debug.loader('loading: %j', arguments);
-  var self = this;
-
-  // If the loader stack is empty, fallback to defaults
-  if (fns == null || fns.length === 0) {
-    fns = this.defaultLoader(plural, options);
-  }
-
-  var opts = extend({}, options);
-
-  function getLoader() {
-    if (opts.loadFn) {
-      var callback = arguments[arguments.length - 1];
-      var args = slice(arguments, 0, arguments.length - 1);
-
-      callback(null, opts.loadFn.apply(self, args));
-    } else {
-      self.loader(plural, opts, fns, done).apply(self, arguments);
-    }
-  }
-
-  return function (/*key, value, fns*/) {
-    debug.loader('loading template: %j', arguments);
-    var args = slice(arguments);
-    var last = args[args.length - 1];
-    var cb = function () {};
-
-    if (typeof last === 'function') {
-      cb = args.pop();
-    }
-
-    args = args.concat([function (err, template) {
-      if (err) return cb(err);
-
-      // validate the template object before moving on
-      self.validate(template);
-
-      // Add a render method to the template
-      // TODO: allow additional opts to be passed
-      forOwn(template, function (value) {
-        // this engine logic is temporary until we decide
-        // how we want to allow users to control this.
-        // for now, this allows the user to change the engine
-        // preference in the the `getExt()` method.
-        value.options = value.options || {};
-        if (hasOwn(opts, 'engine')) {
-          var ext = opts.engine;
-          if (ext[0] !== '.') {
-            ext = '.' + ext;
-          }
-          value.options._engine = ext;
-        }
-        if (hasOwn(opts, 'delims')) {
-          value.options.delims = opts.delims;
-        }
-
-        value.render = function (locals, cb) {
-          return self.renderTemplate(this, locals, cb);
-        };
-      });
-
-      // Run middleware
-      self.dispatch(template);
-
-      // Add template to the cache
-      extend(self.views[plural], template);
-      cb(null);
-    }]);
-
-    getLoader.apply(self, args);
-    return self;
-  };
-};
-
-/**
  * Validate a template object to ensure that it has the properties
  * expected for applying layouts, choosing engines, and so on.
  *
@@ -1278,36 +1166,6 @@ Template.prototype.validate = function(template) {
       debug.err('template `value` must have a `content` property.');
     }
   });
-};
-
-/**
- * Normalize a template object to ensure it has the necessary
- * properties to be rendered by the current renderer.
- *
- * @param  {Object} `template` The template object to normalize.
- * @param  {Object} `options` Options to pass to the renderer.
- *     @option {Function} `renameKey` Override the default function for renaming
- *             the key of normalized template objects.
- * @return {Object} Normalized template.
- * @api private
- */
-
-Template.prototype.normalize = function(plural, template, options) {
-  debug.template('normalizing: [%s]: %j', plural, template);
-  this.lazyrouter();
-
-  if (this.option('normalize')) {
-    return this.options.normalize.apply(this, arguments);
-  }
-
-  forOwn(template, function (value, key) {
-    value.options = extend({ subtype: plural }, options, value.options);
-    var ext = this.getExt(value, options);
-
-    value.layout = value.layout || value.locals.layout;
-    template[key] = value;
-  }, this);
-  return template;
 };
 
 /**
@@ -1631,48 +1489,33 @@ Template.prototype.lookup = function(plural, name, ext) {
  * @api public
  */
 
-Template.prototype.create = function(subtype, plural/*, options, fns, done*/) {
+Template.prototype.create = function(subtype, plural, options, stack) {
+  debug.template('creating subtype: %s', subtype);
+
   var args = slice(arguments);
-
-  /**
-   * Normalize args to make them more predictable for loaders
-   */
-
   if (typeof plural !== 'string') {
-    var name = subtype;
-    args[0] = plural = (name + 's');
-    args.unshift(name);
+    stack = options;
+    options = plural;
+    plural = subtype + 's';
   }
 
-  if (typeOf(args[2]) !== 'object') {
-    args = slice(args, 0, 2).concat([{}]).concat(slice(args, 2));
+  if (typeOf(options) !== 'object') {
+    stack = options;
+    options = {};
   }
 
-  if (!Array.isArray(args[3])) {
-    args = slice(args, 0, 3).concat([[]]).concat(slice(args, 3));
+  if (typeOf(stack) !== 'array') {
+    stack = ['default'];
   }
-
-  debug.template('creating subtype: [%s / %s]', subtype, plural);
 
   this.views[plural] = this.views[plural] || {};
-  args[2] = this.setType(subtype, plural, args[2]);
+  options = this.setType(subtype, plural, options);
+  this.decorate(subtype, plural, options, stack);
 
-  // Add convenience methods for this sub-type
-  this.decorate.apply(this, args);
-
-  /**
-   * Create helper functions
-   */
-
-  var opts = args[2] || {};
-
-  if (this.enabled('default helpers') && opts.isPartial && !opts.disableHelpers) {
-    // Create a sync helper for this type
+  if (this.enabled('default helpers') && options.isPartial && !options.disableHelpers) {
     if (!hasOwn(this._.helpers, subtype)) {
       this.defaultHelper(subtype, plural);
     }
-
-    // Create an async helper for this type
     if (!hasOwn(this._.asyncHelpers, subtype)) {
       this.defaultAsyncHelper(subtype, plural);
     }
@@ -1689,22 +1532,22 @@ Template.prototype.create = function(subtype, plural/*, options, fns, done*/) {
  * @api private
  */
 
-Template.prototype.decorate = function(subtype, plural/*, options, fns, done*/) {
+Template.prototype.decorate = function(subtype, plural, options, stack) {
   debug.template('decorating subtype: [%s / %s]', subtype, plural);
 
   /**
-   * Ininiatlize the loader to be used. If `fns` is empty,
+   * Ininiatlize the loader to be used. If `stack` is empty,
    * we fallback to the default loader stack.
    */
 
-  var load = this.load.apply(this, arguments);
+  // var load = this.load.apply('sync', this, arguments);
 
   /**
    * Add a method to `Template` for `plural`
    */
 
-  mixin(plural, function (/*key, value, fns*/) {
-    return load.apply(this, arguments);
+  mixin(plural, function (/*key, value, stack*/) {
+    // return load.apply(this, arguments);
   });
 
   /**
@@ -1767,7 +1610,6 @@ Template.prototype.compileBase = function(engine, content, options) {
  */
 
 Template.prototype.compileTemplate = function(template, options, async) {
-  var self = this;
   debug.render('compileTemplate: %j', template);
 
   if (typeOf(template) !== 'object') {
@@ -1778,7 +1620,7 @@ Template.prototype.compileTemplate = function(template, options, async) {
   // reference to options in case helpers are needed later
   var opts = options || {};
   var context = opts.context || {};
-  delete opts.context;
+  opts = _.omit(opts, ['context']);
 
   template.options = template.options || {};
   template.options.layout = template.layout;
@@ -2293,6 +2135,18 @@ function methodName(method, type) {
 
 function mixin(method, fn) {
   Template.prototype[method] = fn;
+}
+
+/**
+ * Coerce `val` to an array.
+ *
+ * @api private
+ */
+
+function arrayify(val) {
+  return !Array.isArray(val)
+    ? [val]
+    : val;
 }
 
 /**

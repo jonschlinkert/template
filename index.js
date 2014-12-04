@@ -1157,30 +1157,6 @@ Template.prototype._load = function(subtype, plural, options) {
     // validate the template object before moving on
     self.validate(template);
 
-    // Add a render method to the template
-    // TODO: allow additional opts to be passed
-    forOwn(template, function (value) {
-      // this engine logic is temporary until we decide
-      // how we want to allow users to control this.
-      // for now, this allows the user to change the engine
-      // preference in the the `getExt()` method.
-      value.options = value.options || {};
-      if (hasOwn(opts, 'engine')) {
-        var ext = opts.engine;
-        if (ext[0] !== '.') {
-          ext = '.' + ext;
-        }
-        value.options._engine = ext;
-      }
-      if (hasOwn(opts, 'delims')) {
-        value.options.delims = opts.delims;
-      }
-
-      value.render = function (locals, cb) {
-        return self.renderTemplate(this, locals, cb);
-      };
-    });
-
     // Run middleware
     self.dispatch(template);
 
@@ -1237,16 +1213,39 @@ Template.prototype.validate = function(template) {
 Template.prototype.normalize = function(plural, template, options) {
   debug.template('normalizing: [%s]: %j', plural, template);
   this.lazyrouter();
-
+  
   if (this.option('normalize')) {
     return this.options.normalize.apply(this, arguments);
   }
 
+  var self = this;
+  var opts = extend({}, options);
   forOwn(template, function (value, key) {
+    value.locals = value.locals || {};
     value.options = extend({ subtype: plural }, options, value.options);
-    this.getExt(value, options);
-
     value.layout = value.layout || value.locals.layout;
+
+    // Add a render method to the template
+    // TODO: allow additional opts to be passed
+    // this engine logic is temporary until we decide
+    // how we want to allow users to control this.
+    // for now, this allows the user to change the engine
+    // preference in the the `getExt()` method.
+    if (hasOwn(opts, 'engine')) {
+      var ext = opts.engine;
+      if (ext[0] !== '.') {
+        ext = '.' + ext;
+      }
+      value.options._engine = ext;
+    }
+    if (hasOwn(opts, 'delims')) {
+      value.options.delims = opts.delims;
+    }
+
+    value.render = function (locals, cb) {
+      return self.renderTemplate(this, locals, cb);
+    };
+
     template[key] = value;
   }, this);
   return template;

@@ -1115,6 +1115,73 @@ Template.prototype.defaultAsyncHelper = function(subtype, plural) {
 };
 
 /**
+ * Create a load method for the specified template type.
+ * The load method runs the loader stack for the specified template type then
+ * normalizes and validates the results and adds them to the template cache.
+ * 
+ * @param  {String} `subtype` Template type to use
+ * @param  {String} `plural`  Plural name of the template type to use
+ * @param  {Object} `options` Additional options to pass to normalize
+ * @return {Function} Method for loading templates of the specified type
+ */
+
+Template.prototype._load = function(subtype, plural, options) {
+  var opts = extend({}, options);
+
+  return function (/*fp, stack, options*/) {
+    var self = this;
+    // if (!Array.isArray(stack)) {
+    //   options = stack;
+    //   stack = [];
+    // }
+    // options = options || {};
+    // options.matchLoader = options.matchLoader || function () {
+    //   return subtype;
+    // };
+
+    var loadOpts = {
+      matchLoader: function () { return subtype; }
+    };
+    var args = slice(arguments);
+    var template = self.load(args, loadOpts);
+    template = self.normalize(plural, template, options);
+
+    // validate the template object before moving on
+    self.validate(template);
+
+    // Add a render method to the template
+    // TODO: allow additional opts to be passed
+    forOwn(template, function (value) {
+      // this engine logic is temporary until we decide
+      // how we want to allow users to control this.
+      // for now, this allows the user to change the engine
+      // preference in the the `getExt()` method.
+      value.options = value.options || {};
+      if (hasOwn(opts, 'engine')) {
+        var ext = opts.engine;
+        if (ext[0] !== '.') {
+          ext = '.' + ext;
+        }
+        value.options._engine = ext;
+      }
+      if (hasOwn(opts, 'delims')) {
+        value.options.delims = opts.delims;
+      }
+
+      value.render = function (locals, cb) {
+        return self.renderTemplate(this, locals, cb);
+      };
+    });
+
+    // Run middleware
+    self.dispatch(template);
+
+    // Add template to the cache
+    extend(self.views[plural], template);
+  };
+};
+
+/**
  * Validate a template object to ensure that it has the properties
  * expected for applying layouts, choosing engines, and so on.
  *
@@ -1229,6 +1296,26 @@ Template.prototype.setType = function(subtype, plural, options) {
     opts.isPartial = true;
   }
   return opts;
+};
+
+/**
+ * Private method for registering a loader stack for a specified template type.
+ * 
+ * @param {String} `subtype` template type to set loader stack for
+ * @param {Object} `options` additional options to determine the loader type
+ * @param {Array}  `stack` loader stack
+ */
+
+Template.prototype.setLoaders = function(subtype, options, stack) {
+
+  if (this._.loaders.cache.sync[subtype]) {
+    delete this._.loaders.cache.sync[subtype];
+  }
+  if (stack.length === 0) {
+    stack.push(['default']);
+  }
+
+  this.loader.apply(this, [].concat([subtype], stack));
 };
 
 /**
@@ -1493,12 +1580,12 @@ Template.prototype.lookup = function(plural, name, ext) {
  *   @option {Boolean} [options] `isRenderable` Templates that may be rendered at some point
  *   @option {Boolean} [options] `isLayout` Templates to be used as layouts
  *   @option {Boolean} [options] `isPartial` Templates to be used as partial views or includes
- * @param {Function|Array} `fns` Loader function or functions to be run for every template of this type.
+ * @param {Function|Array} `stack` Loader function or functions to be run for every template of this type.
  * @return {Object} `Template` to enable chaining.
  * @api public
  */
 
-Template.prototype.create = function(subtype, plural, options, fns) {
+Template.prototype.create = function(subtype, plural, options /*, stack*/) {
   debug.template('creating subtype: %s', subtype);
   var args = slice(arguments);
 
@@ -1510,25 +1597,18 @@ Template.prototype.create = function(subtype, plural, options, fns) {
     args.splice(2, 0, {});
   }
 
-  if (!Array.isArray(args[3])) {
-    args.splice(3, 0, ['default']);
-  }
-
   plural = args[1];
   options = args[2];
-  fns = args[3];
+  var stack = slice(args, 3);
 
   this.views[plural] = this.views[plural] || {};
   options = this.setType(subtype, plural, options);
 
-  if (this._.loaders.cache.sync[subtype]) {
-    delete this._.loaders.cache.sync[subtype];
-  }
-
-  this.loader.apply(this, fns);
+  // add loaders to the loader-cache
+  this.setLoaders(subtype, options, stack);
 
   // Add convenience methods for this sub-type
-  this.decorate.apply(this, args);
+  this.decorate(subtype, plural, options);
 
   /**
    * Create helper functions
@@ -1568,57 +1648,7 @@ Template.prototype.decorate = function(subtype, plural, options) {
    * Add a method to `Template` for `plural`
    */
 
-  mixin(plural, function (/*fp, stack, options*/) {
-    var self = this;
-    // if (!Array.isArray(stack)) {
-    //   options = stack;
-    //   stack = [];
-    // }
-    // options = options || {};
-    // options.matchLoader = options.matchLoader || function () {
-    //   return subtype;
-    // };
-
-    var loadOpts = {
-      matchLoader: function () { return subtype; }
-    };
-    var args = slice(arguments);
-    var template = self.load(args, loadOpts);
-    template = self.normalize(plural, template, options);
-
-    // validate the template object before moving on
-    self.validate(template);
-
-    // Add a render method to the template
-    // TODO: allow additional opts to be passed
-    forOwn(template, function (value) {
-      // this engine logic is temporary until we decide
-      // how we want to allow users to control this.
-      // for now, this allows the user to change the engine
-      // preference in the the `getExt()` method.
-      value.options = value.options || {};
-      if (hasOwn(opts, 'engine')) {
-        var ext = opts.engine;
-        if (ext[0] !== '.') {
-          ext = '.' + ext;
-        }
-        value.options._engine = ext;
-      }
-      if (hasOwn(opts, 'delims')) {
-        value.options.delims = opts.delims;
-      }
-
-      value.render = function (locals, cb) {
-        return self.renderTemplate(this, locals, cb);
-      };
-    });
-
-    // Run middleware
-    self.dispatch(template);
-
-    // Add template to the cache
-    extend(self.views[plural], template);
-  });
+  mixin(plural, this._load(subtype, plural, options));
 
   /**
    * Add a method to `Template` for `subtype`

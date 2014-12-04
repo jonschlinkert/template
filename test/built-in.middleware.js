@@ -14,8 +14,8 @@ var template = new Template();
 describe('default middleware:', function () {
   beforeEach(function () {
     template = new Template();
-    template.create('page', [function (file, next) {
-      next(null, file);
+    template.create('page', { isRenderable: true}, [function (args) {
+      return args[0];
     }]);
   });
 

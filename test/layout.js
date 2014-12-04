@@ -15,15 +15,15 @@ describe('layouts:', function () {
     it('should use layouts defined as objects', function (done) {
       var template = new Template();
 
-      template.loadLayout({a: { layout: 'b', content: 'A above\n{% body %}\nA below' }});
-      template.loadLayout({b: { layout: 'c', content: 'B above\n{% body %}\nB below' }});
-      template.loadLayout({c: { layout: 'd', content: 'C above\n{% body %}\nC below' }});
-      template.loadLayout({d: { layout: 'e', content: 'D above\n{% body %}\nD below' }});
-      template.loadLayout({last: { layout: undefined, content: 'last!\n{% body %}\nlast!' }});
-      template.loadLayout({e: { layout: 'f', content: 'E above\n{% body %}\nE below' }});
-      template.loadLayout({f: { layout: 'last', content: 'F above\n{% body %}\nF below' }});
-      template.loadLayout({first: { layout: 'a', content: '{% body %}' }});
-      template.loadPage('about', 'This is the about page.', {layout: 'first'}, {ext: '.html'});
+      template.layout({a: { layout: 'b', content: 'A above\n{% body %}\nA below' }});
+      template.layout({b: { layout: 'c', content: 'B above\n{% body %}\nB below' }});
+      template.layout({c: { layout: 'd', content: 'C above\n{% body %}\nC below' }});
+      template.layout({d: { layout: 'e', content: 'D above\n{% body %}\nD below' }});
+      template.layout({last: { layout: undefined, content: 'last!\n{% body %}\nlast!' }});
+      template.layout({e: { layout: 'f', content: 'E above\n{% body %}\nE below' }});
+      template.layout({f: { layout: 'last', content: 'F above\n{% body %}\nF below' }});
+      template.layout({first: { layout: 'a', content: '{% body %}' }});
+      template.page('about', 'This is the about page.', {layout: 'first'}, {ext: '.html'});
 
       var expected = [
         'last!',
@@ -53,15 +53,15 @@ describe('layouts:', function () {
     it('should use layouts defined as objects', function (done) {
       var template = new Template();
 
-      template.loadLayout({a: { layout: 'b', content: 'A above\n{% body %}\nA below' }});
-      template.loadLayout({b: { layout: 'c', content: 'B above\n{% body %}\nB below' }});
-      template.loadLayout({c: { layout: 'd', content: 'C above\n{% body %}\nC below' }});
-      template.loadLayout({d: { layout: 'e', content: 'D above\n{% body %}\nD below' }});
-      template.loadLayout({last: { layout: undefined, content: 'last!\n{% body %}\nlast!' }});
-      template.loadLayout({e: { layout: 'f', content: 'E above\n{% body %}\nE below' }});
-      template.loadLayout({f: { layout: 'last', content: 'F above\n{% body %}\nF below' }});
-      template.loadLayout({first: { layout: 'a', content: '{% body %}' }});
-      template.loadPage('about', 'This is the about page.', {layout: 'first'}, {ext: '.html'});
+      template.layout({a: { layout: 'b', content: 'A above\n{% body %}\nA below' }});
+      template.layout({b: { layout: 'c', content: 'B above\n{% body %}\nB below' }});
+      template.layout({c: { layout: 'd', content: 'C above\n{% body %}\nC below' }});
+      template.layout({d: { layout: 'e', content: 'D above\n{% body %}\nD below' }});
+      template.layout({last: { layout: undefined, content: 'last!\n{% body %}\nlast!' }});
+      template.layout({e: { layout: 'f', content: 'E above\n{% body %}\nE below' }});
+      template.layout({f: { layout: 'last', content: 'F above\n{% body %}\nF below' }});
+      template.layout({first: { layout: 'a', content: '{% body %}' }});
+      template.page('about', 'This is the about page.', {layout: 'first'}, {ext: '.html'});
 
       var expected = [
         'last!',
@@ -91,13 +91,13 @@ describe('layouts:', function () {
     it('should use layouts defined as strings:', function (done) {
       var template = new Template();
 
-      template.loadLayout('first', '{% body %}', {layout: 'a'});
-      template.loadLayout('a', 'A above\n{% body %}\nA below', {layout: 'b'});
-      template.loadLayout('b', 'B above\n{% body %}\nB below', {layout: 'c'});
-      template.loadLayout('c', 'C above\n{% body %}\nC below', {layout: 'd'});
-      template.loadLayout('d', 'D above\n{% body %}\nD below', {layout: 'e'});
-      template.loadLayout('e', 'E above\n{% body %}\nE below', {layout: 'default'});
-      template.loadLayout('default', 'default!\n{% body %}\ndefault!');
+      template.layout('first', '{% body %}', {layout: 'a'});
+      template.layout('a', 'A above\n{% body %}\nA below', {layout: 'b'});
+      template.layout('b', 'B above\n{% body %}\nB below', {layout: 'c'});
+      template.layout('c', 'C above\n{% body %}\nC below', {layout: 'd'});
+      template.layout('d', 'D above\n{% body %}\nD below', {layout: 'e'});
+      template.layout('e', 'E above\n{% body %}\nE below', {layout: 'default'});
+      template.layout('default', 'default!\n{% body %}\ndefault!');
 
       var expected = [
         'default!',
@@ -126,8 +126,8 @@ describe('layouts:', function () {
   describe('default engine:', function () {
     var template = new Template();
 
-    template.loadLayout('sidebar', {content: '<nav></nav>\n{% body %}', layout: 'default'});
-    template.loadLayout('default', {content: 'default!\n{% body %}\ndefault!'});
+    template.layout('sidebar', {content: '<nav></nav>\n{% body %}', layout: 'default'});
+    template.layout('default', {content: 'default!\n{% body %}\ndefault!'});
 
     it('should use layouts defined as strings:', function (done) {
 
@@ -157,9 +157,9 @@ describe('layouts:', function () {
     it('should append layout ext to layout when applying layout stack', function (done) {
       var template = new Template();
       template.option('layoutExt', 'hbs');
-      template.loadLayout('sidebar.hbs', { content: '<nav></nav>\n{% body %}', layout: 'default.hbs' });
-      template.loadLayout('default.hbs', { content: 'default!\n{% body %}\ndefault!' });
-      template.loadPage('home', { content: 'This is the home page.', layout: 'sidebar' });
+      template.layout('sidebar.hbs', { content: '<nav></nav>\n{% body %}', layout: 'default.hbs' });
+      template.layout('default.hbs', { content: 'default!\n{% body %}\ndefault!' });
+      template.page('home', { content: 'This is the home page.', layout: 'sidebar' });
 
       var expected = [
         'default!',
@@ -181,9 +181,9 @@ describe('layouts:', function () {
     var template = new Template();
     template.create('doc', { isRenderable: true });
 
-    template.loadLayouts('sidebar', { content: '<nav></nav>\n{% body %}', layout: 'default'});
-    template.loadLayouts('default', { content: 'default!\n{% body %}\ndefault!' });
-    template.loadDoc('home', { content: 'This is the home page.', layout: 'sidebar'});
+    template.layouts('sidebar', { content: '<nav></nav>\n{% body %}', layout: 'default'});
+    template.layouts('default', { content: 'default!\n{% body %}\ndefault!' });
+    template.doc('home', { content: 'This is the home page.', layout: 'sidebar'});
 
     it('should use layouts defined as strings:', function (done) {
       var expected = [

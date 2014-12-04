@@ -1498,7 +1498,7 @@ Template.prototype.lookup = function(plural, name, ext) {
  * @api public
  */
 
-Template.prototype.create = function(subtype, plural/*, options, fns, done*/) {
+Template.prototype.create = function(subtype, plural/*, options, fns*/) {
   var args = slice(arguments);
 
   /**
@@ -1523,6 +1523,12 @@ Template.prototype.create = function(subtype, plural/*, options, fns, done*/) {
 
   this.views[plural] = this.views[plural] || {};
   args[2] = this.setType(subtype, plural, args[2]);
+
+  var fns = utils.filter(slice(args, 3), ['function', 'array', 'object']);
+  if (fns[0].length === 0) fns.push(['default']);
+  fns.unshift(subtype);
+  if (this._.loaders.cache.sync[subtype]) delete this._.loaders.cache.sync[subtype];
+  this.loader.apply(this, fns);
 
   // Add convenience methods for this sub-type
   this.decorate.apply(this, args);
@@ -1565,10 +1571,24 @@ Template.prototype.decorate = function(subtype, plural, options) {
    * Add a method to `Template` for `plural`
    */
 
-  mixin(plural, function (template) {
+  mixin(plural, function (/*fp, stack, options*/) {
     var self = this;
+    // if (!Array.isArray(stack)) {
+    //   options = stack;
+    //   stack = [];
+    // }
+    // options = options || {};
+    // options.matchLoader = options.matchLoader || function () {
+    //   return subtype;
+    // };
 
+    var loadOpts = {
+      matchLoader: function () { return subtype; }
+    };
+    var args = slice(arguments);
+    var template = self.load(args, loadOpts);
     template = self.normalize(plural, template, options);
+
     // validate the template object before moving on
     self.validate(template);
 
@@ -1631,20 +1651,20 @@ Template.prototype.decorate = function(subtype, plural, options) {
    * Add a `load` method to `Template` for `subtype`
    */
   
-  mixin(methodName('load', subtype), function () {
-    return this[methodName('load', plural)].apply(this, arguments);
-  });
+  // mixin(methodName('load', subtype), function () {
+  //   return this[methodName('load', plural)].apply(this, arguments);
+  // });
 
   /**
    * Add a `load` method to `Template` for `plural`
    */
   
-  mixin(methodName('load', plural), function () {
-    var args = slice(arguments);
-    var opts = {};
-    opts.matchLoader = this.option('matchLoader');
-    return this[plural](this.load(args, opts));
-  });
+  // mixin(methodName('load', plural), function () {
+  //   var args = slice(arguments);
+  //   var opts = {};
+  //   opts.matchLoader = this.option('matchLoader');
+  //   return this[plural](this.load(args, opts));
+  // });
 };
 
 /**

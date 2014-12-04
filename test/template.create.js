@@ -26,16 +26,14 @@ describe('template create:', function () {
 
   describe('override:', function () {
     it('should override default template subtypes:', function () {
-      template.create('page', { isRenderable: true}, [
-        function (file, next) {
+      template.create('page', { isRenderable: true}, ['default',
+        function (file) {
           _.forOwn(file, function (value, key) {
             value.zzz = 'yyy';
           });
-          next(null, file);
+          return file;
         }
-      ], function (err) {
-        if (err) console.log(err);
-      });
+      ]);
       template.page({'foo.md': {path: 'foo.md', content: 'This is content.'}});
       template.should.have.properties('page', 'pages');
       template.views.pages['foo.md'].should.have.property('zzz', 'yyy');

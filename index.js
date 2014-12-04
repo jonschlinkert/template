@@ -1498,33 +1498,33 @@ Template.prototype.lookup = function(plural, name, ext) {
  * @api public
  */
 
-Template.prototype.create = function(subtype, plural/*, options, fns*/) {
+Template.prototype.create = function(subtype, plural, options, fns) {
+  debug.template('creating subtype: %s', subtype);
   var args = slice(arguments);
 
   if (typeof plural !== 'string') {
-    plural = subtype + 's';
-    args.splice(1, 0, plural);
+    args.splice(1, 0, subtype + 's');
   }
 
   if (typeOf(args[2]) !== 'object') {
     args.splice(2, 0, {});
   }
 
-  debug.template('creating subtype: [%s / %s]', subtype, plural);
-
-  this.views[plural] = this.views[plural] || {};
-  args[2] = this.setType(subtype, plural, args[2]);
-
-  var fns = slice(args, 3);
-  if (fns.length === 0) {
-    fns.push(['default']);
+  if (!Array.isArray(args[3])) {
+    args.splice(3, 0, ['default']);
   }
 
-  fns.unshift(subtype);
+  plural = args[1];
+  options = args[2];
+  fns = args[3];
+
+  this.views[plural] = this.views[plural] || {};
+  options = this.setType(subtype, plural, options);
 
   if (this._.loaders.cache.sync[subtype]) {
     delete this._.loaders.cache.sync[subtype];
   }
+
   this.loader.apply(this, fns);
 
   // Add convenience methods for this sub-type
@@ -1534,7 +1534,7 @@ Template.prototype.create = function(subtype, plural/*, options, fns*/) {
    * Create helper functions
    */
 
-  var opts = args[2] || {};
+  var opts = options || {};
 
   if (this.enabled('default helpers') && opts.isPartial && !opts.disableHelpers) {
     // Create a sync helper for this type

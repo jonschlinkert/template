@@ -1493,39 +1493,33 @@ Template.prototype.lookup = function(plural, name, ext) {
  *   @option {Boolean} [options] `isRenderable` Templates that may be rendered at some point
  *   @option {Boolean} [options] `isLayout` Templates to be used as layouts
  *   @option {Boolean} [options] `isPartial` Templates to be used as partial views or includes
- * @param {Function|Array} `fns` Middleware function or functions to be run for every template of this type.
+ * @param {Function|Array} `fns` Loader function or functions to be run for every template of this type.
  * @return {Object} `Template` to enable chaining.
  * @api public
  */
 
-Template.prototype.create = function(subtype, plural, options, fns) {
+Template.prototype.create = function(subtype, plural/*, options, fns*/) {
   var args = slice(arguments);
 
   if (typeof plural !== 'string') {
-    args.splice(1, 0, subtype + 's');
+    plural = subtype + 's';
+    args.splice(1, 0, plural);
   }
 
   if (typeOf(args[2]) !== 'object') {
     args.splice(2, 0, {});
   }
 
-  if (!Array.isArray(args[3])) {
-    args.splice(3, 0, []);
-  }
-
-  plural = args[1];
-  options = args[2];
-  fns = args[3];
-
   debug.template('creating subtype: [%s / %s]', subtype, plural);
 
   this.views[plural] = this.views[plural] || {};
-  options = this.setType(subtype, plural, options);
+  args[2] = this.setType(subtype, plural, args[2]);
 
-  fns = utils.filter(slice(args, 3), ['function', 'array', 'object']);
-  if (fns[0].length === 0) {
+  var fns = slice(args, 3);
+  if (fns.length === 0) {
     fns.push(['default']);
   }
+
   fns.unshift(subtype);
 
   if (this._.loaders.cache.sync[subtype]) {
@@ -1540,7 +1534,7 @@ Template.prototype.create = function(subtype, plural, options, fns) {
    * Create helper functions
    */
 
-  var opts = options || {};
+  var opts = args[2] || {};
 
   if (this.enabled('default helpers') && opts.isPartial && !opts.disableHelpers) {
     // Create a sync helper for this type

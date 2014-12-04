@@ -1502,7 +1502,8 @@ Template.prototype.create = function(subtype, plural/*, options, fns*/) {
   var args = slice(arguments);
 
   if (typeof plural !== 'string') {
-    args.splice(1, 0, name + 's');
+    plural = subtype + 's';
+    args.splice(1, 0, plural);
   }
 
   if (typeOf(args[2]) !== 'object') {

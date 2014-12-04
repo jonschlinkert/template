@@ -1493,7 +1493,7 @@ Template.prototype.lookup = function(plural, name, ext) {
  *   @option {Boolean} [options] `isRenderable` Templates that may be rendered at some point
  *   @option {Boolean} [options] `isLayout` Templates to be used as layouts
  *   @option {Boolean} [options] `isPartial` Templates to be used as partial views or includes
- * @param {Function|Array} `fns` Middleware function or functions to be run for every template of this type.
+ * @param {Function|Array} `fns` Loader function or functions to be run for every template of this type.
  * @return {Object} `Template` to enable chaining.
  * @api public
  */
@@ -1510,17 +1510,13 @@ Template.prototype.create = function(subtype, plural/*, options, fns*/) {
     args.splice(2, 0, {});
   }
 
-  if (!Array.isArray(args[3])) {
-    args.splice(3, 0, []);
-  }
-
   debug.template('creating subtype: [%s / %s]', subtype, plural);
 
   this.views[plural] = this.views[plural] || {};
   args[2] = this.setType(subtype, plural, args[2]);
 
-  var fns = utils.filter(slice(args, 3), ['function', 'array', 'object']);
-  if (fns[0].length === 0) {
+  var fns = slice(args, 3);
+  if (fns.length === 0) {
     fns.push(['default']);
   }
 

@@ -1,4 +1,4 @@
-### [Template](../index.js#L58)
+### [Template](../index.js#L56)
 
 Create a new instance of `Template`, optionally passing default `options` to initialize with.
 
@@ -336,7 +336,7 @@ Note that when you only specify a name for the type, a plural form is created
 automatically (e.g. `page` and `pages`). However, you can define the
 `plural` form explicitly if necessary.
 
-### [.compileTemplate](../index.js#L1731)
+### [.compileTemplate](../index.js#L1728)
 
 * `template` **{Object}**: The template object with content to compile.    
 * `options` **{Object}**: Options to pass along to the engine when compile. May include a `context` property to bind to helpers.    
@@ -345,7 +345,7 @@ automatically (e.g. `page` and `pages`). However, you can define the
 Compile content on the given `template` object with the specified
 engine `options`.
 
-### [.compile](../index.js#L1783)
+### [.compile](../index.js#L1779)
 
 * `file` **{Object|String}**: String or normalized template object.    
 * `options` **{Object}**    
@@ -354,7 +354,7 @@ engine `options`.
 
 Compile `content` with the given `options`.
 
-### [.compileString](../index.js#L1815)
+### [.compileString](../index.js#L1811)
 
 Compile the given string with the specified `options`.
 
@@ -366,7 +366,7 @@ Compile the given string with the specified `options`.
 The primary purpose of this method is to get the engine before
 passing args to `.compileBase()`.
 
-### [.renderTemplate](../index.js#L1865)
+### [.renderTemplate](../index.js#L1861)
 
 * `template` **{Object}**: The template object with content to render.    
 * `locals` **{Object}**: Locals and/or options to pass to registered view engines.    
@@ -375,7 +375,7 @@ passing args to `.compileBase()`.
 Render content on the given `template` object with the specified
 engine `options` and `callback`.
 
-### [.render](../index.js#L2010)
+### [.render](../index.js#L2006)
 
 * `file` **{Object|String}**: String or normalized template object.    
 * `locals` **{Object}**: Locals and/or options to pass to registered view engines.    
@@ -383,7 +383,7 @@ engine `options` and `callback`.
 
 Render `content` with the given `options` and optional `callback`.
 
-### [.renderString](../index.js#L2041)
+### [.renderString](../index.js#L2037)
 
 Render the given string with the specified `locals` and `callback`.
 
@@ -394,7 +394,7 @@ Render the given string with the specified `locals` and `callback`.
 The primary purpose of this method is to get the engine before
 passing args to `.renderBase()`.
 
-### [.renderSubtype](../index.js#L2070)
+### [.renderSubtype](../index.js#L2066)
 
 Returns a render function for rendering templates of the given `subtype`.
 
@@ -409,7 +409,7 @@ Mostly used internally as a private method, but it's exposed as a
 public method since there are cases when it might be useful, like
 for rendering templates in a gulp/grunt/assemble plugin.
 
-### [.renderType](../index.js#L2102)
+### [.renderType](../index.js#L2098)
 
 * `str` **{String}**: The string to render.    
 * `locals` **{Object}**: Locals and/or options to pass to registered view engines.    

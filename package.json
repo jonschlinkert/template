@@ -51,7 +51,6 @@
   },
   "dependencies": {
     "ansi-styles": "^2.0.0",
-    "arr": "^0.1.5",
     "arr-flatten": "^0.2.1",
     "array-slice": "^0.2.2",
     "arrayify-compact": "^0.1.0",
@@ -62,7 +61,6 @@
     "en-route": "^0.3.3",
     "engine-cache": "^0.7.0",
     "engine-lodash": "^0.4.0",
-    "escape-delims": "^0.4.0",
     "for-own": "^0.1.2",
     "globby": "^1.0.0",
     "helper-cache": "^0.4.2",

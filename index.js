@@ -22,11 +22,9 @@ var Engines = require('engine-cache');
 var Loaders = require('loader-cache');
 var arrayify = require('arrayify-compact');
 var engineLodash = require('engine-lodash');
-var EscapeDelims = require('escape-delims');
 var parser = require('parser-front-matter');
 var flatten = require('arr-flatten');
 var slice = require('array-slice');
-var arr = require('arr');
 
 var init = require('./lib/middleware/init');
 var defaultLoader = require('./lib/loaders');
@@ -259,17 +257,19 @@ Template.prototype.defaultDelimiters = function() {
  */
 
 Template.prototype.defaultLoaders = function() {
+  var mix = utils.mixinLoaders(Template.prototype, this._.loaders);
+
   // register methods
-  utils.extension(Template.prototype, this._.loaders, 'loader', 'register');
-  utils.extension(Template.prototype, this._.loaders, 'loaderAsync', 'registerAsync');
-  utils.extension(Template.prototype, this._.loaders, 'loaderPromise', 'registerPromise');
-  utils.extension(Template.prototype, this._.loaders, 'loaderStream', 'registerStream');
+  mix('loader', 'register');
+  mix('loaderAsync', 'registerAsync');
+  mix('loaderPromise', 'registerPromise');
+  mix('loaderStream', 'registerStream');
 
   // load methods
-  utils.extension(Template.prototype, this._.loaders, 'load');
-  utils.extension(Template.prototype, this._.loaders, 'loadAsync');
-  utils.extension(Template.prototype, this._.loaders, 'loadPromise');
-  utils.extension(Template.prototype, this._.loaders, 'loadStream');
+  mix('load');
+  mix('loadAsync');
+  mix('loadPromise');
+  mix('loadStream');
 
   // register default loader methods
   this.loader('default', defaultLoader(this));
@@ -1118,7 +1118,7 @@ Template.prototype.defaultAsyncHelper = function(subtype, plural) {
  * Create a load method for the specified template type.
  * The load method runs the loader stack for the specified template type then
  * normalizes and validates the results and adds them to the template cache.
- * 
+ *
  * @param  {String} `subtype` Template type to use
  * @param  {String} `plural`  Plural name of the template type to use
  * @param  {Object} `options` Additional options to pass to normalize
@@ -1236,7 +1236,7 @@ Template.prototype.normalize = function(plural, template, options) {
 
   forOwn(template, function (value, key) {
     value.options = extend({ subtype: plural }, options, value.options);
-    var ext = this.getExt(value, options);
+    this.getExt(value, options);
 
     value.layout = value.layout || value.locals.layout;
     template[key] = value;
@@ -1300,7 +1300,7 @@ Template.prototype.setType = function(subtype, plural, options) {
 
 /**
  * Private method for registering a loader stack for a specified template type.
- * 
+ *
  * @param {String} `subtype` template type to set loader stack for
  * @param {Object} `options` additional options to determine the loader type
  * @param {Array}  `stack` loader stack
@@ -1585,7 +1585,7 @@ Template.prototype.lookup = function(plural, name, ext) {
  * @api public
  */
 
-Template.prototype.create = function(subtype, plural, options /*, stack*/) {
+Template.prototype.create = function(subtype, plural, options/*, stack*/) {
   debug.template('creating subtype: %s', subtype);
   var args = slice(arguments);
 
@@ -1599,13 +1599,12 @@ Template.prototype.create = function(subtype, plural, options /*, stack*/) {
 
   plural = args[1];
   options = args[2];
-  var stack = slice(args, 3);
 
   this.views[plural] = this.views[plural] || {};
   options = this.setType(subtype, plural, options);
 
   // add loaders to the loader-cache
-  this.setLoaders(subtype, options, stack);
+  this.setLoaders(subtype, options, slice(args, 3));
 
   // Add convenience methods for this sub-type
   this.decorate(subtype, plural, options);
@@ -1642,8 +1641,6 @@ Template.prototype.create = function(subtype, plural, options /*, stack*/) {
 Template.prototype.decorate = function(subtype, plural, options) {
   debug.template('decorating subtype: [%s / %s]', subtype, plural);
 
-  var opts = extend({}, options);
-
   /**
    * Add a method to `Template` for `plural`
    */
@@ -1654,7 +1651,7 @@ Template.prototype.decorate = function(subtype, plural, options) {
    * Add a method to `Template` for `subtype`
    */
 
-  mixin(subtype, function (template) {
+  mixin(subtype, function (/*template*/) {
     return this[plural].apply(this, arguments);
   });
 
@@ -1729,7 +1726,6 @@ Template.prototype.compileBase = function(engine, content, options) {
  */
 
 Template.prototype.compileTemplate = function(template, options, async) {
-  var self = this;
   debug.render('compileTemplate: %j', template);
 
   if (typeOf(template) !== 'object') {

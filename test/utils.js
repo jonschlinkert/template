@@ -62,25 +62,6 @@ describe('template utils', function() {
     });
   });
 
-  describe('.runLoaderStack', function () {
-    it('should throw an error when a callback is not passed in.', function (done) {
-      try {
-        utils.runLoaderStack([]);
-        done(new Error('Expected an error to be thrown.'));
-      } catch (err) {
-        if (err && err.message === 'Expected cb to be a function') return done();
-        done(new Error('Expected an error to be thrown.'));
-      }
-    });
-
-    it('should throw an error when stack is not an array.', function (done) {
-      utils.runLoaderStack('foo', function (err) {
-        if (err && err.message === 'Expected stack to be an Array') return done();
-        done(new Error('Expected an error to be thrown.'));
-      });;
-    });
-  });
-
   describe('.formatExt', function () {
     it('should add a dot to the front of an extension', function () {
       utils.formatExt('hbs').should.eql('.hbs');

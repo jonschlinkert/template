@@ -112,6 +112,7 @@ Template.prototype.initTemplate = function() {
 
 Template.prototype.loadDefaults = function() {
   this.defaultConfig();
+  this.mixinLoaders();
   this.defaultLoaders();
   this.defaultOptions();
   this.defaultRoutes();
@@ -198,6 +199,38 @@ defineGetter(Template.prototype, 'cwd', function () {
 });
 
 /**
+ * Mixin methods from [loader-cache] for loading templates.
+ *
+ * @api private
+ */
+
+Template.prototype.mixinLoaders = function() {
+  var mix = utils.mixinLoaders(Template.prototype, this._.loaders);
+
+  // register methods
+  mix('loader', 'register');
+  mix('loaderAsync', 'registerAsync');
+  mix('loaderPromise', 'registerPromise');
+  mix('loaderStream', 'registerStream');
+
+  // load methods
+  mix('load');
+  mix('loadAsync');
+  mix('loadPromise');
+  mix('loadStream');
+};
+
+/**
+ * Register default loader methods
+ *
+ * @api private
+ */
+
+Template.prototype.defaultLoaders = function() {
+  this.loader('default', defaultLoader(this));
+};
+
+/**
  * Load default routes / middleware
  *
  *   - `.md`: parse front matter in markdown files
@@ -248,31 +281,6 @@ Template.prototype.defaultEngines = function() {
 
 Template.prototype.defaultDelimiters = function() {
   this.addDelims('*', ['<%', '%>'], ['{%', '%}']);
-};
-
-/**
- * Add methods for loaders and register default loaders.
- *
- * @api private
- */
-
-Template.prototype.defaultLoaders = function() {
-  var mix = utils.mixinLoaders(Template.prototype, this._.loaders);
-
-  // register methods
-  mix('loader', 'register');
-  mix('loaderAsync', 'registerAsync');
-  mix('loaderPromise', 'registerPromise');
-  mix('loaderStream', 'registerStream');
-
-  // load methods
-  mix('load');
-  mix('loadAsync');
-  mix('loadPromise');
-  mix('loadStream');
-
-  // register default loader methods
-  this.loader('default', defaultLoader(this));
 };
 
 /**

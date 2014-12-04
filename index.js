@@ -254,7 +254,7 @@ Template.prototype.defaultDelimiters = function() {
 
 /**
  * Add methods for loaders and register default loaders.
- * 
+ *
  * @api private
  */
 
@@ -1017,8 +1017,8 @@ Template.prototype.asyncHelper = function(name, fn) {
 
 Template.prototype.asyncHelpers = function(helpers) {
   debug.helper('adding async helpers: %s', helpers);
-  var loader = this._.asyncHelpers.addAsyncHelpers;
-  return loader.apply(loader, arguments);
+  var helpers = this._.asyncHelpers.addAsyncHelpers;
+  return helpers.apply(helpers, arguments);
 };
 
 /**
@@ -1501,22 +1501,16 @@ Template.prototype.lookup = function(plural, name, ext) {
 Template.prototype.create = function(subtype, plural/*, options, fns*/) {
   var args = slice(arguments);
 
-  /**
-   * Normalize args to make them more predictable for loaders
-   */
-
   if (typeof plural !== 'string') {
-    var name = subtype;
-    args[0] = plural = (name + 's');
-    args.unshift(name);
+    args.splice(1, 0, name + 's');
   }
 
   if (typeOf(args[2]) !== 'object') {
-    args = slice(args, 0, 2).concat([{}]).concat(slice(args, 2));
+    args.splice(2, 0, {});
   }
 
   if (!Array.isArray(args[3])) {
-    args = slice(args, 0, 3).concat([[]]).concat(slice(args, 3));
+    args.splice(3, 0, []);
   }
 
   debug.template('creating subtype: [%s / %s]', subtype, plural);
@@ -1525,9 +1519,15 @@ Template.prototype.create = function(subtype, plural/*, options, fns*/) {
   args[2] = this.setType(subtype, plural, args[2]);
 
   var fns = utils.filter(slice(args, 3), ['function', 'array', 'object']);
-  if (fns[0].length === 0) fns.push(['default']);
+  if (fns[0].length === 0) {
+    fns.push(['default']);
+  }
+
   fns.unshift(subtype);
-  if (this._.loaders.cache.sync[subtype]) delete this._.loaders.cache.sync[subtype];
+
+  if (this._.loaders.cache.sync[subtype]) {
+    delete this._.loaders.cache.sync[subtype];
+  }
   this.loader.apply(this, fns);
 
   // Add convenience methods for this sub-type
@@ -1650,7 +1650,7 @@ Template.prototype.decorate = function(subtype, plural, options) {
   /**
    * Add a `load` method to `Template` for `subtype`
    */
-  
+
   // mixin(methodName('load', subtype), function () {
   //   return this[methodName('load', plural)].apply(this, arguments);
   // });
@@ -1658,7 +1658,7 @@ Template.prototype.decorate = function(subtype, plural, options) {
   /**
    * Add a `load` method to `Template` for `plural`
    */
-  
+
   // mixin(methodName('load', plural), function () {
   //   var args = slice(arguments);
   //   var opts = {};

@@ -1498,12 +1498,11 @@ Template.prototype.lookup = function(plural, name, ext) {
  * @api public
  */
 
-Template.prototype.create = function(subtype, plural/*, options, fns*/) {
+Template.prototype.create = function(subtype, plural, options, fns) {
   var args = slice(arguments);
 
   if (typeof plural !== 'string') {
-    plural = subtype + 's';
-    args.splice(1, 0, plural);
+    args.splice(1, 0, subtype + 's');
   }
 
   if (typeOf(args[2]) !== 'object') {
@@ -1514,16 +1513,19 @@ Template.prototype.create = function(subtype, plural/*, options, fns*/) {
     args.splice(3, 0, []);
   }
 
+  plural = args[1];
+  options = args[2];
+  fns = args[3];
+
   debug.template('creating subtype: [%s / %s]', subtype, plural);
 
   this.views[plural] = this.views[plural] || {};
-  args[2] = this.setType(subtype, plural, args[2]);
+  options = this.setType(subtype, plural, options);
 
-  var fns = utils.filter(slice(args, 3), ['function', 'array', 'object']);
+  fns = utils.filter(slice(args, 3), ['function', 'array', 'object']);
   if (fns[0].length === 0) {
     fns.push(['default']);
   }
-
   fns.unshift(subtype);
 
   if (this._.loaders.cache.sync[subtype]) {
@@ -1538,7 +1540,7 @@ Template.prototype.create = function(subtype, plural/*, options, fns*/) {
    * Create helper functions
    */
 
-  var opts = args[2] || {};
+  var opts = options || {};
 
   if (this.enabled('default helpers') && opts.isPartial && !opts.disableHelpers) {
     // Create a sync helper for this type

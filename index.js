@@ -20,6 +20,7 @@ var Cache = require('config-cache');
 var Helpers = require('helper-cache');
 var Engines = require('engine-cache');
 var Loaders = require('loader-cache');
+var arrayify = require('arrayify-compact');
 var engineLodash = require('engine-lodash');
 var parser = require('parser-front-matter');
 var flatten = require('arr-flatten');
@@ -111,8 +112,9 @@ Template.prototype.initTemplate = function() {
 
 Template.prototype.loadDefaults = function() {
   this.defaultConfig();
-  this.defaultOptions();
+  this.mixinLoaders();
   this.defaultLoaders();
+  this.defaultOptions();
   this.defaultRoutes();
   this.defaultTransforms();
   this.defaultDelimiters();
@@ -128,9 +130,9 @@ Template.prototype.loadDefaults = function() {
 
 Template.prototype.defaultConfig = function() {
   this._.delims = new Delims(this.options);
-  this._.loaders = new Loaders(this.loaders);
   this._.engines = new Engines(this.engines);
   this._.helpers = new Helpers({bind: false});
+  this._.loaders = new Loaders(this.loaders);
   this._.asyncHelpers = new Helpers({bind: false});
 };
 
@@ -141,7 +143,7 @@ Template.prototype.defaultConfig = function() {
  */
 
 Template.prototype.defaultTransforms = function() {
-  this.transform('noop', function () {});
+  this.transform('placeholder', function () {});
 };
 
 /**
@@ -197,17 +199,35 @@ defineGetter(Template.prototype, 'cwd', function () {
 });
 
 /**
- * Default loaders to use for loading templates.
+ * Mixin methods from [loader-cache] for loading templates.
  *
- * @param {String} `plural` The collection name, e.g. `pages`
- * @param {Object} `options`
+ * @api private
+ */
+
+Template.prototype.mixinLoaders = function() {
+  var mix = utils.mixinLoaders(Template.prototype, this._.loaders);
+
+  // register methods
+  mix('loader', 'register');
+  mix('loaderAsync', 'registerAsync');
+  mix('loaderPromise', 'registerPromise');
+  mix('loaderStream', 'registerStream');
+
+  // load methods
+  mix('load');
+  mix('loadAsync');
+  mix('loadPromise');
+  mix('loadStream');
+};
+
+/**
+ * Register default loader methods
+ *
  * @api private
  */
 
 Template.prototype.defaultLoaders = function() {
-  this.loader('default', function (plural, options) {
-    return defaultLoader(plural, options);
-  });
+  this.loader('default', defaultLoader(this));
 };
 
 /**
@@ -273,35 +293,6 @@ Template.prototype.defaultTemplates = function() {
   this.create('page', { isRenderable: true });
   this.create('layout', { isLayout: true });
   this.create('partial', { isPartial: true });
-};
-
-/**
- * Define a custom loader for loading templates.
- *
- * @param  {String} `plural`
- * @param  {Object} `options`
- * @param  {Array} `fns`
- * @param  {Function} `done`
- */
-
-Template.prototype.loader = function(ext, fn, type) {
-  this._.loaders._register(ext, fn, type);
-  return this;
-};
-
-/**
- * Default load function used for loading templates.
- *
- * @param  {String} `plural`
- * @param  {Object} `options`
- * @param  {Array} `fns` Loader functions.
- * @param  {Function} `done`
- */
-
-Template.prototype.load = function(val, opts, stack, cb) {
-  var type = methodName(opts && opts.type || 'sync');
-  this._.loaders[type](val, opts, stack, cb);
-  return this;
 };
 
 /**
@@ -403,8 +394,8 @@ Template.prototype.dispatch = function(file, fns) {
     if (fns) this.route(value.path).all(fns);
     this.handle('onLoad', value, function (err) {
       if (err) {
-        console.log(chalk.red('Error running middleware for', key));
-        console.log(chalk.red(err));
+        console.error(chalk.red('Error running middleware for', key));
+        console.error(chalk.red(err));
       }
     });
   }.bind(this));
@@ -970,10 +961,6 @@ Template.prototype.helper = function(name, fn) {
 Template.prototype.helpers = function(helpers, options) {
   debug.helper('adding helpers: %s', helpers);
 
-  if (typeof options === 'function') {
-    throw new Error('Template#helpers expects `options` to be an object.');
-  }
-
   if (typeOf(helpers) === 'object') {
     merge(this._.helpers, helpers);
   } else if (Array.isArray(helpers) || typeof helpers === 'string') {
@@ -1136,6 +1123,95 @@ Template.prototype.defaultAsyncHelper = function(subtype, plural) {
 };
 
 /**
+ * Create a load method for the specified template type.
+ * The load method runs the loader stack for the specified template type then
+ * normalizes and validates the results and adds them to the template cache.
+ *
+ * @param  {String} `subtype` Template type to use
+ * @param  {String} `plural`  Plural name of the template type to use
+ * @param  {Object} `options` Additional options to pass to normalize
+ * @return {Function} Method for loading templates of the specified type
+ * @api private
+ */
+
+Template.prototype._load = function(subtype, plural, options) {
+  var opts = extend({}, options);
+  var type = opts.load || 'sync';
+
+  return function (/*args, stack, options*/) {
+    var self = this;
+    var args = slice(arguments);
+    var stack = [];
+    var len = args.length;
+
+    // default method used to handle sync loading when done
+    var cb = function (err, template) {
+      if (err) throw new Error(err);
+      return template;
+    };
+
+    // figure out the args to pass and the loader stack
+    args = args.filter(function (arg, i) {
+      if (i !== 0 && typeOf(arg) === 'array') {
+        stack = arg;
+      } else if (i === len - 1 && typeOf(arg) === 'function') {
+        cb = arg;
+      } else {
+        return arg;
+      }
+    });
+    if (args.length === 1) {
+      args = args[0];
+    }
+
+    var loadOpts = {matchLoader: function () {return subtype;}};
+
+    // default done method to do normalization, validation, and extending
+    // the views when finished loading
+    var done = function (err, template) {
+      if (err) return cb(err);
+      template = self.normalize(plural, template, options);
+
+      // validate the template object before moving on
+      self.validate(template);
+
+      // Run middleware
+      self.dispatch(template);
+
+      // Add template to the cache
+      extend(self.views[plural], template);
+      return cb(null, template);
+    };
+
+    // do the loading based on the loader type
+    switch (type) {
+      case 'async':
+        self.loadAsync(args, stack, loadOpts, done);
+        break;
+
+      case 'promise':
+        return self.loadPromise(args, stack, loadOpts)
+          .then(function (template) {
+            return done(null, template);
+          });
+        break;
+
+      case 'stream':
+        return self.loadStream(args, stack, loadOpts)
+          .on('data', function (template) {
+            done(null, template);
+          })
+          .on('error', done);
+        break;
+
+      default:
+        return done(null, self.load(args, stack, loadOpts));
+        break;
+    }
+  };
+};
+
+/**
  * Validate a template object to ensure that it has the properties
  * expected for applying layouts, choosing engines, and so on.
  *
@@ -1166,6 +1242,59 @@ Template.prototype.validate = function(template) {
       debug.err('template `value` must have a `content` property.');
     }
   });
+};
+
+/**
+ * Normalize a template object to ensure it has the necessary
+ * properties to be rendered by the current renderer.
+ *
+ * @param  {Object} `template` The template object to normalize.
+ * @param  {Object} `options` Options to pass to the renderer.
+ *     @option {Function} `renameKey` Override the default function for renaming
+ *             the key of normalized template objects.
+ * @return {Object} Normalized template.
+ * @api private
+ */
+
+Template.prototype.normalize = function(plural, template, options) {
+  debug.template('normalizing: [%s]: %j', plural, template);
+  this.lazyrouter();
+
+  if (this.option('normalize')) {
+    return this.options.normalize.apply(this, arguments);
+  }
+
+  var self = this;
+  var opts = extend({}, options);
+  forOwn(template, function (value, key) {
+    value.locals = value.locals || {};
+    value.options = extend({ subtype: plural }, options, value.options);
+    value.layout = value.layout || value.locals.layout;
+
+    // Add a render method to the template
+    // TODO: allow additional opts to be passed
+    // this engine logic is temporary until we decide
+    // how we want to allow users to control this.
+    // for now, this allows the user to change the engine
+    // preference in the the `getExt()` method.
+    if (hasOwn(opts, 'engine')) {
+      var ext = opts.engine;
+      if (ext[0] !== '.') {
+        ext = '.' + ext;
+      }
+      value.options._engine = ext;
+    }
+    if (hasOwn(opts, 'delims')) {
+      value.options.delims = opts.delims;
+    }
+
+    value.render = function (locals, cb) {
+      return self.renderTemplate(this, locals, cb);
+    };
+
+    template[key] = value;
+  }, this);
+  return template;
 };
 
 /**
@@ -1220,6 +1349,33 @@ Template.prototype.setType = function(subtype, plural, options) {
     opts.isPartial = true;
   }
   return opts;
+};
+
+/**
+ * Private method for registering a loader stack for a specified
+ * template type.
+ *
+ * @param {String} `subtype` template type to set loader stack for
+ * @param {Object} `options` additional options to determine the loader type
+ * @param {Array}  `stack` loader stack
+ */
+
+Template.prototype.setLoaders = function(subtype, options, stack) {
+  options = options || {};
+  var type = options.load || 'sync';
+
+  if (this._.loaders.cache[type] && this._.loaders.cache[type][subtype]) {
+    delete this._.loaders.cache[type][subtype];
+  }
+  if (stack.length === 0) {
+    stack.push(['default']);
+  }
+
+  var loader = 'loader';
+  if (type !== 'sync') {
+    loader = methodName('loader', type);
+  }
+  this[loader].apply(this, [].concat([subtype], stack));
 };
 
 /**
@@ -1484,38 +1640,48 @@ Template.prototype.lookup = function(plural, name, ext) {
  *   @option {Boolean} [options] `isRenderable` Templates that may be rendered at some point
  *   @option {Boolean} [options] `isLayout` Templates to be used as layouts
  *   @option {Boolean} [options] `isPartial` Templates to be used as partial views or includes
- * @param {Function|Array} `fns` Middleware function or functions to be run for every template of this type.
+ * @param {Function|Array} `stack` Loader function or functions to be run for every template of this type.
  * @return {Object} `Template` to enable chaining.
  * @api public
  */
 
-Template.prototype.create = function(subtype, plural, options, stack) {
+Template.prototype.create = function(subtype, plural, options/*, stack*/) {
   debug.template('creating subtype: %s', subtype);
-
   var args = slice(arguments);
+
   if (typeof plural !== 'string') {
-    stack = options;
-    options = plural;
-    plural = subtype + 's';
+    args.splice(1, 0, subtype + 's');
   }
 
-  if (typeOf(options) !== 'object') {
-    stack = options;
-    options = {};
+  if (typeOf(args[2]) !== 'object') {
+    args.splice(2, 0, {});
   }
 
-  if (typeOf(stack) !== 'array') {
-    stack = ['default'];
-  }
+  plural = args[1];
+  options = args[2];
 
   this.views[plural] = this.views[plural] || {};
   options = this.setType(subtype, plural, options);
-  this.decorate(subtype, plural, options, stack);
 
-  if (this.enabled('default helpers') && options.isPartial && !options.disableHelpers) {
+  // add loaders to the loader-cache
+  this.setLoaders(subtype, options, slice(args, 3));
+
+  // Add convenience methods for this sub-type
+  this.decorate(subtype, plural, options);
+
+  /**
+   * Create helper functions
+   */
+
+  var opts = options || {};
+
+  if (this.enabled('default helpers') && opts.isPartial && !opts.disableHelpers) {
+    // Create a sync helper for this type
     if (!hasOwn(this._.helpers, subtype)) {
       this.defaultHelper(subtype, plural);
     }
+
+    // Create an async helper for this type
     if (!hasOwn(this._.asyncHelpers, subtype)) {
       this.defaultAsyncHelper(subtype, plural);
     }
@@ -1532,29 +1698,20 @@ Template.prototype.create = function(subtype, plural, options, stack) {
  * @api private
  */
 
-Template.prototype.decorate = function(subtype, plural, options, stack) {
+Template.prototype.decorate = function(subtype, plural, options) {
   debug.template('decorating subtype: [%s / %s]', subtype, plural);
-
-  /**
-   * Ininiatlize the loader to be used. If `stack` is empty,
-   * we fallback to the default loader stack.
-   */
-
-  // var load = this.load.apply('sync', this, arguments);
 
   /**
    * Add a method to `Template` for `plural`
    */
 
-  mixin(plural, function (/*key, value, stack*/) {
-    // return load.apply(this, arguments);
-  });
+  mixin(plural, this._load(subtype, plural, options));
 
   /**
    * Add a method to `Template` for `subtype`
    */
 
-  mixin(subtype, function (/*key, value, locals, opts*/) {
+  mixin(subtype, function (/*template*/) {
     return this[plural].apply(this, arguments);
   });
 
@@ -1620,7 +1777,7 @@ Template.prototype.compileTemplate = function(template, options, async) {
   // reference to options in case helpers are needed later
   var opts = options || {};
   var context = opts.context || {};
-  opts = _.omit(opts, ['context']);
+  delete opts.context;
 
   template.options = template.options || {};
   template.options.layout = template.layout;
@@ -1643,8 +1800,7 @@ Template.prototype.compileTemplate = function(template, options, async) {
   opts.debugEngine = this.option('debugEngine');
 
   // if a layout is defined, apply it before compiling
-  var content = template.content;
-  content = this.applyLayout(template, extend({}, context, opts));
+  var content = this.applyLayout(template, extend({}, context, opts));
 
   // compile template
   return this.compileBase(engine, content, opts);
@@ -2013,16 +2169,18 @@ Template.prototype.renderType = function(type, subtype) {
 Template.prototype.bindHelpers = function (options, context, async) {
   debug.helper('binding helpers: %j %j', context, options);
 
-  var helpers = _.cloneDeep(this.options.helpers || {});
-  extend(helpers, _.cloneDeep(this._.helpers));
-  extend(helpers, _.cloneDeep(this._.imports));
+  var helpers = {};
+  extend(helpers, this.options.helpers);
+  extend(helpers, this._.helpers);
+  extend(helpers, this._.imports);
 
   if (async) {
-    helpers = extend({}, helpers, this._.asyncHelpers);
+    extend(helpers, this._.asyncHelpers);
   }
-  extend(helpers, _.cloneDeep(options.helpers || {}));
+  extend(helpers, options.helpers);
 
   var o = {};
+  o.options = extend({}, this.options, options);
   o.context = context || {};
   o.app = this;
 
@@ -2067,7 +2225,7 @@ Template.prototype.mergeContext = function(template, locals) {
 
   // Merge in `locals/data` from templates
   merge(context, this.cache._context.partials);
-  merge(context.layouts || {}, this.cache.layouts);
+  context.layouts = this.cache.layouts || {};
   merge(context, locals);
   return context;
 };
@@ -2102,8 +2260,8 @@ Template.prototype.mergeTypeContext = function(type, key, locals, data) {
 function handleError(template, method) {
   return function (err) {
     if (err) {
-      console.log(chalk.red('Error running ' + method + ' middleware for', template.path));
-      console.log(chalk.red(err));
+      console.error(chalk.red('Error running ' + method + ' middleware for', template.path));
+      console.error(chalk.red(err));
     }
   };
 }
@@ -2135,18 +2293,6 @@ function methodName(method, type) {
 
 function mixin(method, fn) {
   Template.prototype[method] = fn;
-}
-
-/**
- * Coerce `val` to an array.
- *
- * @api private
- */
-
-function arrayify(val) {
-  return !Array.isArray(val)
-    ? [val]
-    : val;
 }
 
 /**

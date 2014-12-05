@@ -18,6 +18,7 @@ var swig = consolidate.swig;
 
 
 describe('generated helpers:', function () {
+  /* deps: swig */
 
   describe('helpers for built-in engines:', function () {
     beforeEach(function () {

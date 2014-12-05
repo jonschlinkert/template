@@ -14,19 +14,19 @@ var template = new Template();
 describe('default middleware:', function () {
   beforeEach(function () {
     template = new Template();
-    template.create('page', [function (file, next) {
-      next(null, file);
-    }]);
+    template.create('page', { isRenderable: true}, function (obj) {
+      return obj;
+    });
   });
 
   it('should get throw an error with bad content.', function () {
-    var stdout = process.stdout.write;
+    var stderr = process.stderr.write;
     var output = [];
-    process.stdout.write = function (msg) {
+    process.stderr.write = function (msg) {
       output.push(msg);
     };
     template.pages({'bad.md': {path: 'bad.md', content: {}}});
-    process.stdout.write = stdout;
+    process.stderr.write = stderr;
     output.length.should.eql(2);
     output[0].indexOf('Error running middleware for bad.md').should.not.eql(-1);
   });

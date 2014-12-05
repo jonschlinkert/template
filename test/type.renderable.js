@@ -16,6 +16,7 @@ var consolidate = require('consolidate');
 var handlebars = require('engine-handlebars');
 
 describe('custom `renderable` types:', function () {
+  /* deps: swig */
   beforeEach(function () {
     template = new Template();
     template.option('preferLocals', true);

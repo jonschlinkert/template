@@ -19,6 +19,8 @@ var content;
 
 
 describe('detect engine', function() {
+  /* deps: swig */
+
   beforeEach(function () {
     template = new Template();
 

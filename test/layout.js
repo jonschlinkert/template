@@ -10,7 +10,6 @@
 var should = require('should');
 var Template = require('..');
 
-
 describe('layouts:', function () {
   describe('default engine:', function () {
     it('should use layouts defined as objects', function (done) {
@@ -182,8 +181,8 @@ describe('layouts:', function () {
     var template = new Template();
     template.create('doc', { isRenderable: true });
 
-    template.layout('sidebar', { content: '<nav></nav>\n{% body %}', layout: 'default'});
-    template.layout('default', { content: 'default!\n{% body %}\ndefault!' });
+    template.layouts('sidebar', { content: '<nav></nav>\n{% body %}', layout: 'default'});
+    template.layouts('default', { content: 'default!\n{% body %}\ndefault!' });
     template.doc('home', { content: 'This is the home page.', layout: 'sidebar'});
 
     it('should use layouts defined as strings:', function (done) {

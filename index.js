@@ -394,8 +394,8 @@ Template.prototype.dispatch = function(file, fns) {
     if (fns) this.route(value.path).all(fns);
     this.handle('onLoad', value, function (err) {
       if (err) {
-        console.log(chalk.red('Error running middleware for', key));
-        console.log(chalk.red(err));
+        console.error(chalk.red('Error running middleware for', key));
+        console.error(chalk.red(err));
       }
     });
   }.bind(this));
@@ -1136,22 +1136,27 @@ Template.prototype.defaultAsyncHelper = function(subtype, plural) {
 Template.prototype._load = function(subtype, plural, options) {
   var opts = extend({}, options);
 
-  return function (/*fp, stack, options*/) {
+  return function (/*args, stack, options*/) {
     var self = this;
-    // if (!Array.isArray(stack)) {
-    //   options = stack;
-    //   stack = [];
-    // }
-    // options = options || {};
-    // options.matchLoader = options.matchLoader || function () {
-    //   return subtype;
-    // };
+    var args = slice(arguments);
+    var stack = [];
+
+    // figure out the args to pass and the loader stack
+    args = args.filter(function (arg, i) {
+      if (i !== 0 && typeOf(arg) === 'array') {
+        stack = arg;
+      } else {
+        return arg;
+      }
+    });
+    if (args.length === 1) {
+      args = args[0];
+    }
 
     var loadOpts = {
       matchLoader: function () { return subtype; }
     };
-    var args = slice(arguments);
-    var template = self.load(args, loadOpts);
+    var template = self.load(args, stack, loadOpts);
     template = self.normalize(plural, template, options);
 
     // validate the template object before moving on
@@ -2225,8 +2230,8 @@ Template.prototype.mergeTypeContext = function(type, key, locals, data) {
 function handleError(template, method) {
   return function (err) {
     if (err) {
-      console.log(chalk.red('Error running ' + method + ' middleware for', template.path));
-      console.log(chalk.red(err));
+      console.error(chalk.red('Error running ' + method + ' middleware for', template.path));
+      console.error(chalk.red(err));
     }
   };
 }

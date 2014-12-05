@@ -147,9 +147,9 @@ describe('middleware', function () {
     });
 
     it('should handle errors in before and after render middleware:', function (done) {
-      var stdout = process.stdout.write;
+      var stderr = process.stderr.write;
       var output = [];
-      process.stdout.write = function (msg) {
+      process.stderr.write = function (msg) {
         output.push(msg);
       };
 
@@ -174,7 +174,7 @@ describe('middleware', function () {
           if (err) return done(err);
           content.should.equal('<%= a %>\n<%= b %>\n<%= c %>');
 
-          process.stdout.write = stdout;
+          process.stderr.write = stderr;
           done();
         });
       });

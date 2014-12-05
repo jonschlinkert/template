@@ -16,6 +16,8 @@ var template = new Template();
 
 
 describe('template.compile()', function () {
+  /* deps: swig */
+
   beforeEach(function () {
     template = new Template();
   });

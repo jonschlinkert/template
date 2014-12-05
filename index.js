@@ -1155,6 +1155,9 @@ Template.prototype._load = function(subtype, plural, options) {
       if (i !== 0 && typeOf(arg) === 'array') {
         stack = arg;
       } else if (i === len - 1 && typeOf(arg) === 'function') {
+        if (type !== 'async') {
+          throw new Error(subtype + ' loaders are not async.');
+        }
         cb = arg;
       } else {
         return arg;

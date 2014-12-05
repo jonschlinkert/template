@@ -1131,6 +1131,7 @@ Template.prototype.defaultAsyncHelper = function(subtype, plural) {
  * @param  {String} `plural`  Plural name of the template type to use
  * @param  {Object} `options` Additional options to pass to normalize
  * @return {Function} Method for loading templates of the specified type
+ * @api private
  */
 
 Template.prototype._load = function(subtype, plural, options) {
@@ -1141,8 +1142,13 @@ Template.prototype._load = function(subtype, plural, options) {
     var self = this;
     var args = slice(arguments);
     var stack = [];
-    var cb = function () {};
     var len = args.length;
+
+    // default method used to handle sync loading when done
+    var cb = function (err, template) {
+      if (err) throw new Error(err);
+      return template;
+    };
 
     // figure out the args to pass and the loader stack
     args = args.filter(function (arg, i) {
@@ -1162,27 +1168,10 @@ Template.prototype._load = function(subtype, plural, options) {
       matchLoader: function () { return subtype; }
     };
 
-    switch (type) {
-      case 'async':
-        self.loadAsync(args, stack, loadOpts, function (err, template) {
-          if (err) return cb(err);
-          template = self.normalize(plural, template, options);
-
-          // validate the template object before moving on
-          self.validate(template);
-
-          // Run middleware
-          self.dispatch(template);
-
-          // Add template to the cache
-          extend(self.views[plural], template);
-
-          cb(null, template);
-        });
-        break;
-
-      default:
-        var template = self.load(args, stack, loadOpts);
+    // default done method to do normalization, validation, and extending
+    // the views when finished loading
+    var done = function (err, template) {
+        if (err) return cb(err);
         template = self.normalize(plural, template, options);
 
         // validate the template object before moving on
@@ -1193,6 +1182,33 @@ Template.prototype._load = function(subtype, plural, options) {
 
         // Add template to the cache
         extend(self.views[plural], template);
+
+        return cb(null, template);
+    };
+
+    // do the loading based on the loader type
+    switch (type) {
+      case 'async':
+        self.loadAsync(args, stack, loadOpts, done);
+        break;
+
+      case 'promise':
+        return self.loadPromise(args, stack, loadOpts)
+          .then(function (template) {
+            return done(null, template);
+          });
+        break;
+
+      case 'stream':
+        return self.loadStream(args, stack, loadOpts)
+          .on('data', function (template) {
+            done(null, template);
+          })
+          .on('error', done);
+        break;
+
+      default:
+        return done(null, self.load(args, stack, loadOpts));
         break;
     }
   };

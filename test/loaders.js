@@ -163,6 +163,34 @@ describe('template loaders', function () {
       });
     });
 
+    it('should use custom promise loaders', function (done) {
+      var Promise = require('bluebird');
+      var options = {};
+      template.create('post', { isRenderable: true, load: 'promise' }, Promise.method(function (patterns) {
+        return globber(patterns, options);
+      }));
+
+      var promise = template.posts('test/fixtures/*.md');
+      promise.then(function (posts) {
+          template.views.posts.should.have.property('md.md');
+          done();
+        });
+    });
+
+    it('should use custom stream loaders', function (done) {
+      var es = require('event-stream');
+      var options = {};
+      template.create('post', { isRenderable: true, load: 'stream' }, es.through(function (patterns) {
+        this.emit('data', globber(patterns, options));
+      }));
+
+      template.posts('test/fixtures/*.md')
+        .on('data', function (posts) {
+          template.views.posts.should.have.property('md.md');
+          done();
+        });
+    });
+
   });
 
   describe('when a custom loader function is set:', function () {

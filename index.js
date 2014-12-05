@@ -2173,11 +2173,11 @@ Template.prototype.bindHelpers = function (options, context, async) {
   extend(helpers, this.options.helpers);
   extend(helpers, this._.helpers);
   extend(helpers, this._.imports);
-  extend(helpers, options.helpers);
 
   if (async) {
     extend(helpers, this._.asyncHelpers);
   }
+  extend(helpers, options.helpers);
 
   var o = {};
   o.options = extend({}, this.options, options);

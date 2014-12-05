@@ -151,6 +151,18 @@ describe('template loaders', function () {
       template.views.posts.should.have.property('added');
     });
 
+    it('should use custom async loaders', function (done) {
+      var options = {};
+      template.create('post', { isRenderable: true, load: 'async' }, function (patterns, opts, next) {
+        next(null, globber(patterns, options));
+      });
+
+      template.posts('test/fixtures/*.md', function (err, posts) {
+        template.views.posts.should.have.property('md.md');
+        done();
+      });
+    });
+
   });
 
   describe('when a custom loader function is set:', function () {

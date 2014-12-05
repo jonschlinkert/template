@@ -1135,16 +1135,21 @@ Template.prototype.defaultAsyncHelper = function(subtype, plural) {
 
 Template.prototype._load = function(subtype, plural, options) {
   var opts = extend({}, options);
+  var type = opts.load || 'sync';
 
   return function (/*args, stack, options*/) {
     var self = this;
     var args = slice(arguments);
     var stack = [];
+    var cb = function () {};
+    var len = args.length;
 
     // figure out the args to pass and the loader stack
     args = args.filter(function (arg, i) {
       if (i !== 0 && typeOf(arg) === 'array') {
         stack = arg;
+      } else if (i === len - 1 && typeOf(arg) === 'function') {
+        cb = arg;
       } else {
         return arg;
       }
@@ -1156,17 +1161,40 @@ Template.prototype._load = function(subtype, plural, options) {
     var loadOpts = {
       matchLoader: function () { return subtype; }
     };
-    var template = self.load(args, stack, loadOpts);
-    template = self.normalize(plural, template, options);
 
-    // validate the template object before moving on
-    self.validate(template);
+    switch (type) {
+      case 'async':
+        self.loadAsync(args, stack, loadOpts, function (err, template) {
+          if (err) return cb(err);
+          template = self.normalize(plural, template, options);
 
-    // Run middleware
-    self.dispatch(template);
+          // validate the template object before moving on
+          self.validate(template);
 
-    // Add template to the cache
-    extend(self.views[plural], template);
+          // Run middleware
+          self.dispatch(template);
+
+          // Add template to the cache
+          extend(self.views[plural], template);
+
+          cb(null, template);
+        });
+        break;
+
+      default:
+        var template = self.load(args, stack, loadOpts);
+        template = self.normalize(plural, template, options);
+
+        // validate the template object before moving on
+        self.validate(template);
+
+        // Run middleware
+        self.dispatch(template);
+
+        // Add template to the cache
+        extend(self.views[plural], template);
+        break;
+    }
   };
 };
 
@@ -1319,15 +1347,21 @@ Template.prototype.setType = function(subtype, plural, options) {
  */
 
 Template.prototype.setLoaders = function(subtype, options, stack) {
+  options = options || {};
+  var type = options.load || 'sync';
 
-  if (this._.loaders.cache.sync[subtype]) {
-    delete this._.loaders.cache.sync[subtype];
+  if (this._.loaders.cache[type] && this._.loaders.cache[type][subtype]) {
+    delete this._.loaders.cache[type][subtype];
   }
   if (stack.length === 0) {
     stack.push(['default']);
   }
 
-  this.loader.apply(this, [].concat([subtype], stack));
+  var loader = 'loader';
+  if (type !== 'sync') {
+    loader = methodName('loader', type);
+  }
+  this[loader].apply(this, [].concat([subtype], stack));
 };
 
 /**

@@ -48,7 +48,6 @@
     "preserve": "^0.1.3",
     "should": "^4.3.0",
     "swig": "^1.4.2",
-    "through2": "^0.6.3",
     "verb": "^0.3.7",
     "verb-prettify": "^0.1.0"
   },

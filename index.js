@@ -130,9 +130,9 @@ Template.prototype.loadDefaults = function() {
 
 Template.prototype.defaultConfig = function() {
   this._.delims = new Delims(this.options);
+  this._.loaders = new Loaders(this.loaders);
   this._.engines = new Engines(this.engines);
   this._.helpers = new Helpers({bind: false});
-  this._.loaders = new Loaders(this.loaders);
   this._.asyncHelpers = new Helpers({bind: false});
 };
 

@@ -35,7 +35,8 @@ describe('template loaders', function () {
   describe('when a custom loader stack is set:', function () {
     it('should allow custom loader stack to be used:', function () {
       var options = {};
-      template.create('post', { isRenderable: true }, function (patterns) {
+      template.create('post', { isRenderable: true },
+        function (patterns) {
           return globber(patterns, options);
         },
         function (file) {

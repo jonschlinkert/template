@@ -1164,26 +1164,23 @@ Template.prototype._load = function(subtype, plural, options) {
       args = args[0];
     }
 
-    var loadOpts = {
-      matchLoader: function () { return subtype; }
-    };
+    var loadOpts = {matchLoader: function () {return subtype;}};
 
     // default done method to do normalization, validation, and extending
     // the views when finished loading
     var done = function (err, template) {
-        if (err) return cb(err);
-        template = self.normalize(plural, template, options);
+      if (err) return cb(err);
+      template = self.normalize(plural, template, options);
 
-        // validate the template object before moving on
-        self.validate(template);
+      // validate the template object before moving on
+      self.validate(template);
 
-        // Run middleware
-        self.dispatch(template);
+      // Run middleware
+      self.dispatch(template);
 
-        // Add template to the cache
-        extend(self.views[plural], template);
-
-        return cb(null, template);
+      // Add template to the cache
+      extend(self.views[plural], template);
+      return cb(null, template);
     };
 
     // do the loading based on the loader type
@@ -1262,7 +1259,7 @@ Template.prototype.validate = function(template) {
 Template.prototype.normalize = function(plural, template, options) {
   debug.template('normalizing: [%s]: %j', plural, template);
   this.lazyrouter();
-  
+
   if (this.option('normalize')) {
     return this.options.normalize.apply(this, arguments);
   }
@@ -1355,7 +1352,8 @@ Template.prototype.setType = function(subtype, plural, options) {
 };
 
 /**
- * Private method for registering a loader stack for a specified template type.
+ * Private method for registering a loader stack for a specified
+ * template type.
  *
  * @param {String} `subtype` template type to set loader stack for
  * @param {Object} `options` additional options to determine the loader type
@@ -1732,25 +1730,6 @@ Template.prototype.decorate = function(subtype, plural, options) {
   mixin(methodName('render', subtype), function () {
     return this.renderSubtype(subtype);
   });
-
-  /**
-   * Add a `load` method to `Template` for `subtype`
-   */
-
-  // mixin(methodName('load', subtype), function () {
-  //   return this[methodName('load', plural)].apply(this, arguments);
-  // });
-
-  /**
-   * Add a `load` method to `Template` for `plural`
-   */
-
-  // mixin(methodName('load', plural), function () {
-  //   var args = slice(arguments);
-  //   var opts = {};
-  //   opts.matchLoader = this.option('matchLoader');
-  //   return this[plural](this.load(args, opts));
-  // });
 };
 
 /**
@@ -1821,8 +1800,7 @@ Template.prototype.compileTemplate = function(template, options, async) {
   opts.debugEngine = this.option('debugEngine');
 
   // if a layout is defined, apply it before compiling
-  var content = template.content;
-  content = this.applyLayout(template, extend({}, context, opts));
+  var content = this.applyLayout(template, extend({}, context, opts));
 
   // compile template
   return this.compileBase(engine, content, opts);
@@ -2191,16 +2169,18 @@ Template.prototype.renderType = function(type, subtype) {
 Template.prototype.bindHelpers = function (options, context, async) {
   debug.helper('binding helpers: %j %j', context, options);
 
-  var helpers = _.cloneDeep(this.options.helpers || {});
-  extend(helpers, _.cloneDeep(this._.helpers));
-  extend(helpers, _.cloneDeep(this._.imports));
+  var helpers = {};
+  extend(helpers, this.options.helpers);
+  extend(helpers, this._.helpers);
+  extend(helpers, this._.imports);
+  extend(helpers, options.helpers);
 
   if (async) {
-    helpers = extend({}, helpers, this._.asyncHelpers);
+    extend(helpers, this._.asyncHelpers);
   }
-  extend(helpers, _.cloneDeep(options.helpers || {}));
 
   var o = {};
+  o.options = extend({}, this.options, options);
   o.context = context || {};
   o.app = this;
 
@@ -2245,7 +2225,7 @@ Template.prototype.mergeContext = function(template, locals) {
 
   // Merge in `locals/data` from templates
   merge(context, this.cache._context.partials);
-  merge(context.layouts || {}, this.cache.layouts);
+  context.layouts = this.cache.layouts || {};
   merge(context, locals);
   return context;
 };

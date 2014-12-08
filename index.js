@@ -1920,6 +1920,9 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   locals = locals || {};
   var opts = extend({}, locals.options);
 
+  // handle pre-render middleware routes
+  this.handle('before', template, handleError(template, 'before'));
+  
   // Merge `.render()` locals with template locals
   locals = this.mergeContext(template, locals);
   extend(opts, locals.options);
@@ -1928,8 +1931,6 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   var ext = this.getExt(template, opts);
   var engine = this.getEngine(ext);
 
-  // handle pre-render middleware routes
-  this.handle('before', template, handleError(template, 'before'));
 
   // compile the template if it hasn't been already
   if (!template.fn) {

@@ -79,7 +79,6 @@ Template.prototype.initTemplate = function() {
   this.loaders = this.loaders || {};
   this.engines = this.engines || {};
   this.delims = this.delims || {};
-  this.layoutSettings = {};
   this.transforms = {};
 
   // Engine properties
@@ -1025,8 +1024,8 @@ Template.prototype.asyncHelper = function(name, fn) {
 
 Template.prototype.asyncHelpers = function(helpers) {
   debug.helper('adding async helpers: %s', helpers);
-  var helpers = this._.asyncHelpers.addAsyncHelpers;
-  return helpers.apply(helpers, arguments);
+  var fn = this._.asyncHelpers.addAsyncHelpers;
+  return fn.apply(fn, arguments);
 };
 
 /**
@@ -1144,13 +1143,20 @@ Template.prototype._load = function(subtype, plural, options) {
     var stack = [];
     var len = args.length;
 
-    // default method used to handle sync loading when done
+    /**
+     * Default method used to handle sync loading
+     * when done
+     */
+
     var cb = function (err, template) {
       if (err) throw new Error(err);
       return template;
     };
 
-    // figure out the args to pass and the loader stack
+    /**
+     * Normalize args to pass to loader stack
+     */
+
     args = args.filter(function (arg, i) {
       if (i !== 0 && typeOf(arg) === 'array') {
         stack = arg;
@@ -1163,53 +1169,52 @@ Template.prototype._load = function(subtype, plural, options) {
         return arg;
       }
     });
-    if (args.length === 1) {
-      args = args[0];
-    }
 
-    var loadOpts = {matchLoader: function () {return subtype;}};
+    if (args.length === 1) args = args[0];
+    var loadOpts = {
+      matchLoader: function () {
+        return subtype;
+      }
+    };
 
-    // default done method to do normalization, validation, and extending
-    // the views when finished loading
-    var done = function (err, template) {
+    /**
+     * Default done function for normalization, validation,
+     * and extending the views when finished loading
+     */
+
+    function done(err, template) {
       if (err) return cb(err);
       template = self.normalize(plural, template, options);
-
       // validate the template object before moving on
       self.validate(template);
-
       // Run middleware
       self.dispatch(template);
-
       // Add template to the cache
       extend(self.views[plural], template);
       return cb(null, template);
-    };
+    }
 
-    // do the loading based on the loader type
+    /**
+     * Choose loaders based on loader type
+     */
+
     switch (type) {
       case 'async':
         self.loadAsync(args, stack, loadOpts, done);
         break;
-
       case 'promise':
         return self.loadPromise(args, stack, loadOpts)
           .then(function (template) {
             return done(null, template);
           });
-        break;
-
       case 'stream':
         return self.loadStream(args, stack, loadOpts)
           .on('data', function (template) {
             done(null, template);
           })
           .on('error', done);
-        break;
-
       default:
         return done(null, self.load(args, stack, loadOpts));
-        break;
     }
   };
 };
@@ -1922,7 +1927,7 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
 
   // handle pre-render middleware routes
   this.handle('before', template, handleError(template, 'before'));
-  
+
   // Merge `.render()` locals with template locals
   locals = this.mergeContext(template, locals);
   extend(opts, locals.options);

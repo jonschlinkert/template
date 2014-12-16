@@ -35,7 +35,7 @@ describe('template layout:', function () {
       });
     });
 
-    it('should use layouts with `page`s:', function (done) {
+    it('should use layouts with pages:', function (done) {
       template.layout('sidebar', '<nav></nav>\n{% body %}', {layout: 'default'});
       template.layout('default', 'default!\n{% body %}\ndefault!');
       template.page('home', {content: 'This is a page!', layout: 'sidebar'});

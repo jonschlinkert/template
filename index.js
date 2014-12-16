@@ -7,7 +7,6 @@
 
 'use strict';
 
-var _ = require('lodash');
 var path = require('path');
 var glob = require('globby');
 var chalk = require('chalk');
@@ -20,9 +19,12 @@ var Cache = require('config-cache');
 var Helpers = require('helper-cache');
 var Engines = require('engine-cache');
 var Loaders = require('loader-cache');
+var cloneDeep = require('clone-deep');
 var arrayify = require('arrayify-compact');
 var engineLodash = require('engine-lodash');
 var parser = require('parser-front-matter');
+var extend = require('extend-shallow');
+var reduce = require('object.reduce');
 var flatten = require('arr-flatten');
 var slice = require('array-slice');
 
@@ -34,8 +36,6 @@ var debug = require('./lib/debug');
 var utils = require('./lib');
 var Router = routes.Router;
 var Route = routes.Route;
-var extend = _.extend;
-var merge = _.merge;
 
 /**
  * Create a new instance of `Template`, optionally passing
@@ -111,7 +111,7 @@ Template.prototype.initTemplate = function() {
 
 Template.prototype.loadDefaults = function() {
   this.defaultConfig();
-  this.mixinLoaders();
+  this.mixInLoaders();
   this.defaultLoaders();
   this.defaultOptions();
   this.defaultRoutes();
@@ -203,8 +203,8 @@ defineGetter(Template.prototype, 'cwd', function () {
  * @api private
  */
 
-Template.prototype.mixinLoaders = function() {
-  var mix = utils.mixinLoaders(Template.prototype, this._.loaders);
+Template.prototype.mixInLoaders = function() {
+  var mix = utils.mixInLoaders(Template.prototype, this._.loaders);
 
   // register methods
   mix('loader', 'register');
@@ -605,11 +605,11 @@ Template.prototype.makeDelims = function(arr, options) {
   debug.delims('making delims: %j', arr);
 
   if (!Array.isArray(arr)) {
-    return merge(options, this.getDelims('*'));
+    return extend({}, options, this.getDelims('*'));
   }
 
   var delims = this._.delims.templates(arr, settings);
-  return merge({}, delims, options);
+  return extend({}, delims, options);
 };
 
 /**
@@ -635,23 +635,23 @@ Template.prototype.makeDelims = function(arr, options) {
  * @api public
  */
 
-Template.prototype.addDelims = function(ext, delims1, delims2, settings) {
+Template.prototype.addDelims = function(ext, delims, layoutDelims, settings) {
   if (ext[0] !== '.') {
     ext = '.' + ext;
   }
 
-  debug.delims('adding delims [ext]: %s', ext, delims1);
+  debug.delims('adding delims [ext]: %s', ext, delims);
   var opts = {};
 
 
-  if (Array.isArray(delims2)) {
-    opts.layoutDelims = delims2;
+  if (Array.isArray(layoutDelims)) {
+    opts.layoutDelims = layoutDelims;
   } else {
-    settings = delims2;
-    delims2 = this.option('layoutDelims');
+    settings = layoutDelims;
+    layoutDelims = this.option('layoutDelims');
   }
 
-  extend(opts, this.makeDelims(delims1, settings));
+  extend(opts, this.makeDelims(delims, settings));
   extend(opts, settings);
 
   this.delims[ext] = opts;
@@ -961,16 +961,16 @@ Template.prototype.helpers = function(helpers, options) {
   debug.helper('adding helpers: %s', helpers);
 
   if (typeOf(helpers) === 'object') {
-    merge(this._.helpers, helpers);
+    extend(this._.helpers, helpers);
   } else if (Array.isArray(helpers) || typeof helpers === 'string') {
     // sniff tests: if it's an object, it's not a glob
     if (typeOf(helpers[0]) === 'object') {
-      _.reduce(helpers, function (acc, o) {
-        return merge(acc, o);
+      reduce(helpers, function (acc, o) {
+        return extend(acc, o);
       }, this._.helpers);
     } else {
        var files = glob.sync(helpers, options);
-      _.reduce(files, function (acc, fp) {
+      reduce(files, function (acc, fp) {
         var name = path.basename(fp, path.extname(fp));
         acc[name] = require(path.resolve(fp));
         return acc;
@@ -1067,7 +1067,7 @@ Template.prototype.defaultHelper = function(subtype, plural) {
       return '';
     }
 
-    var locs = merge({}, this.context, locals);
+    var locs = extend({}, this.context, locals);
 
     var content = self.renderTemplate(partial, locs);
     if (content instanceof Error) {
@@ -1110,7 +1110,7 @@ Template.prototype.defaultAsyncHelper = function(subtype, plural) {
       return next(null, '');
     }
 
-    var locs = merge({}, this.context, locals);
+    var locs = extend({}, this.context, locals);
     var render = self.renderSubtype(subtype);
 
     render(key, locs, function (err, content) {
@@ -1508,7 +1508,7 @@ Template.prototype.mergePartials = function(locals) {
   }
 
   var opts = {};
-  opts.partials = _.cloneDeep(locals.partials || {});
+  opts.partials = cloneDeep(locals.partials || {});
 
   // loop over each `partial` collection
   this.type.partial.forEach(function (plural) {
@@ -1945,7 +1945,7 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
     template.fn = this.compileTemplate(template, opts, typeof cb === 'function');
   }
 
-  var cloned = _.cloneDeep(template);
+  var cloned = cloneDeep(template);
   var content = template.fn;
 
   // backwards compatibility for engines that don't support compile
@@ -2203,7 +2203,7 @@ Template.prototype.bindHelpers = function (options, context, async) {
  *
  * ```js
  * template.option('mergeContext', function(template, locals) {
- *   return _.merge(template.data, template.locals, locals);
+ *   return extend(template.data, template.locals, locals);
  * });
  * ```
  *
@@ -2218,24 +2218,24 @@ Template.prototype.mergeContext = function(template, locals) {
   }
 
   var context = {};
-  merge(context, this.cache.data);
+  extend(context, this.cache.data);
 
   // control the order in which `locals` and `data` are merged
   if (this.enabled('preferLocals')) {
-    merge(context, template.data);
-    merge(context, template.locals);
+    extend(context, template.data);
+    extend(context, template.locals);
   } else {
-    merge(context, template.locals);
-    merge(context, template.data);
+    extend(context, template.locals);
+    extend(context, template.data);
   }
 
   // Merge in partials to pass to engines
-  merge(context, this.mergePartials(context));
+  extend(context, this.mergePartials(context));
 
   // Merge in `locals/data` from templates
-  merge(context, this.cache._context.partials);
+  extend(context, this.cache._context.partials);
   context.layouts = this.cache.layouts || {};
-  merge(context, locals);
+  extend(context, locals);
   return context;
 };
 

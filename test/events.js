@@ -138,28 +138,6 @@ describe('events:', function () {
       });
 
       template.omit(['one', 'two', 'thr', 'fou', 'fiv', 'six', 'sev']);
-
-      called.should.be.true;
-    });
-
-
-    it('should emit `merged` when items are merged into the cache', function () {
-      var called = false;
-      var template = new Template();
-
-      template.on('merge', function (key) {
-        template.get(key).should.be.undefined;
-        called = true;
-      });
-
-      template.merge({ one: 'a' });
-      template.merge({ two: 'c' });
-      template.merge({ thr: 'd' });
-      template.merge({ fou: 'e' });
-      template.merge({ fiv: 'f' });
-      template.merge({ six: 'g' });
-      template.merge({ sev: 'h' });
-
       called.should.be.true;
     });
   });

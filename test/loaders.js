@@ -14,7 +14,6 @@ var globber = require('./lib/globber');
 var template;
 
 describe('template loaders', function () {
-
   beforeEach(function () {
     template = new Template();
     template.engine('md', require('engine-lodash'));
@@ -78,20 +77,21 @@ describe('template loaders', function () {
     it('should modify data:', function (done) {
       var options = {};
       template.data('test/fixtures/data/*.json');
-      template.create('post', { isRenderable: true }, function (patterns) {
-        return globber(patterns, options);
-      },
-      function (template) {
-        _.transform(template, function (acc, value, key) {
-          value.options = value.options || {};
-          value.data = value.data || {};
-          value.data.a = 'b';
+      template.create('post', { isRenderable: true },
+        function (patterns) {
+          return globber(patterns, options);
+        },
+        function (template) {
+          _.transform(template, function (acc, value, key) {
+            value.options = value.options || {};
+            value.data = value.data || {};
+            value.data.a = 'b';
+          });
+          return template;
         });
-        return template;
-      });
+
       template.post('test/fixtures/*.md');
       template.render('md.md', function (err, content) {
-        // console.log(arguments)
         done();
       });
     });
@@ -192,40 +192,5 @@ describe('template loaders', function () {
         });
     });
 
-  });
-
-  describe('when a custom loader function is set:', function () {
-    it('should load using the custom loader', function () {
-      template.create('doc', { isRenderable: true });
-      // template.create('docs', { isRenderable: true }, [
-      //   function (patterns, cwd, options, next) {
-      //     var files = globber(patterns, options);
-      //     if (files.length === 0) {
-      //       return next(null, null);
-      //     }
-
-      //     var res = _.reduce(files, function(acc, fp) {
-      //       acc[fp] = {content: fs.readFileSync(fp, 'utf8'), path: fp};
-      //       return acc;
-      //     }, {}, this);
-
-      //     next(null, res);
-      //   },
-      //   function (file, next) {
-      //     // do stuff
-      //     next(null, file);
-      //   }
-      // ], function (err, result) {
-      //    // result now equals 'done'
-      // });
-
-      template.pages('foo/*.md' [
-        function (file, next) {
-        // console.log(file)
-          // do stuff with file
-          next(null, file)
-        }
-      ]);
-    });
   });
 });

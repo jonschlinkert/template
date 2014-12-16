@@ -47,7 +47,9 @@ describe('custom `renderable` types:', function () {
   it('should prefer template locals over front-matter data:', function (done) {
     template.engine('hbs', handlebars);
     template.engine('md', handlebars);
-    template.page('fixture.md', '---\nauthor: Brian Woodward\n---\n<title>{{author}}</title>', {author: 'Jon Schlinkert'});
+    template.page('fixture.md', '---\nauthor: Brian Woodward\n---\n<title>{{author}}</title>', {
+      author: 'Jon Schlinkert'
+    });
 
     forOwn(template.views.pages, function (value, key) {
       template.render(key, function (err, content) {

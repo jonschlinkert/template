@@ -130,7 +130,6 @@ describe('layouts:', function () {
     template.layout('default', {content: 'default!\n{% body %}\ndefault!'});
 
     it('should use layouts defined as strings:', function (done) {
-
       var expected = [
         'default!',
         '<nav></nav>',

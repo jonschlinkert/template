@@ -66,7 +66,7 @@ describe('cache', function () {
   describe('get():', function () {
     var template = new Template();
     var obj = {a: {b: {c: 1, d: '', e: null, f: undefined, 'g.h.i': 2}}};
-    template.merge(obj);
+    template.set(obj);
 
     it('should get immediate properties.', function() {
       template.get('a').should.eql(obj.a);
@@ -85,7 +85,6 @@ describe('cache', function () {
     });
     it('should return values.', function() {
       (typeof template.get('a.b.e')).should.be.an.object;
-      // template.get('a.b.e').should.equal.null;
     });
     it('should return values.', function() {
       (typeof template.get('a.b.f')).should.be.undefined;

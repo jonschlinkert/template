@@ -26,6 +26,7 @@ var parser = require('parser-front-matter');
 var extend = require('extend-shallow');
 var reduce = require('object.reduce');
 var flatten = require('arr-flatten');
+var merge = require('mixin-deep');
 var slice = require('array-slice');
 
 var init = require('./lib/middleware/init');
@@ -2218,24 +2219,22 @@ Template.prototype.mergeContext = function(template, locals) {
   }
 
   var context = {};
-  extend(context, this.cache.data);
+  merge(context, this.cache.data);
 
   // control the order in which `locals` and `data` are merged
   if (this.enabled('preferLocals')) {
-    extend(context, template.data);
-    extend(context, template.locals);
+    merge(context, template.data);
+    merge(context, template.locals);
   } else {
-    extend(context, template.locals);
-    extend(context, template.data);
+    merge(context, template.locals);
+    merge(context, template.data);
   }
 
-  // Merge in partials to pass to engines
-  extend(context, this.mergePartials(context));
-
+  // Partial templates to pass to engines
+  merge(context, this.mergePartials(context));
   // Merge in `locals/data` from templates
-  extend(context, this.cache._context.partials);
-  context.layouts = this.cache.layouts || {};
-  extend(context, locals);
+  merge(context, this.cache._context.partials);
+  merge(context, locals);
   return context;
 };
 

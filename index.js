@@ -1939,7 +1939,7 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
 
 
   // compile the template if it hasn't been already
-  if (!template.fn) {
+  if (!template.fn || typeof template.fn === 'string') {
     opts.context = opts.context || locals;
     opts.delims = opts.delims || opts.context.delims;
     opts.layoutDelims = opts.layoutDelims || opts.context.layoutDelims;

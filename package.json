@@ -1,7 +1,7 @@
 {
   "name": "template",
   "description": "Render templates from any engine. Make custom template types, use layouts on pages, partials or any custom template type, custom delimiters, helpers, middleware, routes, loaders, and lots more. Powers Assemble v0.6.0, Verb v0.3.0 and your application.",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "homepage": "https://github.com/jonschlinkert/template",
   "author": {
     "name": "Jon Schlinkert",

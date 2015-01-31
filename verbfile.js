@@ -1,6 +1,7 @@
 'use strict';
 
 var istanbul = require('gulp-istanbul');
+var jshint = require('gulp-jshint');
 var mocha = require('gulp-mocha');
 var verb = require('verb');
 
@@ -14,8 +15,14 @@ verb.task('api', function() {
     .pipe(verb.dest('docs'));
 });
 
+verb.task('lint', function () {
+  verb.src(['index.js', 'lib/**/*.js'])
+    .pipe(jshint('.jshintrc'))
+    .pipe(jshint.reporter('jshint-stylish'));
+});
+
 verb.task('test', function (cb) {
-  verb.src('lib/**/*.js')
+  verb.src(['index.js', 'lib/**/*.js'])
     .pipe(istanbul())
     .pipe(istanbul.hookRequire())
     .on('finish', function () {
@@ -26,4 +33,4 @@ verb.task('test', function (cb) {
     });
 });
 
-verb.task('default', ['readme', 'api']);
+verb.task('default', ['test', 'readme', 'api']);

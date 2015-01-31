@@ -23,6 +23,8 @@ benchmark
 coverage
 
 # npmignore
+.*
 test
-docs
-.verb*
+verbfile.md
+docs.md
+api.md

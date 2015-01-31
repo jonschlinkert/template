@@ -1,7 +1,7 @@
 /*!
  * template <https://github.com/jonschlinkert/template>
  *
- * Copyright (c) 2014 Jon Schlinkert, Brian Woodward
+ * Copyright (c) 2014-2015, Jon Schlinkert, Brian Woodward.
  * Licensed under the MIT License (MIT)
  */
 
@@ -12,14 +12,14 @@ var Template = require('..');
 
 
 describe('.addDelims():', function () {
-  it('should addDelims template by `name` on `template`:', function () {
+  it('should register delimiters:', function () {
     var template = new Template();
     Object.keys(template.delims).should.have.length(1);
 
-    template.addDelims('hbs', ['{{', '}}']);
+    template.addDelims('curly', ['{{', '}}']);
     Object.keys(template.delims).should.have.length(2);
 
-    template.addDelims('lodash', ['<%', '%>']);
+    template.addDelims('angle', ['<%', '%>']);
     Object.keys(template.delims).should.have.length(3);
 
     template.addDelims('square', ['[[', ']]']);

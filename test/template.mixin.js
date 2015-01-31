@@ -1,7 +1,7 @@
 /*!
  * template <https://github.com/jonschlinkert/template>
  *
- * Copyright (c) 2014 Jon Schlinkert, Brian Woodward
+ * Copyright (c) 2014-2015, Jon Schlinkert, Brian Woodward.
  * Licensed under the MIT License (MIT)
  */
 
@@ -26,14 +26,14 @@ describe('template.mixin():', function () {
 
   it('should get a mixin by name', function () {
     template.mixin('foo', function (bar) {
-      return bar + '-foo';      
+      return bar + '-foo';
     });
     template.mixin('foo').should.be.a.function;
   });
 
   it('should get all mixins', function () {
     template.mixin('foo', function (bar) {
-      return bar + '-foo';      
+      return bar + '-foo';
     });
     template.mixin('bar', function (foo) {
       return foo + '-bar';

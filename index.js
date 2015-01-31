@@ -1,7 +1,7 @@
 /*!
  * template <https://github.com/jonschlinkert/template>
  *
- * Copyright (c) 2014 Jon Schlinkert, Brian Woodward
+ * Copyright (c) 2014-2015, Jon Schlinkert.
  * Licensed under the MIT license.
  */
 
@@ -402,6 +402,49 @@ Template.prototype.dispatch = function(file, fns) {
 };
 
 /**
+ * Proxy to the engine `Router#route()`
+ * Returns a new `Route` instance for the `path`.
+ *
+ * Routes are isolated middleware stacks for specific paths.
+ * See the Route api docs for details.
+ *
+ * @param {String} `path`
+ * @api public
+ */
+
+Template.prototype.route = function(path) {
+  debug.routes('route: %s', path);
+  this.lazyrouter();
+  return this.router.route(path);
+};
+
+/**
+ * Proxy to `Router#param()` with one added api feature. The `name` parameter
+ * can be an array of names.
+ *
+ * See the Router#param() docs for more details.
+ *
+ * @param {String|Array} `name`
+ * @param {Function} `fn`
+ * @return {Object} `Template` for chaining
+ * @api public
+ */
+
+Template.prototype.param = function(name, fn) {
+  debug.routes('param: %s', name);
+  this.lazyrouter();
+
+  if (Array.isArray(name)) {
+    name.forEach(function(key) {
+      this.param(key, fn);
+    }, this);
+    return this;
+  }
+  this.router.param(name, fn);
+  return this;
+};
+
+/**
  * Proxy to `Router#use()` to add middleware to the engine router.
  * See Router#use() documentation for details.
  *
@@ -413,17 +456,14 @@ Template.prototype.dispatch = function(file, fns) {
  */
 
 Template.prototype.use = function (fn) {
-  var offset = 0;
-  var path = '/';
+  var offset = 0, path = '/';
 
   // default path to '/'
   if (typeof fn !== 'function') {
     var arg = fn;
-
     while (Array.isArray(arg) && arg.length !== 0) {
       arg = arg[0];
     }
-
     // first arg is the path
     if (typeof arg !== 'function') {
       offset = 1;
@@ -444,58 +484,10 @@ Template.prototype.use = function (fn) {
     if (!fn || !fn.handle || !fn.set) {
       return router.use(path, fn.bind(this));
     }
-
     debug.routes('use: %s', path);
     fn.mountpath = path;
     fn.parent = this;
   }, this);
-
-  return this;
-};
-
-/**
- * Proxy to the engine `Router#route()`
- * Returns a new `Route` instance for the `path`.
- *
- * Routes are isolated middleware stacks for specific paths.
- * See the Route api docs for details.
- *
- * @param {String} `path`
- * @api public
- */
-
-Template.prototype.route = function(path) {
-  debug.routes('route: %s', path);
-  this.lazyrouter();
-
-  return this.router.route(path);
-};
-
-/**
- * Proxy to `Router#param()` with one added api feature. The `name` parameter
- * can be an array of names.
- *
- * See the Router#param() docs for more details.
- *
- * @param {String|Array} `name`
- * @param {Function} `fn`
- * @return {Object} `Template` for chaining
- * @api public
- */
-
-Template.prototype.param = function(name, fn) {
-  debug.routes('param: %s', name);
-
-  this.lazyrouter();
-
-  if (Array.isArray(name)) {
-    name.forEach(function(key) {
-      this.param(key, fn);
-    }, this);
-    return this;
-  }
-
-  this.router.param(name, fn);
   return this;
 };
 
@@ -510,7 +502,7 @@ Template.prototype.param = function(name, fn) {
 
 utils.methods.forEach(function(method) {
   Template.prototype[method] = function(path) {
-    debug.routes('$s: $s', method, path);
+    debug.routes('%s: %s', method, path);
     this.lazyrouter();
 
     var route = this.router.route(path);
@@ -1307,7 +1299,7 @@ Template.prototype.normalize = function(plural, template, options) {
 };
 
 /**
- * Get the given `collection` from views. Optionally
+ * Get the given view `collection` from views. Optionally
  * pass a `name` to get a specific template from the
  * collection.
  *
@@ -1927,7 +1919,7 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   var opts = extend({}, locals.options);
 
   // handle pre-render middleware routes
-  this.handle('before', template, handleError(template, 'before'));
+  this.handle('preRender', template, handleError(template, 'preRender'));
 
   // Merge `.render()` locals with template locals
   locals = this.mergeContext(template, locals);
@@ -1963,7 +1955,7 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
     cloned.content = this.renderBase(engine, content, locals, cb);
 
     // handle post-render middleware routes
-    this.handle('after', cloned, handleError(template, 'after'));
+    this.handle('postRender', cloned, handleError(template, 'postRender'));
     return cloned.content;
   }
 
@@ -1975,7 +1967,7 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   return this.renderBase(engine, content, locals, function (err, content) {
     if (err) return cb.call(self, err);
     cloned.content = content;
-    self.handle('after', cloned, handleError(template, 'after'));
+    self.handle('postRender', cloned, handleError(template, 'postRender'));
     return cb.call(self, null, cloned.content);
   });
 };

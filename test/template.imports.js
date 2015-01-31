@@ -1,7 +1,7 @@
 /*!
  * template <https://github.com/jonschlinkert/template>
  *
- * Copyright (c) 2014 Jon Schlinkert, Brian Woodward
+ * Copyright (c) 2014-2015, Jon Schlinkert, Brian Woodward.
  * Licensed under the MIT License (MIT)
  */
 
@@ -26,14 +26,14 @@ describe('template.imports():', function () {
 
   it('should get an import by name', function () {
     template.imports('foo', function (bar) {
-      return bar + '-foo';      
+      return bar + '-foo';
     });
     template.imports('foo').should.be.a.function;
   });
 
   it('should get all imports', function () {
     template.imports('foo', function (bar) {
-      return bar + '-foo';      
+      return bar + '-foo';
     });
     template.imports('bar', function (foo) {
       return foo + '-bar';

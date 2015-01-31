@@ -1,7 +1,7 @@
 /*!
  * template <https://github.com/jonschlinkert/template>
  *
- * Copyright (c) 2014 Jon Schlinkert, Brian Woodward
+ * Copyright (c) 2014-2015, Jon Schlinkert, Brian Woodward.
  * Licensed under the MIT License (MIT)
  */
 
@@ -90,17 +90,16 @@ describe('middleware', function () {
       template.pages(__dirname + '/fixtures/md.md');
       var page = template.views.pages['md.md'];
 
-      template.before(/\.md/, function (file, next) {
+      template.preRender(/\.md/, function (file, next) {
         file.content = tokens.before(file.content);
         next();
       });
-
 
       template.render(page, {name: 'Halle'}, function (err, content) {
         if (err) return done(err);
         content.should.equal('__ID0__\n__ID1__\n__ID2__');
 
-        template.after(/\.md/, function (file, next) {
+        template.postRender(/\.md/, function (file, next) {
           file.content = tokens.after(file.content);
           next();
         });
@@ -118,7 +117,7 @@ describe('middleware', function () {
       template.pages(__dirname + '/fixtures/md.md');
       var page = template.views.pages['md.md'];
 
-      template.before(/\.md/, function (file, next) {
+      template.preRender(/\.md/, function (file, next) {
         file.content = tokens.before(file.content);
         throw new Error('before error, should get handled');
       }, function (err, file, next) {
@@ -130,7 +129,7 @@ describe('middleware', function () {
         if (err) return done(err);
         content.should.equal('__ID0__\n__ID1__\n__ID2__');
 
-        template.after(/\.md/, function (file, next) {
+        template.postRender(/\.md/, function (file, next) {
           file.content = tokens.after(file.content);
           throw new Error('after error, should get handled');
         }, function (err, file, next) {
@@ -156,7 +155,7 @@ describe('middleware', function () {
       template.pages(__dirname + '/fixtures/md.md');
       var page = template.views.pages['md.md'];
 
-      template.before(/\.md/, function (file, next) {
+      template.preRender(/\.md/, function (file, next) {
         file.content = tokens.before(file.content);
         throw new Error('before error, should get handled');
       });
@@ -165,7 +164,7 @@ describe('middleware', function () {
         if (err) return done(err);
         content.should.equal('__ID0__\n__ID1__\n__ID2__');
 
-        template.after(/\.md/, function (file, next) {
+        template.postRender(/\.md/, function (file, next) {
           file.content = tokens.after(file.content);
           throw new Error('after error, should get handled');
         });

@@ -24,51 +24,53 @@ describe('template.compile()', function () {
 
   describe('when an un-cached string is passed to `.compile()`:', function () {
     it('should detect the engine from `ext` (with dot) on locals:', function () {
-      template.compile('<%= name %>', {name: 'Jon Schlinkert', ext: '.html'}).should.eql('<%= name %>');
+      var fn = template.compile('<%= name %>', {name: 'Jon Schlinkert', ext: '.html'});
+      fn.should.be.a.function;
+      fn({name: 'Jon Schlinkert', ext: '.html'}).should.eql('Jon Schlinkert');
     });
 
     it('should detect the engine from `ext` (without dot) on locals:', function () {
-      template.compile('<%= name %>', {name: 'Jon Schlinkert', ext: 'html'}).should.eql('<%= name %>');
+      var fn = template.compile('<%= name %>', {name: 'Jon Schlinkert', ext: 'html'});
+      fn.should.be.a.function;
+      fn({name: 'Jon Schlinkert', ext: 'html'}).should.eql('Jon Schlinkert');
     });
 
     it('should detect the engine from `engine` (with dot) on locals:', function () {
-      template.compile('<%= name %>', {name: 'Jon Schlinkert', engine: '.html'}).should.eql('<%= name %>');
+      var fn = template.compile('<%= name %>', {name: 'Jon Schlinkert', engine: '.html'});
+      fn.should.be.a.function;
+      fn({name: 'Jon Schlinkert', engine: '.html'}).should.eql('Jon Schlinkert');
     });
 
     it('should detect the engine from `engine` (without dot) on locals:', function () {
-      template.compile('<%= name %>', {name: 'Jon Schlinkert', engine: 'html'}).should.eql('<%= name %>');
+      var fn = template.compile('<%= name %>', {name: 'Jon Schlinkert', engine: 'html'});
+      fn.should.be.a.function;
+      fn({name: 'Jon Schlinkert', engine: 'html'}).should.eql('Jon Schlinkert');
     });
   });
 
   describe('when the name of a cached template is passed to `.compile()`:', function () {
     it('should find the template and compile it:', function () {
       template.page('aaa.md', '<%= name %>', {name: 'Jon Schlinkert'});
-      template.compile('aaa.md').should.eql('<%= name %>');
+      template.compile('aaa.md')({name: 'Jon Schlinkert'}).should.eql('Jon Schlinkert');
     });
 
     it('should compile the first matching template if dupes are found:', function () {
       template.page('aaa.md', 'Page: <%= name %>', {name: 'Brian Woodward'});
       template.create('post', 'posts', { isRenderable: true });
       template.post('aaa.md', 'Post: <%= name %>', {name: 'Jon Schlinkert'});
-      template.compile('aaa.md').should.eql('Page: <%= name %>');
+      template.compile('aaa.md')({name: 'Jon Schlinkert'}).should.eql('Page: Jon Schlinkert');
     });
   });
 
   describe('engine compile:', function () {
     it('should determine the engine from the `path` on the given object:', function () {
       var file = {path: 'a/b/c.md', content: '<%= name %>', locals: {name: 'Jon Schlinkert'}};
-      template.compile(file).should.eql('<%= name %>');
+      template.compile(file)({name: 'Jon Schlinkert'}).should.eql('Jon Schlinkert');
     });
 
     it('should determine the engine from the `path` on the given object:', function () {
       var file = {path: 'a/b/c.md', content: '<%= name %>'};
-      template.compile(file, {name: 'Jon Schlinkert'}).should.eql('<%= name %>');
-    });
-
-    it('should compile content with an engine from [consolidate].', function () {
-      template.engine('hbs', consolidate.handlebars);
-      var hbs = template.getEngine('hbs');
-      hbs.compile('{{name}}', {name: 'Jon Schlinkert'}).should.eql('{{name}}');
+      template.compile(file)({name: 'Jon Schlinkert'}).should.eql('Jon Schlinkert');
     });
 
     it('should use `file.path` to determine the correct consolidate engine to compile content:', function () {
@@ -166,7 +168,7 @@ describe('template.compile()', function () {
 
   describe('no options', function () {
     it('should handle not having options', function () {
-      template.compile('<%= name %>', false).should.eql('<%= name %>');
+      template.compile('<%= name %>').should.be.a.function;
     });
   });
 });

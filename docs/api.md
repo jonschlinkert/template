@@ -50,7 +50,7 @@ Delegate `.METHOD(...)` calls to `router.METHOD(...)`
 Special-cased "all" method, applying the given route `path`,
 middleware, and callback.
 
-### [.addDelims](../index.js#L631)
+### [.addDelims](../index.js#L629)
 
 Cache delimiters by `name` with the given `options` for later use.
 
@@ -71,7 +71,7 @@ template.addDelims('es6', ['${', '}'], {
 
 [delims]: https://github.com/jonschlinkert/delims "Generate regex for delimiters"
 
-### [.useDelims](../index.js#L689)
+### [.useDelims](../index.js#L687)
 
 Specify by `ext` the delimiters to make active.
 
@@ -82,7 +82,7 @@ template.useDelims('curly');
 template.useDelims('angle');
 ```
 
-### [.handleDelims](../index.js#L711)
+### [.handleDelims](../index.js#L709)
 
 Specify by `ext` the delimiters to make active.
 
@@ -93,7 +93,7 @@ template.useDelims('curly');
 template.useDelims('angle');
 ```
 
-### [.engine](../index.js#L781)
+### [.engine](../index.js#L779)
 
 * `exts` **{String|Array}**: File extension or array of extensions.    
 * `fn` **{Function|Object}**: or `options`    
@@ -106,7 +106,7 @@ Register the given view engine callback `fn` as `ext`. If only `ext`
 is passed, the engine registered for `ext` is returned. If no `ext`
 is passed, the entire cache is returned.
 
-### [.getEngine](../index.js#L802)
+### [.getEngine](../index.js#L800)
 
 Get the engine settings registered for the given `ext`.
 
@@ -119,7 +119,7 @@ Get the engine settings registered for the given `ext`.
 template.getEngine('.html');
 ```
 
-### [.getExt](../index.js#L828)
+### [.getExt](../index.js#L826)
 
 Used in the `.render()` method to select the `ext` to use for picking an engine.
 
@@ -138,7 +138,7 @@ template.option('getExt', function(template, locals) {
 });
 ```
 
-### [.helper](../index.js#L932)
+### [.helper](../index.js#L930)
 
 Register generic template helpers that are not specific to an engine.
 
@@ -155,7 +155,7 @@ template.helper('lower', function(str) {
 });
 ```
 
-### [.helpers](../index.js#L953)
+### [.helpers](../index.js#L951)
 
 Register multiple helpers.
 
@@ -169,7 +169,7 @@ template.addHelpers({
 });
 ```
 
-### [.asyncHelper](../index.js#L997)
+### [.asyncHelper](../index.js#L995)
 
 Register generic async template helpers that are not specific to an engine.
 
@@ -187,7 +187,7 @@ template.asyncHelper('lower', function(str, next) {
 });
 ```
 
-### [.asyncHelpers](../index.js#L1018)
+### [.asyncHelpers](../index.js#L1016)
 
 Register multiple async helpers.
 
@@ -201,7 +201,7 @@ template.addAsyncHelpers({
 });
 ```
 
-### [.engineHelpers](../index.js#L1036)
+### [.engineHelpers](../index.js#L1034)
 
 Register an object of helpers for the given `ext` (engine).
 
@@ -212,7 +212,7 @@ Register an object of helpers for the given `ext` (engine).
 template.helpers(require('handlebars-helpers'));
 ```
 
-### [.validate](../index.js#L1224)
+### [.validate](../index.js#L1222)
 
 * `key` **{String}**: Template key    
 * `value` **{Object}**: Template object    
@@ -220,7 +220,7 @@ template.helpers(require('handlebars-helpers'));
 Validate a template object to ensure that it has the properties
 expected for applying layouts, choosing engines, and so on.
 
-### [.view](../index.js#L1312)
+### [.view](../index.js#L1310)
 
 * `collection` **{String}**    
 * `name` **{String}**    
@@ -230,7 +230,7 @@ Get the given view `collection` from views. Optionally
 pass a `name` to get a specific template from the
 collection.
 
-### [.getType](../index.js#L1398)
+### [.getType](../index.js#L1396)
 
 Get all views of the given [type]. Valid values are `renderable`, `layout` or `partial`.
 
@@ -244,7 +244,7 @@ var pages = template.getType('renderable');
 
 [type]: ./template-types
 
-### [.mergeType](../index.js#L1421)
+### [.mergeType](../index.js#L1419)
 
 Merge all collections of the given `type` into a single collection. e.g. `partials` and `includes` would be merged.
 
@@ -255,7 +255,7 @@ If an array of `collections` is passed, only those collections
 will be merged and the order in which the collections are defined
 in the array will be respected.
 
-### [.mergeLayouts](../index.js#L1452)
+### [.mergeLayouts](../index.js#L1450)
 
 Merge all `layout` collections based on user-defined options.
 
@@ -263,11 +263,11 @@ Merge all `layout` collections based on user-defined options.
 * `collections` **{String}**: Optionally pass an array of collections    
 
 ```js
-## [.mergePartials](../index.js#L1495)
+## [.mergePartials](../index.js#L1494)
 
 Default method for determining how partials are to be passed to engines. By default, all `partial` collections are merged onto a single `partials` object. To keep each collection on a separate object, you can do `template.disable('mergePartials')`.
 
-* `locals` **{Object}**    
+* `locals` **{Object}**: Locals should have layout delimiters, if defined    
 * `returns`: {Object}  
 
 If you want to control how partials are merged, you can also
@@ -279,7 +279,7 @@ template.option('mergePartials', function(locals) {
 });
 ```
 
-### [.findRenderable](../index.js#L1566)
+### [.findRenderable](../index.js#L1576)
 
 Search all renderable `subtypes`, returning the first template with the given `key`.
 
@@ -289,7 +289,7 @@ Search all renderable `subtypes`, returning the first template with the given `k
   - If `key` is not found an error is thrown.
   - Optionally limit the search to the specified `subtypes`.
 
-### [.findLayout](../index.js#L1582)
+### [.findLayout](../index.js#L1592)
 
 Search all layout `subtypes`, returning the first template with the given `key`.
 
@@ -299,7 +299,7 @@ Search all layout `subtypes`, returning the first template with the given `key`.
   - If `key` is not found an error is thrown.
   - Optionally limit the search to the specified `subtypes`.
 
-### [.findPartial](../index.js#L1598)
+### [.findPartial](../index.js#L1608)
 
 Search all partial `subtypes`, returning the first template with the given `key`.
 
@@ -309,7 +309,7 @@ Search all partial `subtypes`, returning the first template with the given `key`
   - If `key` is not found an error is thrown.
   - Optionally limit the search to the specified `subtypes`.
 
-### [.lookup](../index.js#L1612)
+### [.lookup](../index.js#L1622)
 
 * `plural` **{String}**: The view collection to search.    
 * `name` **{String}**: The name of the template.    
@@ -318,7 +318,7 @@ Search all partial `subtypes`, returning the first template with the given `key`
 Convenience method for finding a template by `name` on
 the given collection. Optionally specify a file extension.
 
-### [.create](../index.js#L1649)
+### [.create](../index.js#L1659)
 
 Create a new `view` collection and associated convience methods.
 
@@ -336,7 +336,7 @@ Note that when you only specify a name for the type, a plural form is created
 automatically (e.g. `page` and `pages`). However, you can define the
 `plural` form explicitly if necessary.
 
-### [.compileTemplate](../index.js#L1770)
+### [.compileTemplate](../index.js#L1780)
 
 * `template` **{Object}**: The template object with content to compile.    
 * `options` **{Object}**: Options to pass along to the engine when compile. May include a `context` property to bind to helpers.    
@@ -345,7 +345,7 @@ automatically (e.g. `page` and `pages`). However, you can define the
 Compile content on the given `template` object with the specified
 engine `options`.
 
-### [.compile](../index.js#L1820)
+### [.compile](../index.js#L1830)
 
 * `file` **{Object|String}**: String or normalized template object.    
 * `options` **{Object}**    
@@ -354,7 +354,7 @@ engine `options`.
 
 Compile `content` with the given `options`.
 
-### [.compileString](../index.js#L1852)
+### [.compileString](../index.js#L1862)
 
 Compile the given string with the specified `options`.
 
@@ -366,7 +366,7 @@ Compile the given string with the specified `options`.
 The primary purpose of this method is to get the engine before
 passing args to `.compileBase()`.
 
-### [.renderTemplate](../index.js#L1902)
+### [.renderTemplate](../index.js#L1912)
 
 * `template` **{Object}**: The template object with content to render.    
 * `locals` **{Object}**: Locals and/or options to pass to registered view engines.    
@@ -375,7 +375,7 @@ passing args to `.compileBase()`.
 Render content on the given `template` object with the specified
 engine `options` and `callback`.
 
-### [.render](../index.js#L2048)
+### [.render](../index.js#L2058)
 
 * `file` **{Object|String}**: String or normalized template object.    
 * `locals` **{Object}**: Locals and/or options to pass to registered view engines.    
@@ -383,7 +383,7 @@ engine `options` and `callback`.
 
 Render `content` with the given `options` and optional `callback`.
 
-### [.renderString](../index.js#L2079)
+### [.renderString](../index.js#L2089)
 
 Render the given string with the specified `locals` and `callback`.
 
@@ -394,7 +394,7 @@ Render the given string with the specified `locals` and `callback`.
 The primary purpose of this method is to get the engine before
 passing args to `.renderBase()`.
 
-### [.renderSubtype](../index.js#L2108)
+### [.renderSubtype](../index.js#L2118)
 
 Returns a render function for rendering templates of the given `subtype`.
 
@@ -409,7 +409,7 @@ Mostly used internally as a private method, but it's exposed as a
 public method since there are cases when it might be useful, like
 for rendering templates in a gulp/grunt/assemble plugin.
 
-### [.renderType](../index.js#L2140)
+### [.renderType](../index.js#L2150)
 
 * `str` **{String}**: The string to render.    
 * `locals` **{Object}**: Locals and/or options to pass to registered view engines.    

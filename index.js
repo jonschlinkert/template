@@ -570,8 +570,6 @@ Template.prototype.applyLayout = function(template, locals) {
     layout = layout + ext;
   }
 
-  locals.delims = locals.layoutDelims || locals.delims;
-
   // Merge `layout` collections based on settings
   var stack = this.mergeLayouts(locals);
   return layouts(template.content, layout, stack, locals);
@@ -1466,9 +1464,10 @@ Template.prototype.mergeLayouts = function(options) {
   } else {
     layouts = this.mergeType('layout');
   }
+  var mergeTypeContext = this.mergeTypeContext.bind(this, 'layouts');
   forOwn(layouts, function (value, key) {
-    this.mergeTypeContext('layouts', key, value.locals, value.data);
-  }, this);
+    mergeTypeContext(key, value.locals, value.data);
+  });
   return layouts;
 };
 
@@ -1487,30 +1486,41 @@ Template.prototype.mergeLayouts = function(options) {
  * });
  * ```
  *
- * @param  {Object} `locals`
+ * @param  {Object} `locals` Locals should have layout delimiters, if defined
  * @return {Object}
  * @api public
  */
 
-Template.prototype.mergePartials = function(locals) {
+Template.prototype.mergePartials = function(context, locals) {
   debug.template('merging partials [%s]: %j', arguments);
+  locals = merge({}, context, locals);
 
   var mergePartials = this.option('mergePartials');
   if (typeof mergePartials === 'function') {
     return mergePartials.call(this, locals);
   }
 
-  var opts = {};
+  var opts = locals.options || {};
   opts.partials = cloneDeep(locals.partials || {});
 
-  // loop over each `partial` collection
+  // loop over each `partial` collection (e.g. `docs`)
   this.type.partial.forEach(function (plural) {
-    var collection = this.views[plural];
 
-    // Loop over the templates in the collection
+    // Example `this.views.docs`
+    var collection = this.views[plural];
+    var mergeTypeContext = this.mergeTypeContext.bind(this, 'partials');
+
+    // Loop over each partial in the collection
     forOwn(collection, function (value, key/*, template*/) {
-      this.mergeTypeContext('partials', key, value.locals, value.data);
-      value.content = this.applyLayout(value, this.cache._context.partials[key]);
+      mergeTypeContext(key, value.locals, value.data);
+
+      // get the globally stored context that we just created
+      // using `mergeTypeContext` for the current partial
+      var layoutOpts = this.cache._context.partials[key];
+      layoutOpts.layoutDelims = utils.pickFrom('layoutDelims', [layoutOpts, opts]);
+
+      // wrap the partial with a layout, if applicable
+      value.content = this.applyLayout(value, layoutOpts);
 
       // If `mergePartials` is true combine all `partial` subtypes
       if (mergePartials === true) {
@@ -1929,13 +1939,13 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   var ext = this.getExt(template, opts);
   var engine = this.getEngine(ext);
 
-
   // compile the template if it hasn't been already
-  if (!template.fn || typeof template.fn === 'string') {
+  if (typeOf(template.fn) !== 'function') {
     opts.context = opts.context || locals;
-    opts.delims = opts.delims || opts.context.delims;
-    opts.layoutDelims = opts.layoutDelims || opts.context.layoutDelims;
-    template.fn = this.compileTemplate(template, opts, typeof cb === 'function');
+    var objects = [opts, opts.context];
+    opts.delims = utils.pickFrom('delims', objects);
+    opts.layoutDelims = utils.pickFrom('layoutDelims', objects);
+    template.fn = this.compileTemplate(template, opts, typeOf(cb) === 'function');
   }
 
   var cloned = cloneDeep(template);
@@ -1943,7 +1953,7 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
 
   // backwards compatibility for engines that don't support compile
   if (typeof content === 'string') {
-    locals = extend(locals, opts);
+    extend(locals, opts);
   }
 
   /**
@@ -2223,7 +2233,7 @@ Template.prototype.mergeContext = function(template, locals) {
   }
 
   // Partial templates to pass to engines
-  merge(context, this.mergePartials(context));
+  merge(context, this.mergePartials(context, locals));
   // Merge in `locals/data` from templates
   merge(context, this.cache._context.partials);
   merge(context, locals);

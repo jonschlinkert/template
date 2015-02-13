@@ -71,17 +71,6 @@ describe('template utils', function() {
     });
   });
 
-  describe('.pickFrom()', function () {
-    it('should get the first value for `key` from the given objects', function () {
-      utils.pickFrom('a', [{b: 'c'}, {a: 'd'}]).should.eql('d');
-      (utils.pickFrom('a', [{b: 'c'}, {a: null}, {a: 'foo'}]) == null).should.be.true;
-    });
-
-    it('should get the first non-null value when `strict: true`', function () {
-      utils.pickFrom('a', [{b: 'c'}, {a: null}, {a: 'foo'}], true).should.eql('foo');
-    });
-  });
-
   describe('.getExt', function () {
     it('should get the extension', function () {
       utils.getExt('filename.hbs').should.eql('hbs');

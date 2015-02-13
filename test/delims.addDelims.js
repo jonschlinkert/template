@@ -22,7 +22,7 @@ describe('.addDelims():', function () {
     template.addDelims('angle', ['<%', '%>']);
     Object.keys(template.delims).should.have.length(3);
 
-    template.addDelims('square', ['[[', ']]']);
+    template.addDelims('square', ['\\[\\[', '\\]\\]']);
     Object.keys(template.delims).should.have.length(4);
   });
 });

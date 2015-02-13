@@ -17,10 +17,16 @@ describe('.getDelims():', function () {
 
     template.useDelims('*');
     template.getDelims().should.eql({
-      escape: /\<\%-([\s\S]+?)\%\>/g,
-      evaluate: /\<\%([\s\S]+?)\%\>/g,
-      interpolate: /\<\%=([\s\S]+?)\%\>/g,
-      layoutDelims: ['{%', '%}']
+      escape: /<%-([\s\S]+?)%>/,
+      evaluate: /<%([\s\S]+?)%>/,
+      interpolate: /<%=([\s\S]+?)%>/,
+      layoutDelims: {
+        escape: /{%-([\s\S]+?)%}/,
+        evaluate: /{%([\s\S]+?)%}/,
+        interpolate: /{%=([\s\S]+?)%}/,
+        original: ['{%','%}']
+      },
+      original: ['<%', '%>']
     });
   });
 
@@ -30,9 +36,10 @@ describe('.getDelims():', function () {
     template.addDelims('default', ['<<', '>>']);
     template.useDelims('default');
     template.getDelims().should.eql({
-      escape: /\<\<-([\s\S]+?)\>\>/g,
-      evaluate: /\<\<([\s\S]+?)\>\>/g,
-      interpolate: /\<\<=([\s\S]+?)\>\>/g
+      escape: /<<-([\s\S]+?)>>/,
+      evaluate: /<<([\s\S]+?)>>/,
+      interpolate: /<<=([\s\S]+?)>>/,
+      original: ['<<', '>>']
     });
   });
 
@@ -43,31 +50,34 @@ describe('.getDelims():', function () {
     };
 
     template.addDelims('lodash', ['<%', '%>']);
-    template.addDelims('hbs', ['{{', '}}']);
-    template.addDelims('square', ['[[', ']]']);
+    template.addDelims('hbs', ['\\{{', '}}']);
+    template.addDelims('square', ['\\[\\[', '\\]\\]']);
 
     // use `lodash`
     template.useDelims('lodash');
     template.getDelims().should.eql({
-      escape: /\<\%-([\s\S]+?)\%\>/g,
-      evaluate: /\<\%([\s\S]+?)\%\>/g,
-      interpolate: /\<\%=([\s\S]+?)\%\>/g
+      escape: /<%-([\s\S]+?)%>/,
+      evaluate: /<%([\s\S]+?)%>/,
+      interpolate: /<%=([\s\S]+?)%>/,
+      original: ['<%', '%>']
     });
 
     // use `square`
     template.useDelims('square');
     template.getDelims().should.eql({
-      escape: /\[\[-([\s\S]+?)\]\]/g,
-      evaluate: /\[\[([\s\S]+?)\]\]/g,
-      interpolate: /\[\[=([\s\S]+?)\]\]/g
+      escape: /\[\[-([\s\S]+?)\]\]/,
+      evaluate: /\[\[([\s\S]+?)\]\]/,
+      interpolate: /\[\[=([\s\S]+?)\]\]/,
+      original: ['\\[\\[', '\\]\\]']
     });
 
     // use `hbs`
     template.useDelims('hbs');
     template.getDelims().should.eql({
-      escape: /\{\{-([\s\S]+?)\}\}/g,
-      evaluate: /\{\{([\s\S]+?)\}\}/g,
-      interpolate: /\{\{=([\s\S]+?)\}\}/g
+      escape: /\{{-([\s\S]+?)}}/,
+      evaluate: /\{{([\s\S]+?)}}/,
+      interpolate: /\{{=([\s\S]+?)}}/,
+      original: ['\\{{', '}}']
     });
   });
 });

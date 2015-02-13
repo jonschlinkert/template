@@ -18,18 +18,19 @@ describe('delimiter usage:', function () {
 
     var ctx = {name: '____Jon Schlinkert____'};
 
+    template.addDelims('es6', /\$\{([^\\}]*(?:\\.[^\\}]*)*)\}/g);
     template.addDelims('lodash', ['<%', '%>']);
     template.addDelims('hbs', ['{{', '}}']);
-    template.addDelims('square', ['[[', ']]']);
+    template.addDelims('square', ['\\[\\[', '\\]\\]']);
 
     var process = function (str, context) {
       var settings = template.getDelims();
-      return _.template(str, context, settings);
+      return _.template(str, settings)(context);
     };
 
     // using default template
     var a = process('${ name }[[= name ]]{{= name }}<%= name %>{%= name %}', ctx);
-    a.should.equal('____Jon Schlinkert____[[= name ]]{{= name }}____Jon Schlinkert____{%= name %}');
+    a.should.equal('${ name }[[= name ]]{{= name }}____Jon Schlinkert____{%= name %}');
 
     template.useDelims('lodash');
     var a = process('${ name }[[= name ]]{{= name }}<%= name %>{%= name %}', ctx);
@@ -37,7 +38,7 @@ describe('delimiter usage:', function () {
 
     template.useDelims('es6');
     var b = process('${ name }[[= name ]]{{= name }}<%= name %>{%= name %}', ctx);
-    b.should.equal('____Jon Schlinkert____[[= name ]]{{= name }}____Jon Schlinkert____{%= name %}');
+    b.should.equal('____Jon Schlinkert____[[= name ]]{{= name }}<%= name %>{%= name %}');
 
     template.useDelims('square');
     var c = process('${ name }[[= name ]]{{= name }}<%= name %>{%= name %}', ctx);
@@ -56,9 +57,7 @@ describe('delimiter usage:', function () {
     template.addDelims('foo', ['<%', '%>']);
     template.addDelims('bar', ['{{', '}}']);
     template.addDelims('baz', ['<<', '>>']);
-    template.addDelims('quux', ['${', '}'], {
-      interpolate: /\$\{([^\\}]*(?:\\.[^\\}]*)*)\}/g
-    });
+    template.addDelims('quux', /\$\{([^\\}]*(?:\\.[^\\}]*)*)\}/g);
 
     var base = '${ name }<<= name >>{{= name }}<%= name %>{%= name %}';
     var ctx = {name: '____Jon Schlinkert____', engine: 'lodash'};
@@ -73,21 +72,23 @@ describe('delimiter usage:', function () {
 
     template.render(base, ctx, function (err, content) {
       if (err) console.log(err);
-      content.should.equal('____Jon Schlinkert____<<= name >>{{= name }}____Jon Schlinkert____{%= name %}');
+      content.should.equal('${ name }<<= name >>{{= name }}____Jon Schlinkert____{%= name %}');
     });
 
     template.render('test.html', ctx, function (err, content) {
       if (err) console.log(err);
-      content.should.equal('____Jon Schlinkert____<<= name >>{{= name }}____Jon Schlinkert____{%= name %}');
+      content.should.equal('${ name }<<= name >>{{= name }}____Jon Schlinkert____{%= name %}');
     });
-
-    // custom delimters
 
     template.useDelims('foo');
     template.render('test.foo', ctx, function (err, content) {
       if (err) console.log(err);
       content.should.equal('${ name }<<= name >>{{= name }}____Jon Schlinkert____{%= name %}');
     });
+
+    /**
+     * custom delimters
+     */
 
     template.useDelims('bar');
     template.render('test.bar', ctx, function (err, content) {

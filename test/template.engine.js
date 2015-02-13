@@ -22,28 +22,6 @@ describe('template delimiters:', function () {
     template = new Template();
   });
 
-  it('should use custom delimiters defined on a template type:', function (done) {
-    template.engine('*', require('engine-lodash'));
-    template.create('doc', 'docs', {
-      delims: ['<<', '>>'],
-      isRenderable: true,
-    });
-
-    template.doc('foo', {content: '<<= name >>', name: 'Halle'});
-    template.docs('bar', {content: '<<= name >>', name: 'Brooke'});
-
-    template.render('foo', function (err, content) {
-      if (err) console.log(err);
-      content.should.equal('Halle');
-    });
-
-    template.render('bar', function (err, content) {
-      if (err) console.log(err);
-      content.should.equal('Brooke');
-    });
-    done();
-  });
-
   it('should allow the engine to be defined when creating a template type:', function (done) {
     template.engine('handlebars', handlebars);
     template.engine('lodash', lodash);

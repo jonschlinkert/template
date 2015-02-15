@@ -6,9 +6,13 @@
 > Example helper for adding **includes** to other templates
 
 
+
+## Helper anatomy
+
 ```js
-template.helper('include', function include(name, locals) {
-  // `this`
+function include(name, locals) {
+  // the `template` object is on `this.app`, to avoid 
+  // conflicts with values on the `this` object in helpers
   var app = this.app;
 
   // `template.option()`
@@ -17,16 +21,19 @@ template.helper('include', function include(name, locals) {
   // `template.include()`
   var includes = this.views.includes;
 
-  // runtime context returned from the `mergeContext` function
-  var ctx = this.context;
-
   // get the include to render
   var template = includes[name];
   //=> {'foo.md': {path: 'includes/foo.md', content: '...', data: {...}}}
 
-  app.render(template, locals, function(err, content) {
+  // runtime context returned from the `mergeContext` function
+  var ctx = extend(this.context, locals);
+
+  // use the render method
+  app.render(template, ctx, function(err, content) {
     // do stuff with content
   });
-});
+}
+
+template.helper('include', include);
 ```
 

@@ -147,27 +147,38 @@ Template.prototype.defaultTransforms = function() {
  */
 
 Template.prototype.defaultOptions = function() {
-  this.disable('debugEngine');
   this.disable('preferLocals');
-  this.enable('default engines');
-  this.enable('default helpers');
-  this.enable('default routes');
   this.enable('track history');
 
-  this.option('cwd', process.cwd());
+  // routes
+  this.enable('default routes');
+  this.option('router methods', []);
+
+  // engines
+  this.disable('debugEngine');
+  this.enable('default engines');
+  this.option('viewEngine', '*');
+  this.option('delims', ['<%', '%>']);
+
+  // helpers
+  this.enable('default helpers');
+
+  // file extensions
   this.option('ext', '*');
   this.option('destExt', '.html');
   this.option('defaultExts', ['md', 'html', 'hbs', 'lodash']);
-  this.option('delims', ['<%', '%>']);
-  this.option('viewEngine', '*');
-  this.enable('mergePartials');
+  this.option('cwd', process.cwd());
+
+  // layouts
   this.enable('mergeLayouts');
-  this.option('defaultLayout', null);
   this.option('layoutDelims', ['{%', '%}']);
   this.option('layoutTag', 'body');
+  this.option('defaultLayout', null);
   this.option('layoutExt', null);
   this.option('layout', null);
-  this.option('router methods', []);
+
+  // partials
+  this.enable('mergePartials');
 
   // Custom function for naming partial keys
   this.option('partialsKey', function (fp) {
@@ -264,8 +275,8 @@ Template.prototype.defaultRoutes = function() {
 Template.prototype.defaultEngines = function() {
   if (this.enabled('default engines')) {
     this.engine(['*', 'md'], engineLodash, {
-      layoutDelims: ['{%', '%}'],
-      destExt: '.html'
+      layoutDelims: this.option('layoutDelims'),
+      destExt: this.option('destExt')
     });
   }
 };

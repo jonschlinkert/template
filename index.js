@@ -8,22 +8,14 @@
 'use strict';
 
 var path = require('path');
+var util = require('util');
 var glob = require('globby');
 var chalk = require('chalk');
 var forOwn = require('for-own');
 var typeOf = require('kind-of');
-var layouts = require('layouts');
-var routes = require('en-route');
-var Cache = require('config-cache');
-var Delims = require('delimiters');
-var Helpers = require('helper-cache');
-var Engines = require('engine-cache');
-var Loaders = require('loader-cache');
 var pickFrom = require('pick-from');
 var cloneDeep = require('clone-deep');
 var arrayify = require('arrayify-compact');
-var engineLodash = require('engine-lodash');
-var parser = require('parser-front-matter');
 var extend = require('extend-shallow');
 var reduce = require('object.reduce');
 var flatten = require('arr-flatten');
@@ -31,15 +23,26 @@ var merge = require('mixin-deep');
 var slice = require('array-slice');
 
 /**
+ * Extend Template
+ */
+
+var layouts = require('layouts');
+var routes = require('en-route');
+var Delims = require('delimiters');
+var Config = require('config-cache');
+var Helpers = require('helper-cache');
+var Engines = require('engine-cache');
+var Loaders = require('loader-cache');
+var Router = routes.Router;
+var Route = routes.Route;
+
+/**
  * Local modules
  */
 
 var init = require('./lib/middleware/init');
-var defaultLoader = require('./lib/loaders');
 var debug = require('./lib/debug');
 var utils = require('./lib');
-var Router = routes.Router;
-var Route = routes.Route;
 
 /**
  * Create a new instance of `Template`, optionally passing
@@ -57,7 +60,7 @@ var Route = routes.Route;
  * @api public
  */
 
-var Template = module.exports = Cache.extend({
+var Template = module.exports = Config.extend({
   constructor: function(options) {
     Template.__super__.constructor.call(this, options);
     this.initTemplate();
@@ -69,9 +72,9 @@ var Template = module.exports = Cache.extend({
  * Extend `Template`
  */
 
-Template.extend = Cache.extend;
-Template.Router = Router;
-Template.Route = Route;
+Template.extend = Config.extend;
+Template.Router = routes.Router;
+Template.Route = routes.Route;
 
 /**
  * Initialize defaults.
@@ -115,11 +118,11 @@ Template.prototype.loadDefaults = function() {
   this.mixInLoaders();
   this.defaultLoaders();
   this.defaultOptions();
-  this.defaultRoutes();
   this.defaultTransforms();
   this.defaultDelimiters();
   this.defaultTemplates();
   this.defaultEngines();
+  this.defaultRoutes();
 };
 
 /**
@@ -166,7 +169,7 @@ Template.prototype.defaultOptions = function() {
   // file extensions
   this.option('ext', '*');
   this.option('destExt', '.html');
-  this.option('defaultExts', ['md', 'html', 'hbs', 'lodash']);
+  this.option('defaultExts', ['md']);
   this.option('cwd', process.cwd());
 
   // layouts
@@ -237,7 +240,7 @@ Template.prototype.mixInLoaders = function() {
  */
 
 Template.prototype.defaultLoaders = function() {
-  this.loader('default', defaultLoader(this));
+  this.loader('default', require('./lib/loaders')(this));
 };
 
 /**
@@ -249,12 +252,8 @@ Template.prototype.defaultLoaders = function() {
 
 Template.prototype.defaultRoutes = function() {
   if (this.enabled('default routes')) {
-    this.route(/\.*/).onLoad(function route(file, next) {
-      parser.parse(file, function(err) {
-        if (err) return next(err);
-        next();
-      });
-    });
+    var re = utils.extensionRe(Object.keys(this.engines));
+    this.onLoad(re, require('./lib/middleware/matter'));
   }
 };
 
@@ -274,7 +273,7 @@ Template.prototype.defaultRoutes = function() {
 
 Template.prototype.defaultEngines = function() {
   if (this.enabled('default engines')) {
-    this.engine(['*', 'md'], engineLodash, {
+    this.engine(['*', 'md'], require('engine-lodash'), {
       layoutDelims: this.option('layoutDelims'),
       destExt: this.option('destExt')
     });
@@ -354,6 +353,7 @@ Template.prototype.lazyrouter = function() {
       strict: this.enabled('strict routing'),
       methods: utils.methods.concat(this.option('router methods'))
     });
+    // initialization middleware. currently a noop
     this.router.use(init(this));
   }
 };

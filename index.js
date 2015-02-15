@@ -30,10 +30,12 @@ var flatten = require('arr-flatten');
 var merge = require('mixin-deep');
 var slice = require('array-slice');
 
+/**
+ * Local modules
+ */
+
 var init = require('./lib/middleware/init');
 var defaultLoader = require('./lib/loaders');
-var camelize = require('./lib/camelize');
-var hasOwn = require('./lib/has-own');
 var debug = require('./lib/debug');
 var utils = require('./lib');
 var Router = routes.Router;
@@ -177,7 +179,7 @@ Template.prototype.defaultOptions = function() {
     return path.basename(fp);
   });
 
-  // Custom function for matchLoader
+  // Custom function for getting a loader
   this.option('matchLoader', function () {
     return 'default';
   });
@@ -642,7 +644,7 @@ Template.prototype.getDelims = function(ext) {
   ext = ext || this.currentDelims || this.option('ext');
 
   if (ext && ext[0] !== '.') { ext = '.' + ext; }
-  if(hasOwn(this.delims, ext)) {
+  if(utils.hasOwn(this.delims, ext)) {
     return this.delims[ext];
   }
 
@@ -1205,11 +1207,11 @@ Template.prototype.validate = function(template) {
       debug.err('template `value` must be an object.');
     }
 
-    if (!hasOwn(value, 'path')) {
+    if (!utils.hasOwn(value, 'path')) {
       debug.err('template `value` must have a `path` property.');
     }
 
-    if (!hasOwn(value, 'content')) {
+    if (!utils.hasOwn(value, 'content')) {
       debug.err('template `value` must have a `content` property.');
     }
   });
@@ -1248,14 +1250,14 @@ Template.prototype.normalize = function(plural, template, options) {
     // how we want to allow users to control this.
     // for now, this allows the user to change the engine
     // preference in the the `getExt()` method.
-    if (hasOwn(opts, 'engine')) {
+    if (utils.hasOwn(opts, 'engine')) {
       var ext = opts.engine;
       if (ext[0] !== '.') {
         ext = '.' + ext;
       }
       value.options._engine = ext;
     }
-    if (hasOwn(opts, 'delims')) {
+    if (utils.hasOwn(opts, 'delims')) {
       value.options.delims = opts.delims;
     }
 
@@ -1280,7 +1282,7 @@ Template.prototype.normalize = function(plural, template, options) {
  */
 
 Template.prototype.view = function(collection, name) {
-  if (this.views.hasOwnProperty(collection)) {
+  if (utils.hasOwn(this.views, collection)) {
     var obj = this.views[collection];
     return name ? obj[name] : obj;
   }
@@ -1341,7 +1343,7 @@ Template.prototype.setLoaders = function(subtype, options, stack) {
 
   var loader = 'loader';
   if (type !== 'sync') {
-    loader = methodName('loader', type);
+    loader = utils.methodName('loader', type);
   }
   this[loader].apply(this, [].concat([subtype], stack));
 };
@@ -1397,7 +1399,7 @@ Template.prototype.mergeType = function(type, collections) {
   while (len--) {
     var colection = collections[i--];
     for (var key in this.views[colection]) {
-      if (this.views[colection].hasOwnProperty(key)) {
+      if (utils.hasOwn(this.views[colection], key)) {
         o[key] = this.views[colection][key];
       }
     }
@@ -1520,7 +1522,7 @@ Template.prototype.mergePartials = function(context) {
 
 Template.prototype.find = function(type, key, subtypes) {
   var o = this.mergeType(type, subtypes);
-  if (o && typeOf(o) === 'object' && hasOwn(o, key)) {
+  if (o && typeOf(o) === 'object' && utils.hasOwn(o, key)) {
     return o[key];
   }
   if (this.enabled('strict errors')) {
@@ -1588,10 +1590,10 @@ Template.prototype.findPartial = function(key, subtypes) {
 
 Template.prototype.lookup = function(plural, name, ext) {
   var views = this.views[plural];
-  if (hasOwn(views, name)) {
+  if (utils.hasOwn(views, name)) {
     return views[name];
   }
-  if (hasOwn(views, name + (ext || '.md'))) {
+  if (utils.hasOwn(views, name + (ext || '.md'))) {
     return views[name + (ext || '.md')];
   }
   if (this.enabled('strict errors')) {
@@ -1642,11 +1644,11 @@ Template.prototype.create = function(subtype, plural, opts/*, stack*/) {
   // create default helpers
   if (this.enabled('default helpers') && opts && opts.isPartial) {
     // Create a sync helper for this type
-    if (!hasOwn(this._.helpers, subtype)) {
+    if (!utils.hasOwn(this._.helpers, subtype)) {
       this.defaultHelper(subtype, plural);
     }
     // Create an async helper for this type
-    if (!hasOwn(this._.asyncHelpers, subtype)) {
+    if (!utils.hasOwn(this._.asyncHelpers, subtype)) {
       this.defaultAsyncHelper(subtype, plural);
     }
   }
@@ -1671,12 +1673,12 @@ Template.prototype.decorate = function(subtype, plural, options) {
   });
 
   // Add a `get` method to `Template` for `subtype`
-  mixin(methodName('get', subtype), function (key) {
+  mixin(utils.methodName('get', subtype), function (key) {
     return this.views[plural][key];
   });
 
   // Add a `render` method to `Template` for `subtype`
-  mixin(methodName('render', subtype), function () {
+  mixin(utils.methodName('render', subtype), function () {
     return this.renderSubtype(subtype);
   });
 };
@@ -1694,7 +1696,7 @@ Template.prototype.decorate = function(subtype, plural, options) {
 
 Template.prototype.compileBase = function(engine, content, options) {
   debug.render('compileBase: %j', arguments);
-  if (!hasOwn(engine, 'compile')) {
+  if (!utils.hasOwn(engine, 'compile')) {
     throw new Error('`.compile()` method not found on: "' + engine.name + '".');
   }
   try {
@@ -1942,7 +1944,7 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
  */
 
 Template.prototype.renderSync = function(engine, content, options) {
-  if (!hasOwn(engine, 'renderSync')) {
+  if (!utils.hasOwn(engine, 'renderSync')) {
     throw new Error('`.renderSync()` method not found on: "' + engine.name + '".');
   }
   try {
@@ -1966,7 +1968,7 @@ Template.prototype.renderSync = function(engine, content, options) {
  */
 
 Template.prototype.renderAsync = function(engine, content, options, cb) {
-  if (!hasOwn(engine, 'render')) {
+  if (!utils.hasOwn(engine, 'render')) {
     throw new Error('`.render()` method not found on: "' + engine.name + '".');
   }
 
@@ -2042,7 +2044,7 @@ Template.prototype.renderString = function(str, locals, cb) {
   }
 
   locals = extend({options: {}}, locals);
-  var options = locals.options;
+  var options = locals.options || {};
 
   var template = { content: str, locals: locals, options: options };
   return this.renderTemplate(template, locals, cb);
@@ -2223,23 +2225,6 @@ function handleError(template, method) {
       console.error(chalk.red(err));
     }
   };
-}
-
-/**
- * Create a camel-cased method name for the given
- * `method` and `type`.
- *
- *     'get' + 'page' => `getPage`
- *
- * @param  {String} `type`
- * @param  {String} `name`
- * @return {String}
- */
-
-function methodName(method, type) {
-  return camelize(method)
-    + type[0].toUpperCase()
-    + type.slice(1);
 }
 
 /**

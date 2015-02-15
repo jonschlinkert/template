@@ -8,8 +8,6 @@
 'use strict';
 
 var should = require('should');
-
-var camelize = require('../lib/camelize');
 var utils = require('../lib');
 var Template = require('..');
 var template;
@@ -77,21 +75,16 @@ describe('template utils', function() {
     });
   });
 
-  describe('.camelize', function () {
-    describe('when a dot separated name is passed', function () {
-      it('should return the first segment', function () {
-        camelize('foo.bar').should.eql('foo');
-      });
-    });
+  describe('.camelcase', function () {
     describe('when a single letter is passed', function () {
       it('should return the single letter', function () {
-        camelize('a').should.eql('a');
+        utils.camelcase('a').should.eql('a');
       });
     });
     describe('when a name with a dash or underscore is passed', function () {
-      it('should return a single camelized name', function () {
-        camelize('foo-bar').should.eql('fooBar');
-        camelize('foo_bar').should.eql('fooBar');
+      it('should return a single camelcased name', function () {
+        utils.camelcase('foo-bar').should.eql('fooBar');
+        utils.camelcase('foo_bar').should.eql('fooBar');
       });
     });
   });

@@ -1979,7 +1979,7 @@ Template.prototype.renderAsync = function(engine, content, options, cb) {
         return;
       }
 
-      self._.asyncHelpers.resolve(res, function (err, res) {
+      self._.asyncHelpers.resolveHelper(res, function (err, res) {
         if (err) {
           debug.err('renderAsync [helpers]: %j', err);
           return cb.call(self, err);

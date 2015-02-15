@@ -85,7 +85,6 @@ Template.prototype.initTemplate = function() {
   this.engines = this.engines || {};
   this.delims = this.delims || {};
   this.transforms = {};
-  this.history = [];
 
   // Engine properties
   this._ = {};
@@ -151,7 +150,6 @@ Template.prototype.defaultTransforms = function() {
 
 Template.prototype.defaultOptions = function() {
   this.disable('preferLocals');
-  this.enable('track history');
 
   // routes
   this.enable('default routes');
@@ -206,16 +204,6 @@ Template.prototype.defaultOptions = function() {
 defineGetter(Template.prototype, 'cwd', function () {
   return this.option('cwd') || process.cwd();
 });
-
-/**
- * Register default loader methods
- */
-
-Template.prototype.track = function(msg, key, value) {
-  if (this.enabled('track history')) {
-    this.history.push({msg: msg, key: key, value: value});
-  }
-};
 
 /**
  * Mixin methods from [loader-cache] for loading templates.
@@ -570,10 +558,7 @@ Template.prototype.applyLayout = function(template, locals) {
   // it to the layout name before passing the name to [layouts]
   var ext = this.option('layoutExt');
   if (ext) {
-    if (ext[0] !== '.') {
-      ext = '.' + ext;
-    }
-    layout = layout + ext;
+    layout = layout + utils.formatExt(ext);
   }
 
   // Merge `layout` collections based on settings
@@ -624,8 +609,7 @@ Template.prototype.makeDelims = function(arr, options) {
 
 Template.prototype.addDelims = function(ext, delims, layoutDelims, settings) {
   debug.delims('adding delims [ext]: %s', ext, delims);
-
-  if (ext[0] !== '.') { ext = '.' + ext; }
+  ext = utils.formatExt(ext);
 
   if (typeOf(layoutDelims) === 'object') {
     settings = layoutDelims;
@@ -653,8 +637,8 @@ Template.prototype.getDelims = function(ext) {
   debug.delims('getting delims: %s', ext);
 
   ext = ext || this.currentDelims || this.option('ext');
+  ext = utils.formatExt(ext);
 
-  if (ext && ext[0] !== '.') { ext = '.' + ext; }
   if(utils.hasOwn(this.delims, ext)) {
     return this.delims[ext];
   }
@@ -677,8 +661,7 @@ Template.prototype.getDelims = function(ext) {
 
 Template.prototype.useDelims = function(ext) {
   debug.delims('using delims: %s', ext);
-
-  if (ext && ext[0] !== '.') { ext = '.' + ext; }
+  ext = utils.formatExt(ext);
 
   Object.defineProperty(this, 'currentDelims', {
     configurable: true,
@@ -689,7 +672,6 @@ Template.prototype.useDelims = function(ext) {
       ext = val;
     }
   });
-
   return ext;
 };
 
@@ -748,10 +730,9 @@ Template.prototype.registerEngine = function(ext, fn, options) {
   debug.engine('registering [engine]: %s', ext);
 
   var opts = extend({}, options);
+  ext = utils.formatExt(ext);
 
-  if (ext[0] !== '.') { ext = '.' + ext; }
   this._.engines.setEngine(ext, fn, opts);
-
   if (opts.delims) {
     this.addDelims(ext, opts.delims);
     this.engines[ext].delims = this.getDelims(ext);
@@ -1119,20 +1100,13 @@ Template.prototype._load = function(subtype, plural, options) {
     var stack = [];
     var len = args.length;
 
-    /**
-     * Default method used to handle sync loading
-     * when done
-     */
-
+    // Default method used to handle sync loading when done
     var cb = function (err, template) {
       if (err) throw new Error(err);
       return template;
     };
 
-    /**
-     * Normalize args to pass to loader stack
-     */
-
+    // Normalize args to pass to loader stack
     args = args.filter(function (arg, i) {
       if (i !== 0 && typeOf(arg) === 'array') {
         stack = arg;
@@ -1157,7 +1131,6 @@ Template.prototype._load = function(subtype, plural, options) {
      * Default done function for normalization, validation,
      * and extending the views when finished loading
      */
-
     function done(err, template) {
       if (err) return cb(err);
       template = self.normalize(plural, template, options);
@@ -1170,10 +1143,7 @@ Template.prototype._load = function(subtype, plural, options) {
       return cb(null, template);
     }
 
-    /**
-     * Choose loaders based on loader type
-     */
-
+    // Choose loaders based on loader type
     switch (type) {
       case 'async':
         self.loadAsync(args, stack, loadOpts, done);
@@ -1248,8 +1218,9 @@ Template.prototype.normalize = function(plural, template, options) {
     return this.options.normalize.apply(this, arguments);
   }
 
-  var self = this;
   var opts = extend({}, options);
+  var self = this;
+
   forOwn(template, function (value, key) {
     value.locals = value.locals || {};
     value.options = extend({ subtype: plural }, options, value.options);

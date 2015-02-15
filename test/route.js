@@ -115,36 +115,31 @@ describe('template.route()', function () {
   });
 
   // Route tests from kerouac
+  describe('with parameterized path', function () {
+    var route = new Route('/blog/:year/:month/:day/:slug').all([
+      function () {}
+    ]);
 
-  // describe('with parameterized path', function () {
-  //   var route = new Route('/blog/:year/:month/:day/:slug').all([
-  //     function () {}
-  //   ]);
+    it('should have path property', function () {
+      route.path.should.equal('/blog/:year/:month/:day/:slug');
+    });
 
-  //   it('should have path property', function () {
-  //     route.path.should.equal('/blog/:year/:month/:day/:slug');
-  //   });
+    it('should have stack property', function () {
+      route.stack.should.be.instanceof(Array);
+      route.stack.should.have.length(1);
+    });
 
-  //   it('should have stack property', function () {
-  //     route.stack.should.be.instanceof(Array);
-  //     route.stack.should.have.length(1);
-  //   });
+    // it('should match correctly', function () {
+    //   route.match('/blog/2015/04/18/hello-world').should.be.true;
+    //   route.params.should.be.instanceof(Object);
+    //   Object.keys(route.params).should.have.length(4);
+    //   route.params.year.should.equal('2015');
+    //   route.params.month.should.equal('04');
+    //   route.params.day.should.equal('18');
+    //   route.params.slug.should.equal('hello-world');
 
-  //   it('should not have whole path', function () {
-  //     route.isWholePath().should.be.false;
-  //   });
-
-  //   it('should match correctly', function () {
-  //     route.match('/blog/2015/04/18/hello-world').should.be.true;
-  //     route.params.should.be.instanceof(Object);
-  //     Object.keys(route.params).should.have.length(4);
-  //     route.params.year.should.equal('2015');
-  //     route.params.month.should.equal('04');
-  //     route.params.day.should.equal('18');
-  //     route.params.slug.should.equal('hello-world');
-
-  //     route.match('/blog/2015/04/18').should.be.false;
-  //     route.match('/not-blog/2015/04/18/hello-world').should.be.false;
-  //   });
-  // });
+    //   route.match('/blog/2015/04/18').should.be.false;
+    //   route.match('/not-blog/2015/04/18/hello-world').should.be.false;
+    // });
+  });
 });

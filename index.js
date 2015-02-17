@@ -228,7 +228,8 @@ Template.prototype.mixInLoaders = function() {
  */
 
 Template.prototype.defaultLoaders = function() {
-  this.loader('default', require('./lib/loaders')(this));
+  this.loader('default', require('./lib/loaders').templates(this));
+  this.loader('helpers', require('./lib/loaders').helpers(this));
 };
 
 /**
@@ -921,23 +922,11 @@ Template.prototype.helper = function(name, fn) {
 
 Template.prototype.helpers = function(helpers, options) {
   debug.helper('adding helpers: %s', helpers);
-  if (typeOf(helpers) === 'object') {
-    extend(this._.helpers, helpers);
-  } else if (Array.isArray(helpers) || typeof helpers === 'string') {
-    // if it's an object, it's not a glob
-    if (typeOf(helpers[0]) === 'object') {
-      reduce(helpers, function (acc, o) {
-        return extend(acc, o);
-      }, this._.helpers);
-    } else {
-      var files = glob.sync(helpers, options);
-      reduce(files, function (acc, fp) {
-        var name = path.basename(fp, path.extname(fp));
-        acc[name] = require(path.resolve(fp));
-        return acc;
-      }, this._.helpers);
-    }
-  }
+  options = options || {};
+  options.matchLoader = function () {
+    return 'helpers';
+  };
+  this._.helpers.addHelpers(this.load(helpers, options));
   return this;
 };
 
@@ -982,10 +971,14 @@ Template.prototype.asyncHelper = function(name, fn) {
  * @api public
  */
 
-Template.prototype.asyncHelpers = function(helpers) {
+Template.prototype.asyncHelpers = function(helpers, options) {
   debug.helper('adding async helpers: %s', helpers);
-  var fn = this._.asyncHelpers.addAsyncHelpers;
-  return fn.apply(fn, arguments);
+  options = options || {};
+  options.matchLoader = function () {
+    return 'helpers';
+  };
+  this._.asyncHelpers.addAsyncHelpers(this.load(helpers, options));
+  return this;
 };
 
 /**

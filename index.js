@@ -1873,7 +1873,6 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
     template.fn = this.compileTemplate(template, opts, isAsync);
   }
 
-  var cloned = cloneDeep(template);
   var content = template.fn;
 
   // backwards compatibility for engines that don't support compile
@@ -1887,11 +1886,11 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
 
   // when a callback is not passed, render and handle middleware
   if (typeof cb !== 'function') {
-    cloned.content = this.renderBase(engine, content, locals, cb);
+    template.content = this.renderBase(engine, content, locals, cb);
 
     // handle post-render middleware routes
-    this.handle('postRender', cloned, handleError(template, 'postRender'));
-    return cloned.content;
+    this.handle('postRender', template, handleError(template, 'postRender'));
+    return template.content;
   }
 
   /**
@@ -1901,9 +1900,9 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   // when a callback is passed, render and handle middleware in callback
   return this.renderBase(engine, content, locals, function (err, content) {
     if (err) return cb.call(self, err);
-    cloned.content = content;
-    self.handle('postRender', cloned, handleError(template, 'postRender'));
-    return cb.call(self, null, cloned.content);
+    template.content = content;
+    self.handle('postRender', template, handleError(template, 'postRender'));
+    return cb.call(self, null, template.content);
   });
 };
 

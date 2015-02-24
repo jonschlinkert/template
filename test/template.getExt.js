@@ -28,7 +28,6 @@ describe('template.getExt()', function () {
     var page = {
       options: {}
     };
-    var locals = {};
-    (template.getExt(page, locals) == null).should.be.true;
+    (template.getExt(template.normalize(page)) == null).should.be.true;
   });
 });

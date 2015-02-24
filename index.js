@@ -137,7 +137,10 @@ Template.prototype.loadDefaults = function() {
 
 Template.prototype.defaultConfig = function() {
   this._.env = new Config(this.env);
+  delete this.env.data;
   this._.settings = new Config(this.settings);
+  delete this.settings.data;
+
   this._.delims = new Delims(this.options);
   this._.loaders = new Loaders(this.loaders);
   this._.engines = new Engines(this.engines);
@@ -562,7 +565,7 @@ Template.prototype.applyLayout = function(template, locals) {
   }
 
   // Get the name of the (starting) layout to be used
-  var layout = utils.getLayout(template, locals);
+  var layout = utils.getLayout(template);
 
   // If `layoutExt` is defined on the options, append
   // it to the layout name before passing the name to [layouts]
@@ -799,34 +802,27 @@ Template.prototype.getEngine = function(ext) {
  * **Example:**
  *
  * ```js
- * template.option('getExt', function(template, locals) {
+ * template.option('getExt', function(template) {
  *   return path.extname(template.path);
  * });
  * ```
  *
  * @param {Object} `template` Template object
- * @param {Object} `locals` Locals object
  * @return {String} `ext` For determining the engine to use.
  * @api public
  */
 
-Template.prototype.getExt = function(template, locals) {
+Template.prototype.getExt = function(template) {
   var fn = this.option('getExt');
 
   if (typeof fn === 'function') {
-    return fn.call(this, template, locals);
+    return fn.call(this, template);
   }
 
-  template.locals = template.locals || {};
-
-  // `_engine` is defined on the `.create()` method
-  var ext = template.options._engine
-    || template.locals.engine
-    || template.options.engine
-    || locals.engine
-    || locals.ext
-    || template.engine
-    || template.ext
+  var ctx = template.context.calculate();
+  var ext = ctx._engine
+    || ctx.engine
+    || ctx.ext
     || path.extname(template.path)
     || this.option('viewEngine');
 
@@ -1135,7 +1131,7 @@ Template.prototype._load = function(subtype, plural, options) {
      */
     function done(err, template) {
       if (err) return cb(err);
-      template = self.normalize(plural, template, options);
+      template = self.normalizeEach(plural, template, options);
       // validate the template object before moving on
       self.validate(template);
       // Run middleware
@@ -1165,6 +1161,25 @@ Template.prototype._load = function(subtype, plural, options) {
         return done(null, self.load(args, stack, loadOpts));
     }
   };
+};
+
+/**
+ * Create a new Context Manager for the given template.
+ *
+ * @param  {Object} `template` Template object to get options and locals from.
+ * @return {Object} New instance of a ContextManager
+ * @api private
+ */
+
+Template.prototype._context = function(template) {
+  var context = new Context();
+  context.setContext('env', 10, this.env);
+  context.setContext('settings', 20, this.settings);
+  context.setContext('template', 25, template);
+  context.setContext('template.options', 30, template.options);
+  context.setContext('template.data', 35, template.data);
+  context.setContext('template.locals', 40, template.locals);
+  return context;
 };
 
 /**
@@ -1206,52 +1221,62 @@ Template.prototype.validate = function(template) {
  *
  * @param  {Object} `template` The template object to normalize.
  * @param  {Object} `options` Options to pass to the renderer.
- *     @option {Function} `renameKey` Override the default function for renaming
- *             the key of normalized template objects.
  * @return {Object} Normalized template.
  * @api private
  */
 
-Template.prototype.normalize = function(plural, template, options) {
-  debug.template('normalizing: [%s]: %j', plural, template);
-  this.lazyrouter();
-
+Template.prototype.normalize = function(template, options) {
   if (this.option('normalize')) {
-    return this.options.normalize.apply(this, arguments);
+    return this.options.normalize(template, options);
   }
 
+  var self = this;
   var opts = extend({}, options);
+  template.data = template.data || {};
+  template.locals = template.locals || {};
+  template.options = extend({}, opts, template.options);
+  template.context = this._context(template);
+
+  if (utils.hasOwn(opts, 'engine')) {
+    var ext = opts.engine;
+    if (ext[0] !== '.') {
+      ext = '.' + ext;
+    }
+    template.options._engine = ext;
+  }
+  if (utils.hasOwn(opts, 'delims')) {
+    template.options.delims = opts.delims;
+  }
+
+  template.render = function (locals, cb) {
+    return self.renderTemplate(this, locals, cb);
+  };
+  return template;
+};
+
+/**
+ * Normalize an object of template objects to ensure they have the necessary
+ * properties to be rendered by the current renderer.
+ *
+ * @param  {String} `plural` Template type
+ * @param  {Object} `templates` The template objects to normalize.
+ * @param  {Object} `options` Options to pass to the renderer.
+ * @return {Object} Normalized templates.
+ * @api private
+ */
+
+Template.prototype.normalizeEach = function(plural, templates, options) {
+  debug.template('normalizing: [%s]: %j', plural, templates);
+  this.lazyrouter();
+
+  var opts = extend({ subtype: plural }, options);
   var self = this;
 
-  forOwn(template, function (value, key) {
-    value.locals = value.locals || {};
-    value.options = extend({ subtype: plural }, options, value.options);
-    value.layout = value.layout || value.locals.layout;
-
-    // Add a render method to the template
-    // TODO: allow additional opts to be passed
-    // this engine logic is temporary until we decide
-    // how we want to allow users to control this.
-    // for now, this allows the user to change the engine
-    // preference in the the `getExt()` method.
-    if (utils.hasOwn(opts, 'engine')) {
-      var ext = opts.engine;
-      if (ext[0] !== '.') {
-        ext = '.' + ext;
-      }
-      value.options._engine = ext;
-    }
-    if (utils.hasOwn(opts, 'delims')) {
-      value.options.delims = opts.delims;
-    }
-
-    value.render = function (locals, cb) {
-      return self.renderTemplate(this, locals, cb);
-    };
-
-    template[key] = value;
+  forOwn(templates, function (template, key) {
+    templates[key] = self.normalize(template, opts);
   }, this);
-  return template;
+
+  return templates;
 };
 
 /**
@@ -1421,6 +1446,8 @@ Template.prototype.mergeLayouts = function(options) {
   }
   var mergeTypeContext = this.mergeTypeContext.bind(this, 'layouts');
   forOwn(layouts, function (value, key) {
+    // ensure the `layout` property is at the root of the object to work with `layout-stack`
+    value.layout = value.layout || utils.getLayout(value);
     mergeTypeContext(key, value.locals, value.data);
   });
   return layouts;
@@ -1709,16 +1736,19 @@ Template.prototype.compileTemplate = function(template, options, async) {
       + typeOf(template) + ' / '+ template + '".');
   }
 
-  // reference to options in case helpers are needed later
-  var opts = options || {};
-  var context = opts.context || {};
-  delete opts.context;
+  template = this.normalize(template);
 
-  template.options = template.options || {};
-  template.options.layout = template.layout;
+  // reference to options in case helpers are needed later
+  var opts = extend({}, options);
+  var locals = extend({}, opts.locals);
+  delete opts.locals;
+
+  template.context.setContext('compile.options', 50, opts);
+  template.context.setContext('compile.locals', 60, locals);
+  var context = template.context.calculate();
 
   // find ext and engine to use
-  var ext = template.ext || this.getExt(template, context);
+  var ext = this.getExt(template);
   var engine = this.getEngine(ext);
 
   // Handle custom template delimiters and escaping
@@ -1799,6 +1829,7 @@ Template.prototype.compileString = function(str, options, async) {
 
   options = extend({locals: {}}, options);
   var locals = options.locals;
+  delete options.locals;
 
   var template = { content: str, locals: locals, options: options };
   return this.compileTemplate(template, options, async);
@@ -1852,9 +1883,10 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
     throw new Error('Template#renderTemplate() expects an object, got: "'
       + typeOf(template) + ' / '+ template + '".');
   }
+  template = this.normalize(template);
 
   // find any options passed in on locals
-  locals = locals || {};
+  locals = extend({}, locals);
   var opts = extend({}, locals.options);
 
   // handle pre-render middleware routes
@@ -1867,13 +1899,13 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   extend(opts, locals.options);
 
   // find the engine to use to render
-  var ext = this.getExt(template, opts);
+  var ext = this.getExt(template);
   var engine = this.getEngine(ext);
 
   // compile the template if it hasn't been already
   if (typeOf(template.fn) !== 'function') {
-    opts.context = opts.context || locals;
-    var objects = [opts, opts.context, engine.options, this.options];
+    opts.locals = opts.locals || locals;
+    var objects = [opts, opts.locals, engine.options, this.options];
 
     opts.delims = pickFrom('delims', objects);
     opts.layoutDelims = pickFrom('layoutDelims', objects);

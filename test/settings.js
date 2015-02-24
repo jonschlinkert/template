@@ -16,7 +16,7 @@ describe('settings', function () {
     it('when new Template() is defined:', function () {
       var template = new Template();
       template.should.be.instanceOf(Template);
-      template.settings.should.be.eql({ data: {} });
+      template.settings.should.be.empty;
       template._.settings.should.be.instanceOf(Config);
     });
   });

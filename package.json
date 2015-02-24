@@ -39,6 +39,7 @@
     "chalk": "^0.5.1",
     "clone-deep": "^0.1.1",
     "config-cache": "^1.0.1",
+    "context-manager": "^0.2.0",
     "debug": "^2.1.1",
     "delimiters": "^1.0.1",
     "en-route": "^0.4.0",

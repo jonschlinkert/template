@@ -33,6 +33,7 @@ var Config = require('config-cache');
 var Helpers = require('helper-cache');
 var Engines = require('engine-cache');
 var Loaders = require('loader-cache');
+var Context = require('context-manager');
 var Router = routes.Router;
 var Route = routes.Route;
 
@@ -86,6 +87,12 @@ Template.prototype.initTemplate = function() {
   this.delims = this.delims || {};
   this.transforms = {};
 
+  // environment settings (private)
+  this.env = {};
+
+  // default settings (private)
+  this.settings = {};
+
   // Engine properties
   this._ = {};
   this._.mixins = {};
@@ -129,6 +136,8 @@ Template.prototype.loadDefaults = function() {
  */
 
 Template.prototype.defaultConfig = function() {
+  this._.env = new Config(this.env);
+  this._.settings = new Config(this.settings);
   this._.delims = new Delims(this.options);
   this._.loaders = new Loaders(this.loaders);
   this._.engines = new Engines(this.engines);

@@ -155,6 +155,7 @@ Template.prototype.defaultConfig = function() {
   this._.context = new Context();
   this._.context.setContext('env:options', 10, this.env.options);
   this._.context.setContext('defaults:options', 20, this.defaults.options);
+  this._.context.setContext('data', 25, this.cache.data);
   this._.context.setContext('options', 30, this.options);
 };
 
@@ -216,6 +217,24 @@ Template.prototype.defaultOptions = function() {
   // Custom function for getting a loader
   this._.defaults.option('matchLoader', function () {
     return 'default';
+  });
+
+  // Custom function for merging context
+  this._.defaults.option('mergeContext', function (template, locals) {
+    var order = ['env:options', 'default:options', 'options', 'data'];
+    if (this.context('preferLocals')) {
+      order = order.concat(['template:options', 'template:data', 'template:locals']);
+    } else {
+      order = order.concat(['template:locals', 'template:data', 'template:options']);
+    }
+
+    // Calculate context
+    var context = template.context.calculate(order);
+    // Partial templates to pass to engines
+    merge(context, this.mergePartials(locals));
+    // Merge in `locals/data` from templates
+    merge(context, this.cache._context.partials);
+    return context;
   });
 };
 
@@ -1193,6 +1212,7 @@ Template.prototype._context = function(template) {
   var context = new Context();
   context.setContext('env:options', 10, this.env.options);
   context.setContext('defaults:options', 20, this.defaults.options);
+  context.setContext('data', 22, this.cache.data);
   context.setContext('template', 25, template);
   context.setContext('template:options', 30, template.options);
   context.setContext('template:data', 35, template.data);
@@ -2208,26 +2228,7 @@ Template.prototype.mergeContext = function(template, locals) {
   if (typeof this.context('mergeContext') === 'function') {
     return this.context('mergeContext').apply(this, arguments);
   }
-
-  var context = {};
-  merge(context, this.cache.data);
-
-  // control the order in which `locals` and `data` are merged
-  if (this.enabled('preferLocals')) {
-    merge(context, template.options);
-    merge(context, template.data);
-    merge(context, template.locals);
-  } else {
-    merge(context, template.locals);
-    merge(context, template.data);
-    merge(context, template.options);
-  }
-
-  // Partial templates to pass to engines
-  merge(context, this.mergePartials(locals));
-  // Merge in `locals/data` from templates
-  merge(context, this.cache._context.partials);
-  return context;
+  return {};
 };
 
 /**

@@ -1767,8 +1767,8 @@ Template.prototype.compileTemplate = function(template, options, async) {
   var locals = extend({}, opts.locals);
   delete opts.locals;
 
-  template.context.setContext('compile.options', 50, opts);
-  template.context.setContext('compile.locals', 60, locals);
+  template.context.setContext('compile:options', 50, opts);
+  template.context.setContext('compile:locals', 60, locals);
   var context = template.context.calculate();
 
   // find ext and engine to use

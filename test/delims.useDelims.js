@@ -72,12 +72,12 @@ describe('delimiter usage:', function () {
 
     template.render(base, ctx, function (err, content) {
       if (err) console.log(err);
-      content.should.equal('${ name }<<= name >>{{= name }}____Jon Schlinkert____{%= name %}');
+      content.should.equal('____Jon Schlinkert____<<= name >>{{= name }}____Jon Schlinkert____{%= name %}');
     });
 
     template.render('test.html', ctx, function (err, content) {
       if (err) console.log(err);
-      content.should.equal('${ name }<<= name >>{{= name }}____Jon Schlinkert____{%= name %}');
+      content.should.equal('____Jon Schlinkert____<<= name >>{{= name }}____Jon Schlinkert____{%= name %}');
     });
 
     template.useDelims('foo');

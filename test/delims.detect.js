@@ -127,6 +127,7 @@ describe('custom delimiters:', function () {
   });
 
   it('should detect custom delimiters defined on the global options:', function (done) {
+    template = new Template();
     template.engine('*', require('engine-lodash'));
     template.option('layoutDelims', ['{{', '}}'])
 
@@ -141,6 +142,7 @@ describe('custom delimiters:', function () {
   });
 
   it('should detect custom delimiters defined on a template\'s locals:', function (done) {
+    template = new Template();
     template.engine('*', require('engine-lodash'));
 
     template.layout('default', 'abc{{ body }}xyz');
@@ -154,6 +156,7 @@ describe('custom delimiters:', function () {
   });
 
   it('should detect custom delimiters defined on a template\'s options:', function (done) {
+    template = new Template();
     template.engine('*', require('engine-lodash'));
 
     template.layout('default', 'abc{{ body }}xyz');
@@ -167,6 +170,7 @@ describe('custom delimiters:', function () {
   });
 
   it('should detect custom delimiters defined on `.render()` locals:', function (done) {
+    template = new Template();
     template.engine('*', require('engine-lodash'));
 
     template.layout('default', 'abc{{ body }}xyz');

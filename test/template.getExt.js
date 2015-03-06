@@ -23,11 +23,11 @@ describe('template.getExt()', function () {
     template.getExt().should.eql('.custom');
   });
 
-  it('should get `null` when no `ext` properties are found.', function () {
+  it('should get `.*` when no `ext` properties are found.', function () {
     template.option('viewEngine', undefined);
     var page = {
       options: {}
     };
-    (template.getExt(template.normalize(page)) == null).should.be.true;
+    template.getExt(template.normalize(page)).should.eql('.*');
   });
 });

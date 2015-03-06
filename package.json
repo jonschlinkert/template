@@ -47,6 +47,7 @@
     "engine-lodash": "^0.5.0",
     "extend-shallow": "^0.2.0",
     "for-own": "^0.1.2",
+    "get-value": "^1.0.4",
     "globby": "^1.1.0",
     "helper-cache": "^0.5.0",
     "kind-of": "^1.1.0",

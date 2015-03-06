@@ -16,7 +16,6 @@ describe('env', function () {
     it('when new Template() is defined:', function () {
       var template = new Template();
       template.should.be.instanceOf(Template);
-      template.env.should.be.empty;
       template._.env.should.be.instanceOf(Config);
     });
   });

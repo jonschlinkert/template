@@ -11,6 +11,7 @@ var path = require('path');
 var util = require('util');
 var glob = require('globby');
 var chalk = require('chalk');
+var get = require('get-value');
 var forOwn = require('for-own');
 var typeOf = require('kind-of');
 var pickFrom = require('pick-from');
@@ -88,10 +89,14 @@ Template.prototype.initTemplate = function() {
   this.transforms = {};
 
   // environment settings (private)
-  this.env = {};
+  this.env = {
+    options: {}
+  };
 
   // default settings (private)
-  this.defaults = {};
+  this.defaults = {
+    options: {}
+  };
 
   // Engine properties
   this._ = {};
@@ -146,6 +151,11 @@ Template.prototype.defaultConfig = function() {
   this._.engines = new Engines(this.engines);
   this._.helpers = new Helpers({bind: false});
   this._.asyncHelpers = new Helpers({bind: false});
+
+  this._.context = new Context();
+  this._.context.setContext('env:options', 10, this.env.options);
+  this._.context.setContext('defaults:options', 20, this.defaults.options);
+  this._.context.setContext('options', 30, this.options);
 };
 
 /**
@@ -161,50 +171,50 @@ Template.prototype.defaultTransforms = function() {
  */
 
 Template.prototype.defaultOptions = function() {
-  this.disable('preferLocals');
+  this._.defaults.disable('preferLocals');
 
   // routes
-  this.enable('default routes');
-  this.option('router methods', []);
+  this._.defaults.enable('default routes');
+  this._.defaults.option('router methods', []);
 
   // engines
-  this.disable('debugEngine');
-  this.enable('default engines');
-  this.option('viewEngine', '*');
-  this.option('delims', ['<%', '%>']);
+  this._.defaults.disable('debugEngine');
+  this._.defaults.enable('default engines');
+  this._.defaults.option('viewEngine', '*');
+  this._.defaults.option('delims', ['<%', '%>']);
 
   // helpers
-  this.enable('default helpers');
+  this._.defaults.enable('default helpers');
 
   // file extensions
-  this.option('ext', '*');
-  this.option('destExt', '.html');
-  this.option('defaultExts', ['md']);
-  this.option('cwd', process.cwd());
+  this._.defaults.option('ext', '*');
+  this._.defaults.option('destExt', '.html');
+  this._.defaults.option('defaultExts', ['md']);
+  this._.defaults.option('cwd', process.cwd());
 
   // layouts
-  this.enable('mergeLayouts');
-  this.option('layoutDelims', ['{%', '%}']);
-  this.option('layoutTag', 'body');
-  this.option('defaultLayout', null);
-  this.option('layoutExt', null);
-  this.option('layout', null);
+  this._.defaults.enable('mergeLayouts');
+  this._.defaults.option('layoutDelims', ['{%', '%}']);
+  this._.defaults.option('layoutTag', 'body');
+  this._.defaults.option('defaultLayout', null);
+  this._.defaults.option('layoutExt', null);
+  this._.defaults.option('layout', null);
 
   // partials
-  this.enable('mergePartials');
+  this._.defaults.enable('mergePartials');
 
   // Custom function for naming partial keys
-  this.option('partialsKey', function (fp) {
+  this._.defaults.option('partialsKey', function (fp) {
     return path.basename(fp, path.extname(fp));
   });
 
   // Custom function for all other template keys
-  this.option('renameKey', function (fp) {
+  this._.defaults.option('renameKey', function (fp) {
     return path.basename(fp);
   });
 
   // Custom function for getting a loader
-  this.option('matchLoader', function () {
+  this._.defaults.option('matchLoader', function () {
     return 'default';
   });
 };
@@ -214,7 +224,7 @@ Template.prototype.defaultOptions = function() {
  */
 
 defineGetter(Template.prototype, 'cwd', function () {
-  return this.option('cwd') || process.cwd();
+  return this.context('cwd') || process.cwd();
 });
 
 /**
@@ -252,7 +262,7 @@ Template.prototype.defaultLoaders = function() {
  */
 
 Template.prototype.defaultRoutes = function() {
-  if (this.enabled('default routes')) {
+  if (this.context('default routes')) {
     var re = utils.extensionRe(Object.keys(this.engines));
     this.onLoad(re, require('./lib/middleware/matter'));
   }
@@ -273,10 +283,10 @@ Template.prototype.defaultRoutes = function() {
  */
 
 Template.prototype.defaultEngines = function() {
-  if (this.enabled('default engines')) {
+  if (this.context('default engines')) {
     this.engine(['*', 'md'], require('engine-lodash'), {
-      layoutDelims: this.option('layoutDelims'),
-      destExt: this.option('destExt')
+      layoutDelims: this.context('layoutDelims'),
+      destExt: this.context('destExt')
     });
   }
 };
@@ -350,9 +360,9 @@ Template.prototype.transform = function(name, fn) {
 Template.prototype.lazyrouter = function() {
   if (!this.router) {
     this.router = new Router({
-      caseSensitive: this.enabled('case sensitive routing'),
-      strict: this.enabled('strict routing'),
-      methods: utils.methods.concat(this.option('router methods'))
+      caseSensitive: this.context('case sensitive routing'),
+      strict: this.context('strict routing'),
+      methods: utils.methods.concat(this.context('router methods'))
     });
     // initialization middleware. currently a noop
     this.router.use(init(this));
@@ -569,7 +579,7 @@ Template.prototype.applyLayout = function(template, locals) {
 
   // If `layoutExt` is defined on the options, append
   // it to the layout name before passing the name to [layouts]
-  var ext = this.option('layoutExt');
+  var ext = this.context('layoutExt');
   if (ext) {
     layout = layout + utils.formatExt(ext);
   }
@@ -649,7 +659,7 @@ Template.prototype.addDelims = function(ext, delims, layoutDelims, settings) {
 Template.prototype.getDelims = function(ext) {
   debug.delims('getting delims: %s', ext);
 
-  ext = ext || this.currentDelims || this.option('ext');
+  ext = ext || this.currentDelims || this.context('ext');
   ext = utils.formatExt(ext);
 
   if(utils.hasOwn(this.delims, ext)) {
@@ -712,7 +722,7 @@ Template.prototype.handleDelims = function(ext, engine, template, locals) {
     || template.options.escapeDelims
     || locals.escapeDelims
     || engine.options && engine.options.escapeDelims
-    || this.option('escapeDelims');
+    || this.context('escapeDelims');
 
   if (escapeDelims && typeof escapeDelims === 'object') {
     if (Array.isArray(escapeDelims)) {
@@ -813,18 +823,26 @@ Template.prototype.getEngine = function(ext) {
  */
 
 Template.prototype.getExt = function(template) {
-  var fn = this.option('getExt');
+  var fn = this.context('getExt');
 
   if (typeof fn === 'function') {
     return fn.call(this, template);
   }
 
-  var ctx = template.context.calculate();
-  var ext = ctx._engine
+  // build template context with only template objects
+  var tmplCtx = template.context.calculate(['template', 'template:options', 'template:data', 'template:locals']);
+
+  // build global context with global objects
+  var ctx = this.context();
+
+  // check for the extension based on various properties
+  var ext = tmplCtx._engine
+    || tmplCtx.engine
+    || tmplCtx.ext
+    || path.extname(template.path)
     || ctx.engine
     || ctx.ext
-    || path.extname(template.path)
-    || this.option('viewEngine');
+    || this.context('viewEngine');
 
   if (ext == null) return null;
   if (ext[0] !== '.') {
@@ -1173,13 +1191,18 @@ Template.prototype._load = function(subtype, plural, options) {
 
 Template.prototype._context = function(template) {
   var context = new Context();
-  context.setContext('env', 10, this.env);
-  context.setContext('defaults', 20, this.defaults);
+  context.setContext('env:options', 10, this.env.options);
+  context.setContext('defaults:options', 20, this.defaults.options);
   context.setContext('template', 25, template);
-  context.setContext('template.options', 30, template.options);
-  context.setContext('template.data', 35, template.data);
-  context.setContext('template.locals', 40, template.locals);
+  context.setContext('template:options', 30, template.options);
+  context.setContext('template:data', 35, template.data);
+  context.setContext('template:locals', 40, template.locals);
   return context;
+};
+
+Template.prototype.context = function(key) {
+  var ctx = this._.context.calculate();
+  return get(ctx, key);
 };
 
 /**
@@ -1226,8 +1249,9 @@ Template.prototype.validate = function(template) {
  */
 
 Template.prototype.normalize = function(template, options) {
-  if (this.option('normalize')) {
-    return this.options.normalize(template, options);
+  var normalize = this.context('normalize');
+  if (normalize) {
+    return normalize(template, options);
   }
 
   var self = this;
@@ -1431,7 +1455,7 @@ Template.prototype.mergeLayouts = function(options) {
   debug.template('merging layouts: %j', options);
 
   var layouts = {};
-  var mergeLayouts = this.option('mergeLayouts');
+  var mergeLayouts = this.context('mergeLayouts');
 
   if (typeof mergeLayouts === 'function') {
     return mergeLayouts.call(this, arguments);
@@ -1477,7 +1501,7 @@ Template.prototype.mergePartials = function(context) {
   debug.template('merging partials [%s]: %j', arguments);
   // locals = merge({}, context, locals);
 
-  var mergePartials = this.option('mergePartials');
+  var mergePartials = this.context('mergePartials');
   if (typeof mergePartials === 'function') {
     return mergePartials.call(this, context);
   }
@@ -1653,7 +1677,7 @@ Template.prototype.create = function(subtype, plural, opts/*, stack*/) {
   this.decorate(subtype, plural, opts);
 
   // create default helpers
-  if (this.enabled('default helpers') && opts && opts.isPartial) {
+  if (this.context('default helpers') && opts && opts.isPartial) {
     // Create a sync helper for this type
     if (!utils.hasOwn(this._.helpers, subtype)) {
       this.defaultHelper(subtype, plural);
@@ -1769,7 +1793,7 @@ Template.prototype.compileTemplate = function(template, options, async) {
 
   // Bind context to helpers before passing to the engine.
   this.bindHelpers(opts, context, async);
-  opts.debugEngine = this.option('debugEngine');
+  opts.debugEngine = this.context('debugEngine');
 
   // if a layout is defined, apply it before compiling
   var content = this.applyLayout(template, extend({}, context, opts));
@@ -2181,8 +2205,8 @@ Template.prototype.bindHelpers = function (options, context, async) {
  */
 
 Template.prototype.mergeContext = function(template, locals) {
-  if (typeof this.option('mergeContext') === 'function') {
-    return this.option('mergeContext').apply(this, arguments);
+  if (typeof this.context('mergeContext') === 'function') {
+    return this.context('mergeContext').apply(this, arguments);
   }
 
   var context = {};

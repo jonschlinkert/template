@@ -91,7 +91,7 @@ Template.prototype.initTemplate = function() {
   this.env = {};
 
   // default settings (private)
-  this.settings = {};
+  this.defaults = {};
 
   // Engine properties
   this._ = {};
@@ -138,8 +138,8 @@ Template.prototype.loadDefaults = function() {
 Template.prototype.defaultConfig = function() {
   this._.env = new Config(this.env);
   delete this.env.data;
-  this._.settings = new Config(this.settings);
-  delete this.settings.data;
+  this._.defaults = new Config(this.defaults);
+  delete this.defaults.data;
 
   this._.delims = new Delims(this.options);
   this._.loaders = new Loaders(this.loaders);
@@ -1174,7 +1174,7 @@ Template.prototype._load = function(subtype, plural, options) {
 Template.prototype._context = function(template) {
   var context = new Context();
   context.setContext('env', 10, this.env);
-  context.setContext('settings', 20, this.settings);
+  context.setContext('defaults', 20, this.defaults);
   context.setContext('template', 25, template);
   context.setContext('template.options', 30, template.options);
   context.setContext('template.data', 35, template.data);

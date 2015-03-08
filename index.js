@@ -42,9 +42,10 @@ var Route = routes.Route;
  * Local modules
  */
 
-var mergeContext = require('./lib/merge-context');
-var init = require('./lib/middleware/init');
 var debug = require('./lib/debug');
+var init = require('./lib/middleware/init');
+var loaders = require('./lib/loaders');
+var mergeContext = require('./lib/merge-context');
 var utils = require('./lib');
 
 /**
@@ -66,6 +67,7 @@ var utils = require('./lib');
 var Template = module.exports = Config.extend({
   constructor: function(options) {
     Template.__super__.constructor.call(this, options);
+    this.initSettings();
     this.initTemplate();
     this.loadDefaults();
   }
@@ -80,6 +82,15 @@ Template.Router = routes.Router;
 Template.Route = routes.Route;
 
 /**
+ * Initialize internal objects.
+ */
+
+Template.prototype.initSettings = function() {
+  this._defaults = {options: {}};
+  this._env = {options: {}};
+};
+
+/**
  * Initialize defaults.
  */
 
@@ -88,12 +99,6 @@ Template.prototype.initTemplate = function() {
   this.engines = this.engines || {};
   this.delims = this.delims || {};
   this.transforms = {};
-
-  // environment settings (private)
-  this._env = {options: {}};
-
-  // default settings (private)
-  this._defaults = {options: {}};
 
   // Engine properties
   this._ = {};
@@ -108,9 +113,9 @@ Template.prototype.initTemplate = function() {
 
   // View collections
   this.views = {};
-  this.view('layouts', {});
-  this.view('partials', {});
   this.view('anonymous', {});
+  this.view('partials', {});
+  this.view('layouts', {});
   this.view('pages', {});
   this.collection = {};
 
@@ -231,7 +236,7 @@ defineGetter(Template.prototype, 'cwd', function () {
  */
 
 Template.prototype.mixInLoaders = function() {
-  var mix = utils.mixInLoaders(Template.prototype, this._.loaders);
+  var mix = utils.mixInLoaders(this, this._.loaders);
   // register methods
   mix('loader', 'register');
   mix('loaderAsync', 'registerAsync');
@@ -249,8 +254,8 @@ Template.prototype.mixInLoaders = function() {
  */
 
 Template.prototype.defaultLoaders = function() {
-  this.loader('default', require('./lib/loaders').templates(this));
-  this.loader('helpers', require('./lib/loaders').helpers(this));
+  this.loader('default', loaders.templates(this));
+  this.loader('helpers', loaders.helpers(this));
 };
 
 /**

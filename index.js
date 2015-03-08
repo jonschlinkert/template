@@ -86,8 +86,8 @@ Template.Route = routes.Route;
  */
 
 Template.prototype.initSettings = function() {
-  this._defaults = {options: {}};
-  this._env = {options: {}};
+  this._defaults = {};
+  this._env = {};
 };
 
 /**
@@ -144,8 +144,6 @@ Template.prototype.loadDefaults = function() {
 
 Template.prototype.defaultConfig = function() {
   this._.env = new Config(this._env);
-  this._.defaults = new Config(this._defaults);
-
   this._.delims = new Delims(this.options);
   this._.loaders = new Loaders(this.loaders);
   this._.engines = new Engines(this.engines);
@@ -153,8 +151,8 @@ Template.prototype.defaultConfig = function() {
   this._.asyncHelpers = new Helpers({bind: false});
 
   this._.context = new Context();
-  this._.context.setContext('env', 10, this._env.options);
-  this._.context.setContext('defaults', 20, this._defaults.options);
+  this._.context.setContext('env', 10, this._env);
+  this._.context.setContext('defaults', 20, this._defaults);
   this._.context.setContext('data', 25, this.cache.data);
   this._.context.setContext('options', 30, this.options);
 };
@@ -172,55 +170,55 @@ Template.prototype.defaultTransforms = function() {
  */
 
 Template.prototype.defaultOptions = function() {
-  this._.defaults.disable('preferLocals');
+  this.defaults('preferLocals', false);
 
   // routes
-  this._.defaults.enable('default routes');
-  this._.defaults.option('router methods', []);
+  this.defaults('default routes', true);
+  this.defaults('router methods', []);
 
   // engines
-  this._.defaults.disable('debugEngine');
-  this._.defaults.enable('default engines');
-  this._.defaults.option('viewEngine', '*');
-  this._.defaults.option('delims', ['<%', '%>']);
+  this.defaults('debugEngine', false);
+  this.defaults('default engines', true);
+  this.defaults('viewEngine', '*');
+  this.defaults('delims', ['<%', '%>']);
 
   // helpers
-  this._.defaults.enable('default helpers');
+  this.defaults('default helpers', true);
 
   // file extensions
-  this._.defaults.option('ext', '*');
-  this._.defaults.option('destExt', '.html');
-  this._.defaults.option('defaultExts', ['md']);
-  this._.defaults.option('cwd', process.cwd());
+  this.defaults('ext', '*');
+  this.defaults('destExt', '.html');
+  this.defaults('defaultExts', ['md']);
+  this.defaults('cwd', process.cwd());
 
   // layouts
-  this._.defaults.enable('mergeLayouts');
-  this._.defaults.option('layoutDelims', ['{%', '%}']);
-  this._.defaults.option('layoutTag', 'body');
-  this._.defaults.option('defaultLayout', null);
-  this._.defaults.option('layoutExt', null);
-  this._.defaults.option('layout', null);
+  this.defaults('mergeLayouts', true);
+  this.defaults('layoutDelims', ['{%', '%}']);
+  this.defaults('layoutTag', 'body');
+  this.defaults('defaultLayout', null);
+  this.defaults('layoutExt', null);
+  this.defaults('layout', null);
 
   // partials
-  this._.defaults.enable('mergePartials');
+  this.defaults('mergePartials', true);
 
   // Custom function for naming partial keys
-  this._.defaults.option('partialsKey', function (fp) {
+  this.defaults('partialsKey', function (fp) {
     return path.basename(fp, path.extname(fp));
   });
 
   // Custom function for all other template keys
-  this._.defaults.option('renameKey', function (fp) {
+  this.defaults('renameKey', function (fp) {
     return path.basename(fp);
   });
 
   // Custom function for getting a loader
-  this._.defaults.option('matchLoader', function () {
+  this.defaults('matchLoader', function () {
     return 'default';
   });
 
   // Default function for merging context
-  this._.defaults.option('mergeContext', mergeContext);
+  this.defaults('mergeContext', mergeContext);
 };
 
 /**
@@ -317,6 +315,30 @@ Template.prototype.defaultTemplates = function() {
   this.create('page', { isRenderable: true });
   this.create('layout', { isLayout: true });
   this.create('partial', { isPartial: true });
+};
+
+/**
+ * Set default values on `this._defaults`
+ */
+
+Template.prototype.defaults = function(key, value) {
+  if (typeof value === 'undefined') {
+    return this._defaults[key];
+  }
+  this._defaults[key] = value;
+  return this;
+};
+
+/**
+ * Set default values on `this._env`
+ */
+
+Template.prototype.env = function(key, value) {
+  if (typeof value === 'undefined') {
+    return this._env[key];
+  }
+  this._env[key] = value;
+  return this;
 };
 
 /**
@@ -1195,8 +1217,8 @@ Template.prototype._load = function(subtype, plural, options) {
 
 Template.prototype._context = function(template) {
   var context = new Context();
-  context.setContext('env', 10, this._env.options);
-  context.setContext('defaults', 20, this._defaults.options);
+  context.setContext('env', 10, this._env);
+  context.setContext('defaults', 20, this._defaults);
   context.setContext('data', 22, this.cache.data);
   context.setContext('template', 25, template);
   context.setContext('template:options', 30, template.options);

@@ -223,7 +223,7 @@ Template.prototype.defaultOptions = function() {
  */
 
 defineGetter(Template.prototype, 'cwd', function () {
-  return this.option('cwd') || process.cwd();
+  return this.context('cwd') || process.cwd();
 });
 
 /**

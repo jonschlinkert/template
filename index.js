@@ -44,7 +44,7 @@ var Route = routes.Route;
 
 var debug = require('./lib/debug');
 var init = require('./lib/middleware/init');
-var loaders = require('./lib/loaders');
+var transforms = require('./lib/transforms');
 var mergeContext = require('./lib/merge-context');
 var utils = require('./lib');
 
@@ -68,7 +68,9 @@ var Template = module.exports = Config.extend({
   constructor: function(options) {
     Template.__super__.constructor.call(this, options);
     this.initTemplate();
-    this.loadDefaults();
+    this.defaultConfig();
+    this.defaultOptions();
+    this.loadTransforms();
   }
 });
 
@@ -115,19 +117,15 @@ Template.prototype.initTemplate = function() {
 };
 
 /**
- * Load all defaults
+ * Load default transforms.
  */
 
-Template.prototype.loadDefaults = function() {
-  this.defaultConfig();
-  this.mixInLoaders();
-  this.defaultLoaders();
-  this.defaultOptions();
-  this.defaultTransforms();
-  this.defaultDelimiters();
-  this.defaultTemplates();
-  this.defaultEngines();
-  this.defaultRoutes();
+Template.prototype.loadTransforms = function() {
+  this.transform('loaders', transforms.loaders);
+  this.transform('delims', transforms.delimiters);
+  this.transform('templates', transforms.templates);
+  this.transform('engines', transforms.engines);
+  this.transform('routes', transforms.routes);
 };
 
 /**
@@ -154,11 +152,23 @@ Template.prototype.context = function(key) {
 };
 
 /**
- * Run the default transforms.
+ * Create a new Context Manager for a given template.
+ *
+ * @param  {Object} `template` Template object to get options and locals from.
+ * @return {Object} New instance of a ContextManager
+ * @api private
  */
 
-Template.prototype.defaultTransforms = function() {
-  this.transform('placeholder', function () {});
+Template.prototype._context = function(template) {
+  var context = new Context();
+  context.setContext('env', 10, this._.env);
+  context.setContext('defaults', 20, this._.defaults);
+  context.setContext('data', 22, this.cache.data);
+  context.setContext('template', 25, template);
+  context.setContext('template:options', 30, template.options);
+  context.setContext('template:data', 35, template.data);
+  context.setContext('template:locals', 40, template.locals);
+  return context;
 };
 
 /**
@@ -225,114 +235,6 @@ Template.prototype.defaultOptions = function() {
 defineGetter(Template.prototype, 'cwd', function () {
   return this.context('cwd') || process.cwd();
 });
-
-/**
- * Create a new Context Manager for a given template.
- *
- * @param  {Object} `template` Template object to get options and locals from.
- * @return {Object} New instance of a ContextManager
- * @api private
- */
-
-Template.prototype._context = function(template) {
-  var context = new Context();
-  context.setContext('env', 10, this._.env);
-  context.setContext('defaults', 20, this._.defaults);
-  context.setContext('data', 22, this.cache.data);
-  context.setContext('template', 25, template);
-  context.setContext('template:options', 30, template.options);
-  context.setContext('template:data', 35, template.data);
-  context.setContext('template:locals', 40, template.locals);
-  return context;
-};
-
-/**
- * Mixin methods from [loader-cache] for loading templates.
- */
-
-Template.prototype.mixInLoaders = function() {
-  var mix = utils.mixInLoaders(this, this._.loaders);
-  // register methods
-  mix('loader', 'register');
-  mix('loaderAsync', 'registerAsync');
-  mix('loaderPromise', 'registerPromise');
-  mix('loaderStream', 'registerStream');
-  // load methods
-  mix('load');
-  mix('loadAsync');
-  mix('loadPromise');
-  mix('loadStream');
-};
-
-/**
- * Register default loader methods
- */
-
-Template.prototype.defaultLoaders = function() {
-  this.loader('default', loaders.templates(this));
-  this.loader('helpers', loaders.helpers(this));
-};
-
-/**
- * Load default routes / middleware
- *
- *   - `.md`: parse front matter in markdown files
- *   - `.hbs`: parse front matter in handlebars templates
- */
-
-Template.prototype.defaultRoutes = function() {
-  if (this.context('default routes')) {
-    var re = utils.extensionRe(Object.keys(this.engines));
-    this.onLoad(re, require('./lib/middleware/matter'));
-  }
-};
-
-/**
- * Load default engines. The default engine, [engine-lodash]
- * will process templates in any files with the `.md` extension.
- * To change or negate these extensions, just do:
- *
- * ```js
- * engine.option('defaultExts', 'md');
- * // or an array of extensions
- * engine.option('defaultExts', ['hbs', 'md']);
- * ```
- * @name default engines
- * @api public
- */
-
-Template.prototype.defaultEngines = function() {
-  if (this.context('default engines')) {
-    this.engine(['*', 'md'], require('engine-lodash'), {
-      layoutDelims: this.context('layoutDelims'),
-      destExt: this.context('destExt')
-    });
-  }
-};
-
-/**
- * Register default template delimiters.
- *
- *   - engine delimiters: Delimiters used in templates process
- *     by [engine-lodash], the default engine.
- *   - layout delimiters: Delimiters used in layouts.
- *
- * @api private
- */
-
-Template.prototype.defaultDelimiters = function() {
-  this.addDelims('*', ['<%', '%>'], ['{%', '%}']);
-};
-
-/**
- * Register default view collections.
- */
-
-Template.prototype.defaultTemplates = function() {
-  this.create('page', { isRenderable: true });
-  this.create('layout', { isLayout: true });
-  this.create('partial', { isPartial: true });
-};
 
 /**
  * Set default values on `this._.defaults`

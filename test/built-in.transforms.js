@@ -16,11 +16,10 @@ describe('default transforms:', function () {
     template = new Template();
   });
   it('should get all the transforms.', function () {
-    var transforms = template.transform();
-    Object.keys(transforms).length.should.eql(1);
+    (Object.keys(template.transform()).length > 0).should.be.true;
   });
   it('should get a transform by name.', function () {
-    var fn = template.transform('placeholder');
-    (typeof fn === 'function').should.be.true;
+    template.transform('templates').should.be.a.function;
+    template.transform('engines').should.be.a.function;
   });
 });

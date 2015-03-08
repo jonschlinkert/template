@@ -117,6 +117,7 @@ describe('custom `renderable` types:', function () {
 
       forOwn(template.views.posts, function(value, key) {
         template.render(key, function (err, content) {
+          console.log(template)
           if (err) console.log(err);
           content.should.equal('Jon Schlinkert\nzzzzzz');
         });

@@ -90,14 +90,10 @@ Template.prototype.initTemplate = function() {
   this.transforms = {};
 
   // environment settings (private)
-  this.env = {
-    options: {}
-  };
+  this._env = {options: {}};
 
   // default settings (private)
-  this.defaults = {
-    options: {}
-  };
+  this._defaults = {options: {}};
 
   // Engine properties
   this._ = {};
@@ -142,10 +138,8 @@ Template.prototype.loadDefaults = function() {
  */
 
 Template.prototype.defaultConfig = function() {
-  this._.env = new Config(this.env);
-  delete this.env.data;
-  this._.defaults = new Config(this.defaults);
-  delete this.defaults.data;
+  this._.env = new Config(this._env);
+  this._.defaults = new Config(this._defaults);
 
   this._.delims = new Delims(this.options);
   this._.loaders = new Loaders(this.loaders);
@@ -154,8 +148,8 @@ Template.prototype.defaultConfig = function() {
   this._.asyncHelpers = new Helpers({bind: false});
 
   this._.context = new Context();
-  this._.context.setContext('env:options', 10, this.env.options);
-  this._.context.setContext('defaults:options', 20, this.defaults.options);
+  this._.context.setContext('env', 10, this._env.options);
+  this._.context.setContext('defaults', 20, this._defaults.options);
   this._.context.setContext('data', 25, this.cache.data);
   this._.context.setContext('options', 30, this.options);
 };
@@ -1196,8 +1190,8 @@ Template.prototype._load = function(subtype, plural, options) {
 
 Template.prototype._context = function(template) {
   var context = new Context();
-  context.setContext('env:options', 10, this.env.options);
-  context.setContext('defaults:options', 20, this.defaults.options);
+  context.setContext('env', 10, this._env.options);
+  context.setContext('defaults', 20, this._defaults.options);
   context.setContext('data', 22, this.cache.data);
   context.setContext('template', 25, template);
   context.setContext('template:options', 30, template.options);

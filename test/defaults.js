@@ -54,19 +54,19 @@ describe('defaults', function () {
       template._.defaults.get('a').should.eql(1)
     });
     it('should set property value.', function() {
-      template.defaults.a.should.eql(1);
+      template._defaults.a.should.eql(1);
     });
     it('should return nested property value.', function() {
       template._.defaults.set('b.c.d', 1);
       template._.defaults.get('b.c.d').should.eql(1);
     });
     it('should set property value.', function() {
-      template.defaults.b.c.d.should.eql(1);
+      template._defaults.b.c.d.should.eql(1);
     });
     it('literal backslash should escape period in property name.', function() {
       template._.defaults.set('e\\.f\\.g', 1);
       template._.defaults.get('e\\.f\\.g', true).should.eql(1);
-      template.defaults['e.f.g'].should.eql(1);
+      template._defaults['e.f.g'].should.eql(1);
     });
   });
 });

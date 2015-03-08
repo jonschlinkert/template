@@ -135,7 +135,6 @@ Template.prototype.loadDefaults = function() {
  */
 
 Template.prototype.defaultConfig = function() {
-  this._.env = new Config(this._.env);
   this._.delims = new Delims(this.options);
   this._.loaders = new Loaders(this.loaders);
   this._.engines = new Engines(this.engines);
@@ -149,6 +148,11 @@ Template.prototype.defaultConfig = function() {
   this._.context.setContext('options', 30, this.options);
 };
 
+Template.prototype.context = function(key) {
+  var ctx = this._.context.calculate();
+  return get(ctx, key);
+};
+
 /**
  * Run the default transforms.
  */
@@ -158,7 +162,8 @@ Template.prototype.defaultTransforms = function() {
 };
 
 /**
- * Initialize default options.
+ * Initialize default options. Any of these can be
+ * overridden with `template.option('foo', 'bar')`.
  */
 
 Template.prototype.defaultOptions = function() {
@@ -218,7 +223,7 @@ Template.prototype.defaultOptions = function() {
  */
 
 defineGetter(Template.prototype, 'cwd', function () {
-  return this.context('cwd') || process.cwd();
+  return this.option('cwd') || process.cwd();
 });
 
 /**
@@ -239,11 +244,6 @@ Template.prototype._context = function(template) {
   context.setContext('template:data', 35, template.data);
   context.setContext('template:locals', 40, template.locals);
   return context;
-};
-
-Template.prototype.context = function(key) {
-  var ctx = this._.context.calculate();
-  return get(ctx, key);
 };
 
 /**
@@ -872,16 +872,21 @@ Template.prototype.getExt = function(template) {
     return fn.call(this, template);
   }
 
-  // build template context with only template objects
-  var tmplCtx = template.context.calculate(['template', 'template:options', 'template:data', 'template:locals']);
+  // build template context from this template objects
+  var context = template.context.calculate([
+    'template',
+    'template:options',
+    'template:data',
+    'template:locals'
+  ]);
 
   // build global context with global objects
   var ctx = this.context();
 
   // check for the extension based on various properties
-  var ext = tmplCtx._engine
-    || tmplCtx.engine
-    || tmplCtx.ext
+  var ext = context._engine
+    || context.engine
+    || context.ext
     || path.extname(template.path)
     || ctx.engine
     || ctx.ext

@@ -53,7 +53,7 @@ describe('defaults', function () {
       template.defaults('a').should.eql(1)
     });
     it('should set property value.', function() {
-      template._defaults.a.should.eql(1);
+      template._.defaults.a.should.eql(1);
     });
   });
 });

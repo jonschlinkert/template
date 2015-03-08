@@ -53,7 +53,7 @@ describe('env', function () {
       template.env('a').should.eql(1)
     });
     it('should set property value.', function() {
-      template._env.a.should.eql(1);
+      template._.env.a.should.eql(1);
     });
   });
 });

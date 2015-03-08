@@ -67,7 +67,6 @@ var utils = require('./lib');
 var Template = module.exports = Config.extend({
   constructor: function(options) {
     Template.__super__.constructor.call(this, options);
-    this.initSettings();
     this.initTemplate();
     this.loadDefaults();
   }
@@ -80,15 +79,6 @@ var Template = module.exports = Config.extend({
 Template.extend = Config.extend;
 Template.Router = routes.Router;
 Template.Route = routes.Route;
-
-/**
- * Initialize internal objects.
- */
-
-Template.prototype.initSettings = function() {
-  this._defaults = {};
-  this._env = {};
-};
 
 /**
  * Initialize defaults.
@@ -104,6 +94,8 @@ Template.prototype.initTemplate = function() {
   this._ = {};
   this._.mixins = {};
   this._.imports = {};
+  this._.defaults = {};
+  this._.env = {};
 
   // View types (categories)
   this.type = {};
@@ -143,7 +135,7 @@ Template.prototype.loadDefaults = function() {
  */
 
 Template.prototype.defaultConfig = function() {
-  this._.env = new Config(this._env);
+  this._.env = new Config(this._.env);
   this._.delims = new Delims(this.options);
   this._.loaders = new Loaders(this.loaders);
   this._.engines = new Engines(this.engines);
@@ -151,8 +143,8 @@ Template.prototype.defaultConfig = function() {
   this._.asyncHelpers = new Helpers({bind: false});
 
   this._.context = new Context();
-  this._.context.setContext('env', 10, this._env);
-  this._.context.setContext('defaults', 20, this._defaults);
+  this._.context.setContext('env', 10, this._.env);
+  this._.context.setContext('defaults', 20, this._.defaults);
   this._.context.setContext('data', 25, this.cache.data);
   this._.context.setContext('options', 30, this.options);
 };
@@ -228,6 +220,31 @@ Template.prototype.defaultOptions = function() {
 defineGetter(Template.prototype, 'cwd', function () {
   return this.context('cwd') || process.cwd();
 });
+
+/**
+ * Create a new Context Manager for a given template.
+ *
+ * @param  {Object} `template` Template object to get options and locals from.
+ * @return {Object} New instance of a ContextManager
+ * @api private
+ */
+
+Template.prototype._context = function(template) {
+  var context = new Context();
+  context.setContext('env', 10, this._.env);
+  context.setContext('defaults', 20, this._.defaults);
+  context.setContext('data', 22, this.cache.data);
+  context.setContext('template', 25, template);
+  context.setContext('template:options', 30, template.options);
+  context.setContext('template:data', 35, template.data);
+  context.setContext('template:locals', 40, template.locals);
+  return context;
+};
+
+Template.prototype.context = function(key) {
+  var ctx = this._.context.calculate();
+  return get(ctx, key);
+};
 
 /**
  * Mixin methods from [loader-cache] for loading templates.
@@ -318,26 +335,26 @@ Template.prototype.defaultTemplates = function() {
 };
 
 /**
- * Set default values on `this._defaults`
+ * Set default values on `this._.defaults`
  */
 
 Template.prototype.defaults = function(key, value) {
   if (typeof value === 'undefined') {
-    return this._defaults[key];
+    return this._.defaults[key];
   }
-  this._defaults[key] = value;
+  this._.defaults[key] = value;
   return this;
 };
 
 /**
- * Set default values on `this._env`
+ * Set default values on `this._.env`
  */
 
 Template.prototype.env = function(key, value) {
   if (typeof value === 'undefined') {
-    return this._env[key];
+    return this._.env[key];
   }
-  this._env[key] = value;
+  this._.env[key] = value;
   return this;
 };
 
@@ -1205,31 +1222,6 @@ Template.prototype._load = function(subtype, plural, options) {
         return done(null, self.load(args, stack, loadOpts));
     }
   };
-};
-
-/**
- * Create a new Context Manager for the given template.
- *
- * @param  {Object} `template` Template object to get options and locals from.
- * @return {Object} New instance of a ContextManager
- * @api private
- */
-
-Template.prototype._context = function(template) {
-  var context = new Context();
-  context.setContext('env', 10, this._env);
-  context.setContext('defaults', 20, this._defaults);
-  context.setContext('data', 22, this.cache.data);
-  context.setContext('template', 25, template);
-  context.setContext('template:options', 30, template.options);
-  context.setContext('template:data', 35, template.data);
-  context.setContext('template:locals', 40, template.locals);
-  return context;
-};
-
-Template.prototype.context = function(key) {
-  var ctx = this._.context.calculate();
-  return get(ctx, key);
 };
 
 /**

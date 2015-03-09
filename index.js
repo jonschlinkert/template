@@ -210,22 +210,37 @@ Template.prototype.defaultOptions = function() {
   this.defaults('mergePartials', true);
 
   // Custom function for naming partial keys
-  this.defaults('partialsKey', function (fp) {
+  this.mixinDefault('partialsKey', function (fp) {
     return path.basename(fp, path.extname(fp));
   });
 
   // Custom function for all other template keys
-  this.defaults('renameKey', function (fp) {
+  this.mixinDefault('renameKey', function (fp) {
     return path.basename(fp);
   });
 
   // Custom function for getting a loader
-  this.defaults('matchLoader', function () {
+  this.mixinDefault('matchLoader', function () {
     return 'default';
   });
 
-  // Default function for merging context
-  this.defaults('mergeContext', mergeContext);
+/**
+ * Build the context to be passed to templates. This can be
+ * overridden by passing a function to the `mergeContext`
+ * option.
+ *
+ * ```js
+ * template.option('mergeContext', function(template, locals) {
+ *   return extend(template.data, template.locals, locals);
+ * });
+ * ```
+ *
+ * @param  {Object} `template` Template object
+ * @param  {Object} `locals`
+ * @return {Object} The object to be passed to engines/templates as context.
+ */
+
+  this.mixinDefault('mergeContext', mergeContext);
 };
 
 /**
@@ -2115,29 +2130,6 @@ Template.prototype.bindHelpers = function (options, context, async) {
 };
 
 /**
- * Build the context to be passed to templates. This can be
- * overridden by passing a function to the `mergeContext`
- * option.
- *
- * ```js
- * template.option('mergeContext', function(template, locals) {
- *   return extend(template.data, template.locals, locals);
- * });
- * ```
- *
- * @param  {Object} `template` Template object
- * @param  {Object} `locals`
- * @return {Object} The object to be passed to engines/templates as context.
- */
-
-Template.prototype.mergeContext = function(template, locals) {
-  if (typeof this.context('mergeContext') === 'function') {
-    return this.context('mergeContext').apply(this, arguments);
-  }
-  return {};
-};
-
-/**
  * Build the context for a specific template and type.
  *
  * ```js
@@ -2184,6 +2176,45 @@ function handleError(template, method) {
 function mixin(method, fn) {
   Template.prototype[method] = fn;
 }
+
+/**
+ * Extend the `Template` prototype with a new default method.
+ * Add the `fn` to the `defaults` to allow user overrides.
+ *
+ * ```js
+ * this.mixinDefault('renameKey', function (fp) {
+ *   return fp;
+ * });
+ *
+ * this.renameKey('path/to/file.hbs');
+ * //=> 'path/to/file.hbs'
+ *
+ * this.option('renameKey', function (fp) {
+ *   return path.basename(fp, path.extname(fp));
+ * });
+ *
+ * this.renameKey('path/to/file.hbs');
+ * //=> 'file'
+ * ```
+ *
+ * @param  {String} `method` The method name.
+ * @param  {Function} `defaultFn` The default function.
+ * @api private
+ */
+
+Template.prototype.mixinDefault = function (method, defaultFn) {
+  // add default function to defaults
+  this.defaults(method, defaultFn);
+
+  // create mixin to handle calling the default function
+  mixin(method, function () {
+    var fn = this.context(method);
+    if (fn && typeof fn === 'function') {
+      return fn.apply(this, arguments);
+    }
+    return fn;
+  });
+};
 
 /**
  * Utility method to define getters.

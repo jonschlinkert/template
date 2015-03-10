@@ -61,15 +61,16 @@ describe('template loaders', function () {
 
     it('should load templates from files using a custom function:', function () {
       var options = {};
-      template.create('post', { isRenderable: true }, function (patterns) {
-        return globber(patterns, options);
-      },
-      function (template) {
-        _.transform(template, function (acc, value, key) {
-          acc[key] = JSON.parse(value.content)[key];
+      template.create('post', { isRenderable: true },
+        function (patterns) {
+          return globber(patterns, options);
+        },
+        function (template) {
+          _.transform(template, function (acc, value, key) {
+            acc[key] = JSON.parse(value.content)[key];
+          });
+          return template
         });
-        return template
-      });
       template.post('test/fixtures/loaders/npm-load.json');
       template.views.posts.should.have.property('npm-load.json');
     });

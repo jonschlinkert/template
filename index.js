@@ -41,6 +41,7 @@ var Route = routes.Route;
  */
 
 var init = require('./lib/middleware/init');
+var loaders = require('./lib/loaders');
 var debug = require('./lib/debug');
 var utils = require('./lib');
 
@@ -228,8 +229,8 @@ Template.prototype.mixInLoaders = function() {
  */
 
 Template.prototype.defaultLoaders = function() {
-  this.loader('default', require('./lib/loaders').templates(this));
-  this.loader('helpers', require('./lib/loaders').helpers(this));
+  this.loader('default', loaders.templates(this));
+  this.loader('helpers', loaders.helpers(this));
 };
 
 /**
@@ -424,9 +425,10 @@ Template.prototype.param = function(name, fn) {
   debug.routes('param: %s', name);
   this.lazyrouter();
   if (Array.isArray(name)) {
-    name.forEach(function(key) {
-      this.param(key, fn);
-    }, this);
+    var len = name.length, i = 0;
+    while (len--) {
+      this.param(name[i++], fn);
+    }
     return this;
   }
   this.router.param(name, fn);
@@ -470,16 +472,18 @@ Template.prototype.use = function (fn) {
   }
   this.lazyrouter();
   var router = this.router;
+  var len = fns.length, i = 0;
 
-  fns.forEach(function (fn) {
+  while (len--) {
+    var fn = fns[i++];
     // non-Template instance
     if (!fn || !fn.handle || !fn.set) {
-      return router.use(path, fn.bind(this));
+      router.use(path, fn.bind(this));
     }
     debug.routes('use: %s', path);
     fn.mountpath = path;
     fn.parent = this;
-  }, this);
+  }
   return this;
 };
 
@@ -498,8 +502,12 @@ utils.methods.forEach(function(method) {
     this.lazyrouter();
 
     var route = this.router.route(path);
-    var args = slice(arguments, 1);
+    var len = arguments.length - 1;
+    var args = new Array(len);
 
+    for (var i = 0; i < len; i++) {
+      args[i] = arguments[i + 1];
+    }
     route[method].apply(route, args);
     return this;
   };
@@ -525,7 +533,12 @@ Template.prototype.all = function(path) {
   debug.routes('all: %s', path);
   this.lazyrouter();
   var route = this.router.route(path);
-  var args = slice(arguments, 1);
+  var len = arguments.length - 1;
+  var args = new Array(len);
+
+  for (var i = 0; i < len; i++) {
+    args[i] = arguments[i + 1];
+  }
   route.all.apply(route, args);
   return this;
 };
@@ -564,7 +577,8 @@ Template.prototype.applyLayout = function(template, locals) {
 
   // Merge `layout` collections based on settings
   var stack = this.mergeLayouts(locals);
-  return layouts(template.content, layout, stack, locals);
+  var res = layouts(template.content, layout, stack, locals);
+  return res.result;
 };
 
 /**
@@ -756,9 +770,9 @@ Template.prototype.registerEngine = function(ext, fn, options) {
 
 Template.prototype.engine = function(exts, fn, options) {
   debug.engine('engine %j:', exts);
-  arrayify(exts).forEach(function(ext) {
-    this.registerEngine(ext, fn, options);
-  }.bind(this));
+  exts = arrayify(exts);
+  var len = exts.length;
+  while (len--) this.registerEngine(exts[len], fn, options);
   return this;
 };
 
@@ -923,9 +937,11 @@ Template.prototype.helper = function(name, fn) {
 Template.prototype.helpers = function(helpers, options) {
   debug.helper('adding helpers: %s', helpers);
   options = options || {};
+
   options.matchLoader = function () {
     return 'helpers';
   };
+
   this._.helpers.addHelpers(this.load(helpers, options));
   return this;
 };
@@ -1053,7 +1069,6 @@ Template.prototype.defaultAsyncHelper = function(subtype, plural) {
     }
 
     var partial = self.views[plural][key];
-
     if (!partial) {
       // TODO: use actual delimiters in messages
       debug.err(chalk.red('helper {{' + subtype + ' "' + key + '"}} not found.'));
@@ -1089,9 +1104,14 @@ Template.prototype._load = function(subtype, plural, options) {
 
   return function (/*args, stack, options*/) {
     var self = this;
-    var args = slice(arguments);
     var stack = [];
-    var len = args.length;
+
+    var len = arguments.length;
+    var args = new Array(len);
+
+    for (var i = 0; i < len; i++) {
+      args[i] = arguments[i];
+    }
 
     // Default method used to handle sync loading when done
     var cb = function (err, template) {
@@ -1214,34 +1234,36 @@ Template.prototype.normalize = function(plural, template, options) {
   var opts = extend({}, options);
   var self = this;
 
-  forOwn(template, function (value, key) {
-    value.locals = value.locals || {};
-    value.options = extend({ subtype: plural }, options, value.options);
-    value.layout = value.layout || value.locals.layout;
+  for (var key in template) {
+    if (template.hasOwnProperty(key)) {
+      var value = template[key];
 
-    // Add a render method to the template
-    // TODO: allow additional opts to be passed
-    // this engine logic is temporary until we decide
-    // how we want to allow users to control this.
-    // for now, this allows the user to change the engine
-    // preference in the the `getExt()` method.
-    if (utils.hasOwn(opts, 'engine')) {
-      var ext = opts.engine;
-      if (ext[0] !== '.') {
-        ext = '.' + ext;
+      value.locals = value.locals || {};
+      value.options = extend({ subtype: plural }, options, value.options);
+      value.layout = value.layout || value.locals.layout;
+
+      // Add a render method to the template TODO: allow additional
+      // opts to be passed this engine logic is temporary until we
+      // decide how we want to allow users to control this. for now,
+      // this allows the user to change the engine preference in the
+      // the `getExt()` method.
+      if (utils.hasOwn(opts, 'engine')) {
+        var ext = opts.engine;
+        if (ext[0] !== '.') {
+          ext = '.' + ext;
+        }
+        value.options._engine = ext;
       }
-      value.options._engine = ext;
-    }
-    if (utils.hasOwn(opts, 'delims')) {
-      value.options.delims = opts.delims;
-    }
+      if (utils.hasOwn(opts, 'delims')) {
+        value.options.delims = opts.delims;
+      }
 
-    value.render = function (locals, cb) {
-      return self.renderTemplate(this, locals, cb);
-    };
-
-    template[key] = value;
-  }, this);
+      value.render = function (locals, cb) {
+        return self.renderTemplate(this, locals, cb);
+      };
+      template[key] = value;
+    }
+  }
   return template;
 };
 
@@ -1342,11 +1364,14 @@ Template.prototype.setLoaders = function(subtype, options, stack) {
 Template.prototype.getType = function(type) {
   debug.template('getting type: %s', type);
   var arr = this.type[type];
+  var len = arr.length, i = 0;
+  var res = {};
 
-  return arr.reduce(function(acc, plural) {
-    acc[plural] = this.views[plural];
-    return acc;
-  }.bind(this), {});
+  while (len--) {
+    var plural = arr[i++];
+    res[plural] = this.views[plural];
+  }
+  return res;
 };
 
 /**
@@ -1367,19 +1392,17 @@ Template.prototype.mergeType = function(type, collections) {
   var obj = this.getType(type);
 
   collections = arrayify(collections || Object.keys(obj));
-  var len = collections.length;
-  var o = {};
-  var i = len - 1;
+  var len = collections.length, res = {};
 
   while (len--) {
-    var colection = collections[i--];
+    var colection = collections[len];
     for (var key in this.views[colection]) {
       if (utils.hasOwn(this.views[colection], key)) {
-        o[key] = this.views[colection][key];
+        res[key] = this.views[colection][key];
       }
     }
   }
-  return o;
+  return res;
 };
 
 /**
@@ -1410,10 +1433,14 @@ Template.prototype.mergeLayouts = function(options) {
   } else {
     layouts = this.mergeType('layout');
   }
+
   var mergeTypeContext = this.mergeTypeContext.bind(this, 'layouts');
-  forOwn(layouts, function (value, key) {
-    mergeTypeContext(key, value.locals, value.data);
-  });
+  for (var key in layouts) {
+    if (layouts.hasOwnProperty(key)) {
+      var value = layouts[key];
+      mergeTypeContext(key, value.locals, value.data);
+    }
+  }
   return layouts;
 };
 
@@ -1449,37 +1476,43 @@ Template.prototype.mergePartials = function(context) {
   var opts = context.options || {};
   opts.partials = cloneDeep(context.partials || {});
 
-  // loop over each `partial` collection (e.g. `docs`)
-  this.type.partial.forEach(function (plural) {
+  var arr = this.type.partial;
+  var len = arr.length, i = 0;
 
+  // loop over each `partial` collection (e.g. `docs`)
+  while (len--) {
+    var plural = arr[i++];
     // Example `this.views.docs`
     var collection = this.views[plural];
     var mergeTypeContext = this.mergeTypeContext.bind(this, 'partials');
 
     // Loop over each partial in the collection
-    forOwn(collection, function (value, key/*, template*/) {
-      mergeTypeContext(key, value.locals, value.data);
+    for (var key in collection) {
+      if (collection.hasOwnProperty(key)) {
+        var value = collection[key];
 
-      // get the globally stored context that we just created
-      // using `mergeTypeContext` for the current partial
-      var layoutOpts = this.cache._context.partials[key];
-      layoutOpts.layoutDelims = pickFrom('layoutDelims', [layoutOpts, opts]);
+        mergeTypeContext(key, value.locals, value.data);
 
-      // wrap the partial with a layout, if applicable
-      value.content = this.applyLayout(value, layoutOpts);
+        // get the globally stored context that we just created
+        // using `mergeTypeContext` for the current partial
+        var layoutOpts = this.cache._context.partials[key];
+        layoutOpts.layoutDelims = pickFrom('layoutDelims', [layoutOpts, opts]);
 
-      // If `mergePartials` is true combine all `partial` subtypes
-      if (mergePartials === true) {
-        opts.partials[key] = value.content;
+        // wrap the partial with a layout, if applicable
+        value.content = this.applyLayout(value, layoutOpts);
 
-      // Otherwise, each partial subtype on a separate object
-      } else {
-        opts[plural] = opts[plural] || {};
-        opts[plural][key] = value.content;
+        // If `mergePartials` is true combine all `partial` subtypes
+        if (mergePartials === true) {
+          opts.partials[key] = value.content;
+
+        // Otherwise, each partial subtype on a separate object
+        } else {
+          opts[plural] = opts[plural] || {};
+          opts[plural][key] = value.content;
+        }
       }
-    }, this);
-  }, this);
-
+    }
+  }
   context.options = extend({}, context.options, opts);
   return context;
 };
@@ -1598,7 +1631,12 @@ Template.prototype.lookup = function(plural, name, ext) {
 
 Template.prototype.create = function(subtype, plural, opts/*, stack*/) {
   debug.template('creating subtype: %s', subtype);
-  var args = slice(arguments);
+  var len = arguments.length;
+  var args = new Array(len);
+
+  for (var i = 0; i < len; i++) {
+    args[i] = arguments[i];
+  }
 
   // normalize arguments
   if (typeOf(plural) !== 'string') { args.splice(1, 0, subtype + 's'); }
@@ -1611,7 +1649,7 @@ Template.prototype.create = function(subtype, plural, opts/*, stack*/) {
   opts = this.setType(subtype, plural, opts);
 
   // add loaders to default loaders
-  this.setLoaders(subtype, opts, slice(args, 3));
+  this.setLoaders(subtype, opts, args.slice(3));
 
   // Add convenience methods for this sub-type
   this.decorate(subtype, plural, opts);
@@ -1994,7 +2032,6 @@ Template.prototype.render = function(content, locals, cb) {
   if (typeOf(template) === 'object') {
     return this.renderTemplate(template, locals, cb);
   }
-
   return this.renderString(content, locals, cb);
 };
 

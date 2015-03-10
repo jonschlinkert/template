@@ -108,7 +108,7 @@ describe('generic helpers:', function () {
 
       engine.render('{{include "README.md"}}', function (err, content) {
         if (err) console.log(err);
-        re.test(content).should.be.true;
+        content.should.match(re);
       });
       done();
     });

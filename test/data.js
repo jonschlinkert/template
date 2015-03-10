@@ -39,8 +39,12 @@ describe('template data', function () {
       template.cache.data.should.eql({a: { a: 'a', b: 'b', c: 'c' }, x: { x: 'x', y: 'y', z: 'z' }});
     });
 
-    it('should merge data from `data` into the root of the context:', function () {
-      template.data('test/fixtures/data/data.json');
+    it('should merge data from a function:', function () {
+      template.data('test/fixtures/data/data.json', function (fp) {
+        var data = {};
+        data[path.basename(fp, path.extname(fp))] = require(path.resolve(fp));
+        return data;
+      });
       template.cache.data.should.eql({ '_root': 'I should be at the root!' });
     });
   });

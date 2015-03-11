@@ -1,7 +1,7 @@
 {
   "name": "template",
   "description": "Render templates from any engine. Make custom template types, use layouts on pages, partials or any custom template type, custom delimiters, helpers, middleware, routes, loaders, and lots more. Powers Assemble v0.6.0, Verb v0.3.0 and your application.",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "homepage": "https://github.com/jonschlinkert/template",
   "author": {
     "name": "Jon Schlinkert",
@@ -49,7 +49,7 @@
     "globby": "^1.2.0",
     "helper-cache": "^0.5.2",
     "kind-of": "^1.1.0",
-    "layouts": "^0.8.1",
+    "layouts": "^0.9.0",
     "load-templates": "^0.6.0",
     "loader-cache": "^0.4.0",
     "mixin-deep": "^1.0.1",

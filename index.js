@@ -741,10 +741,7 @@ Template.prototype.getExt = function(template, locals) {
     || this.option('viewEngine');
 
   if (ext == null) return null;
-  if (ext[0] !== '.') {
-    ext = '.' + ext;
-  }
-  return ext;
+  return utils.formatExt(ext);
 };
 
 /**
@@ -1153,12 +1150,9 @@ Template.prototype.normalize = function(plural, template, options) {
       // this allows the user to change the engine preference in the
       // the `getExt()` method.
       if (utils.hasOwn(opts, 'engine')) {
-        var ext = opts.engine;
-        if (ext[0] !== '.') {
-          ext = '.' + ext;
-        }
-        value.options._engine = ext;
+        value.options._engine = utils.formatExt(opts.engine);
       }
+
       if (utils.hasOwn(opts, 'delims')) {
         value.options.delims = opts.delims;
       }
@@ -1434,6 +1428,10 @@ Template.prototype.mergePartials = function(context) {
  */
 
 Template.prototype.find = function(type, key, subtypes) {
+  if (typeof type !== 'string') {
+    throw new TypeError('Template#find() expects `type` to be a string.');
+  }
+
   var o = this.mergeType(type, subtypes);
   if (o && typeOf(o) === 'object' && utils.hasOwn(o, key)) {
     return o[key];

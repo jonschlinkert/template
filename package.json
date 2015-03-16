@@ -35,7 +35,6 @@
     "ansi-styles": "^2.0.1",
     "arr-flatten": "^1.0.1",
     "array-slice": "^0.2.2",
-    "arrayify-compact": "^0.1.0",
     "chalk": "^1.0.0",
     "clone-deep": "^0.1.1",
     "config-cache": "^1.2.0",

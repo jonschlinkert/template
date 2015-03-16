@@ -16,7 +16,6 @@ var forOwn = require('for-own');
 var typeOf = require('kind-of');
 var pickFrom = require('pick-from');
 var cloneDeep = require('clone-deep');
-var arrayify = require('arrayify-compact');
 var extend = require('extend-shallow');
 var reduce = require('object.reduce');
 var flatten = require('arr-flatten');
@@ -676,7 +675,7 @@ Template.prototype.registerEngine = function(ext, fn, options) {
 
 Template.prototype.engine = function(exts, fn, options) {
   debug.engine('engine %j:', exts);
-  exts = arrayify(exts);
+  exts = utils.arrayify(exts);
   var len = exts.length;
   while (len--) this.registerEngine(exts[len], fn, options);
   return this;
@@ -1292,7 +1291,7 @@ Template.prototype.mergeType = function(type, collections) {
   debug.template('merging [type]: %s', type);
   var obj = this.getType(type);
 
-  collections = arrayify(collections || Object.keys(obj));
+  collections = utils.arrayify(collections || Object.keys(obj));
   var len = collections.length, res = {};
 
   while (len--) {

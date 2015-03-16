@@ -413,6 +413,7 @@ utils.methods.forEach(function(method) {
     for (var i = 0; i < len; i++) {
       args[i] = arguments[i + 1];
     }
+
     route[method].apply(route, args);
     return this;
   };
@@ -1008,32 +1009,32 @@ Template.prototype._load = function(subtype, plural, options) {
     var self = this;
     var stack = [];
 
-    var len = arguments.length;
-    var args = new Array(len);
-
-    for (var i = 0; i < len; i++) {
-      args[i] = arguments[i];
-    }
-
     // Default method used to handle sync loading when done
     var cb = function (err, template) {
       if (err) throw new Error(err);
       return template;
     };
 
-    // Normalize args to pass to loader stack
-    args = args.filter(function (arg, i) {
+    var len = arguments.length;
+    var args = new Array(len);
+
+    for (var i = 0; i < len; i++) {
+      var arg = arguments[i];
+
       if (i !== 0 && typeOf(arg) === 'array') {
         stack = arg;
+        args.pop();
+        continue;
       } else if (i === len - 1 && typeOf(arg) === 'function') {
         if (type !== 'async') {
           throw new Error(subtype + ' loaders are not async.');
         }
         cb = arg;
-      } else {
-        return arg;
+        args.pop();
+        continue;
       }
-    });
+      args[i] = arg;
+    }
 
     if (args.length === 1) args = args[0];
     var loadOpts = {
@@ -1241,7 +1242,8 @@ Template.prototype.setLoaders = function(subtype, options, stack) {
   if (type !== 'sync') {
     loader = utils.methodName('loader', type);
   }
-  this[loader].apply(this, [].concat([subtype], stack));
+
+  this[loader].apply(this, [subtype].concat(stack));
 };
 
 /**

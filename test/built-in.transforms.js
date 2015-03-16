@@ -17,10 +17,10 @@ describe('default transforms:', function () {
   });
   it('should get all the transforms.', function () {
     var transforms = template.transform();
-    Object.keys(transforms).length.should.eql(1);
+    (Object.keys(transforms).length > 1).should.be.true;
   });
   it('should get a transform by name.', function () {
-    var fn = template.transform('placeholder');
+    var fn = template.transform('loaders');
     (typeof fn === 'function').should.be.true;
   });
 });

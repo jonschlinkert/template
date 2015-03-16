@@ -200,14 +200,6 @@ Template.prototype.defaultOptions = function() {
 };
 
 /**
- * Set the current working directory
- */
-
-defineGetter(Template.prototype, 'cwd', function () {
-  return this.option('cwd') || process.cwd();
-});
-
-/**
  * Assign transform `fn` to `name` or return the value of `name`
  * if no other arguments are passed.
  *

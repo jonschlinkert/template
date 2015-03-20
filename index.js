@@ -1896,15 +1896,16 @@ Template.prototype.renderAsync = function(engine, content, options, cb) {
         cb.call(self, err);
         return;
       }
+      cb.call(self, null, res);
 
-      self._.asyncHelpers.resolveHelper(res, function (err, res) {
-        if (err) {
-          debug.err('renderAsync [helpers]: %j', err);
-          return cb.call(self, err);
-        }
+      // self._.asyncHelpers.resolveHelper(res, function (err, res) {
+      //   if (err) {
+      //     debug.err('renderAsync [helpers]: %j', err);
+      //     return cb.call(self, err);
+      //   }
 
-        cb.call(self, null, res);
-      });
+      //   cb.call(self, null, res);
+      // });
     });
   } catch (err) {
     debug.err('renderAsync [catch]: %j', err);

@@ -28,7 +28,8 @@ describe('.addAsyncHelper():', function () {
     });
 
     helpers.should.have.properties(['a', 'b']);
-    helpers._.asyncHelpers.should.have.properties(['a', 'b']);
+    helpers.a.async.should.be.true;
+    helpers.b.async.should.be.true;
   });
 
   it('should use bound helpers in templates:', function (done) {
@@ -65,7 +66,8 @@ describe('.addAsyncHelper():', function () {
 
 
     helpers.should.have.properties(['a', 'b']);
-    helpers._.asyncHelpers.should.have.properties(['a', 'b']);
+    helpers.a.async.should.be.true;
+    helpers.b.async.should.be.true;
   });
 
 
@@ -99,7 +101,8 @@ describe('.addAsyncHelper():', function () {
       });
 
     template._.asyncHelpers.should.have.properties(['a', 'b']);
-    template._.asyncHelpers._.asyncHelpers.should.have.properties(['a', 'b']);
+    template._.asyncHelpers.a.async.should.be.true;
+    template._.asyncHelpers.b.async.should.be.true;
 
     template.page('foo.md', {content: 'A: <%= a(name) %>\nB: <%= b(name) %>'});
 

@@ -18,7 +18,7 @@ describe('template partial', function () {
   });
 
   describe('when a partial has a layout defined:', function () {
-    it('should use render', function () {
+    it.skip('should use render', function () {
       template.layout('default.md', 'bbb{% body %}bbb');
       template.layout('href.md', '<a href="{% body %}"><%= text %></a>');
       template.partials('link.md', '---\nlayout: href.md\ntext: Jon Schlinkert\n---\nhttps://github.com/jonschlinkert', {a: 'b'});

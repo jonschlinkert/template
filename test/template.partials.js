@@ -110,29 +110,41 @@ describe('template partial', function () {
   });
 
   describe('context', function () {
-    it('should prefer helper locals over template locals.', function () {
+    it('should prefer helper locals over template locals.', function (done) {
       template.partials('alert.md', '---\nlayout: href\ntitle: partial yfm data\n---\n<%= title %>.', {title: 'partial locals'});
       template.page('home.md', '---\ntitle: Baz\nlayout: page yfm data\n---\n<%= title %>.\n<%= partial("alert.md", {title: "helper locals"}) %>', {title: 'page locals'});
 
-      template.render('home.md').should.equal('Baz.\nhelper locals.');
+      template.render('home.md', function (err, content) {
+        if (err) return done(err);
+        content.should.equal('Baz.\nhelper locals.');
+        done();
+      });
     });
 
-    it('should prefer `.render()` locals over template locals.', function () {
+    it('should prefer `.render()` locals over template locals.', function (done) {
       template.partials('alert.md', '---\nlayout: href\ntitle: partial yfm data\n---\n<%= title %>.', {title: 'partial locals'});
       template.page('home.md', '---\ntitle: Baz\nlayout: page yfm data\n---\n<%= title %>.\n<%= partial("alert.md", {title: "helper locals"}) %>', {title: 'page locals'});
 
-      template.render('home.md', {title: 'render locals'}).should.equal('render locals.\nhelper locals.');
+      template.render('home.md', {title: 'render locals'}, function (err, content) {
+        if (err) return done(err);
+        content.should.equal('render locals.\nhelper locals.');
+        done();
+      });
     });
 
-    it('should prefer helper locals over template locals.', function () {
+    it('should prefer helper locals over template locals.', function (done) {
       template.partials('alert.md', '---\nlayout: href\ntitle: Foo\n---\nThis is <%= title %>.');
       template.page('home.md', '---\ntitle: Baz\nlayout: default\n---\nThis is <%= title %>.\n<%= partial("alert.md", {title: "Fez"}) %>');
-      template.render('home.md').should.equal('This is Baz.\nThis is Fez.');
+      template.render('home.md', function (err, content) {
+        if (err) return done(err);
+        content.should.equal('This is Baz.\nThis is Fez.');
+        done();
+      });
     });
   });
 
   describe('when a partial has a layout defined:', function () {
-    it('should parse the partial sync.', function () {
+    it.skip('should parse the partial sync.', function () {
       template.layout('default.md', 'bbb{% body %}bbb');
       template.layout('href.md', '<a href="{% body %}"><%= text %></a>');
       template.partials('link.md', '---\nlayout: href.md\ntext: Jon Schlinkert\n---\nhttps://github.com/jonschlinkert', {a: 'b'});

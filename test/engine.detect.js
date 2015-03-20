@@ -13,7 +13,7 @@ var assert = require('assert');
 var should = require('should');
 var consolidate = require('consolidate');
 var engines = require('engines');
-var Template = require('..');
+var Template = require('./app');
 var template;
 var content;
 

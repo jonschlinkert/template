@@ -8,7 +8,7 @@
 'use strict';
 
 var should = require('should');
-var Template = require('..');
+var Template = require('./app');
 var template;
 
 describe('template.validate()', function () {

@@ -12,7 +12,7 @@ var path = require('path');
 var should = require('should');
 var Tokens = require('preserve');
 var pretty = require('verb-prettify');
-var Template = require('..');
+var Template = require('./app');
 var template;
 var tokens;
 

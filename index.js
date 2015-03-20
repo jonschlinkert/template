@@ -66,7 +66,6 @@ var Template = module.exports = Config.extend({
   constructor: function(options) {
     Template.__super__.constructor.call(this, options);
     this.initTemplate();
-    this.loadDefaults();
     this.defaultConfig();
     this.defaultOptions();
     this.loadTransforms();
@@ -123,14 +122,6 @@ Template.prototype.loadTransforms = function() {
   this.transform('delims', transforms.delimiters);
   this.transform('templates', transforms.templates);
   this.transform('engines', transforms.engines);
-};
-
-/**
- * Load all defaults
- */
-
-Template.prototype.loadDefaults = function() {
-  this.defaultOptions();
 };
 
 /**

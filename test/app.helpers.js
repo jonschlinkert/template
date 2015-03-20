@@ -9,20 +9,20 @@
 
 var async = require('async');
 var should = require('should');
-var Template = require('..');
-var template;
 var consolidate = require('consolidate');
 var handlebars = require('engine-handlebars');
 var lodash = consolidate.lodash;
 var swig = consolidate.swig;
 
+var Template = require('./app');
+var template;
+
 
 describe('generated helpers:', function () {
   /* deps: swig */
-  describe('helpers for built-in template types:', function () {
+  describe('helpers for built-in engines:', function () {
     beforeEach(function () {
       template = new Template();
-      template.engine(['*', '.md'], require('engine-lodash'));
     });
 
     it('should use the `partial` helper with a built-in engine.', function (done) {
@@ -88,7 +88,6 @@ describe('generated helpers:', function () {
   describe('helper context:', function () {
     beforeEach(function () {
       template = new Template();
-      template.engine(['*', '.md'], require('engine-lodash'));
     });
 
     it('should give preference to front-matter over template locals and helper locals.', function (done) {

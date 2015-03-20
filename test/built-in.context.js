@@ -8,13 +8,14 @@
 'use strict';
 
 var should = require('should');
-var Template = require('./app');
+var Template = require('..');
 var template;
 
 
-describe('app context', function() {
+describe('template context', function() {
   beforeEach(function() {
     template = new Template();
+    template.engine('.md', require('engine-lodash'));
   });
 
   describe('context:', function () {

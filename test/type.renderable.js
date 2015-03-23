@@ -10,7 +10,7 @@
 var assert = require('assert');
 var should = require('should');
 var forOwn = require('for-own');
-var Template = require('..');
+var Template = require('./app');
 var template;
 var consolidate = require('consolidate');
 var handlebars = require('engine-handlebars');

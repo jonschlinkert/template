@@ -9,20 +9,20 @@
 
 var async = require('async');
 var should = require('should');
-var Template = require('..');
-var template;
 var consolidate = require('consolidate');
 var handlebars = require('engine-handlebars');
 var lodash = consolidate.lodash;
 var swig = consolidate.swig;
 
+var Template = require('./app');
+var template;
+
 
 describe('generated helpers:', function () {
   /* deps: swig */
-  describe('helpers for built-in template types:', function () {
+  describe('helpers for built-in engines:', function () {
     beforeEach(function () {
       template = new Template();
-      template.engine(['*', '.md'], require('engine-lodash'));
     });
 
     it('should use the `partial` helper with a built-in engine.', function (done) {
@@ -58,33 +58,22 @@ describe('generated helpers:', function () {
       });
     });
 
-    it('should return an empty string when the partial is missing.', function (done) {
+    it('should return an empty string when the partial is missing.', function () {
       template.partial('abc.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}});
       template.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("def.md", { name: "CCC" }) %> bar'});
+      template.render('xyz.md', {name: 'DDD'}).should.eql('foo  bar');
+    });
+
+    it('should throw an error when something is wrong in a partial', function (done) {
+      template.partial('abc.md', {content: '---\nname: "AAA"\n---\n<%= name %> - <%= foo(name) %>', locals: {name: 'BBB'}});
+      template.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("abc.md", { name: "CCC" }) %> bar'});
       template.render('xyz.md', {name: 'DDD'}, function (err, content) {
-        if (err) return done(err);
-        content.should.eql('foo  bar');
+        if (!err) return done('Expected an error.');
         done();
       });
     });
 
-    it('should throw an error when something is wrong in a partial', function (done) {
-      var called = false;
-      var cb = function (err) {
-        if (called) return;
-        called = true;
-        done(err);
-      };
-
-      template.partial('abc.md', {content: '---\nname: "AAA"\n---\n<%= name %> - <%= foo(name) %>', locals: {name: 'BBB'}});
-      template.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("abc.md", { name: "CCC" }) %> bar'});
-      template.render('xyz.md', {name: 'DDD'}, function (err, content) {
-        if (!err) return cb('Expected an error.');
-        cb();
-      });
-    });
-
-    it.skip('should throw an error when something is wrong in a partial', function () {
+    it('should throw an error when something is wrong in a partial', function () {
       template.partial('abc.md', {content: '---\nname: "AAA"\n---\n<%= name %> - <%= foo(name) %>', locals: {name: 'BBB'}});
       template.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("abc.md", { name: "CCC" }) %> bar'});
       try {
@@ -99,7 +88,6 @@ describe('generated helpers:', function () {
   describe('helper context:', function () {
     beforeEach(function () {
       template = new Template();
-      template.engine(['*', '.md'], require('engine-lodash'));
     });
 
     it('should give preference to front-matter over template locals and helper locals.', function (done) {

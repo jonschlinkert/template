@@ -23,4 +23,4 @@ module.exports = function (template) {
       destExt: template.option('destExt')
     });
   }
-}
+};

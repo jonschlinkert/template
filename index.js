@@ -121,7 +121,6 @@ Template.prototype.loadTransforms = function() {
   this.transform('routes', transforms.middleware);
   this.transform('delims', transforms.delimiters);
   this.transform('templates', transforms.templates);
-  this.transform('engines', transforms.engines);
 };
 
 /**

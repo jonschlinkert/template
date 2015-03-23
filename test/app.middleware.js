@@ -8,10 +8,10 @@
 'use strict';
 
 var should = require('should');
-var Template = require('..');
+var Template = require('./app');
 var template;
 
-describe('default middleware:', function () {
+describe('app middleware:', function () {
   beforeEach(function () {
     template = new Template();
     template.create('page', { isRenderable: true}, function (obj) {

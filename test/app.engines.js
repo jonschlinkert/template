@@ -11,13 +11,18 @@ var fs = require('fs');
 var path = require('path');
 var assert = require('assert');
 var should = require('should');
-var Template = require('..');
+var Template = require('./app');
 var template = new Template();
 
 
-describe('default engines', function() {
+describe('app engines', function() {
   it('should register default engines automatically.', function() {
-    template.engines.should.be.empty;
+    template.engines.should.have.properties(['.*', '.md']);
+  });
+
+  it.skip('should disable default engines.', function() {
+    template.disable('default engines');
+    template.engines.should.not.have.properties(['.*', '.md']);
   });
 });
 

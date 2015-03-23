@@ -9,7 +9,7 @@
 
 var should = require('should');
 var _ = require('lodash');
-var Template = require('..');
+var Template = require('./app');
 var globber = require('./lib/globber');
 var template;
 

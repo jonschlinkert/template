@@ -12,7 +12,7 @@ var path = require('path');
 var should = require('should');
 var handlebars = require('engine-handlebars');
 var lodash = require('engine-lodash');
-var Template = require('..');
+var Template = require('./app');
 var template;
 
 

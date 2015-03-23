@@ -12,7 +12,7 @@ var path = require('path');
 var should = require('should');
 var forOwn = require('for-own');
 var engines = require('engines');
-var Template = require('..');
+var Template = require('./app');
 var template = new Template();
 
 

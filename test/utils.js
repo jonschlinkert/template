@@ -9,7 +9,7 @@
 
 var should = require('should');
 var utils = require('../lib');
-var Template = require('..');
+var Template = require('./app');
 var template;
 
 

@@ -23,7 +23,7 @@ describe('template render', function () {
   });
 
   describe('when a `renderable` template\'s own render method is used:', function () {
-    it.skip('should render the template synchronously:', function () {
+    it('should render the template synchronously:', function () {
       var page = template.getPage('home.md');
       page.render().should.equal('bbbThis is home page content.\n<a href="https://github.com/jonschlinkert">Brooke</a>bbb');
     });

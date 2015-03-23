@@ -1636,6 +1636,7 @@ Template.prototype.compileTemplate = function(template, options, async) {
   var opts = options || {};
   var context = opts.context || {};
   delete opts.context;
+  opts.async = async;
 
   template.options = template.options || {};
   template.options.layout = template.layout;
@@ -1666,6 +1667,7 @@ Template.prototype.compileTemplate = function(template, options, async) {
 
   // if a layout is defined, apply it before compiling
   var content = this.applyLayout(template, extend({}, context, opts));
+
 
   // compile template
   return this.compileBase(engine, content, opts);
@@ -1829,6 +1831,7 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
    * async
    */
 
+  locals.async = true;
   // when a callback is passed, render and handle middleware in callback
   return this.renderBase(engine, content, locals, function (err, content) {
     if (err) return cb.call(self, err);
@@ -1887,15 +1890,6 @@ Template.prototype.renderAsync = function(engine, content, options, cb) {
         return;
       }
       cb.call(self, null, res);
-
-      // self._.asyncHelpers.resolveHelper(res, function (err, res) {
-      //   if (err) {
-      //     debug.err('renderAsync [helpers]: %j', err);
-      //     return cb.call(self, err);
-      //   }
-
-      //   cb.call(self, null, res);
-      // });
     });
   } catch (err) {
     debug.err('renderAsync [catch]: %j', err);

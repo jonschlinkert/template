@@ -65,11 +65,18 @@ describe('generated helpers:', function () {
     });
 
     it('should throw an error when something is wrong in a partial', function (done) {
+      var called = false;
+      var cb = function (err) {
+        if (called) return;
+        called = true;
+        done(err);
+      };
+
       template.partial('abc.md', {content: '---\nname: "AAA"\n---\n<%= name %> - <%= foo(name) %>', locals: {name: 'BBB'}});
       template.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("abc.md", { name: "CCC" }) %> bar'});
       template.render('xyz.md', {name: 'DDD'}, function (err, content) {
-        if (!err) return done('Expected an error.');
-        done();
+        if (!err) return cb('Expected an error.');
+        cb();
       });
     });
 

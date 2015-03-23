@@ -84,7 +84,7 @@ describe('generated helpers:', function () {
       });
     });
 
-    it.skip('should throw an error when something is wrong in a partial', function () {
+    it('should throw an error when something is wrong in a partial', function () {
       template.partial('abc.md', {content: '---\nname: "AAA"\n---\n<%= name %> - <%= foo(name) %>', locals: {name: 'BBB'}});
       template.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("abc.md", { name: "CCC" }) %> bar'});
       try {

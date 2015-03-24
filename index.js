@@ -14,6 +14,7 @@ var chalk = require('chalk');
 var get = require('get-value');
 var forOwn = require('for-own');
 var typeOf = require('kind-of');
+var pick = require('object.pick');
 var pickFrom = require('pick-from');
 var cloneDeep = require('clone-deep');
 var extend = require('extend-shallow');
@@ -62,15 +63,15 @@ var utils = require('./lib');
  * @api public
  */
 
-var Template = module.exports = Config.extend({
-  constructor: function(options) {
-    Template.__super__.constructor.call(this, options);
-    this.initTemplate();
-    this.defaultConfig();
-    this.defaultOptions();
-    this.loadTransforms();
-  }
-});
+function Template(options) {
+  Config.call(this, options);
+  this.initTemplate();
+  this.defaultConfig();
+  this.defaultOptions();
+  this.loadTransforms();
+}
+
+Config.extend(Template.prototype);
 
 /**
  * Extend `Template`
@@ -88,6 +89,7 @@ Template.prototype.initTemplate = function() {
   this.loaders = this.loaders || {};
   this.engines = this.engines || {};
   this.delims = this.delims || {};
+  this.collections = {};
   this.transforms = {};
 
   // Engine properties
@@ -107,7 +109,7 @@ Template.prototype.initTemplate = function() {
   this.view('partials', {});
   this.view('layouts', {});
   this.view('pages', {});
-  this.collection = {};
+  this.inflections = {};
 
   this.set('_context', {});
 };
@@ -1190,7 +1192,7 @@ Template.prototype.setType = function(subtype, plural, options) {
   var opts = extend({}, options);
 
   // Make an association between `subtype` and its `plural`
-  this.collection[subtype] = plural;
+  this.inflections[subtype] = plural;
 
   if (opts.isRenderable) {
     this.type.renderable.push(plural);
@@ -1559,6 +1561,10 @@ Template.prototype.create = function(subtype, plural, opts/*, stack*/) {
       this.defaultAsyncHelper(subtype, plural);
     }
   }
+
+  // add default collections for this sub-type
+  this.collection(subtype, plural, opts);
+
   return this;
 };
 
@@ -1588,6 +1594,42 @@ Template.prototype.decorate = function(subtype, plural, options) {
   mixin(utils.methodName('render', subtype), function () {
     return this.renderSubtype(subtype);
   });
+};
+
+/**
+ * Create a collection.
+ */
+
+Template.prototype.collection = function(subtype, plural, options) {
+  var middleware = require('./lib/collections/middleware');
+
+  if (typeof plural === 'object') {
+    options = plural;
+    plural = subtype + 's';
+  }
+
+  if (typeof plural === 'undefined') {
+    options = {};
+    plural = subtype + 's';
+  }
+
+  this.collections[plural] = {};
+
+  options = options || {};
+  options.plural = options.plural || plural;
+  options.forType = options.forType || [plural];
+  options.forType = !Array.isArray(options.forType)
+    ? [options.forType]
+    : options.forType;
+
+  if (!options.props) {
+    options.props = function (file) {
+      return [true];
+    };
+  }
+
+  this.collections[plural].options = pick(options, ['plural', 'forType', 'props', 'pattern']);
+  this.onLoad(options.pattern || /./, middleware(this, options));
 };
 
 /**
@@ -1667,7 +1709,6 @@ Template.prototype.compileTemplate = function(template, options, async) {
 
   // if a layout is defined, apply it before compiling
   var content = this.applyLayout(template, extend({}, context, opts));
-
 
   // compile template
   return this.compileBase(engine, content, opts);
@@ -1969,7 +2010,7 @@ Template.prototype.renderSubtype = function(subtype) {
   debug.render('render subtype: [%s / %s]', subtype);
 
   // get the plural name of the given subtype
-  var plural = this.collection[subtype];
+  var plural = this.inflections[subtype];
   var self = this;
 
   return function (key, locals, cb) {
@@ -2157,3 +2198,6 @@ function defineGetter(o, name, getter) {
     set: function() {}
   });
 }
+
+
+module.exports = Template;

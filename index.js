@@ -107,8 +107,7 @@ Template.prototype.initTemplate = function() {
   this.view('partials', {});
   this.view('layouts', {});
   this.view('pages', {});
-  this.collection = {};
-
+  this.inflections = {};
   this.set('_context', {});
 };
 
@@ -218,10 +217,62 @@ Template.prototype.transform = function(name, fn) {
     return this.transforms[name];
   }
 
-  this.transforms[name] = fn;
   if (fn && typeof fn === 'function') {
-    fn.apply(this, [this].concat(arguments));
+    this.transforms[name] = fn;
+    fn(this);
   }
+  return this;
+};
+
+/**
+ * Assign mixin `fn` to `name` or return the value of `name`
+ * if no other arguments are passed.
+ *
+ * This method sets mixins on the cache, which can later be passed
+ * to any template engine that uses mixins, like Lo-Dash or Underscore.
+ * This also ensures that mixins are passed to the same instance of
+ * whatever engine is used.
+ *
+ * @param {String} `name` The name of the mixin to add.
+ * @param {Function} `fn` The actual mixin function.
+ * @api private
+ */
+
+Template.prototype.mixin = function(name, fn) {
+  debug.engine('adding [mixin]: %s', name);
+  if (arguments.length === 0) {
+    return this._.mixins;
+  }
+  if (arguments.length === 1) {
+    return this._.mixins[name];
+  }
+  this._.mixins[name] = fn;
+  return this;
+};
+
+/**
+ * Assign import `fn` to `name` or return the value of `name`
+ * if no other arguments are passed.
+ *
+ * ```js
+ * template.imports('log', function(msg) {
+ *   return console.log(msg);
+ * });
+ * ```
+ * @param {String} `name` The name of the import to add.
+ * @param {Function} `fn` The actual import function.
+ * @api private
+ */
+
+Template.prototype.imports = function(name, fn) {
+  debug.engine('adding [imports]: %s', name);
+  if (arguments.length === 0) {
+    return this._.imports;
+  }
+  if (arguments.length === 1) {
+    return this._.imports[name];
+  }
+  this._.imports[name] = fn;
   return this;
 };
 
@@ -735,58 +786,6 @@ Template.prototype.getExt = function(template, locals) {
 };
 
 /**
- * Assign mixin `fn` to `name` or return the value of `name`
- * if no other arguments are passed.
- *
- * This method sets mixins on the cache, which can later be passed
- * to any template engine that uses mixins, like Lo-Dash or Underscore.
- * This also ensures that mixins are passed to the same instance of
- * whatever engine is used.
- *
- * @param {String} `name` The name of the mixin to add.
- * @param {Function} `fn` The actual mixin function.
- * @api private
- */
-
-Template.prototype.mixin = function(name, fn) {
-  debug.engine('adding [mixin]: %s', name);
-  if (arguments.length === 0) {
-    return this._.mixins;
-  }
-  if (arguments.length === 1) {
-    return this._.mixins[name];
-  }
-  this._.mixins[name] = fn;
-  return this;
-};
-
-/**
- * Assign import `fn` to `name` or return the value of `name`
- * if no other arguments are passed.
- *
- * ```js
- * template.imports('log', function(msg) {
- *   return console.log(msg);
- * });
- * ```
- * @param {String} `name` The name of the import to add.
- * @param {Function} `fn` The actual import function.
- * @api private
- */
-
-Template.prototype.imports = function(name, fn) {
-  debug.engine('adding [imports]: %s', name);
-  if (arguments.length === 0) {
-    return this._.imports;
-  }
-  if (arguments.length === 1) {
-    return this._.imports[name];
-  }
-  this._.imports[name] = fn;
-  return this;
-};
-
-/**
  * Register generic template helpers that are not specific to an
  * engine.
  *
@@ -1190,7 +1189,7 @@ Template.prototype.setType = function(subtype, plural, options) {
   var opts = extend({}, options);
 
   // Make an association between `subtype` and its `plural`
-  this.collection[subtype] = plural;
+  this.inflections[subtype] = plural;
 
   if (opts.isRenderable) {
     this.type.renderable.push(plural);
@@ -1969,7 +1968,7 @@ Template.prototype.renderSubtype = function(subtype) {
   debug.render('render subtype: [%s / %s]', subtype);
 
   // get the plural name of the given subtype
-  var plural = this.collection[subtype];
+  var plural = this.inflections[subtype];
   var self = this;
 
   return function (key, locals, cb) {

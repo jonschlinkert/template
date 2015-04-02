@@ -20,7 +20,7 @@ describe('default transforms:', function () {
     (Object.keys(transforms).length > 1).should.be.true;
   });
   it('should get a transform by name.', function () {
-    var fn = template.transform('loaders');
+    var fn = template.transform('routes');
     (typeof fn === 'function').should.be.true;
   });
 });

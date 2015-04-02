@@ -30,7 +30,6 @@ describe('.use()', function () {
     });
 
     template.page('foo', {content: 'letters:'});
-    console.log(template)
     template.render('foo', function (err, content) {
       if (err) console.log(err);
       content.should.equal('letters:AAA');

@@ -35,6 +35,7 @@ var Router = routes.Router;
  */
 
 var debug = require('./lib/debug');
+var loaders = require('./lib/loaders');
 var transforms = require('./lib/transforms');
 var utils = require('./lib');
 
@@ -60,7 +61,9 @@ var Template = module.exports = Config.extend({
     this.initTemplate();
     this.defaultConfig();
     this.defaultOptions();
-    this.loadTransforms();
+    this.mixInLoaders();
+    this.defaultLoaders();
+    this.defaultTransforms();
   }
 });
 
@@ -103,16 +106,6 @@ Template.prototype.initTemplate = function() {
   this.view('partials', {});
   this.view('layouts', {});
   this.view('pages', {});
-};
-
-/**
- * Load default transforms.
- */
-
-Template.prototype.loadTransforms = function() {
-  this.transform('loaders', transforms.loaders);
-  this.transform('routes', transforms.middleware);
-  this.transform('templates', transforms.templates);
 };
 
 /**
@@ -176,6 +169,42 @@ Template.prototype.defaultOptions = function() {
   this.option('matchLoader', function () {
     return 'default';
   });
+};
+
+/**
+ * Mixin methods from [loader-cache] for loading templates.
+ */
+
+Template.prototype.mixInLoaders = function() {
+  var mix = utils.mixInLoaders(Template.prototype, this._.loaders);
+  // register methods
+  mix('loader', 'register');
+  mix('loaderAsync', 'registerAsync');
+  mix('loaderPromise', 'registerPromise');
+  mix('loaderStream', 'registerStream');
+  // load methods
+  mix('load');
+  mix('loadAsync');
+  mix('loadPromise');
+  mix('loadStream');
+};
+
+/**
+ * Register default loader methods
+ */
+
+Template.prototype.defaultLoaders = function() {
+  this.loader('default', loaders.templates(this));
+  this.loader('helpers', loaders.helpers(this));
+};
+
+/**
+ * Load default transforms.
+ */
+
+Template.prototype.defaultTransforms = function() {
+  this.transform('routes', transforms.middleware);
+  this.transform('templates', transforms.templates);
 };
 
 /**

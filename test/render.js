@@ -25,7 +25,7 @@ describe('template.render()', function () {
     it('should expose `this` to the .render() method:', function (done) {
       template.render('<%= name %>', {name: 'Jon Schlinkert'}, function (err, content) {
         if (err) console.log(err);
-        this.should.have.properties(['cache', 'options', 'engines', 'delims']);
+        this.should.have.properties(['cache', 'options', 'engines']);
         done();
       });
     });

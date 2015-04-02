@@ -82,7 +82,6 @@ Template.Route = routes.Route;
 Template.prototype.initTemplate = function() {
   this.loaders = this.loaders || {};
   this.engines = this.engines || {};
-  this.delims = this.delims || {};
   this.inflections = {};
   this.transforms = {};
 

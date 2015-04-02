@@ -34,9 +34,9 @@ var Router = routes.Router;
  * Local modules
  */
 
-var debug = require('./lib/debug');
-var loaders = require('./lib/loaders');
 var transforms = require('./lib/transforms');
+var loaders = require('./lib/loaders');
+var debug = require('./lib/debug');
 var utils = require('./lib');
 
 /**
@@ -55,17 +55,17 @@ var utils = require('./lib');
  * @api public
  */
 
-var Template = module.exports = Config.extend({
-  constructor: function(options) {
-    Template.__super__.constructor.call(this, options);
-    this.initTemplate();
-    this.defaultConfig();
-    this.defaultOptions();
-    this.mixInLoaders();
-    this.defaultLoaders();
-    this.defaultTransforms();
-  }
-});
+function Template(options) {
+  Config.call(this, options);
+  Template.__super__.constructor.call(this, options);
+  this.initTemplate();
+  this.defaultConfig();
+  this.defaultOptions();
+  this.mixInLoaders();
+  this.defaultLoaders();
+  this.defaultTransforms();
+}
+Config.extend(Template.prototype);
 
 /**
  * Extend `Template`
@@ -275,8 +275,7 @@ Template.prototype.handle = function(method, file, done) {
   file.options.method = method;
   if (!this.router) {
     debug.routes('no routes defined on engine');
-    done();
-    return;
+    return done();
   }
   this.router.handle(file, done);
 };
@@ -1924,3 +1923,9 @@ function handleError(method, template) {
 function mixin(method, fn) {
   Template.prototype[method] = fn;
 }
+
+/**
+ * Expose `Template`
+ */
+
+module.exports = Template;

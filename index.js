@@ -36,7 +36,6 @@ var Router = routes.Router;
  */
 
 var debug = require('./lib/debug');
-var init = require('./lib/middleware/init');
 var transforms = require('./lib/transforms');
 var utils = require('./lib');
 
@@ -210,7 +209,6 @@ Template.prototype.transform = function(name, fn) {
   if (arguments.length === 1) {
     return this.transforms[name];
   }
-
   if (fn && typeof fn === 'function') {
     this.transforms[name] = fn;
     fn(this);
@@ -230,8 +228,6 @@ Template.prototype.lazyrouter = function() {
       strict: this.enabled('strict routing'),
       methods: utils.methods.concat(this.option('router methods'))
     });
-    // initialization middleware. currently a noop
-    this.router.use(init(this));
   }
 };
 

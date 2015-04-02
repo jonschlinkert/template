@@ -32,7 +32,7 @@ describe('template.router()', function() {
     });
 
     it('should have routes for default template types.', function() {
-      template.router.stack.should.have.length(4);
+      template.router.stack.should.have.length(3);
     });
 
     it('should dispatch /foo', function(done) {

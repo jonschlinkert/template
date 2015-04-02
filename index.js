@@ -8,16 +8,12 @@
 'use strict';
 
 var path = require('path');
-var util = require('util');
-var glob = require('globby');
 var chalk = require('chalk');
-var get = require('get-value');
 var forOwn = require('for-own');
 var typeOf = require('kind-of');
 var pickFrom = require('pick-from');
 var cloneDeep = require('clone-deep');
 var extend = require('extend-shallow');
-var reduce = require('object.reduce');
 var flatten = require('arr-flatten');
 var merge = require('mixin-deep');
 var slice = require('array-slice');
@@ -34,7 +30,6 @@ var Helpers = require('helper-cache');
 var Engines = require('engine-cache');
 var Loaders = require('loader-cache');
 var Router = routes.Router;
-var Route = routes.Route;
 
 /**
  * Local modules
@@ -43,7 +38,6 @@ var Route = routes.Route;
 var debug = require('./lib/debug');
 var init = require('./lib/middleware/init');
 var transforms = require('./lib/transforms');
-var loaders = require('./lib/loaders');
 var utils = require('./lib');
 
 /**
@@ -225,58 +219,6 @@ Template.prototype.transform = function(name, fn) {
 };
 
 /**
- * Assign mixin `fn` to `name` or return the value of `name`
- * if no other arguments are passed.
- *
- * This method sets mixins on the cache, which can later be passed
- * to any template engine that uses mixins, like Lo-Dash or Underscore.
- * This also ensures that mixins are passed to the same instance of
- * whatever engine is used.
- *
- * @param {String} `name` The name of the mixin to add.
- * @param {Function} `fn` The actual mixin function.
- * @api private
- */
-
-Template.prototype.mixin = function(name, fn) {
-  debug.engine('adding [mixin]: %s', name);
-  if (arguments.length === 0) {
-    return this._.mixins;
-  }
-  if (arguments.length === 1) {
-    return this._.mixins[name];
-  }
-  this._.mixins[name] = fn;
-  return this;
-};
-
-/**
- * Assign import `fn` to `name` or return the value of `name`
- * if no other arguments are passed.
- *
- * ```js
- * template.imports('log', function(msg) {
- *   return console.log(msg);
- * });
- * ```
- * @param {String} `name` The name of the import to add.
- * @param {Function} `fn` The actual import function.
- * @api private
- */
-
-Template.prototype.imports = function(name, fn) {
-  debug.engine('adding [imports]: %s', name);
-  if (arguments.length === 0) {
-    return this._.imports;
-  }
-  if (arguments.length === 1) {
-    return this._.imports[name];
-  }
-  this._.imports[name] = fn;
-  return this;
-};
-
-/**
  * Lazily initalize router, to allow options to
  * be passed in after init.
  */
@@ -420,14 +362,14 @@ Template.prototype.use = function (fn) {
   var len = fns.length, i = 0;
 
   while (len--) {
-    var fn = fns[i++];
+    var mfn = fns[i++];
     // non-Template instance
-    if (!fn || !fn.handle || !fn.set) {
-      router.use(path, fn.bind(this));
+    if (!mfn || !mfn.handle || !mfn.set) {
+      router.use(path, mfn.bind(this));
     }
     debug.routes('use: %s', path);
-    fn.mountpath = path;
-    fn.parent = this;
+    mfn.mountpath = path;
+    mfn.parent = this;
   }
   return this;
 };
@@ -528,155 +470,6 @@ Template.prototype.applyLayout = function(template, locals) {
 };
 
 /**
- * Pass custom delimiters to Lo-Dash.
- *
- * **Example:**
- *
- * ```js
- * template.makeDelims(['{%', '%}'], ['{{', '}}'], opts);
- * ```
- *
- * @param  {Array} `arr` Array of delimiters.
- * @param  {Array} `layoutDelims` layout-specific delimiters to use. Default is `['{{', '}}']`.
- * @param  {Object} `options` Options to pass to [delims].
- * @api private
- */
-
-Template.prototype.makeDelims = function(arr, options) {
-  var settings = extend({}, options, { escape: true });
-  return this._.delims.makeDelims(arr, settings);
-};
-
-/**
- * Cache delimiters by `name` with the given `options` for later use.
- *
- * **Example:**
- *
- * ```js
- * template.addDelims('curly', ['{%', '%}']);
- * template.addDelims('angle', ['<%', '%>']);
- * template.addDelims('es6', ['${', '}'], {
- *   // override the generated regex
- *   interpolate: /\$\{([^\\}]*(?:\\.[^\\}]*)*)\}/g
- * });
- * ```
- *
- * @param {String} `name` The name to use for the stored delimiters.
- * @param {Array} `delims` Array of delimiter strings. See [delims] for details.
- * @param {Object} `opts` Options to pass to [delims]. You can also use the options to
- *                        override any of the generated delimiters.
- * @api public
- */
-
-Template.prototype.addDelims = function(ext, delims, layoutDelims, settings) {
-  debug.delims('adding delims [ext]: %s', ext, delims);
-  ext = utils.formatExt(ext);
-
-  if (typeOf(layoutDelims) === 'object') {
-    settings = layoutDelims;
-    layoutDelims = null;
-  }
-
-  this._.delims.setDelims(ext, delims, settings);
-  this.delims[ext] = this._.delims.getDelims(ext);
-
-  if (Array.isArray(layoutDelims)) {
-    this.delims[ext].layoutDelims = this.makeDelims(layoutDelims, settings);
-  }
-  return this;
-};
-
-/**
- * The `ext` of the stored delimiters to pass to the current delimiters engine.
- * The engine must support custom delimiters for this to work.
- *
- * @param  {Array} `ext` The name of the stored delimiters to pass.
- * @api private
- */
-
-Template.prototype.getDelims = function(ext) {
-  debug.delims('getting delims: %s', ext);
-
-  ext = ext || this.currentDelims || this.option('ext');
-  ext = utils.formatExt(ext);
-
-  if(utils.hasOwn(this.delims, ext)) {
-    return this.delims[ext];
-  }
-
-  this.useDelims(ext);
-  return this.delims[ext];
-};
-
-/**
- * Specify by `ext` the delimiters to make active.
- *
- * ```js
- * template.useDelims('curly');
- * template.useDelims('angle');
- * ```
- *
- * @param {String} `ext`
- * @api public
- */
-
-Template.prototype.useDelims = function(ext) {
-  debug.delims('using delims: %s', ext);
-  ext = utils.formatExt(ext);
-
-  Object.defineProperty(this, 'currentDelims', {
-    configurable: true,
-    get: function () {
-      return ext;
-    },
-    set: function (val) {
-      ext = val;
-    }
-  });
-  return ext;
-};
-
-/**
- * Specify by `ext` the delimiters to make active.
- *
- * ```js
- * template.useDelims('curly');
- * template.useDelims('angle');
- * ```
- *
- * @param {String} `ext`
- * @api public
- */
-
-Template.prototype.handleDelims = function(ext, engine, template, locals) {
-  // See if delimiters are defined for the template
-  var delims = template.delims
-    || template.options.delims
-    || locals.delims
-    || engine.options && engine.options.delims;
-
-  // See if escape syntax is defined for delimiters
-  var escapeDelims = template.escapeDelims
-    || template.options.escapeDelims
-    || locals.escapeDelims
-    || engine.options && engine.options.escapeDelims
-    || this.option('escapeDelims');
-
-  if (escapeDelims && typeof escapeDelims === 'object') {
-    if (Array.isArray(escapeDelims)) {
-      escapeDelims = {from: escapeDelims, to: delims};
-    }
-    locals.escapeDelims = escapeDelims;
-  }
-
-  // Ensure that delimiters are converted to regex and
-  // cached, so we can pass the regex to the engine
-  if (Array.isArray(delims) && typeof this.currentDelims === 'undefined') {
-    this.addDelims(ext, delims);
-  }
-};
-
-/**
  * Private method for registering an engine. Register the given view
  * engine callback `fn` as `ext`.
  *
@@ -694,10 +487,6 @@ Template.prototype.registerEngine = function(ext, fn, options) {
   ext = utils.formatExt(ext);
 
   this._.engines.setEngine(ext, fn, opts);
-  if (opts.delims) {
-    this.addDelims(ext, opts.delims);
-    this.engines[ext].delims = this.getDelims(ext);
-  }
   return this;
 };
 
@@ -1141,12 +930,7 @@ Template.prototype.normalize = function(plural, template, options) {
       if (utils.hasOwn(opts, 'engine')) {
         value.options._engine = utils.formatExt(opts.engine);
       }
-
-      if (utils.hasOwn(opts, 'delims')) {
-        value.options.delims = opts.delims;
-      }
-
-      value.render = function (locals, cb) {
+      value.render = function render(locals, cb) {
         return self.renderTemplate(this, locals, cb);
       };
       template[key] = value;
@@ -1190,7 +974,6 @@ Template.prototype.setType = function(subtype, plural, options) {
 
   // Make an association between `subtype` and its `plural`
   this.inflections[subtype] = plural;
-
   if (opts.isRenderable) {
     this.type.renderable.push(plural);
   }
@@ -1355,7 +1138,6 @@ Template.prototype.mergeLayouts = function(options) {
 
 Template.prototype.mergePartials = function(context) {
   debug.template('merging partials [%s]: %j', arguments);
-  // locals = merge({}, context, locals);
 
   var mergePartials = this.option('mergePartials');
   if (typeof mergePartials === 'function') {
@@ -1643,22 +1425,6 @@ Template.prototype.compileTemplate = function(template, options, async) {
   // find ext and engine to use
   var ext = template.ext || this.getExt(template, context);
   var engine = this.getEngine(ext);
-
-  // Handle custom template delimiters and escaping
-  this.handleDelims(ext, engine, template, opts);
-
-  // additional delim settings
-  var settings;
-
-  if (typeof this.currentDelims !== 'undefined') {
-    settings = this.delims[this.currentDelims];
-  } else {
-    settings = this.getDelims(ext);
-  }
-
-  if (settings) {
-    opts = extend({}, settings, opts);
-  }
 
   // Bind context to helpers before passing to the engine.
   this.bindHelpers(opts, context, async);
@@ -2136,23 +1902,4 @@ function handleError(template, method) {
 
 function mixin(method, fn) {
   Template.prototype[method] = fn;
-}
-
-/**
- * Utility method to define getters.
- *
- * @param  {Object} `o`
- * @param  {String} `name`
- * @param  {Function} `getter`
- * @return {Getter}
- * @api private
- */
-
-function defineGetter(o, name, getter) {
-  Object.defineProperty(o, name, {
-    configurable: false,
-    enumerable: false,
-    get: getter,
-    set: function() {}
-  });
 }

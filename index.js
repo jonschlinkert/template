@@ -24,7 +24,6 @@ var slice = require('array-slice');
 
 var layouts = require('layouts');
 var routes = require('en-route');
-var Delims = require('delimiters');
 var Config = require('config-cache');
 var Helpers = require('helper-cache');
 var Engines = require('engine-cache');
@@ -81,7 +80,11 @@ Template.prototype.initTemplate = function() {
   this.loaders = this.loaders || {};
   this.engines = this.engines || {};
   this.delims = this.delims || {};
+  this.inflections = {};
   this.transforms = {};
+
+  // context object for partials
+  this.set('_context', {});
 
   // Engine properties
   this._ = {};
@@ -100,8 +103,6 @@ Template.prototype.initTemplate = function() {
   this.view('partials', {});
   this.view('layouts', {});
   this.view('pages', {});
-  this.inflections = {};
-  this.set('_context', {});
 };
 
 /**
@@ -111,7 +112,6 @@ Template.prototype.initTemplate = function() {
 Template.prototype.loadTransforms = function() {
   this.transform('loaders', transforms.loaders);
   this.transform('routes', transforms.middleware);
-  this.transform('delims', transforms.delimiters);
   this.transform('templates', transforms.templates);
 };
 
@@ -120,7 +120,6 @@ Template.prototype.loadTransforms = function() {
  */
 
 Template.prototype.defaultConfig = function() {
-  this._.delims = new Delims(this.options);
   this._.loaders = new Loaders(this.loaders);
   this._.engines = new Engines(this.engines);
   this._.helpers = new Helpers({bind: false});
@@ -142,7 +141,6 @@ Template.prototype.defaultOptions = function() {
   this.disable('debugEngine');
   this.enable('default engines');
   this.option('viewEngine', '*');
-  this.option('delims', ['<%', '%>']);
 
   // helpers
   this.enable('default helpers');
@@ -339,7 +337,7 @@ Template.prototype.use = function (fn) {
     while (Array.isArray(arg) && arg.length !== 0) {
       arg = arg[0];
     }
-    // first arg is the path
+    // if the first arg is the path, offset by 1
     if (typeof arg !== 'function') {
       offset = 1;
       path = fn;
@@ -348,8 +346,9 @@ Template.prototype.use = function (fn) {
 
   var fns = flatten(slice(arguments, offset));
   if (fns.length === 0) {
-    throw new TypeError('Template#use() expects middleware functions');
+    throw new TypeError('Template#use() expects middleware functions.');
   }
+
   this.lazyrouter();
   var router = this.router;
   var len = fns.length, i = 0;

@@ -246,7 +246,6 @@ Template.prototype.handle = function(method, file, done) {
   }
   file.options = file.options || {};
   file.options.method = method;
-
   if (!this.router) {
     debug.routes('no routes defined on engine');
     done();
@@ -256,7 +255,7 @@ Template.prototype.handle = function(method, file, done) {
 };
 
 /**
- * Dispatch `file` through an explicitly defined middleware `stack`.
+ * Dispatch `file` through an array of middleware functions.
  *
  * @param  {Object} `file`
  * @param  {Array} `fns`
@@ -264,15 +263,13 @@ Template.prototype.handle = function(method, file, done) {
  */
 
 Template.prototype.dispatch = function(file, fns) {
-  forOwn(file, function (value, key) {
-    if (fns) this.route(value.path).all(fns);
-    this.handle('onLoad', value, function (err) {
-      if (err) {
-        console.error(chalk.red('Error running middleware for', key));
-        console.error(chalk.red(err));
-      }
-    });
-  }.bind(this));
+  for (var key in file) {
+    if (file.hasOwnProperty(key)) {
+      var value = file[key];
+      if (fns) this.route(value.path).all(fns);
+      this.handle('onLoad', value, handleError('onLoad', {path: key}));
+    }
+  }
 };
 
 /**
@@ -1544,7 +1541,7 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   var opts = extend({}, locals.options);
 
   // handle pre-render middleware routes
-  this.handle('preRender', template, handleError(template, 'preRender'));
+  this.handle('preRender', template, handleError('preRender', template));
 
   // Merge `.render()` locals with template locals
   locals = this.mergeContext(template, locals);
@@ -1584,7 +1581,7 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
     template.content = this.renderBase(engine, content, locals, cb);
 
     // handle post-render middleware routes
-    this.handle('postRender', template, handleError(template, 'postRender'));
+    this.handle('postRender', template, handleError('postRender', template));
     return template.content;
   }
 
@@ -1597,7 +1594,7 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   return this.renderBase(engine, content, locals, function (err, content) {
     if (err) return cb.call(self, err);
     template.content = content;
-    self.handle('postRender', template, handleError(template, 'postRender'));
+    self.handle('postRender', template, handleError('postRender', template));
     return cb.call(self, null, template.content);
   });
 };
@@ -1879,7 +1876,7 @@ Template.prototype.mergeTypeContext = function(type, key, locals, data) {
  * @api private
  */
 
-function handleError(template, method) {
+function handleError(method, template) {
   return function (err) {
     if (err) {
       console.error(chalk.red('Error running ' + method + ' middleware for', template.path));

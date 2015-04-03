@@ -16,7 +16,7 @@ var Template = require('./app');
 var template;
 
 
-describe('template delimiters:', function () {
+describe('template engine:', function () {
   /* deps: engine-handlebars */
   beforeEach(function () {
     template = new Template();

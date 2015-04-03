@@ -9,7 +9,6 @@
 
 var path = require('path');
 var chalk = require('chalk');
-var forOwn = require('for-own');
 var typeOf = require('kind-of');
 var pickFrom = require('pick-from');
 var cloneDeep = require('clone-deep');
@@ -35,6 +34,7 @@ var Router = routes.Router;
  */
 
 var transforms = require('./lib/transforms');
+var validate = require('./lib/validate');
 var loaders = require('./lib/loaders');
 var debug = require('./lib/debug');
 var utils = require('./lib');
@@ -88,10 +88,8 @@ Template.prototype.initTemplate = function() {
   // context object for partials
   this.set('_context', {});
 
-  // Engine properties
+  // Engine-related
   this._ = {};
-  this._.mixins = {};
-  this._.imports = {};
 
   // View types (categories)
   this.type = {};
@@ -101,7 +99,6 @@ Template.prototype.initTemplate = function() {
 
   // View collections
   this.views = {};
-  this.view('anonymous', {});
   this.view('partials', {});
   this.view('layouts', {});
   this.view('pages', {});
@@ -229,15 +226,12 @@ Template.prototype.defaultTransforms = function() {
 
 Template.prototype.transform = function(name, fn) {
   debug.engine('adding [transform]: %s', name);
-  if (arguments.length === 0) {
-    return this.transforms;
-  }
   if (arguments.length === 1) {
     return this.transforms[name];
   }
   if (fn && typeof fn === 'function') {
     this.transforms[name] = fn;
-    fn(this);
+    fn.call(this, this);
   }
   return this;
 };
@@ -881,33 +875,12 @@ Template.prototype._load = function(subtype, plural, options) {
  * Validate a template object to ensure that it has the properties
  * expected for applying layouts, choosing engines, and so on.
  *
- * @param  {String} `key` Template key
- * @param  {Object} `value` Template object
+ * @param  {String} `template` a template object
  * @api public
  */
 
 Template.prototype.validate = function(template) {
-  if (template == null || typeOf(template) !== 'object') {
-    debug.err('`template` must be an object.');
-  }
-
-  forOwn(template, function (value, key) {
-    if (key == null || typeof key !== 'string') {
-      debug.err('template `key` must be a string.');
-    }
-
-    if (value == null || typeOf(value) !== 'object') {
-      debug.err('template `value` must be an object.');
-    }
-
-    if (!utils.hasOwn(value, 'path')) {
-      debug.err('template `value` must have a `path` property.');
-    }
-
-    if (!utils.hasOwn(value, 'content')) {
-      debug.err('template `value` must have a `content` property.');
-    }
-  });
+  return validate.apply(validate, arguments);
 };
 
 /**
@@ -1044,8 +1017,6 @@ Template.prototype.setLoaders = function(subtype, options, stack) {
  * var pages = template.getType('renderable');
  * //=> { pages: { 'home.hbs': { ... }, 'about.hbs': { ... }}, posts: { ... }}
  * ```
- *
- * [type]: ./template-types
  *
  * @param {String} `type`
  * @param {Object} `opts`
@@ -1428,7 +1399,7 @@ Template.prototype.compileTemplate = function(template, options, async) {
   debug.render('compileTemplate: %j', template);
 
   if (typeOf(template) !== 'object') {
-    throw new Error('Template#compileTemplate() expects an object, got: "'
+    throw new Error('Template#compileTemplate() expects an object, not: "'
       + typeOf(template) + ' / '+ template + '".');
   }
 
@@ -1692,15 +1663,12 @@ Template.prototype.renderAsync = function(engine, content, options, cb) {
 
 Template.prototype.render = function(content, locals, cb) {
   debug.render('render: %j', arguments);
-
   if (content == null) {
     throw new Error('Template#render() expects a string or object.');
   }
-
   if (typeOf(content) === 'object') {
     return this.renderTemplate(content, locals, cb);
   }
-
   var template = this.findRenderable(content);
   if (typeOf(template) === 'object') {
     return this.renderTemplate(template, locals, cb);
@@ -1726,7 +1694,6 @@ Template.prototype.renderString = function(str, locals, cb) {
     cb = locals;
     locals = {};
   }
-
   locals = extend({options: {}}, locals);
   var options = locals.options || {};
 

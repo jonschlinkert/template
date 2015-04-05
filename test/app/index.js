@@ -11,8 +11,9 @@ function App(options) {
   Template.call(this, options);
   this._loadTransforms();
 }
-util.inherits(App, Template);
 
+Template.extend(App.prototype);
+App.extend = Template.extend;
 App.Router = routes.Router;
 App.Route = routes.Route;
 

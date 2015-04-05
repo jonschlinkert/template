@@ -9,20 +9,20 @@
 
 var path = require('path');
 var chalk = require('chalk');
-var typeOf = require('kind-of');
-var pickFrom = require('pick-from');
 var cloneDeep = require('clone-deep');
 var extend = require('extend-shallow');
 var flatten = require('arr-flatten');
+var layouts = require('layouts');
 var merge = require('mixin-deep');
+var pickFrom = require('pick-from');
+var routes = require('en-route');
 var slice = require('array-slice');
+var typeOf = require('kind-of');
 
 /**
  * Extend Template
  */
 
-var layouts = require('layouts');
-var routes = require('en-route');
 var Config = require('config-cache');
 var Engines = require('engine-cache');
 var Helpers = require('helper-cache');

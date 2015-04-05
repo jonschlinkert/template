@@ -21,7 +21,7 @@ verb.task('lint', function () {
     .pipe(jshint.reporter('jshint-stylish'));
 });
 
-verb.task('test', function (cb) {
+verb.task('test', ['lint'], function (cb) {
   verb.src(['index.js', 'lib/**/*.js'])
     .pipe(istanbul())
     .pipe(istanbul.hookRequire())

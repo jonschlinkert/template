@@ -24,9 +24,10 @@ var slice = require('array-slice');
 var layouts = require('layouts');
 var routes = require('en-route');
 var Config = require('config-cache');
-var Helpers = require('helper-cache');
 var Engines = require('engine-cache');
+var Helpers = require('helper-cache');
 var Loaders = require('loader-cache');
+var Options = require('option-cache');
 var Router = routes.Router;
 
 /**
@@ -56,8 +57,8 @@ var utils = require('./lib');
  */
 
 function Template(options) {
+  Options.call(this, options);
   Config.call(this, options);
-  Template.__super__.constructor.call(this, options);
   this.initTemplate();
   this.defaultConfig();
   this.defaultOptions();
@@ -65,7 +66,10 @@ function Template(options) {
   this.defaultLoaders();
   this.defaultTransforms();
 }
+
 Config.extend(Template.prototype);
+Template.extend = Config.extend;
+extend(Template.prototype, Options.prototype);
 
 /**
  * Extend `Template`
@@ -85,17 +89,17 @@ Template.prototype.initTemplate = function() {
   this.inflections = {};
   this.transforms = {};
 
-  // context object for partials
-  this.set('_context', {});
-
   // Engine-related
-  this._ = {};
+  this._ = this._ || {};
 
   // View types (categories)
   this.type = {};
   this.type.partial = [];
   this.type.renderable = [];
   this.type.layout = [];
+
+  // context object for partials
+  this.set('_context', {});
 
   // View collections
   this.views = {};
@@ -134,14 +138,7 @@ Template.prototype.defaultOptions = function() {
   // helpers
   this.enable('default helpers');
 
-  // file extensions
-  this.option('ext', '*');
-  this.option('destExt', '.html');
-  this.option('defaultExts', ['md']);
-  this.option('cwd', process.cwd());
-
   // layouts
-  this.enable('mergeLayouts');
   this.option('layoutDelims', ['{%', '%}']);
   this.option('layoutTag', 'body');
   this.option('defaultLayout', null);
@@ -879,7 +876,7 @@ Template.prototype._load = function(subtype, plural, options) {
  * @api public
  */
 
-Template.prototype.validate = function(template) {
+Template.prototype.validate = function(/*template*/) {
   return validate.apply(validate, arguments);
 };
 
@@ -1529,13 +1526,12 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   }
 
   if (typeOf(template) !== 'object') {
-    throw new Error('Template#renderTemplate() expects an object, got: "'
-      + typeOf(template) + ' / '+ template + '".');
+    throw new Error('Template#renderTemplate() expects an object: ' + template);
   }
 
   // find any options passed in on locals
   locals = locals || {};
-  var opts = extend({}, locals.options);
+  var opts = locals.options || {};
 
   // handle pre-render middleware routes
   this.handle('preRender', template, handleError('preRender', template));
@@ -1550,13 +1546,15 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   var ext = this.getExt(template, opts);
   var engine = this.getEngine(ext);
 
+  if (typeof engine === 'undefined') {
+    var args = JSON.stringify([].slice.call(arguments));
+    throw new Error('Template#renderTemplate() expects an engine to be defined: ' + args);
+  }
+
   // compile the template if it hasn't been already
   if (typeOf(template.fn) !== 'function') {
     opts.context = opts.context || locals;
-    var objects = [opts, opts.context, engine.options, this.options];
-
-    opts.delims = pickFrom('delims', objects);
-    opts.layoutDelims = pickFrom('layoutDelims', objects);
+    opts.delims = engine.options.delims;
 
     var isAsync = typeOf(cb) === 'function';
     template.fn = this.compileTemplate(template, opts, isAsync);

@@ -57,4 +57,55 @@ describe('.enabled() / .enable()', function () {
       template.disabled('abc').should.be.false;
     });
   });
+
+  describe('.enable/enabled()', function () {
+    it('should set the value to true', function () {
+      template.enable('foo');
+      template.enabled('foo').should.be.true;
+    });
+
+    it('should return `this`', function () {
+      template.enable('foo').should.equal(template);
+    });
+
+    it('should default to false', function () {
+      template.enabled('xyz').should.be.false;
+    });
+
+    it('should return true when set', function () {
+      template.enable('a');
+      template.enabled('a').should.be.true;
+    });
+
+    it('should return `false` when set to `false` as an option.', function () {
+      template.option('a', false);
+      template.enabled('a').should.be.false;
+    });
+
+    it('should return true when set as an option.', function () {
+      template.option('a', true);
+      template.enabled('a').should.be.true;
+    });
+  });
+
+  describe('.disable/disabled()', function () {
+    it('should set the value to false', function () {
+      template.disable('foo');
+      template.disabled('foo').should.be.true;
+      template.enabled('foo').should.be.false;
+    });
+
+    it('should return `this`', function () {
+      template.disable('foo').should.eql(template);
+    });
+
+    it('should default to true', function () {
+      template.disabled('xyz').should.be.true;
+    });
+
+    it('should return false when set', function () {
+      template.disable('abc');
+      template.disabled('abc').should.be.true;
+    });
+  });
 });

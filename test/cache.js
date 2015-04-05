@@ -95,13 +95,6 @@ describe('cache', function () {
     it('should just return existing properties.', function() {
       template.get('a', true).should.eql(template.cache.a);
     });
-    it('should create immediate properties.', function() {
-      template.get('b', true).should.eql(template.cache.b);
-    });
-    it('should create nested properties.', function() {
-      template.get('c.d.e', true);
-      template.cache.c.d.should.have.property('e');
-    });
   });
 
   describe('all:', function () {

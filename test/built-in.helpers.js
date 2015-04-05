@@ -36,6 +36,18 @@ describe('generated helpers:', function () {
       });
     });
 
+    it.skip('should not use the `partial` helper when `default helpers` is disabled.', function (done) {
+      template.disable('default helpers');
+      template.partial('a.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}});
+      template.page('b.md', {path: 'b.md', content: 'foo <%= partial("a.md") %> bar'});
+
+      template.render('b.md', function (err, content) {
+        if (err) return done(err);
+        content.should.equal('foo AAA bar');
+        done();
+      });
+    });
+
     it('should use the `partial` helper and locals with a built-in engine.', function (done) {
       template.partial('abc.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}});
       template.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("abc.md", { name: "CCC" }) %> bar'});

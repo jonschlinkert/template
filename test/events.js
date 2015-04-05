@@ -7,19 +7,12 @@
 
 'use strict';
 
+var assert = require('assert');
 var should = require('should');
 var Template = require('./app');
 var template = new Template();
 
 describe('events:', function () {
-  describe('when configuration settings are customized', function () {
-    it('should have the custom settings', function () {
-      var template = new Template();
-      template.wildcard.should.be.true;
-      template.listenerTree.should.be.an.object;
-    });
-  });
-
   describe('when a listener is removed', function () {
     it('should remove listener', function () {
       var template = new Template();
@@ -112,7 +105,7 @@ describe('events:', function () {
 
       template.on('clear', function (key, value) {
         called = true;
-        template.get(key).should.be.undefined;
+        assert(template.get(key) == undefined);
       });
 
       template.clear('one');

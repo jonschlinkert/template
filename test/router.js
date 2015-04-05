@@ -330,7 +330,7 @@ describe('template.router()', function() {
   });
 });
 
-describe.skip('template.use()', function () {
+describe('template.use()', function () {
   beforeEach(function () {
     template = new Template();
   });

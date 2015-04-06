@@ -19,8 +19,7 @@ var engine = require('engine-lodash');
 module.exports = function (template) {
   if (!template.disabled('default engines')) {
     template.engine(['*', 'md'], engine, {
-      layoutDelims: template.option('layoutDelims'),
-      destExt: template.option('destExt')
+      layoutDelims: template.option('layoutDelims')
     });
   }
 };

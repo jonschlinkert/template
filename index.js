@@ -148,11 +148,6 @@ Template.prototype.defaultOptions = function() {
   // partials
   this.enable('mergePartials');
 
-  // Custom function for naming partial keys
-  this.option('partialsKey', function (fp) {
-    return path.basename(fp, path.extname(fp));
-  });
-
   // Custom function for all other template keys
   this.option('renameKey', function (fp) {
     return path.basename(fp);
@@ -900,7 +895,7 @@ Template.prototype.normalize = function(plural, template, options) {
     return this.options.normalize.apply(this, arguments);
   }
 
-  var opts = extend({}, options);
+  var opts = options || {};
   var self = this;
 
   for (var key in template) {
@@ -909,6 +904,8 @@ Template.prototype.normalize = function(plural, template, options) {
 
       value.locals = value.locals || {};
       value.options = extend({ subtype: plural }, options, value.options);
+      utils.flattenProp('engine', value, value.locals, value.options);
+      utils.flattenProp('ext', value, value.locals, value.options);
       value.layout = value.layout || value.locals.layout;
 
       // Add a render method to the template TODO: allow additional
@@ -1419,7 +1416,6 @@ Template.prototype.compileTemplate = function(template, options, async) {
 
   // if a layout is defined, apply it before compiling
   var content = this.applyLayout(template, extend({}, context, opts));
-
 
   // compile template
   return this.compileBase(engine, content, opts);

@@ -217,7 +217,7 @@ Template.prototype.defaultTransforms = function() {
  */
 
 Template.prototype.transform = function(name, fn) {
-  debug.engine('adding [transform]: %s', name);
+  debug.transform('.transform: ', arguments);
   if (arguments.length === 1) {
     return this.transforms[name];
   }
@@ -252,7 +252,7 @@ Template.prototype.lazyrouter = function() {
  */
 
 Template.prototype.handle = function(method, file, done) {
-  debug.routes('handling: %j', arguments);
+  debug.routes('.handle: ', arguments);
   if (typeof method === 'object') {
     done = file; file = method; method = null;
   }
@@ -266,29 +266,11 @@ Template.prototype.handle = function(method, file, done) {
 };
 
 /**
- * Dispatch `file` through an array of middleware functions.
- *
- * @param  {Object} `file`
- * @param  {Array} `fns`
- * @api private
- */
-
-Template.prototype.dispatch = function(file, fns) {
-  for (var key in file) {
-    if (file.hasOwnProperty(key)) {
-      var value = file[key];
-      if (fns) this.route(value.path).all(fns);
-      this.handle('onLoad', value, handleError('onLoad', {path: key}));
-    }
-  }
-};
-
-/**
  * Proxy to the engine `Router#route()`
  * Returns a new `Route` instance for the `path`.
  *
  * Routes are isolated middleware stacks for specific paths.
- * See the Route api docs for details.
+ * See the `Route` api docs for details.
  *
  * @param {String} `path`
  * @api public
@@ -304,7 +286,7 @@ Template.prototype.route = function(path) {
  * Proxy to `Router#param()` with one added api feature. The `name` parameter
  * can be an array of names.
  *
- * See the Router#param() docs for more details.
+ * See the `Router#param()` docs for more details.
  *
  * @param {String|Array} `name`
  * @param {Function} `fn`
@@ -328,7 +310,7 @@ Template.prototype.param = function(name, fn) {
 
 /**
  * Proxy to `Router#use()` to add middleware to the engine router.
- * See Router#use() documentation for details.
+ * See the `Router#use()` documentation for details.
  *
  * If the `fn` parameter is an engine, then it will be
  * mounted at the `route` specified.
@@ -486,7 +468,7 @@ Template.prototype.applyLayout = function(template, locals) {
  */
 
 Template.prototype.registerEngine = function(ext, fn, options) {
-  debug.engine('registering [engine]: %s', ext);
+  debug.engine('.registerEngine: %s, %j', ext, options);
 
   var opts = extend({}, options);
   ext = utils.formatExt(ext);
@@ -508,11 +490,11 @@ Template.prototype.registerEngine = function(ext, fn, options) {
  * @api public
  */
 
-Template.prototype.engine = function(exts, fn, options) {
-  debug.engine('engine %j:', exts);
+Template.prototype.engine = function(exts, fn, opts) {
+  debug.engine('.engine [exts] %j [opts] %j:', exts, opts);
   exts = utils.arrayify(exts);
   var len = exts.length;
-  while (len--) this.registerEngine(exts[len], fn, options);
+  while (len--) this.registerEngine(exts[len], fn, opts);
   return this;
 };
 
@@ -530,7 +512,7 @@ Template.prototype.engine = function(exts, fn, options) {
  */
 
 Template.prototype.getEngine = function(ext) {
-  debug.engine('getting [engine]: %s', ext);
+  debug.engine('.getEngine %s', ext);
   return this._.engines.getEngine(ext);
 };
 
@@ -555,24 +537,20 @@ Template.prototype.getEngine = function(ext) {
  * @api public
  */
 
-Template.prototype.getExt = function(template, locals) {
+Template.prototype.getExt = function(tmpl, locals) {
   var fn = this.option('getExt');
 
   if (typeof fn === 'function') {
-    return fn.call(this, template, locals);
+    return fn.call(this, tmpl, locals);
   }
 
-  template.locals = template.locals || {};
-
   // `_engine` is defined on the `.create()` method
-  var ext = template.options._engine
-    || template.locals.engine
-    || template.options.engine
+  var ext = tmpl.options._engine
+    || tmpl.options.engine
     || locals.engine
     || locals.ext
-    || template.engine
-    || template.ext
-    || path.extname(template.path)
+    || tmpl.ext
+    || path.extname(tmpl.path)
     || this.option('viewEngine');
 
   if (ext == null) return null;
@@ -835,7 +813,7 @@ Template.prototype._load = function(subtype, plural, options) {
       // validate the template object before moving on
       self.validate(template);
       // Run middleware
-      self.dispatch(template);
+      // self.dispatch(template);
       // Add template to the cache
       extend(self.views[plural], template);
       return cb(null, template);
@@ -900,30 +878,16 @@ Template.prototype.normalize = function(plural, template, options) {
 
   for (var key in template) {
     if (template.hasOwnProperty(key)) {
-      var value = template[key];
+      var file = template[key];
 
-      value.locals = value.locals || {};
-      value.options = extend({ subtype: plural }, options, value.options);
-
-      // move `ext` from `locals` and `options` to the root of the template
-      utils.flattenProp('engine', value, value.locals, value.options);
-      // move `engine` from `locals` and `options` to the root of the template
-      utils.flattenProp('ext', value, value.locals, value.options);
-      value.layout = value.layout || value.locals.layout;
-
-      // TODO: allow additional opts to be passed this engine logic
-      // is temporary until we decide how we want to allow users to
-      // control this. for now, this allows the user to change the
-      // engine preference in the the `getExt()` method.
-      if (utils.hasOwn(opts, 'engine')) {
-        value.options._engine = utils.formatExt(opts.engine);
-      }
+      file.options = extend({ subtype: plural }, options, file.options);
+      this.handle('onLoad', file, handleError('onLoad', {path: key}));
 
       // Add a render method to the template
-      value.render = function render(locals, cb) {
+      file.render = function render(locals, cb) {
         return self.renderTemplate(this, locals, cb);
       };
-      template[key] = value;
+      template[key] = file;
     }
   }
   return template;
@@ -1344,9 +1308,7 @@ Template.prototype.decorate = function(subtype, plural, options) {
   mixin(plural, this._load(subtype, plural, options));
 
   // singular convenience method, ex: `.page`
-  mixin(subtype, function (/*template*/) {
-    return this[plural].apply(this, arguments);
-  });
+  mixin(subtype, this._load(subtype, plural, options));
 
   // Add a `get` method to `Template` for `subtype`
   mixin(utils.methodName('get', subtype), function (key) {

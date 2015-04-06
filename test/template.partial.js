@@ -7,6 +7,7 @@
 
 'use strict';
 
+var path = require('path');
 var assert = require('assert');
 var should = require('should');
 var Template = require('./app');
@@ -110,7 +111,7 @@ describe('template partial', function () {
     });
 
     it('should save both locals and front-matter data to the `file` object.', function () {
-      template.partial({'a.md': {content: '---\nname: AAA\n---\nThis is content.', name: 'BBB'}});
+      template.partial({'a.md': {content: '---\nname: AAA\n---\nThis is content.', locals: {name: 'BBB'}}});
       template.views.partials['a.md'].data.name.should.equal('AAA');
       template.views.partials['a.md'].locals.name.should.equal('BBB');
     });
@@ -121,14 +122,15 @@ describe('template partial', function () {
     });
   });
 
-  describe('partialsKey', function () {
-    it('should use the partialsKey function on options', function () {
-      // TODO: should this be removed?
-      template.options.partialsKey('a.md').should.eql('a');
-      // template.partial('a.md', '---\nname: AAA\n---\nThis is content.');
-      // template.views.partials.should.have.property.a;
-      // template.views.partials['a'].should.have.property.content;
-      // template.views.partials['a'].content.should.equal('This is content.');
+  describe('renameKey', function () {
+    it('should use the renameKey function on options', function () {
+      template.option('renameKey', function (fp) {
+        return path.basename(fp, path.extname(fp));
+      });
+      template.partial('a.md', '---\nname: AAA\n---\nThis is content.');
+      template.views.partials.should.have.property.a;
+      template.views.partials['a'].should.have.property.content;
+      template.views.partials['a'].content.should.equal('This is content.');
     });
   });
 });

@@ -58,10 +58,10 @@ describe('template engine:', function () {
     template.create('apple', 'apples', { isRenderable: true });
     template.create('orange', 'oranges', { isRenderable: true });
 
-    template.apple('foo', {content: '<<= name >>{{ name }}<%= name %>', name: 'Halle'}, {
+    template.apple('foo', {content: '<<= name >>{{ name }}<%= name %>', locals: {name: 'Halle'}}, {
       engine: 'lodash'
     });
-    template.orange('bar', {content: '<<= name >>{{ name }}<%= name %>', name: 'Brooke'}, {
+    template.orange('bar', {content: '<<= name >>{{ name }}<%= name %>', locals: {name: 'Brooke'}}, {
       engine: 'handlebars'
     });
 

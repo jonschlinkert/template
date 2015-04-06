@@ -28,10 +28,10 @@ describe('custom `renderable` types:', function () {
     template.engine('swig', consolidate.swig);
     template.engine('tmpl', consolidate.lodash);
 
-    template.page({path: 'a.hbs', content: '<title>{{author}}</title>', author: 'Jon Schlinkert'});
-    template.page({path: 'b.tmpl', content: '<title><%= author %></title>', author: 'Jon Schlinkert'});
-    template.page({path: 'd.swig', content: '<title>{{author}}</title>', author: 'Jon Schlinkert'});
-    template.page({'e.swig': {content: '<title>{{author}}</title>', author: 'Jon Schlinkert'}});
+    template.page({path: 'a.hbs', content: '<title>{{author}}</title>', locals: {author: 'Jon Schlinkert'}});
+    template.page({path: 'b.tmpl', content: '<title><%= author %></title>', locals: {author: 'Jon Schlinkert'}});
+    template.page({path: 'd.swig', content: '<title>{{author}}</title>', locals: {author: 'Jon Schlinkert'}});
+    template.page({'e.swig': {content: '<title>{{author}}</title>', locals: {author: 'Jon Schlinkert'}}});
     template.page('f.hbs', '<title>{{author}}</title>', {author: 'Jon Schlinkert'});
     template.page('g.md', '---\nauthor: Brian Woodward\n---\n<title>{{author}}</title>', {author: 'Jon Schlinkert'});
 

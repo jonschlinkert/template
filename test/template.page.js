@@ -112,7 +112,7 @@ describe('template page', function () {
     });
 
     it('should save both locals and front-matter data to the `file` object.', function () {
-      template.page({'a.md': {content: '---\nname: AAA\n---\nThis is content.', name: 'BBB'}});
+      template.page({'a.md': {content: '---\nname: AAA\n---\nThis is content.', locals: {name: 'BBB'}}});
       template.views.pages['a.md'].data.name.should.equal('AAA');
       template.views.pages['a.md'].locals.name.should.equal('BBB');
     });

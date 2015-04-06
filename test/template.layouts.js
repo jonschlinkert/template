@@ -56,8 +56,8 @@ describe('template layout', function () {
     });
 
     it('should use a custom rename function on layout keys:', function () {
-      template.option('renameKey', function (filepath) {
-        return path.basename(filepath) + ':string';
+      template.option('renameKey', function (fp) {
+        return path.basename(fp) + ':string';
       });
 
       template.layouts(['test/fixtures/layouts/matter/*.md']);
@@ -89,7 +89,7 @@ describe('template layout', function () {
     });
 
     it('should save both locals and front-matter data to the `file` object.', function () {
-      template.layouts({'a.md': {content: '---\nname: AAA\n---\nThis is content.', name: 'BBB'}});
+      template.layouts({'a.md': {content: '---\nname: AAA\n---\nThis is content.', locals: {name: 'BBB'}}});
       template.views.layouts.should.have.property('a.md');
       template.views.layouts['a.md'].data.name.should.equal('AAA');
       template.views.layouts['a.md'].locals.name.should.equal('BBB');

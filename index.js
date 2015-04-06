@@ -266,6 +266,24 @@ Template.prototype.handle = function(method, file, done) {
 };
 
 /**
+ * Dispatch `file` through an array of middleware functions.
+ *
+ * @param  {Object} `file`
+ * @param  {Array} `fns`
+ * @api private
+ */
+
+Template.prototype.dispatch = function(verb, file, fns) {
+  for (var key in file) {
+    if (file.hasOwnProperty(key)) {
+      var value = file[key];
+      if (fns) this.route(value.path).all(fns);
+      this.handle(verb, value, handleError(verb, {path: key}));
+    }
+  }
+};
+
+/**
  * Proxy to the engine `Router#route()`
  * Returns a new `Route` instance for the `path`.
  *

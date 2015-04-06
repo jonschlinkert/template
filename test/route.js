@@ -105,7 +105,7 @@ describe('template.route()', function () {
     });
     it('should add a middleware stack before dispatching', function () {
       var page = {foo: {path: 'foo.md', options: {}}};
-      template.dispatch(page, [function (file, next) {
+      template.dispatch('onLoad', page, [function (file, next) {
         file.data.foo = 'bar';
         next();
       }]);
@@ -128,17 +128,17 @@ describe('template.route()', function () {
       route.stack.should.have.length(1);
     });
 
-    // it('should match correctly', function () {
-    //   route.match('/blog/2015/04/18/hello-world').should.be.true;
-    //   route.params.should.be.instanceof(Object);
-    //   Object.keys(route.params).should.have.length(4);
-    //   route.params.year.should.equal('2015');
-    //   route.params.month.should.equal('04');
-    //   route.params.day.should.equal('18');
-    //   route.params.slug.should.equal('hello-world');
+    it.skip('should match correctly', function () {
+      route.match('/blog/2015/04/18/hello-world').should.be.true;
+      route.params.should.be.instanceof(Object);
+      Object.keys(route.params).should.have.length(4);
+      route.params.year.should.equal('2015');
+      route.params.month.should.equal('04');
+      route.params.day.should.equal('18');
+      route.params.slug.should.equal('hello-world');
 
-    //   route.match('/blog/2015/04/18').should.be.false;
-    //   route.match('/not-blog/2015/04/18/hello-world').should.be.false;
-    // });
+      route.match('/blog/2015/04/18').should.be.false;
+      route.match('/not-blog/2015/04/18/hello-world').should.be.false;
+    });
   });
 });

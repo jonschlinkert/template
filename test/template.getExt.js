@@ -24,7 +24,7 @@ describe('template.getExt()', function () {
   });
 
   it('should get `null` when no `ext` properties are found.', function () {
-    template.option('viewEngine', undefined);
+    template.option('view engine', undefined);
     var page = {
       options: {}
     };

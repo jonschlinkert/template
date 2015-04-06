@@ -133,7 +133,7 @@ Template.prototype.defaultOptions = function() {
   // engines
   this.disable('debugEngine');
   this.enable('default engines');
-  this.option('viewEngine', '*');
+  this.option('view engine', '*');
 
   // helpers
   this.enable('default helpers');
@@ -531,6 +531,7 @@ Template.prototype.engine = function(exts, fn, opts) {
 
 Template.prototype.getEngine = function(ext) {
   debug.engine('.getEngine %s', ext);
+  ext = ext || this.option('view engine');
   return this._.engines.getEngine(ext);
 };
 
@@ -569,7 +570,7 @@ Template.prototype.getExt = function(tmpl, locals) {
     || locals.ext
     || tmpl.ext
     || path.extname(tmpl.path)
-    || this.option('viewEngine');
+    || this.option('view engine');
 
   if (ext == null) return null;
   return utils.formatExt(ext);
@@ -1387,12 +1388,10 @@ Template.prototype.compileTemplate = function(template, options, async) {
   delete opts.context;
   opts.async = async;
 
-  template.options = template.options || {};
   template.options.layout = template.layout;
 
-  // find ext and engine to use
-  var ext = template.ext || this.getExt(template, context);
-  var engine = this.getEngine(ext);
+  // get the engine to use
+  var engine = this.getEngine(template.options.engine);
 
   // Bind context to helpers before passing to the engine.
   this.bindHelpers(opts, context, async);
@@ -1523,8 +1522,7 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   extend(opts, locals.options);
 
   // find the engine to use to render
-  var ext = this.getExt(template, opts);
-  var engine = this.getEngine(ext);
+  var engine = this.getEngine(template.options.engine);
 
   if (typeof engine === 'undefined') {
     var args = JSON.stringify([].slice.call(arguments));

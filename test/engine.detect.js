@@ -107,7 +107,7 @@ describe('detect engine', function() {
 
       it('should use the `engine` property defined directly on the template object.', function() {
         template.page('a', {content: content, engine: '.tmpl'});
-        template.views.pages['a'].locals.should.have.property('engine', '.tmpl');
+        template.views.pages['a'].should.have.property('engine', '.tmpl');
         template.render('a').should.equal('<title>{{title}}RENDERED</title>');
       });
 
@@ -119,7 +119,7 @@ describe('detect engine', function() {
 
       it('should prefer `engine` defined on the template over `ext` on options.', function() {
         template.page('a', {content: content, engine: '.tmpl', options: {ext: '.hbs'}});
-        template.views.pages['a'].locals.should.have.property('engine', '.tmpl');
+        template.views.pages.a.options.should.have.property('engine', '.tmpl');
         template.render('a').should.equal('<title>{{title}}RENDERED</title>');
       });
 

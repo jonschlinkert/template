@@ -113,7 +113,6 @@ describe('.render() synchronously:', function () {
       template.page('a', '<title>{{author}}</title>', {author: 'Jon Schlinkert', ext: 'hbs'});
       template.page('b', '<title><%= author %></title>', {author: 'Jon Schlinkert', ext: 'tmpl'});
       template.page('d', '<title>{{author}}</title>', {author: 'Jon Schlinkert', ext: 'swig'});
-
       forOwn(template.views.pages, function (value, key) {
         template.render(key).should.equal('<title>Jon Schlinkert</title>');
       });

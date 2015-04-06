@@ -9,12 +9,12 @@
 
 var async = require('async');
 var should = require('should');
-var Template = require('..');
-var template;
 var consolidate = require('consolidate');
 var handlebars = require('engine-handlebars');
 var lodash = consolidate.lodash;
 var swig = consolidate.swig;
+var Template = require('..');
+var template;
 
 
 describe('generated helpers:', function () {

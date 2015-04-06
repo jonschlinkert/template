@@ -9,7 +9,7 @@ module.exports = App;
 
 function App(options) {
   Template.call(this, options);
-  this._loadTransforms();
+  this._defaultTransforms();
 }
 
 Template.extend(App.prototype);
@@ -17,6 +17,6 @@ App.extend = Template.extend;
 App.Router = routes.Router;
 App.Route = routes.Route;
 
-App.prototype._loadTransforms = function() {
+App.prototype._defaultTransforms = function() {
   this.transform('engines', transforms.engines);
 };

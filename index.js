@@ -904,18 +904,22 @@ Template.prototype.normalize = function(plural, template, options) {
 
       value.locals = value.locals || {};
       value.options = extend({ subtype: plural }, options, value.options);
+
+      // move `ext` from `locals` and `options` to the root of the template
       utils.flattenProp('engine', value, value.locals, value.options);
+      // move `engine` from `locals` and `options` to the root of the template
       utils.flattenProp('ext', value, value.locals, value.options);
       value.layout = value.layout || value.locals.layout;
 
-      // Add a render method to the template TODO: allow additional
-      // opts to be passed this engine logic is temporary until we
-      // decide how we want to allow users to control this. for now,
-      // this allows the user to change the engine preference in the
-      // the `getExt()` method.
+      // TODO: allow additional opts to be passed this engine logic
+      // is temporary until we decide how we want to allow users to
+      // control this. for now, this allows the user to change the
+      // engine preference in the the `getExt()` method.
       if (utils.hasOwn(opts, 'engine')) {
         value.options._engine = utils.formatExt(opts.engine);
       }
+
+      // Add a render method to the template
       value.render = function render(locals, cb) {
         return self.renderTemplate(this, locals, cb);
       };

@@ -831,8 +831,6 @@ Template.prototype._load = function(subtype, plural, options) {
       template = self.normalize(plural, template, options);
       // validate the template object before moving on
       self.validate(template);
-      // Run middleware
-      // self.dispatch(template);
       // Add template to the cache
       extend(self.views[plural], template);
       return cb(null, template);
@@ -892,14 +890,14 @@ Template.prototype.normalize = function(plural, template, options) {
     return this.options.normalize.apply(this, arguments);
   }
 
-  var opts = options || {};
+  var opts = merge({ subtype: plural, create: options}, options);
   var self = this;
 
   for (var key in template) {
     if (template.hasOwnProperty(key)) {
       var file = template[key];
 
-      file.options = extend({ subtype: plural }, options, file.options);
+      file.options = extend({}, opts, file.options);
       this.handle('onLoad', file, handleError('onLoad', {path: key}));
 
       // Add a render method to the template
@@ -1388,10 +1386,15 @@ Template.prototype.compileTemplate = function(template, options, async) {
   delete opts.context;
   opts.async = async;
 
+  template.path = template.path || '.';
+  template.options = template.options || {};
   template.options.layout = template.layout;
+  if (!template.ext) {
+    var ext = path.extname(template.path);
+    if (ext) template.ext = ext;
+  }
 
-  // get the engine to use
-  var engine = this.getEngine(template.options.engine);
+  template.ext = template.ext || template.engine;
 
   // Bind context to helpers before passing to the engine.
   this.bindHelpers(opts, context, async);
@@ -1399,6 +1402,9 @@ Template.prototype.compileTemplate = function(template, options, async) {
 
   // if a layout is defined, apply it before compiling
   var content = this.applyLayout(template, extend({}, context, opts));
+
+  // get the engine to use
+  var engine = this.getEngine(template.ext);
 
   // compile template
   return this.compileBase(engine, content, opts);
@@ -1497,7 +1503,6 @@ Template.prototype.renderBase = function(engine, content, options, cb) {
  */
 
 Template.prototype.renderTemplate = function(template, locals, cb) {
-  var self = this;
   debug.render('renderTemplate: %j', template);
   if (typeof locals === 'function') {
     cb = locals;
@@ -1510,7 +1515,9 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
 
   // find any options passed in on locals
   locals = locals || {};
-  var opts = locals.options || {};
+  var self = this;
+  var opts = {};
+  template.path = template.path || '.';
 
   // handle pre-render middleware routes
   this.handle('preRender', template, handleError('preRender', template));
@@ -1519,10 +1526,10 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   locals = this.mergeContext(template, locals);
 
   // merge options
-  extend(opts, locals.options);
+  opts = extend({}, opts, locals.options);
 
   // find the engine to use to render
-  var engine = this.getEngine(template.options.engine);
+  var engine = this.getEngine(template.engine);
 
   if (typeof engine === 'undefined') {
     var args = JSON.stringify([].slice.call(arguments));

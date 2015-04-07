@@ -124,29 +124,28 @@ Template.prototype.defaultConfig = function() {
  */
 
 Template.prototype.defaultOptions = function() {
-  this.disable('preferLocals');
-
-  // routes
+  // defaults
   this.enable('default routes');
+  this.enable('default engines');
+  this.enable('default helpers');
   this.option('router methods', []);
 
   // engines
-  this.disable('debugEngine');
-  this.enable('default engines');
   this.option('view engine', '*');
-
-  // helpers
-  this.enable('default helpers');
+  this.disable('debugEngine');
 
   // layouts
+  this.option('defaultLayout', null);
   this.option('layoutDelims', ['{%', '%}']);
   this.option('layoutTag', 'body');
-  this.option('defaultLayout', null);
   this.option('layoutExt', null);
   this.option('layout', null);
 
   // partials
   this.enable('mergePartials');
+
+  // context
+  this.disable('preferLocals');
 
   // Custom function for all other template keys
   this.option('renameKey', function (fp) {
@@ -1115,6 +1114,7 @@ Template.prototype.mergePartials = function(context) {
 
   var opts = context.options || {};
   opts.partials = cloneDeep(context.partials || {});
+  var mergeTypeContext = this.mergeTypeContext.bind(this, 'partials');
 
   var arr = this.type.partial;
   var len = arr.length, i = 0;
@@ -1124,7 +1124,6 @@ Template.prototype.mergePartials = function(context) {
     var plural = arr[i++];
     // Example `this.views.docs`
     var collection = this.views[plural];
-    var mergeTypeContext = this.mergeTypeContext.bind(this, 'partials');
 
     // Loop over each partial in the collection
     for (var key in collection) {
@@ -1387,6 +1386,10 @@ Template.prototype.compileTemplate = function(template, options, async) {
   opts.async = async;
 
   template.path = template.path || '.';
+
+  // handle pre-compile middleware routes
+  // this.handle('preCompile', template, handleError('preCompile', template));
+
   template.options = template.options || {};
   template.options.layout = template.layout;
   if (!template.ext) {
@@ -1529,11 +1532,19 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   opts = extend({}, opts, locals.options);
 
   // find the engine to use to render
+  // var ext = template.engine;
+  // if (ext === null) return cb(null, );
+
+  // var engine = this.getEngine(ext);
   var engine = this.getEngine(template.engine);
 
   if (typeof engine === 'undefined') {
     var args = JSON.stringify([].slice.call(arguments));
-    throw new Error('Template#renderTemplate() expects an engine to be defined: ' + args);
+    var err = new Error('Template#renderTemplate() expects an engine to be defined: ' + args);
+    if (typeof cb === 'function') {
+      return cb(err);
+    }
+    throw err;
   }
 
   // compile the template if it hasn't been already

@@ -1539,11 +1539,7 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   // merge options
   opts = extend({}, opts, locals.options);
 
-  // find the engine to use to render
-  // var ext = template.engine;
-  // if (ext === null) return cb(null, );
-
-  // var engine = this.getEngine(ext);
+  // find the engine to use for rendering templates
   var engine = this.getEngine(template.engine);
 
   // compile the template if it hasn't been already
@@ -1563,29 +1559,26 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   }
 
   /**
-   * sync
+   * sync: when a callback is not passed, render and handle middleware
+   *
    */
-
-  // when a callback is not passed, render and handle middleware
   if (typeof cb !== 'function') {
     template.content = this.renderBase(engine, content, locals, cb);
-
     // handle post-render middleware routes
     this.handle('postRender', template, handleError('postRender', template));
     return template.content;
   }
 
   /**
-   * async
+   * async: when a callback is passed, render and handle middleware in callback
    */
-
   locals.async = true;
-  // when a callback is passed, render and handle middleware in callback
   return this.renderBase(engine, content, locals, function (err, content) {
     if (err) {
       cb.call(self, err);
       return;
     }
+
     // update the `content` property with the rendered result, so we can
     // pass the entire template object to the postRender middleware
     template.content = content;

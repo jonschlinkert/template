@@ -10,17 +10,16 @@
 var fs = require('fs');
 var path = require('path');
 var should = require('should');
-var Tokens = require('preserve');
+var tokens = require('preserve');
 var pretty = require('verb-prettify');
 var Template = require('./app');
 var template;
-var tokens;
+var re = /<%=\s*[^>]+%>/g;
 
 
 describe('middleware', function () {
   beforeEach(function () {
     template = new Template();
-    tokens = new Tokens(/<%=\s*[^>]+%>/g);
   });
 
   it('should use middleware on cached templates:', function (done) {
@@ -52,20 +51,25 @@ describe('middleware', function () {
   });
 
 
-  describe('should use middleware on markdown files:', function () {
+  describe('should use pre-render and post-render middleware:', function () {
     it('should preserve templates:', function (done) {
-      template.route(/\.md/).all(function (file, next) {
-        file.content = tokens.before(file.content);
+      template.onLoad(/\.md/, function (file, next) {
+        file.content = tokens.before(file.content, re);
+        next()
+      });
+
+      template.postRender(/\.md/, function (file, next) {
+        file.content = tokens.after(file.content);
         next()
       });
 
       template.pages(__dirname + '/fixtures/md.md');
       var page = template.views.pages['md.md'];
+      page.content.should.match(/__ID/);
 
       template.renderTemplate(page, function (err, content) {
         if (err) console.log(err);
-        content.should.equal('__ID0__\n__ID1__\n__ID2__');
-        tokens.after(content).should.equal('<%= a %>\n<%= b %>\n<%= c %>');
+        content.should.equal('<%= a %>\n<%= b %>\n<%= c %>');
         done();
       });
     });
@@ -91,13 +95,13 @@ describe('middleware', function () {
       var page = template.views.pages['md.md'];
 
       template.preRender(/\.md/, function (file, next) {
-        file.content = tokens.before(file.content);
+        file.content = tokens.before(file.content, re);
         next();
       });
 
       template.render(page, {name: 'Halle'}, function (err, content) {
         if (err) return done(err);
-        content.should.equal('__ID0__\n__ID1__\n__ID2__');
+        content.should.match(/__ID/);
 
         template.postRender(/\.md/, function (file, next) {
           file.content = tokens.after(file.content);
@@ -118,7 +122,7 @@ describe('middleware', function () {
       var page = template.views.pages['md.md'];
 
       template.preRender(/\.md/, function (file, next) {
-        file.content = tokens.before(file.content);
+        file.content = tokens.before(file.content, re);
         throw new Error('before error, should get handled');
       }, function (err, file, next) {
         if (err) return next();
@@ -127,7 +131,7 @@ describe('middleware', function () {
 
       template.render(page, {name: 'Halle'}, function (err, content) {
         if (err) return done(err);
-        content.should.equal('__ID0__\n__ID1__\n__ID2__');
+        content.should.match(/__ID/);
 
         template.postRender(/\.md/, function (file, next) {
           file.content = tokens.after(file.content);
@@ -156,13 +160,13 @@ describe('middleware', function () {
       var page = template.views.pages['md.md'];
 
       template.preRender(/\.md/, function (file, next) {
-        file.content = tokens.before(file.content);
+        file.content = tokens.before(file.content, re);
         throw new Error('before error, should get handled');
       });
 
       template.render(page, {name: 'Halle'}, function (err, content) {
         if (err) return done(err);
-        content.should.equal('__ID0__\n__ID1__\n__ID2__');
+        content.should.match(/__ID/);
 
         template.postRender(/\.md/, function (file, next) {
           file.content = tokens.after(file.content);

@@ -10,7 +10,6 @@
 var fs = require('fs');
 var path = require('path');
 var should = require('should');
-var Tokens = require('preserve');
 var pretty = require('verb-prettify');
 var Template = require('./app');
 var template;
@@ -20,7 +19,6 @@ var tokens;
 describe('.use()', function () {
   beforeEach(function () {
     template = new Template();
-    tokens = new Tokens(/<%=\s*[^>]+%>/g);
   });
 
   it('should run once for every method:', function (done) {

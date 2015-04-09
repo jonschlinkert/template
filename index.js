@@ -134,6 +134,13 @@ Template.prototype.defaultOptions = function() {
   this.option('view engine', '*');
   this.disable('debugEngine');
 
+  this.engine('.*', function (str, opts, cb) {
+    if (typeof opts === 'function') {
+      cb = opts; opts = {};
+    }
+    cb(null, str);
+  })
+
   // layouts
   this.option('defaultLayout', null);
   this.option('layoutDelims', ['{%', '%}']);
@@ -485,7 +492,7 @@ Template.prototype.applyLayout = function(template, locals) {
  */
 
 Template.prototype.registerEngine = function(ext, fn, options) {
-  debug.engine('.registerEngine: %s, %j', ext, options);
+  debug.engine('.registerEngine:', arguments);
 
   var opts = extend({}, options);
   ext = utils.formatExt(ext);
@@ -508,7 +515,7 @@ Template.prototype.registerEngine = function(ext, fn, options) {
  */
 
 Template.prototype.engine = function(exts, fn, opts) {
-  debug.engine('.engine [exts] %j [opts] %j:', exts, opts);
+  debug.engine('.engine:', arguments);
   exts = utils.arrayify(exts);
   var len = exts.length;
   while (len--) this.registerEngine(exts[len], fn, opts);
@@ -556,6 +563,7 @@ Template.prototype.getEngine = function(ext) {
  */
 
 Template.prototype.getExt = function(tmpl, locals) {
+  debug.engine('.getExt:', arguments);
   var fn = this.option('getExt');
 
   if (typeof fn === 'function') {
@@ -576,8 +584,7 @@ Template.prototype.getExt = function(tmpl, locals) {
 };
 
 /**
- * Register generic template helpers that are not specific to an
- * engine.
+ * Register generic template helpers that can be used with any engine.
  *
  * Helpers registered using this method will be passed to every
  * engine, so this method is best for generic javascript functions -
@@ -944,16 +951,18 @@ Template.prototype.setType = function(subtype, plural, options) {
 
   // Make an association between `subtype` and its `plural`
   this.inflections[subtype] = plural;
-  if (opts.isRenderable) {
+  if (opts.isRenderable && this.type.renderable.indexOf(plural) === -1) {
     this.type.renderable.push(plural);
   }
 
-  if (opts.isLayout) {
+  if (opts.isLayout && this.type.layout.indexOf(plural) === -1) {
     this.type.layout.push(plural);
   }
 
   if (opts.isPartial || (!opts.isRenderable && !opts.isLayout)) {
-    this.type.partial.push(plural);
+    if (this.type.partial.indexOf(plural) === -1) {
+      this.type.partial.push(plural);
+    }
     opts.isPartial = true;
   }
   return opts;
@@ -1491,7 +1500,6 @@ Template.prototype.renderBase = function(engine, content, options, cb) {
   if (typeof cb !== 'function') {
     return this.renderSync(engine, content, options);
   }
-
   return this.renderAsync(engine, content, options, cb);
 };
 
@@ -1538,15 +1546,6 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   // var engine = this.getEngine(ext);
   var engine = this.getEngine(template.engine);
 
-  if (typeof engine === 'undefined') {
-    var args = JSON.stringify([].slice.call(arguments));
-    var err = new Error('Template#renderTemplate() expects an engine to be defined: ' + args);
-    if (typeof cb === 'function') {
-      return cb(err);
-    }
-    throw err;
-  }
-
   // compile the template if it hasn't been already
   if (typeOf(template.fn) !== 'function') {
     opts.context = opts.context || locals;
@@ -1560,7 +1559,7 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
 
   // backwards compatibility for engines that don't support compile
   if (typeof content === 'string') {
-    extend(locals, opts);
+    locals = extend({}, locals, opts);
   }
 
   /**
@@ -1583,9 +1582,16 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   locals.async = true;
   // when a callback is passed, render and handle middleware in callback
   return this.renderBase(engine, content, locals, function (err, content) {
-    if (err) return cb.call(self, err);
+    if (err) {
+      cb.call(self, err);
+      return;
+    }
+    // update the `content` property with the rendered result, so we can
+    // pass the entire template object to the postRender middleware
     template.content = content;
     self.handle('postRender', template, handleError('postRender', template));
+
+    // final rendered string
     return cb.call(self, null, template.content);
   });
 };
@@ -1658,7 +1664,8 @@ Template.prototype.renderAsync = function(engine, content, options, cb) {
 Template.prototype.render = function(content, locals, cb) {
   debug.render('render: %j', arguments);
   if (content == null) {
-    throw new Error('Template#render() expects a string or object.');
+    var args = JSON.stringify([].slice.call(arguments));
+    throw new Error('Template#render() expects a string or object, not:' + args);
   }
   if (typeOf(content) === 'object') {
     return this.renderTemplate(content, locals, cb);

@@ -1,36 +1,41 @@
 'use strict';
 
+/* deps: jshint-stylish mocha */
 var istanbul = require('gulp-istanbul');
 var jshint = require('gulp-jshint');
 var mocha = require('gulp-mocha');
+var gutil = require('gulp-util');
 var verb = require('verb');
 
 verb.task('readme', function() {
-  verb.src('.verb.md')
+  return verb.src('.verb.md')
     .pipe(verb.dest('./'));
 });
 
 verb.task('api', function() {
-  verb.src('docs/.verb/*.md')
+  return verb.src('docs/.verb/*.md')
     .pipe(verb.dest('docs'));
 });
 
 verb.task('lint', function () {
-  verb.src(['index.js', 'lib/**/*.js'])
+  return verb.src(['index.js', 'lib/**/*.js'])
     .pipe(jshint('.jshintrc'))
     .pipe(jshint.reporter('jshint-stylish'));
 });
 
 verb.task('test', ['lint'], function (cb) {
   verb.src(['index.js', 'lib/**/*.js'])
-    .pipe(istanbul())
+    .pipe(istanbul({includeUntested: true}))
     .pipe(istanbul.hookRequire())
     .on('finish', function () {
-      verb.src('test/*.js')
+      verb.src(['test/*.js'])
         .pipe(mocha())
+        .on('error', gutil.log)
         .pipe(istanbul.writeReports())
-        .on('end', cb);
+        .on('end', function () {
+          cb();
+        });
     });
 });
 
-verb.task('default', ['test', 'readme', 'api']);
+verb.task('default', ['readme', 'test']);

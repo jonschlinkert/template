@@ -68,8 +68,8 @@ function Template(options) {
 }
 
 Config.extend(Template.prototype);
-Template.extend = Config.extend;
 extend(Template.prototype, Options.prototype);
+Template.extend = Config.extend;
 
 /**
  * Extend `Template`

@@ -105,7 +105,7 @@ describe('events:', function () {
 
       template.on('clear', function (key, value) {
         called = true;
-        assert(template.get(key) == undefined);
+        assert(template.get(key) == null);
       });
 
       template.clear('one');
@@ -125,9 +125,12 @@ describe('events:', function () {
       template.set('six', 'g');
       template.set('sev', 'h');
 
-      template.on('omit', function (key) {
-        template.get(key).should.be.undefined;
+      template.on('omit', function (keys) {
         called = true;
+        for (var i = 0; i < keys.length; i++) {
+          var key = keys[i];
+          assert(template.get(key) == null);
+        }
       });
 
       template.omit(['one', 'two', 'thr', 'fou', 'fiv', 'six', 'sev']);

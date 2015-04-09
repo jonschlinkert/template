@@ -7,6 +7,7 @@
 
 'use strict';
 
+var assert = require('assert');
 var should = require('should');
 var Template = require('./app');
 
@@ -75,7 +76,7 @@ describe('cache', function () {
       template.get('a.b').should.eql(obj.a.b);
     });
     it('should return undefined for nonexistent properties.', function() {
-      (typeof template.get('a.x')).should.be.undefined;
+      assert(template.get('a.x') == null);
     });
     it('should return values.', function() {
       template.get('a.b.c').should.eql(1);
@@ -84,10 +85,10 @@ describe('cache', function () {
       template.get('a.b.d').should.eql('');
     });
     it('should return values.', function() {
-      (typeof template.get('a.b.e')).should.be.an.object;
+      assert(template.get('a.b.e') == null);
     });
     it('should return values.', function() {
-      (typeof template.get('a.b.f')).should.be.undefined;
+      assert(template.get('a.b.f') == null);
     });
     it('literal backslash should escape period in property name.', function() {
       template.get('a.b.g\\.h\\.i', true).should.equal(2);

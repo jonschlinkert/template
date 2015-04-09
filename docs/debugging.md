@@ -1,10 +1,10 @@
-# Debugging
+## Debugging
 
 > Learn how to track down errors in Template
 
 Template uses [debug](https://github.com/visionmedia/debug) with custom namespaces to allow fine-grained debugging.
 
-## Running `debug`
+### Running debug
 
 Run the following in the command line to debug:
 
@@ -17,7 +17,7 @@ Where `foo` is whatever command/application you're running, and `*` is the names
 
 All available [namespaces can be found here](https://github.com/jonschlinkert/template/blob/master/lib/debug.js#L38-L50).
 
-## Windows
+### Windows
 
 You might need to use a different approach in Windows. If the command above doesn't work, as a quickfix try adding the following above the `require` statements in your application (wherever `template` is being required):
 

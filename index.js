@@ -1057,9 +1057,6 @@ Template.prototype.mergeType = function(type, keys) {
 /**
  * Merge all `layout` collections based on user-defined options.
  *
- * ```js
- *
- *
  * @param {String} `type` The template type to search.
  * @param {String} `collections` Optionally pass an array of collections
  * @api public

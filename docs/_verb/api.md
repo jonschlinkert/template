@@ -1,1 +1,1 @@
-{%= comments("index.js", {cwd: dest.dirname}) %}
+{%= apidocs("index.js") %}

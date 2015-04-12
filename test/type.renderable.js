@@ -7,6 +7,7 @@
 
 'use strict';
 
+var async = require('async');
 var assert = require('assert');
 var should = require('should');
 var forOwn = require('for-own');
@@ -61,7 +62,7 @@ describe('custom `renderable` types:', function () {
   });
 
   describe('when custom template types are passed to a built-in engine:', function () {
-    it('should render them with the `.render()` method:', function (done) {
+    it('should render them with the `.render()` method:', function (cb) {
       template.create('post', 'posts', { isRenderable: true });
       template.create('include', 'includes');
 
@@ -73,13 +74,13 @@ describe('custom `renderable` types:', function () {
       template.render('2014-08-31.md', function (err, content) {
         if (err) console.log(err);
         content.should.equal('<title>Jon Schlinkert</title>\n<nav>sidebar stuff...</nav>');
-        done();
+        cb();
       });
     });
   });
 
   describe('when custom template types are passed to a non built-in engine:', function () {
-    it('should render them with the `.render()` method:', function (done) {
+    it('should render them with the `.render()` method:', function (cb) {
       template.engine('hbs', handlebars);
       template.engine('md', handlebars);
 
@@ -91,18 +92,19 @@ describe('custom `renderable` types:', function () {
         author: 'Jon Schlinkert'
       });
 
-      forOwn(template.views.posts, function(value, key) {
+      var keys = Object.keys(template.views.posts);
+      async.each(keys, function (key, next) {
         template.render(key, function (err, content) {
           if (err) console.log(err);
           content.should.equal('Jon Schlinkert\nbbbbbb');
+          next();
         });
-      });
-      done();
+      }, cb);
     });
   });
 
   describe('when custom template types are passed to a non built-in engine:', function () {
-    it('should render them with the `.render()` method:', function (done) {
+    it('should render them with the `.render()` method:', function (cb) {
       template.engine('hbs', handlebars);
       template.engine('md', handlebars);
 
@@ -115,13 +117,14 @@ describe('custom `renderable` types:', function () {
         author: 'Jon Schlinkert'
       });
 
-      forOwn(template.views.posts, function(value, key) {
+      var keys = Object.keys(template.views.posts);
+      async.each(keys, function (key, next) {
         template.render(key, function (err, content) {
           if (err) console.log(err);
           content.should.equal('Jon Schlinkert\nzzzzzz');
+          next();
         });
-      });
-      done();
+      }, cb);
     });
   });
 });

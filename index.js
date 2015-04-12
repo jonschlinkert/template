@@ -1032,22 +1032,22 @@ Template.prototype.getType = function(type) {
  * in the array will be respected.
  *
  * @param {String} `type` The template type to search.
- * @param {String} `collections` Optionally pass an array of collections
+ * @param {String} `keys` Optionally pass an array of view collection names
  * @api public
  */
 
-Template.prototype.mergeType = function(type, collections) {
+Template.prototype.mergeType = function(type, keys) {
   debug.template('merging [type]: %s', type);
   var obj = this.getType(type);
 
-  collections = utils.arrayify(collections || Object.keys(obj));
-  var len = collections.length, res = {};
+  keys = utils.arrayify(keys || Object.keys(obj));
+  var len = keys.length, res = {};
 
   while (len--) {
-    var colection = collections[len];
-    for (var key in this.views[colection]) {
-      if (utils.hasOwn(this.views[colection], key)) {
-        res[key] = this.views[colection][key];
+    var collection = keys[len];
+    for (var key in this.views[collection]) {
+      if (utils.hasOwn(this.views[collection], key)) {
+        res[key] = this.views[collection][key];
       }
     }
   }
@@ -1380,7 +1380,7 @@ Template.prototype.compileBase = function(engine, content, options) {
  * @api public
  */
 
-Template.prototype.compileTemplate = function(template, options, async) {
+Template.prototype.compileTemplate = function(template, options, isAsync) {
   debug.render('compileTemplate: %j', template);
 
   if (typeOf(template) !== 'object') {
@@ -1392,7 +1392,7 @@ Template.prototype.compileTemplate = function(template, options, async) {
   var opts = options || {};
   var context = opts.context || {};
   delete opts.context;
-  opts.async = async;
+  opts.async = isAsync;
 
   template.path = template.path || '.';
 
@@ -1409,7 +1409,7 @@ Template.prototype.compileTemplate = function(template, options, async) {
   template.ext = template.ext || template.engine;
 
   // Bind context to helpers before passing to the engine.
-  this.bindHelpers(opts, context, async);
+  this.bindHelpers(opts, context, isAsync);
   opts.debugEngine = this.option('debugEngine');
 
   // if a layout is defined, apply it before compiling
@@ -1427,12 +1427,12 @@ Template.prototype.compileTemplate = function(template, options, async) {
  *
  * @param  {Object|String} `file` String or normalized template object.
  * @param  {Object} `options`
- * @param  {Boolean} `async` Load async helpers
+ * @param  {Boolean} `isAsync` Load async helpers
  * @return {Function} Compiled function.
  * @api public
  */
 
-Template.prototype.compile = function(content, options, async) {
+Template.prototype.compile = function(content, options, isAsync) {
   debug.render('compile: %j', arguments);
 
   if (content == null) {
@@ -1440,15 +1440,15 @@ Template.prototype.compile = function(content, options, async) {
   }
 
   if (typeOf(content) === 'object') {
-    return this.compileTemplate(content, options, async);
+    return this.compileTemplate(content, options, isAsync);
   }
 
   var template = this.findRenderable(content);
   if (typeOf(template) === 'object') {
-    return this.compileTemplate(template, options, async);
+    return this.compileTemplate(template, options, isAsync);
   }
 
-  return this.compileString(content, options, async);
+  return this.compileString(content, options, isAsync);
 };
 
 /**
@@ -1464,10 +1464,10 @@ Template.prototype.compile = function(content, options, async) {
  * @api public
  */
 
-Template.prototype.compileString = function(str, options, async) {
+Template.prototype.compileString = function(str, options, isAsync) {
   debug.render('render string: %s', str);
   if (typeof options === 'boolean') {
-    async = options;
+    isAsync = options;
     options = {};
   }
 
@@ -1475,7 +1475,7 @@ Template.prototype.compileString = function(str, options, async) {
   var locals = options.locals;
 
   var template = { content: str, locals: locals, options: options };
-  return this.compileTemplate(template, options, async);
+  return this.compileTemplate(template, options, isAsync);
 };
 
 /**
@@ -1769,11 +1769,11 @@ Template.prototype.renderType = function(type, subtype) {
  *
  * @param  {Object} `options` Additional options that may contain helpers
  * @param  {Object} `context` Used as the context to bind to helpers
- * @param  {Boolean} `async` Is the helper async?
+ * @param  {Boolean} `isAsync` Pass `true` if the helper is async.
  * @return {Object}
  */
 
-Template.prototype.bindHelpers = function (options, context, async) {
+Template.prototype.bindHelpers = function (options, context, isAsync) {
   debug.helper('binding helpers: %j %j', context, options);
 
   var helpers = {};
@@ -1781,7 +1781,7 @@ Template.prototype.bindHelpers = function (options, context, async) {
   extend(helpers, this._.helpers);
   extend(helpers, this._.imports);
 
-  if (async) {
+  if (isAsync) {
     extend(helpers, this._.asyncHelpers);
   }
   extend(helpers, options.helpers);

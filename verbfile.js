@@ -1,19 +1,39 @@
 'use strict';
 
 /* deps: jshint-stylish mocha */
+var path = require('path');
 var istanbul = require('gulp-istanbul');
 var jshint = require('gulp-jshint');
 var mocha = require('gulp-mocha');
 var gutil = require('gulp-util');
 var verb = require('verb');
 
+
+verb.helper('rename', function(str, a, b, c) {
+  str = str.split(a + '.').join(b + '.');
+  str = str.split('var ' + a).join('var ' + b);
+  var upperB = b[0].toUpperCase() + b.slice(1);
+  str = str.split(c).join(upperB);
+  return str;
+});
+
+verb.helper('npm', function (name) {
+  return 'node_modules/' + name + '/index.js';
+});
+
+verb.helper('home', function (name) {
+  var dir = path.dirname(require.resolve(name));
+  var pkg = path.resolve(dir, 'package.json');
+  return require(pkg).homepage + '/blob/master/index.js';
+});
+
 verb.task('readme', function() {
   return verb.src('.verb.md')
     .pipe(verb.dest('./'));
 });
 
-verb.task('api', function() {
-  return verb.src('docs/.verb/*.md')
+verb.task('docs', function() {
+  return verb.src('docs/_verb/*.md')
     .pipe(verb.dest('docs'));
 });
 

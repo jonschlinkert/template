@@ -43,5 +43,5 @@ describe('template.lookup()', function () {
     } catch (err) {
       if (!err) throw new Error('Expected an error.');
     }
-  })
+  });
 });

@@ -12,12 +12,14 @@ var chalk = require('chalk');
 var cloneDeep = require('clone-deep');
 var extend = require('extend-shallow');
 var flatten = require('arr-flatten');
+var isGlob = require('is-glob');
 var layouts = require('layouts');
 var merge = require('mixin-deep');
 var pickFrom = require('pick-from');
 var routes = require('en-route');
 var slice = require('array-slice');
 var typeOf = require('kind-of');
+var mm = require('micromatch');
 
 /**
  * Extend Template
@@ -539,48 +541,6 @@ Template.prototype.getEngine = function(ext) {
   debug.engine('.getEngine %s', ext);
   ext = ext || this.option('view engine');
   return this._.engines.getEngine(ext);
-};
-
-/**
- * Used in the `.render()` method to select the `ext`
- * to use for picking an engine.
- *
- * This logic can be overridden by passing a custom
- * function on `options.getExt`, e.g.:
- *
- * **Example:**
- *
- * ```js
- * template.option('getExt', function(template, locals) {
- *   return path.extname(template.path);
- * });
- * ```
- *
- * @param {Object} `template` Template object
- * @param {Object} `locals` Locals object
- * @return {String} `ext` For determining the engine to use.
- * @api public
- */
-
-Template.prototype.getExt = function(tmpl, locals) {
-  debug.engine('.getExt:', arguments);
-  var fn = this.option('getExt');
-
-  if (typeof fn === 'function') {
-    return fn.call(this, tmpl, locals);
-  }
-
-  // `_engine` is defined on the `.create()` method
-  var ext = tmpl.options._engine
-    || tmpl.options.engine
-    || locals.engine
-    || locals.ext
-    || tmpl.ext
-    || path.extname(tmpl.path)
-    || this.option('view engine');
-
-  if (ext == null) return null;
-  return utils.formatExt(ext);
 };
 
 /**
@@ -1135,7 +1095,6 @@ Template.prototype.mergePartials = function(context) {
     for (var key in collection) {
       if (collection.hasOwnProperty(key)) {
         var value = collection[key];
-
         mergeTypeContext(key, value.locals, value.data);
 
         // get the globally stored context that we just created
@@ -1177,7 +1136,6 @@ Template.prototype.find = function(type, key, subtypes) {
   if (typeof type !== 'string') {
     throw new TypeError('Template#find() expects `type` to be a string.');
   }
-
   var o = this.mergeType(type, subtypes);
   if (o && typeOf(o) === 'object' && utils.hasOwn(o, key)) {
     return o[key];
@@ -1250,9 +1208,16 @@ Template.prototype.lookup = function(plural, name, ext) {
   if (utils.hasOwn(views, name)) {
     return views[name];
   }
-  if (utils.hasOwn(views, name + (ext || '.md'))) {
-    return views[name + (ext || '.md')];
+  if (ext && utils.hasOwn(views, name + ext)) {
+    return views[name + ext];
   }
+
+  var res = mm.matchKeys(views, name + (ext || '\\.*'));
+  var keys = Object.keys(res);
+  if (keys.length) {
+    return res[keys[0]];
+  }
+
   if (this.enabled('strict errors')) {
     throw new Error('Cannot find ' + plural + ': "' + name + '"');
   }
@@ -1391,19 +1356,10 @@ Template.prototype.compileTemplate = function(template, options, isAsync) {
   delete opts.context;
   opts.async = isAsync;
 
-  template.path = template.path || '.';
-
   // handle pre-compile middleware routes
-  // this.handle('preCompile', template, handleError('preCompile', template));
+  this.handle('preCompile', template, handleError('preCompile', template));
 
-  template.options = template.options || {};
-  template.options.layout = template.layout;
-  if (!template.ext) {
-    var ext = path.extname(template.path);
-    if (ext) template.ext = ext;
-  }
-
-  template.ext = template.ext || template.engine;
+  template.engine = template.engine || path.extname(template.path);
 
   // Bind context to helpers before passing to the engine.
   this.bindHelpers(opts, context, isAsync);
@@ -1413,7 +1369,7 @@ Template.prototype.compileTemplate = function(template, options, isAsync) {
   var content = this.applyLayout(template, extend({}, context, opts));
 
   // get the engine to use
-  var engine = this.getEngine(template.ext);
+  var engine = this.getEngine(template.engine);
 
   // compile template
   return this.compileBase(engine, content, opts);
@@ -1430,9 +1386,8 @@ Template.prototype.compileTemplate = function(template, options, isAsync) {
  */
 
 Template.prototype.compile = function(content, options, isAsync) {
-  debug.render('compile: %j', arguments);
-
-  if (content == null) {
+  debug.render('compile:', arguments);
+  if (typeof content !== 'string' && typeOf(content) !== 'object') {
     throw new Error('Template#compile() expects a string or object.');
   }
 
@@ -1444,7 +1399,6 @@ Template.prototype.compile = function(content, options, isAsync) {
   if (typeOf(template) === 'object') {
     return this.compileTemplate(template, options, isAsync);
   }
-
   return this.compileString(content, options, isAsync);
 };
 
@@ -1462,7 +1416,7 @@ Template.prototype.compile = function(content, options, isAsync) {
  */
 
 Template.prototype.compileString = function(str, options, isAsync) {
-  debug.render('render string: %s', str);
+  debug.render('render string:', arguments);
   if (typeof options === 'boolean') {
     isAsync = options;
     options = {};
@@ -1523,9 +1477,8 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
 
   // find any options passed in on locals
   locals = locals || {};
-  var self = this;
-  var opts = {};
   template.path = template.path || '.';
+  var self = this;
 
   // handle pre-render middleware routes
   this.handle('preRender', template, handleError('preRender', template));
@@ -1534,17 +1487,17 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   locals = this.mergeContext(template, locals);
 
   // merge options
-  opts = extend({}, opts, locals.options);
+  var opts = extend({}, opts, locals.options);
 
   // find the engine to use for rendering templates
   var engine = this.getEngine(template.engine);
+  var isAsync = typeOf(cb) === 'function';
 
   // compile the template if it hasn't been already
   if (typeOf(template.fn) !== 'function') {
     opts.context = opts.context || locals;
     opts.delims = engine.options.delims;
 
-    var isAsync = typeOf(cb) === 'function';
     template.fn = this.compileTemplate(template, opts, isAsync);
   }
 
@@ -1555,21 +1508,13 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
     locals = extend({}, locals, opts);
   }
 
-  /**
-   * sync: when a callback is not passed, render and handle middleware
-   *
-   */
-  if (typeof cb !== 'function') {
+  if (!isAsync) {
     template.content = this.renderBase(engine, content, locals, cb);
     // handle post-render middleware routes
     this.handle('postRender', template, handleError('postRender', template));
     return template.content;
   }
 
-  /**
-   * async: when a callback is passed, render and handle middleware in callback
-   */
-  locals.async = true;
   return this.renderBase(engine, content, locals, function (err, content) {
     if (err) {
       cb.call(self, err);

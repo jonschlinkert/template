@@ -69,12 +69,6 @@ describe('template utils', function() {
     });
   });
 
-  describe('.getExt', function () {
-    it('should get the extension', function () {
-      utils.getExt('filename.hbs').should.eql('hbs');
-    });
-  });
-
   describe('.camelcase', function () {
     describe('when a single letter is passed', function () {
       it('should return the single letter', function () {

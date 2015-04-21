@@ -19,7 +19,6 @@ var pickFrom = require('pick-from');
 var routes = require('en-route');
 var slice = require('array-slice');
 var typeOf = require('kind-of');
-var mm = require('micromatch');
 
 /**
  * Extend Template
@@ -136,7 +135,7 @@ Template.prototype.defaultOptions = function() {
   this.option('view engine', '*');
   this.disable('debugEngine');
 
-  this.engine('.*', function (str, opts, cb) {
+  this.engine('.*', function noop(str, opts, cb) {
     if (typeof opts === 'function') {
       cb = opts; opts = {};
     }
@@ -495,7 +494,6 @@ Template.prototype.applyLayout = function(template, locals) {
 
 Template.prototype.registerEngine = function(ext, fn, options) {
   debug.engine('.registerEngine:', arguments);
-
   var opts = extend({}, options);
   ext = utils.formatExt(ext);
 
@@ -1208,16 +1206,9 @@ Template.prototype.lookup = function(plural, name, ext) {
   if (utils.hasOwn(views, name)) {
     return views[name];
   }
-  if (ext && utils.hasOwn(views, name + ext)) {
-    return views[name + ext];
+  if (utils.hasOwn(views, name + (ext || '.md'))) {
+    return views[name + (ext || '.md')];
   }
-
-  var res = mm.matchKeys(views, name + (ext || '\\.*'));
-  var keys = Object.keys(res);
-  if (keys.length) {
-    return res[keys[0]];
-  }
-
   if (this.enabled('strict errors')) {
     throw new Error('Cannot find ' + plural + ': "' + name + '"');
   }

@@ -1722,6 +1722,7 @@ Template.prototype.bindHelpers = function (options, context, isAsync) {
   var o = {};
   o.options = extend({}, this.options, options);
   o.context = context || {};
+  o.store = this.store || {}
   o.app = this;
 
   options.helpers = utils.bindAll(helpers, o);

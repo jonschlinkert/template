@@ -12,7 +12,6 @@ var chalk = require('chalk');
 var cloneDeep = require('clone-deep');
 var extend = require('extend-shallow');
 var flatten = require('arr-flatten');
-var isGlob = require('is-glob');
 var layouts = require('layouts');
 var merge = require('mixin-deep');
 var pickFrom = require('pick-from');
@@ -1722,7 +1721,7 @@ Template.prototype.bindHelpers = function (options, context, isAsync) {
   var o = {};
   o.options = extend({}, this.options, options);
   o.context = context || {};
-  o.store = this.store || {}
+  o.store = this.store || {};
   o.app = this;
 
   options.helpers = utils.bindAll(helpers, o);

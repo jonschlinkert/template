@@ -8,7 +8,6 @@ var mocha = require('gulp-mocha');
 var gutil = require('gulp-util');
 var verb = require('verb');
 
-
 verb.helper('rename', function(str, a, b, c) {
   str = str.split(a + '.').join(b + '.');
   str = str.split('var ' + a).join('var ' + b);

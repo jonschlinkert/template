@@ -1,7 +1,7 @@
 {
   "name": "template",
   "description": "Render templates using any engine. Supports, layouts, pages, partials and custom template types. Use template helpers, middleware, routes, loaders, and lots more. Powers assemble, verb and other node.js apps.",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "homepage": "https://github.com/jonschlinkert/template",
   "author": {
     "name": "Jon Schlinkert",
@@ -27,12 +27,15 @@
     "lib/"
   ],
   "scripts": {
-    "test": "mocha"
+    "test": "mocha",
+    "cover": "istanbul cover node_modules/.bin/_mocha && open coverage/lcov-report/index.html",
+    "ci": "istanbul cover ./node_modules/mocha/bin/_mocha --report lcovonly -- -R spec && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage"
   },
   "dependencies": {
     "ansi-styles": "^2.0.1",
     "arr-flatten": "^1.0.1",
     "array-slice": "^0.2.3",
+    "async": "^0.9.0",
     "chalk": "^1.0.0",
     "clone-deep": "^0.1.1",
     "config-cache": "^3.1.0",
@@ -57,7 +60,6 @@
     "pick-from": "^0.1.0"
   },
   "devDependencies": {
-    "async": "^0.9.0",
     "bluebird": "^2.9.24",
     "consolidate": "^0.12.1",
     "coveralls": "^2.11.2",

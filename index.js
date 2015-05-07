@@ -59,12 +59,7 @@ var utils = require('./lib');
 function Template(options) {
   Options.call(this, options);
   Config.call(this, options);
-  this.initTemplate();
-  this.defaultConfig();
-  this.defaultOptions();
-  this.mixInLoaders();
-  this.defaultLoaders();
-  this.defaultTransforms();
+  this.initTemplate(options);
 }
 
 Config.extend(Template.prototype);
@@ -106,6 +101,12 @@ Template.prototype.initTemplate = function() {
   this.view('partials', {});
   this.view('layouts', {});
   this.view('pages', {});
+
+  this.defaultConfig();
+  this.defaultOptions();
+  this.delegateLoaders();
+  this.defaultLoaders();
+  this.defaultTransforms();
 };
 
 /**
@@ -139,7 +140,7 @@ Template.prototype.defaultOptions = function() {
       cb = opts; opts = {};
     }
     cb(null, str);
-  })
+  });
 
   // layouts
   this.option('defaultLayout', null);
@@ -169,8 +170,8 @@ Template.prototype.defaultOptions = function() {
  * Mixin methods from [loader-cache] for loading templates.
  */
 
-Template.prototype.mixInLoaders = function() {
-  var mix = utils.mixInLoaders(Template.prototype, this._.loaders);
+Template.prototype.delegateLoaders = function() {
+  var mix = utils.delegate(Template.prototype, this._.loaders);
   // register methods
   mix('loader', 'register');
   mix('loaderAsync', 'registerAsync');

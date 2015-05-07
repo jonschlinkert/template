@@ -9,6 +9,7 @@
 
 var path = require('path');
 var chalk = require('chalk');
+var async = require('async');
 var cloneDeep = require('clone-deep');
 var extend = require('extend-shallow');
 var flatten = require('arr-flatten');
@@ -1139,10 +1140,14 @@ Template.prototype.getViews = function(name) {
  * the first template found with the given `key`. Optionally pass
  * an array of `subtypes` to limit the search;
  *
+ * ```js
+ * template.find('renderable', 'home', ['page', 'post']);
+ * ```
+ *
  * @param {String} `type` The template type to search.
  * @param {String} `key` The template to find.
  * @param {Array} `subtypes`
- * @api private
+ * @api public
  */
 
 Template.prototype.find = function(type, key, subtypes) {
@@ -1705,6 +1710,42 @@ Template.prototype.renderType = function(type, subtype) {
     }
     return self.renderTemplate(template, locals, cb);
   };
+};
+
+/**
+ * Render each item in a collection.
+ *
+ * ```js
+ * template.renderEach('pages', function(err, res) {
+ *   //=> array of rendered pages (strings)
+ * });
+ * ```
+ *
+ * @param  {String} `collection` The name of the collection to render.
+ * @param  {Object} `locals` Locals object and/or options to pass to the engine as context.
+ * @return {Array} Array of rendered strings.
+ * @api public
+ */
+
+Template.prototype.renderEach = function(collection, locals, cb) {
+  debug.render('renderEach:', arguments);
+  if (typeof locals === 'function') {
+    cb = locals;
+    locals = {};
+  }
+
+  var view = this.views[collection];
+  var keys = Object.keys(view);
+  var self = this;
+
+  async.map(keys, function (key, next) {
+    var template = view[key];
+
+    self.render(template, locals, function (err, content) {
+      if (err) return next(err);
+      next(null, content);
+    });
+  }, cb);
 };
 
 /**

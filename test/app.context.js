@@ -7,10 +7,10 @@
 
 'use strict';
 
+/* deps: mocha load-templates handlebars */
 var should = require('should');
 var Template = require('./app');
 var template;
-
 
 describe('app context', function() {
   beforeEach(function() {

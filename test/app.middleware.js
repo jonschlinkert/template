@@ -11,7 +11,7 @@ var should = require('should');
 var Template = require('./app');
 var template;
 
-describe('app middleware:', function () {
+describe('app.middleware:', function () {
   beforeEach(function () {
     template = new Template();
     template.create('page', { isRenderable: true}, function (obj) {

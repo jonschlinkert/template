@@ -18,14 +18,14 @@ var Template = require('./app');
 var template;
 
 
-describe('generated helpers:', function () {
+describe('built-in helpers:', function () {
   /* deps: swig */
-  describe('helpers for built-in engines:', function () {
+  describe('automatically generated helpers for default template types:', function () {
     beforeEach(function () {
       template = new Template();
     });
-
-    it('should use the `partial` helper with a built-in engine.', function (done) {
+    
+    it('should use the `partial` helper.', function (done) {
       template.partial('a.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}});
       template.page('b.md', {path: 'b.md', content: 'foo <%= partial("a.md") %> bar'});
 
@@ -36,7 +36,7 @@ describe('generated helpers:', function () {
       });
     });
 
-    it('should use the `partial` helper and locals with a built-in engine.', function (done) {
+    it('should use the `partial` helper with locals.', function (done) {
       template.partial('abc.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}});
       template.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("abc.md", { name: "CCC" }) %> bar'});
 

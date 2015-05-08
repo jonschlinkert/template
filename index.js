@@ -810,7 +810,7 @@ Template.prototype._load = function(subtype, plural, options) {
      */
     function done(err, template) {
       if (err) return cb(err);
-      template = self.normalize(plural, template, options);
+      template = self.normalize(subtype, plural, template, options);
       // validate the template object before moving on
       self.validate(template);
       // Add template to the cache
@@ -864,7 +864,7 @@ Template.prototype.validate = function(/*template*/) {
  * @api private
  */
 
-Template.prototype.normalize = function(plural, template, options) {
+Template.prototype.normalize = function(subtype, plural, template, options) {
   debug.template('normalizing: [%s]: %j', plural, template);
   this.lazyrouter();
 
@@ -872,22 +872,27 @@ Template.prototype.normalize = function(plural, template, options) {
     return this.options.normalize.apply(this, arguments);
   }
 
-  var opts = merge({ subtype: plural, create: options}, options);
   var self = this;
+  var opts = cloneDeep(options || {});
+  opts.subtype = subtype;
+  opts.collection = plural;
 
   for (var key in template) {
     if (template.hasOwnProperty(key)) {
       var file = template[key];
 
-      file.options = extend({}, opts, file.options);
+      file.options = file.options || {};
+      extend(file.options, opts);
       this.handle('onLoad', file, handleError('onLoad', {path: key}));
 
       // Add a render method to the template
-      file.render = function render(locals, cb) {
-        return self.renderTemplate(this, locals, cb);
-      };
+      file.render = render;
       template[key] = file;
     }
+  }
+
+  function render(locals, cb) {
+    return self.renderTemplate(this, locals, cb);
   }
   return template;
 };
@@ -954,27 +959,52 @@ Template.prototype.setLoaders = function(subtype, options, stack) {
 };
 
 /**
- * Get all views of the given [type]. Valid values are
- * `renderable`, `layout` or `partial`.
+ * Get a view `collection` by its singular or plural name.
  *
  * ```js
- * var pages = template.getType('renderable');
- * //=> { pages: { 'home.hbs': { ... }, 'about.hbs': { ... }}, posts: { ... }}
+ * var pages = template.getViews('pages');
+ * //=> { pages: {'home.hbs': { ... }}
+ *
+ * var posts = template.getViews('posts');
+ * //=> { posts: {'2015-10-10.md': { ... }}
  * ```
  *
- * @param {String} `type`
- * @param {Object} `opts`
+ * @param {String} `name` Collection name.
+ * @return {Object}
  * @api public
  */
 
-Template.prototype.getType = function(type) {
+Template.prototype.getViews = function(name) {
+  if (!this.views.hasOwnProperty(name)) {
+    name = this.inflections[name];
+  }
+  return this.views[name];
+};
+
+/**
+ * Get all view collections of the given [type].
+ *
+ * ```js
+ * var renderable = template.getType('renderable');
+ * //=> { pages: { 'home.hbs': { ... }, 'about.hbs': { ... }}, posts: { ... }}
+ * ```
+ *
+ * @param {String} `type` Types are `renderable`, `layout` and `partial`.
+ * @api public
+ */
+
+Template.prototype.getType = function(type, subtypes) {
   debug.template('getting type: %s', type);
-  var arr = this.type[type];
-  var len = arr.length, i = 0;
+
+  var keys = typeof subtypes !== 'undefined'
+    ? utils.arrayify(subtypes)
+    : this.type[type];
+
+  var len = keys.length, i = 0;
   var res = {};
 
   while (len--) {
-    var plural = arr[i++];
+    var plural = keys[i++];
     res[plural] = this.views[plural];
   }
   return res;
@@ -989,22 +1019,23 @@ Template.prototype.getType = function(type) {
  * in the array will be respected.
  *
  * @param {String} `type` The template type to search.
- * @param {String} `keys` Optionally pass an array of view collection names
+ * @param {String} `subtypes` Optionally pass an array of view collection names
  * @api public
  */
 
-Template.prototype.mergeType = function(type, keys) {
+Template.prototype.mergeType = function(type/*, subtypes*/) {
   debug.template('merging [type]: %s', type);
-  var obj = this.getType(type);
+  var collections = this.getType.apply(this, arguments);
+  var res = {};
 
-  keys = utils.arrayify(keys || Object.keys(obj));
-  var len = keys.length, res = {};
+  for (var key in collections) {
+    if (collections.hasOwnProperty(key)) {
+      var collection = collections[key];
 
-  while (len--) {
-    var collection = keys[len];
-    for (var key in this.views[collection]) {
-      if (utils.hasOwn(this.views[collection], key)) {
-        res[key] = this.views[collection][key];
+      for (var name in collection) {
+        if (!res.hasOwnProperty(name) && collection.hasOwnProperty(name)) {
+          res[name] = collection[name];
+        }
       }
     }
   }
@@ -1019,19 +1050,20 @@ Template.prototype.mergeType = function(type, keys) {
  * @api public
  */
 
-Template.prototype.mergeLayouts = function(options) {
-  debug.template('merging layouts: %j', options);
+Template.prototype.mergeLayouts = function(fn) {
+  debug.template('merging layouts: %j', fn);
 
+  var custom = this.option('mergeLayouts');
+  if (typeof custom === 'undefined') custom = fn;
   var layouts = {};
-  var mergeLayouts = this.option('mergeLayouts');
 
-  if (typeof mergeLayouts === 'function') {
-    return mergeLayouts.call(this, arguments);
+  if (typeof custom === 'function') {
+    return custom.call(this, arguments);
   }
 
-  if (Array.isArray(mergeLayouts)) {
-    layouts = this.mergeType('layout', mergeLayouts);
-  } else if (mergeLayouts === false) {
+  if (Array.isArray(custom)) {
+    layouts = this.mergeType('layout', custom);
+  } else if (custom === false) {
     layouts = this.views.layouts;
   } else {
     layouts = this.mergeType('layout');
@@ -1049,12 +1081,7 @@ Template.prototype.mergeLayouts = function(options) {
 
 /**
  * Default method for determining how partials are to be passed to
- * engines. By default, all `partial` collections are merged onto a
- * single `partials` object. To keep each collection on a separate
- * object, you can do `template.disable('mergePartials')`.
- *
- * If you want to control how partials are merged, you can also
- * pass a function to the `mergePartials` option:
+ * engines.
  *
  * ```js
  * template.option('mergePartials', function(locals) {
@@ -1062,7 +1089,7 @@ Template.prototype.mergeLayouts = function(options) {
  * });
  * ```
  *
- * @param  {Object} `locals` Locals should have layout delimiters, if defined
+ * @param {Object} `locals` Locals should have layout delimiters, if defined
  * @return {Object}
  * @api public
  */
@@ -1119,24 +1146,9 @@ Template.prototype.mergePartials = function(context) {
 };
 
 /**
- * Get the given view `collection` by its singular or
- * plural name.
+ * Find the first template that matches the given `key`.
  *
- * @param {String} `collection`
- * @param {String} `name`
- * @return {Object}
- * @api public
- */
-
-Template.prototype.getViews = function(name) {
-  if (!this.views.hasOwnProperty(name)) {
-    name = this.inflections[name];
-  }
-  return this.views[name];
-};
-
-/**
- * Search all `subtype` objects of the given `type`, returning
+ * Searches all views of [view-subtypes][subtypes] of the given [type], returning
  * the first template found with the given `key`. Optionally pass
  * an array of `subtypes` to limit the search;
  *
@@ -1150,24 +1162,32 @@ Template.prototype.getViews = function(name) {
  * @api public
  */
 
-Template.prototype.find = function(type, key, subtypes) {
+Template.prototype.find = function(type, name, subtypes) {
   if (typeof type !== 'string') {
     throw new TypeError('Template#find() expects `type` to be a string.');
   }
-  var o = this.mergeType(type, subtypes);
-  if (o && typeOf(o) === 'object' && utils.hasOwn(o, key)) {
-    return o[key];
+
+  if (typeof name !== 'string') {
+    throw new TypeError('Template#find() expects `name` to be a string.');
   }
-  if (this.enabled('strict errors')) {
-    throw new Error('Cannot find ' + type + ' template: "' + key + '"');
+
+  var collection = this.getType(type, subtypes);
+  for (var key in collection) {
+    if (collection.hasOwnProperty(key)) {
+      var views = collection[key];
+      if (views.hasOwnProperty(name)) {
+        return views[name];
+      }
+    }
   }
+  return null;
 };
 
 /**
  * Search all renderable `subtypes`, returning the first template
  * with the given `key`.
  *
- *   - If `key` is not found an error is thrown.
+ *   - If `key` is not found `null` is returned
  *   - Optionally limit the search to the specified `subtypes`.
  *
  * @param {String} `key` The template to search for.
@@ -1183,7 +1203,7 @@ Template.prototype.findRenderable = function(key, subtypes) {
  * Search all layout `subtypes`, returning the first template
  * with the given `key`.
  *
- *   - If `key` is not found an error is thrown.
+ *   - If `key` is not found `null` is returned
  *   - Optionally limit the search to the specified `subtypes`.
  *
  * @param {String} `key` The template to search for.
@@ -1199,7 +1219,7 @@ Template.prototype.findLayout = function(key, subtypes) {
  * Search all partial `subtypes`, returning the first template
  * with the given `key`.
  *
- *   - If `key` is not found an error is thrown.
+ *   - If `key` is not found `null` is returned
  *   - Optionally limit the search to the specified `subtypes`.
  *
  * @param {String} `key` The template to search for.
@@ -1212,7 +1232,7 @@ Template.prototype.findPartial = function(key, subtypes) {
 };
 
 /**
- * Convenience method for finding a template by `name` on
+ * Convenience method for finding a specific template by `name` on
  * the given collection. Optionally specify a file extension.
  *
  * @param {String} `plural` The view collection to search.
@@ -1221,8 +1241,8 @@ Template.prototype.findPartial = function(key, subtypes) {
  * @api public
  */
 
-Template.prototype.lookup = function(plural, name, ext) {
-  var views = this.views[plural];
+Template.prototype.lookup = function(collection, name, ext) {
+  var views = this.views[collection];
   if (utils.hasOwn(views, name)) {
     return views[name];
   }
@@ -1230,9 +1250,9 @@ Template.prototype.lookup = function(plural, name, ext) {
     return views[name + (ext || '.md')];
   }
   if (this.enabled('strict errors')) {
-    throw new Error('Cannot find ' + plural + ': "' + name + '"');
+    throw new Error('Cannot find ' + collection + ': "' + name + '"');
   }
-  debug.err('Cannot find ' + plural + ': "' + name + '"');
+  debug.err('Cannot find ' + collection + ': "' + name + '"');
   return null;
 };
 
@@ -1370,8 +1390,6 @@ Template.prototype.compileTemplate = function(template, options, isAsync) {
   // handle pre-compile middleware routes
   this.handle('preCompile', template, handleError('preCompile', template));
 
-  template.engine = template.engine || path.extname(template.path);
-
   // Bind context to helpers before passing to the engine.
   this.bindHelpers(opts, context, isAsync);
   opts.debugEngine = this.option('debugEngine');
@@ -1507,7 +1525,6 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   if (typeOf(template.fn) !== 'function') {
     opts.context = opts.context || locals;
     opts.delims = engine.options.delims;
-
     template.fn = this.compileTemplate(template, opts, isAsync);
   }
 
@@ -1776,7 +1793,6 @@ Template.prototype.bindHelpers = function (options, context, isAsync) {
   var o = {};
   o.options = extend({}, this.options, options);
   o.context = context || {};
-  o.store = this.store || {};
   o.app = this;
 
   options.helpers = utils.bindAll(helpers, o);

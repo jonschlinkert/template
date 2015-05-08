@@ -32,7 +32,7 @@ describe('.mergeLayouts():', function () {
     template.block('f', {content: 'f'});
   });
 
-  describe('should return an object with the `subtypes` for the given template `type`:', function () {
+  describe('should return an object with `subtypes` for the given `type`:', function () {
     it('should merge `layout` subtypes:', function () {
       template.mergeLayouts().should.have.properties('d', 'e', 'f');
     });
@@ -67,48 +67,81 @@ describe('.mergeLayouts():', function () {
       template.mergeLayouts().should.have.properties('e', 'f');
       template.mergeLayouts().should.not.have.property('d');
     });
+
+    describe('should only return `views.layouts`:', function () {
+      it('when false is passed on the mergeLayouts option:', function () {
+        template.option('mergeLayouts', false);
+        var res = template.mergeLayouts();
+        res.should.have.property('d');
+        res.should.not.have.properties('e', 'f');
+      });
+
+      it('when disabled', function () {
+        template.disable('mergeLayouts');
+        var res = template.mergeLayouts();
+        res.should.have.property('d');
+        res.should.not.have.properties('e', 'f');
+      });
+    });
   });
 
-  describe('when a custom function is passed to the `mergeLayouts` option:', function () {
-    it('should use it to merge collections:', function () {
+  describe('custom `mergeLayouts` function:', function () {
+    beforeEach(function () {
+      template = new Template();
       template.create('banana', {isLayout: true});
       template.create('apple', {isLayout: true});
 
-      template.banana('aaa', {content: 'this is a banana'});
       template.apple('aaa', {content: 'this is an apple'});
+      template.banana('aaa', {content: 'this is a banana'});
+    });
 
-      template.option('mergeLayouts', function(foo) {
+    it('should use a custom function passed on the `mergeLayouts` method:', function () {
+      var res = template.mergeLayouts(function() {
+        return this.mergeType('layout', ['apples', 'bananas']);
+      });
+
+      res.should.have.property('aaa');
+      res['aaa'].should.have.property('content', 'this is an apple');
+    });
+
+    it('should reverse the order in the array:', function () {
+      var res = template.mergeLayouts(function() {
+        return this.mergeType('layout', ['bananas', 'apples']);
+      });
+      
+      res.should.have.property('aaa');
+      res['aaa'].should.have.property('content', 'this is a banana');
+    });
+  });
+
+  describe('custom `mergeLayouts` function passed on options:', function () {
+    beforeEach(function () {
+      template = new Template();
+      template.create('banana', {isLayout: true});
+      template.create('apple', {isLayout: true});
+
+      template.apple('aaa', {content: 'this is an apple'});
+      template.banana('aaa', {content: 'this is a banana'});
+    });
+
+    it('should use a custom function passed on the options:', function () {
+      template.option('mergeLayouts', function() {
         return this.mergeType('layout', ['apples', 'bananas']);
       });
 
       var res = template.mergeLayouts();
       res.should.have.property('aaa');
       res['aaa'].should.have.property('content', 'this is an apple');
+    });
 
-      // change the order in the array
-
-      template.option('mergeLayouts', function(foo) {
-        return this.mergeType('layout', ['bananas', 'apples']);
+    it('should reverse the order in the array:', function () {
+      template.option('mergeLayouts', function() {
+        return this.mergeType('layout', ['apples', 'bananas']);
       });
-      res = template.mergeLayouts();
+
+      var res = template.mergeLayouts();
       res.should.have.property('aaa');
-      res['aaa'].should.have.property('content', 'this is a banana');
-    });
-  });
-
-  describe('when `false` is passed to the `mergeLayouts` option:', function () {
-    it('should only return the `views.layouts` collection:', function () {
-      template.option('mergeLayouts', false);
-      template.mergeLayouts().should.have.property('d');
-      template.mergeLayouts().should.not.have.properties('e', 'f');
-    });
-  });
-
-  describe('when the `mergeLayouts` option is disabled:', function () {
-    it('should only return the `views.layouts` collection:', function () {
-      template.disable('mergeLayouts');
-      template.mergeLayouts().should.have.property('d');
-      template.mergeLayouts().should.not.have.properties('e', 'f');
+      res['aaa'].should.have.property('content', 'this is an apple');
     });
   });
 });

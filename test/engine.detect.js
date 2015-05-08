@@ -72,7 +72,7 @@ describe('detect engine', function() {
 
       it('should prefer the create-method engine over `engine` defined on template options:', function() {
         template.doc('doc-a', {content: str, options: {engine: '.hbs'}});
-        template.views.docs['doc-a'].options.should.have.property('engine', '.hbs');
+        template.views.docs['doc-a'].options.should.have.property('engine', '.tmpl');
         template.render('doc-a').should.equal('<title>{{title}}RENDERED</title>');
       });
     });

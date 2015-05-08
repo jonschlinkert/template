@@ -7,6 +7,7 @@
 
 'use strict';
 
+var assert = require('assert');
 var should = require('should');
 var Template = require('./app');
 var template;
@@ -39,17 +40,10 @@ describe('.find...():', function () {
     template.snippet('i', {content: 'i\'m a snippet'});
   });
 
-  describe('whene `strict errors` is enabled:', function () {
-    it('should thrown an error when the template is not found:', function () {
-      template.enable('strict errors');
-
-      (function () {
-        template.findLayout('foo');
-      }).should.throw('Cannot find layout template: "foo"');
-    });
-  });
-
   describe('.findLayout():', function () {
+    it('should return `null` when a template is not found:', function () {
+      assert(template.findLayout('foo') === null);
+    });
     it('should return the first template with subtype `layout` that matches `name`:', function () {
       template.findLayout('d').should.have.property('content', 'i\'m a layout');
     });

@@ -97,19 +97,19 @@ describe('events:', function () {
       called.should.be.true;
     });
 
-    it('should emit `clear` when an item is removed from the cache', function () {
+    it('should emit `del` when an item is removed from the cache', function () {
       var called = false;
       var template = new Template();
       template.set('one', 'a');
       template.set('two', 'c');
 
-      template.on('clear', function (key, value) {
+      template.on('del', function (key, value) {
         called = true;
         assert(template.get(key) == null);
       });
 
-      template.clear('one');
-      template.clear('two');
+      template.del('one');
+      template.del('two');
 
       called.should.be.true;
     });

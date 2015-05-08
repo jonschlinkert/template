@@ -27,7 +27,7 @@ describe('cache', function () {
   describe('keys():', function () {
     var template = new Template();
     it('should return the keys of properties on the cache.', function () {
-      template.clear();
+      template.del();
 
       template.set('a', 1);
       template.set('b', 2);
@@ -41,7 +41,7 @@ describe('cache', function () {
     var template = new Template();
 
     afterEach(function() {
-      template.clear();
+      template.del();
     });
 
     describe('set() - add:', function () {

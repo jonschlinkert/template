@@ -15,7 +15,7 @@ var pkg = require('../package');
 describe('template data', function() {
   var template = new Template();
   beforeEach(function() {
-    template.clear();
+    template.del();
   });
 
 

@@ -477,6 +477,7 @@ Template.prototype.applyLayout = function(template, locals) {
   // Merge `layout` collections based on settings
   var stack = this.mergeLayouts(locals);
   var res = layouts(template.content, layout, stack, locals);
+  template.options.layoutStack = res;
   return res.result;
 };
 
@@ -1067,7 +1068,7 @@ Template.prototype.mergeLayouts = function(fn) {
     layouts = this.mergeType('layout');
   }
 
-  var mergeTypeContext = this.mergeTypeContext.bind(this, 'layouts');
+  var mergeTypeContext = this.mergeTypeContext(this, 'layouts');
   for (var key in layouts) {
     if (layouts.hasOwnProperty(key)) {
       var value = layouts[key];
@@ -1101,9 +1102,11 @@ Template.prototype.mergePartials = function(context) {
   }
 
   var opts = context.options || {};
-  opts.partials = cloneDeep(context.partials || {});
-  var mergeTypeContext = this.mergeTypeContext.bind(this, 'partials');
+  if (mergePartials === true) {
+    opts.partials = cloneDeep(context.partials || {});
+  }
 
+  var mergeTypeContext = this.mergeTypeContext(this, 'partials');
   var arr = this.type.partial;
   var len = arr.length, i = 0;
 
@@ -1164,11 +1167,9 @@ Template.prototype.find = function(type, name, subtypes) {
   if (typeof type !== 'string') {
     throw new TypeError('Template#find() expects `type` to be a string.');
   }
-
   if (typeof name !== 'string') {
     throw new TypeError('Template#find() expects `name` to be a string.');
   }
-
   var collection = this.getType(type, subtypes);
   for (var key in collection) {
     if (collection.hasOwnProperty(key)) {
@@ -1320,11 +1321,14 @@ Template.prototype.create = function(subtype, plural, opts/*, stack*/) {
 Template.prototype.decorate = function(subtype, plural, options) {
   debug.template('decorating subtype:', arguments);
 
-  // plural convenience method, ex: `.pages`
-  mixin(plural, this._load(subtype, plural, options));
+  // create a loader for this template subtype
+  var fn = this._load(subtype, plural, options);
 
-  // singular convenience method, ex: `.page`
-  mixin(subtype, this._load(subtype, plural, options));
+  // make a `plural` convenience method, ex: `.pages`
+  mixin(plural, fn);
+
+  // make a `singular` convenience method, ex: `.page`
+  mixin(subtype, fn);
 
   // Add a `get` method to `Template` for `subtype`
   mixin(utils.methodName('get', subtype), function (key) {
@@ -1394,6 +1398,10 @@ Template.prototype.compileTemplate = function(template, options, isAsync) {
 
   // if a layout is defined, apply it before compiling
   var content = this.applyLayout(template, extend({}, context, opts));
+  template.content = content;
+
+  // handle pre-compile middleware routes
+  this.handle('postCompile', template, handleError('postCompile', template));
 
   // get the engine to use
   var engine = this.getEngine(template.engine);
@@ -1513,7 +1521,7 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   locals = this.mergeContext(template, locals);
 
   // merge options
-  var opts = extend({}, opts, locals.options);
+  var opts = locals.options || {};
 
   // find the engine to use for rendering templates
   var engine = this.getEngine(template.engine);
@@ -1852,9 +1860,11 @@ Template.prototype.mergeContext = function(template, locals) {
  * @api private
  */
 
-Template.prototype.mergeTypeContext = function(type, key, locals, data) {
-  this.cache._context[type] = this.cache._context[type] || {};
-  this.cache._context[type][key] = extend({}, locals, data);
+Template.prototype.mergeTypeContext = function (app, type) {
+  return function(key, locals, data) {
+    app.cache._context[type] = app.cache._context[type] || {};
+    app.cache._context[type][key] = extend({}, locals, data);
+  };
 };
 
 /**

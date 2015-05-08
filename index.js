@@ -801,7 +801,7 @@ Template.prototype._load = function(subtype, plural, options) {
 
     var loadOpts = {};
     loadOpts.matchLoader = function () {
-        return subtype;
+      return subtype;
     };
 
     /**
@@ -881,18 +881,16 @@ Template.prototype.normalize = function(subtype, plural, template, options) {
     if (template.hasOwnProperty(key)) {
       var file = template[key];
 
+      file.contexts = file.contexts || {};
       file.options = file.options || {};
+      file.contexts.create = opts;
       file.options.create = opts;
+
       this.handle('onLoad', file, handleError('onLoad', {path: key}));
 
       // Add a render method to the template
-      file.render = render;
       template[key] = file;
     }
-  }
-
-  function render(locals, cb) {
-    return self.renderTemplate(this, locals, cb);
   }
   return template;
 };

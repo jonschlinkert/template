@@ -43,6 +43,7 @@ verb.task('lint', function () {
 });
 
 verb.task('test', function (cb) {
+  // deps: coveralls istanbul jshint-stylish
   verb.src(['index.js', 'lib/**/*.js'])
     .pipe(istanbul({includeUntested: true}))
     .pipe(istanbul.hookRequire())

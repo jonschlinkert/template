@@ -72,7 +72,8 @@ describe('detect engine', function() {
 
       it('should prefer the create-method engine over `engine` defined on template options:', function() {
         template.doc('doc-a', {content: str, options: {engine: '.hbs'}});
-        template.views.docs['doc-a'].options.should.have.property('engine', '.tmpl');
+        template.views.docs['doc-a'].options.should.have.property('create');
+        template.views.docs['doc-a'].options.create.should.have.property('engine', '.tmpl');
         template.render('doc-a').should.equal('<title>{{title}}RENDERED</title>');
       });
     });
@@ -170,8 +171,10 @@ describe('detect engine', function() {
         template.include('aaa', {content: str});
         template.doc('bbb', {content: str});
 
-        template.views.includes['aaa'].options.should.have.property('engine', '.bang');
-        template.views.docs['bbb'].options.should.have.property('engine', '.fez');
+        template.views.includes['aaa'].options.should.have.property('create');
+        template.views.includes['aaa'].options.create.should.have.property('engine', '.bang');
+        template.views.docs['bbb'].options.should.have.property('create');
+        template.views.docs['bbb'].options.create.should.have.property('engine', '.fez');
 
         template.render('aaa').should.equal('<title>{{title}}RENDERED</title>');
         template.render('bbb').should.equal('<title>RENDERED<%= title %></title>');

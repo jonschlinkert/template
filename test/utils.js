@@ -25,11 +25,10 @@ describe('template utils', function() {
       template.post('aaa.md', '<%= abc %>');
 
       template.findRenderable('aaa.md').should.have.property('options');
-      template.findRenderable('aaa.md').options.should.have.property('subtype', 'page');
-      template.findRenderable('aaa.md').options.should.have.property('isRenderable', true);
+      template.findRenderable('aaa.md').options.should.have.property('create');
+      template.findRenderable('aaa.md').options.create.should.eql({collection: 'pages', isRenderable: true, subtype: 'page'});
+
       template.findRenderable('aaa.md', ['posts']).should.have.property('options');
-      template.findRenderable('aaa.md', ['posts']).options.should.have.property('subtype', 'post');
-      template.findRenderable('aaa.md', ['posts']).options.should.have.property('isRenderable', true);
     });
 
     it('should get the first template of the given subtype:', function () {
@@ -38,8 +37,8 @@ describe('template utils', function() {
       template.include('aaa.md', '<%= abc %>');
 
       template.findPartial('aaa.md', ['partials']).should.have.property('options');
-      template.findPartial('aaa.md', ['partials']).options.should.have.property('subtype', 'partial');
-      template.findPartial('aaa.md', ['partials']).options.should.have.property('isPartial', true);
+      template.findPartial('aaa.md', ['partials']).options.should.have.property('create');
+      template.findPartial('aaa.md', ['partials']).options.create.should.eql({collection: 'partials', isPartial: true, subtype: 'partial'});
     });
 
     it('should get the first template based on the order of the passed array:', function () {
@@ -51,12 +50,14 @@ describe('template utils', function() {
       template.snippet('aaa.md', '<%= abc %>');
 
       template.findPartial('aaa.md', ['partials', 'snippets', 'includes']).should.have.property('options');
-      template.findPartial('aaa.md', ['partials', 'snippets', 'includes']).options.should.have.property('subtype', 'partial');
-      template.findPartial('aaa.md', ['partials', 'snippets', 'includes']).options.should.have.property('isPartial', true);
+      template.findPartial('aaa.md', ['partials', 'snippets', 'includes']).options.should.have.property('create');
+      template.findPartial('aaa.md', ['partials', 'snippets', 'includes']).options.create.should.have.property('subtype');
+      template.findPartial('aaa.md', ['partials', 'snippets', 'includes']).options.create.should.have.property('isPartial');
 
       template.findPartial('aaa.md', ['snippets', 'partials', 'includes']).should.have.property('options');
-      template.findPartial('aaa.md', ['snippets', 'partials', 'includes']).options.should.have.property('subtype', 'snippet');
-      template.findPartial('aaa.md', ['snippets', 'partials', 'includes']).options.should.have.property('isPartial', true);
+      template.findPartial('aaa.md', ['snippets', 'partials', 'includes']).options.should.have.property('create');
+      template.findPartial('aaa.md', ['snippets', 'partials', 'includes']).options.create.should.eql({ collection: 'snippets', isPartial: true, subtype: 'snippet' });
+      template.findPartial('aaa.md', ['snippets', 'partials', 'includes']).options.create.should.have.property('isPartial');
     });
   });
 

@@ -882,7 +882,7 @@ Template.prototype.normalize = function(subtype, plural, template, options) {
       var file = template[key];
 
       file.options = file.options || {};
-      extend(file.options, opts);
+      file.options.create = opts;
       this.handle('onLoad', file, handleError('onLoad', {path: key}));
 
       // Add a render method to the template

@@ -19,6 +19,7 @@ var pickFrom = require('pick-from');
 var routes = require('en-route');
 var slice = require('array-slice');
 var typeOf = require('kind-of');
+var tutil = require('template-utils')._;
 
 /**
  * Extend Template
@@ -465,13 +466,17 @@ Template.prototype.applyLayout = function(template, locals) {
   }
 
   // Get the name of the (starting) layout to be used
-  var layout = utils.getLayout(template, locals);
+  var layout = template.layout
+    || template.data && template.data.layout
+    || locals && locals.layout
+    || template.options && template.options.layout
+    || template.locals && template.locals.layout
 
   // If `layoutExt` is defined on the options, append
   // it to the layout name before passing the name to [layouts]
   var ext = this.option('layoutExt');
   if (ext) {
-    layout = layout + utils.formatExt(ext);
+    layout += tutil.formatExt(ext);
   }
 
   // Merge `layout` collections based on settings
@@ -514,8 +519,7 @@ Template.prototype.view = function(collection, name) {
 Template.prototype.registerEngine = function(ext, fn, options) {
   debug.engine('.registerEngine:', arguments);
   var opts = extend({}, options);
-  ext = utils.formatExt(ext);
-
+  ext = tutil.formatExt(ext);
   this._.engines.setEngine(ext, fn, opts);
   return this;
 };
@@ -883,7 +887,7 @@ Template.prototype.normalize = function(subtype, plural, template, options) {
       var file = template[key];
 
       file.contexts = file.contexts || {};
-      file.options = file.options || {};
+      file.options = extend({}, opts, file.options);
       file.contexts.create = opts;
       file.options.create = opts;
 
@@ -1392,16 +1396,17 @@ Template.prototype.compileTemplate = function(template, options, isAsync) {
   // handle pre-compile middleware routes
   this.handle('preCompile', template, handleError('preCompile', template));
 
-  // Bind context to helpers before passing to the engine.
-  this.bindHelpers(opts, context, isAsync);
-  opts.debugEngine = this.option('debugEngine');
-
   // if a layout is defined, apply it before compiling
   var content = this.applyLayout(template, extend({}, context, opts));
   template.content = content;
 
   // handle pre-compile middleware routes
   this.handle('postCompile', template, handleError('postCompile', template));
+  content = template.content;
+
+  // Bind context to helpers before passing to the engine.
+  this.bindHelpers(opts, context, isAsync);
+  opts.debugEngine = this.option('debugEngine');
 
   // get the engine to use
   var engine = this.getEngine(template.engine);

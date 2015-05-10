@@ -61,15 +61,6 @@ describe('template utils', function() {
     });
   });
 
-  describe('.formatExt', function () {
-    it('should add a dot to the front of an extension', function () {
-      utils.formatExt('hbs').should.eql('.hbs');
-    });
-    it('should return the same extension when a dot already exists', function () {
-      utils.formatExt('.hbs').should.eql('.hbs');
-    });
-  });
-
   describe('.camelcase', function () {
     describe('when a single letter is passed', function () {
       it('should return the single letter', function () {

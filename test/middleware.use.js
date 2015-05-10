@@ -30,7 +30,7 @@ describe('.use()', function () {
     template.page('foo', {content: 'letters:'});
     template.render('foo', function (err, content) {
       if (err) console.log(err);
-      content.should.equal('letters:AAAA');
+      content.should.equal('letters:AAAAA');
       done();
     });
   });

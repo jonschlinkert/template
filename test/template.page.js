@@ -108,7 +108,8 @@ describe('template page', function () {
     it('should keep locals and front-matter data separate.', function () {
       template.page({'a.md': {content: '---\nname: AAA\n---\nThis is content.', locals: {c: 'c'}}});
       template.views.pages['a.md'].should.have.property('data', { name: 'AAA' });
-      template.views.pages['a.md'].should.have.property('locals', { c: 'c' });
+      template.views.pages['a.md'].should.have.property('locals');
+      template.views.pages['a.md'].locals.should.have.property('c', 'c');
     });
 
     it('should save both locals and front-matter data to the `file` object.', function () {

@@ -100,7 +100,8 @@ describe('template partial', function () {
     it('should save both locals and front-matter data to the `file` object.', function () {
       template.partials({'a.md': {content: '---\nname: AAA\n---\nThis is content.', locals: {name: 'BBB'}}});
       template.views.partials['a.md'].should.have.property('data', { name: 'AAA' });
-      template.views.partials['a.md'].should.have.property('locals', { name: 'BBB' });
+      template.views.partials['a.md'].should.have.property('locals');
+      template.views.partials['a.md'].locals.should.have.property('name', 'BBB');
     });
 
     it('should use the key as `file.path` if one does not exist.', function () {

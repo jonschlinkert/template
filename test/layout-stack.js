@@ -12,7 +12,7 @@ var Template = require('./app');
 
 describe('layout stack:', function () {
   describe('options.layoutStack:', function () {
-    it.only('should add the layout stack to options.layoutStack:', function (done) {
+    it('should add the layout stack to options.layoutStack:', function (done) {
       var template = new Template();
 
       template.layout({a: { layout: 'b', content: '---\ntitle: AAA\n---\nA above\n{% body %}\nA below' , locals: {aa: 'a'}}});
@@ -46,7 +46,8 @@ describe('layout stack:', function () {
       var tmpl = template.getPage('about');
       template.render(tmpl, function(err, content) {
         if (err) return done(err);
-        tmpl.contexts.should.have.property('layouts');
+
+        // tmpl.options.should.have.property('layoutContext');
         tmpl.options.should.have.property('layoutStack');
         content.should.equal(expected);
         done();

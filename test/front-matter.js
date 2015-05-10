@@ -47,6 +47,28 @@ describe('template front-matter', function () {
     });
   });
 
+  describe('noread:', function () {
+    it('should not parse front matter when `noread` is defined:', function () {
+      template.page('a', '---\nb: c\n---\nd', {options: {noread: true}});
+      template.views.pages.a.should.have.property('data');
+      template.views.pages.a.data.should.not.have.property('b');
+    });
+
+    it('should not parse front matter when `noread` is defined on `create`:', function () {
+      template.create('doc', {noread: true});
+      template.docs('a', '---\nb: c\n---\nd');
+      template.views.docs.a.should.have.property('data');
+      template.views.docs.a.data.should.not.have.property('b');
+    });
+
+    it('should extend the data object on a template with front matter:', function () {
+      template.page('a', {content: '---\nb: c\n---\nd', data: {e: 'f'}});
+      template.views.pages.a.should.have.property('data');
+      template.views.pages.a.data.should.have.property('b', 'c');
+      template.views.pages.a.data.should.have.property('e', 'f');
+    });
+  });
+
   describe('when custom middleware for parsing front matter:', function () {
     describe('data.page:', function () {
       beforeEach(function () {

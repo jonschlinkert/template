@@ -43,42 +43,42 @@ describe('template.route()', function () {
       var doneCalled = false;
       var keys = Object.keys(template.views.pages);
       async.each(keys, function (key, next) {
-        var value = template.views.pages[key];
-        template.handle(value, function (err) {
+        var file = template.views.pages[key];
+        template.handle(file, function (err) {
           if (err) {
             doneCalled = true;
             return done(err);
           }
           switch (key) {
             case 'a.hbs':
-              value.path.should.eql('a.hbs');
-              value.data.should.eql({});
-              value.locals.should.eql({author: 'Jon Schlinkert'});
+              file.path.should.eql('a.hbs');
+              file.data.should.eql({});
+              file.locals.should.have.property('author', 'Jon Schlinkert');
               break;
             case 'b.tmpl':
-              value.path.should.eql('b.tmpl');
-              value.data.should.eql({});
-              value.locals.should.eql({author: 'Jon Schlinkert'});
+              file.path.should.eql('b.tmpl');
+              file.data.should.eql({});
+              file.locals.should.have.property('author', 'Jon Schlinkert');
               break;
             case 'd.swig':
-              value.path.should.eql('d.swig');
-              value.data.should.eql({});
-              value.locals.should.eql({author: 'Jon Schlinkert'});
+              file.path.should.eql('d.swig');
+              file.data.should.eql({});
+              file.locals.should.have.property('author', 'Jon Schlinkert');
               break;
             case 'e.swig':
-              value.path.should.eql('e.swig');
-              value.data.should.eql({});
-              value.locals.should.eql({author: 'Jon Schlinkert'});
+              file.path.should.eql('e.swig');
+              file.data.should.eql({});
+              file.locals.should.have.property('author', 'Jon Schlinkert');
               break;
             case 'f.hbs':
-              value.path.should.eql('f.hbs');
-              value.data.should.eql({});
-              value.locals.should.eql({author: 'Jon Schlinkert'});
+              file.path.should.eql('f.hbs');
+              file.data.should.eql({});
+              file.locals.should.have.property('author', 'Jon Schlinkert');
               break;
             case 'g.md':
-              value.path.should.eql('g.md');
-              value.data.should.eql({author: 'Brian Woodward'});
-              value.locals.should.eql({author: 'Jon Schlinkert'});
+              file.path.should.eql('g.md');
+              file.data.should.have.property('author', 'Brian Woodward');
+              file.locals.should.have.property('author', 'Jon Schlinkert');
               break;
           }
           next();

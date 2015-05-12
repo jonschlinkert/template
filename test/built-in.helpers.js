@@ -99,15 +99,15 @@ describe('generated helpers:', function () {
     it('should throw an error when something is wrong in a partial', function () {
       template.partial('abc.md', {content: '---\nname: "AAA"\n---\n<%= name %> - <%= foo(name) %>', locals: {name: 'BBB'}});
       template.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("abc.md", { name: "CCC" }) %> bar'});
-      try {
-        template.render('xyz.md', {name: 'DDD'}).should.eql('foo CCC bar');
-      } catch (err) {
-        if (!err) throw new Error('Expected an error.');
-      }
+
+      template.render('xyz.md', {name: 'DDD'}, function (err, content) {
+        err.should.be.an.object;
+        err.message.should.equal('foo is not defined');
+      });
     });
   });
 
-
+  
   describe('helper context:', function () {
     beforeEach(function () {
       template = new Template();

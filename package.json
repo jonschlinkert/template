@@ -1,7 +1,7 @@
 {
   "name": "template",
   "description": "Render templates using any engine. Supports, layouts, pages, partials and custom template types. Use template helpers, middleware, routes, loaders, and lots more. Powers assemble, verb and other node.js apps.",
-  "version": "0.14.0",
+  "version": "0.14.1",
   "homepage": "https://github.com/jonschlinkert/template",
   "author": {
     "name": "Jon Schlinkert",
@@ -58,6 +58,7 @@
     "option-cache": "^1.3.0",
     "parser-front-matter": "^1.2.1",
     "pick-from": "^0.1.0",
+    "relative": "^3.0.0",
     "template-utils": "^0.6.0"
   },
   "devDependencies": {

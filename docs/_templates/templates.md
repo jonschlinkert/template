@@ -9,8 +9,17 @@
 
 ## template object
 
+A `template` object is a key-value, where `key` is the unique name of the template, and `value` is an object with properties such as `content` and `path`. The `value` is sometimes referred to as `file`, since this object is used to create [vinyl] files in in Template-based applications.
 
-## file object
+**Example**
+
+```js
+// file object
+var file = {path: 'a/b/c.hbs', content: '<body> This is content! </body>'};
+
+// template object
+{'c.hbs': file}
+```
 
 
 ## Register templates
@@ -108,3 +117,5 @@ Search all partial `subtypes`, returning the first template with the given `key`
 
 * `key` **{String}**: The template to search for.
 * `subtypes` **{Array}**
+
+{%%= reflinks(['assemble', 'verb', 'vinyl']) %}

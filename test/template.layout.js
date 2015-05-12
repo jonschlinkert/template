@@ -7,119 +7,196 @@
 
 'use strict';
 
-var assert = require('assert');
 var should = require('should');
 var Template = require('./app');
-var template;
 
-describe('template layout', function () {
-  beforeEach(function () {
-    template = new Template();
+describe('layouts:', function () {
+  describe('default engine:', function () {
+    it('should use layouts defined as objects', function (done) {
+      var template = new Template();
+
+      template.layout({a: { layout: 'b', content: 'A above\n{% body %}\nA below' }});
+      template.layout({b: { layout: 'c', content: 'B above\n{% body %}\nB below' }});
+      template.layout({c: { layout: 'd', content: 'C above\n{% body %}\nC below' }});
+      template.layout({d: { layout: 'e', content: 'D above\n{% body %}\nD below' }});
+      template.layout({last: { layout: undefined, content: 'last!\n{% body %}\nlast!' }});
+      template.layout({e: { layout: 'f', content: 'E above\n{% body %}\nE below' }});
+      template.layout({f: { layout: 'last', content: 'F above\n{% body %}\nF below' }});
+      template.layout({first: { layout: 'a', content: '{% body %}' }});
+      template.page('about', 'This is the about page.', {layout: 'first'}, {ext: '.html'});
+
+      var expected = [
+        'last!',
+        'F above',
+        'E above',
+        'D above',
+        'C above',
+        'B above',
+        'A above',
+        'fooo',
+        'A below',
+        'B below',
+        'C below',
+        'D below',
+        'E below',
+        'F below',
+        'last!'
+      ].join('\n');
+
+      template.render({content: 'fooo', layout: 'first'}, function(err, content) {
+        if (err) return done(err);
+        content.should.equal(expected);
+        done();
+      });
+    });
+
+    it('should use layouts defined as objects', function (done) {
+      var template = new Template();
+
+      template.layout({a: { layout: 'b', content: 'A above\n{% body %}\nA below' }});
+      template.layout({b: { layout: 'c', content: 'B above\n{% body %}\nB below' }});
+      template.layout({c: { layout: 'd', content: 'C above\n{% body %}\nC below' }});
+      template.layout({d: { layout: 'e', content: 'D above\n{% body %}\nD below' }});
+      template.layout({last: { layout: undefined, content: 'last!\n{% body %}\nlast!' }});
+      template.layout({e: { layout: 'f', content: 'E above\n{% body %}\nE below' }});
+      template.layout({f: { layout: 'last', content: 'F above\n{% body %}\nF below' }});
+      template.layout({first: { layout: 'a', content: '{% body %}' }});
+      template.page('about', 'This is the about page.', {layout: 'first'}, {ext: '.html'});
+
+      var expected = [
+        'last!',
+        'F above',
+        'E above',
+        'D above',
+        'C above',
+        'B above',
+        'A above',
+        'This is the about page.',
+        'A below',
+        'B below',
+        'C below',
+        'D below',
+        'E below',
+        'F below',
+        'last!'
+      ].join('\n');
+
+      template.render('about', function(err, content) {
+        if (err) return done(err);
+        content.should.equal(expected);
+        done();
+      });
+    });
+
+    it('should use layouts defined as strings:', function (done) {
+      var template = new Template();
+
+      template.layout('first', '{% body %}', {layout: 'a'});
+      template.layout('a', 'A above\n{% body %}\nA below', {layout: 'b'});
+      template.layout('b', 'B above\n{% body %}\nB below', {layout: 'c'});
+      template.layout('c', 'C above\n{% body %}\nC below', {layout: 'd'});
+      template.layout('d', 'D above\n{% body %}\nD below', {layout: 'e'});
+      template.layout('e', 'E above\n{% body %}\nE below', {layout: 'default'});
+      template.layout('default', 'default!\n{% body %}\ndefault!');
+
+      var expected = [
+        'default!',
+        'E above',
+        'D above',
+        'C above',
+        'B above',
+        'A above',
+        'This is a page!',
+        'A below',
+        'B below',
+        'C below',
+        'D below',
+        'E below',
+        'default!'
+      ].join('\n');
+
+      template.render({content: 'This is a page!', layout: 'first'}, function(err, content) {
+        if (err) return done(err);
+        content.should.eql(expected);
+        done();
+      });
+    });
   });
 
-  describe('.layout() strings', function () {
-    it('should add a layout to the cache.', function () {
-      template.layout('a.md', 'b');
-      template.views.layouts.should.have.property('a.md');
-    });
+  describe('default engine:', function () {
+    var template = new Template();
 
-    it('should put layouts on the `views.layouts` object.', function () {
-      template.layouts('a.md', 'b');
-      template.views.layouts['a.md'].should.have.property('content', 'b');
-    });
+    template.layout('sidebar', {content: '<nav></nav>\n{% body %}', layout: 'default'});
+    template.layout('default', {content: 'default!\n{% body %}\ndefault!'});
 
-    it('should get layouts with the `.getLayout()` method', function () {
-      template.layouts('a.md', 'b');
-      template.getLayout('a.md').content.should.equal('b');
-    });
+    it('should use layouts defined as strings:', function (done) {
+      var expected = [
+        'default!',
+        '<nav></nav>',
+        'This is a page!',
+        'default!'
+      ].join('\n');
 
-    it('should get layouts with the `.view()` collection method', function () {
-      template.layouts('a.md', 'b');
-      template.view('layouts', 'a.md').content.should.equal('b');
-    });
-
-    it('should add the template string to the `content` property.', function () {
-      template.layouts('a.md', 'this is content.');
-      template.views.layouts['a.md'].content.should.equal('this is content.');
-    });
-
-    it('should add the template string to the `content` property.', function () {
-      template.layout('a.md', 'this is content.');
-      template.views.layouts['a.md'].content.should.equal('this is content.');
-    });
-
-    it('should add add the string to a `content` property.', function () {
-      template.layout('a.md', 'b');
-      template.views.layouts['a.md'].should.have.property('content', 'b');
-    });
-
-    it('should add locals to the `locals` property.', function () {
-      template.layout('a.md', 'b', {c: 'c'});
-      template.views.layouts['a.md'].locals.should.have.property('c');
-    });
-
-    it('should add locals to the `locals` property.', function () {
-      template.layout('a.md', 'b', {c: 'c'});
-      template.views.layouts['a.md'].locals.should.have.property('c');
-    });
-
-    it('should add the third arg to the `locals` property.', function () {
-      template.layout('a.md', 'b', {title: 'c'});
-      template.views.layouts['a.md'].locals.should.have.property('title');
+      template.render({content: 'This is a page!', layout: 'sidebar'}, function(err, content) {
+        if (err) return done(err);
+        content.should.eql(expected);
+        done();
+      });
     });
   });
 
-  describe('.layout() objects', function () {
-    it('should add a layout to the cache.', function () {
-      template.layout({'a.md': {content: 'b', data: {c: 'c'}}});
-      template.views.layouts.should.have.property('a.md');
-    });
 
-    it('should add the template string to the `content` property.', function () {
-      template.layout({'a.md': {content: 'b', data: {c: 'c'}}});
-      template.views.layouts['a.md'].content.should.equal('b');
-    });
-
-    it('should add locals to the `data` property.', function () {
-      template.layout({'a.md': {content: 'b', data: {c: 'c'}}});
-      template.views.layouts['a.md'].should.have.property('data', {c: 'c'});
-      template.views.layouts['a.md'].should.have.property('content', 'b');
-    });
-
-    it('should add locals to the `data` property.', function () {
-      template.layout({'a.md': {content: 'b', data: {c: 'c'}}});
-      template.views.layouts['a.md'].data.should.have.property('c');
+  describe.skip('when an `ext` is defined on a template:', function () {
+    it('should use the layout defined regardless of extension:', function () {
+      //
     });
   });
 
-  describe('when a layout has front matter', function () {
-    it('should parse the layout.', function () {
-      template.layout('a.md', '---\nname: AAA\n---\nThis is content.');
-      template.views.layouts['a.md'].should.have.property.content;
-      template.views.layouts['a.md'].content.should.equal('This is content.');
-    });
+  describe('option layoutExt', function () {
+    it('should append layout ext to layout when applying layout stack', function (done) {
+      var template = new Template();
+      template.option('layoutExt', 'hbs');
+      template.layout('sidebar.hbs', { content: '<nav></nav>\n{% body %}', layout: 'default.hbs' });
+      template.layout('default.hbs', { content: 'default!\n{% body %}\ndefault!' });
+      template.page('home', { content: 'This is the home page.', layout: 'sidebar' });
 
-    it('should parse the `content` value.', function () {
-      template.layout({'a.md': {path: 'a.md', content: '---\nname: AAA\n---\nThis is content.'}});
-      template.views.layouts.should.have.property('a.md');
-    });
+      var expected = [
+        'default!',
+        '<nav></nav>',
+        'This is the home page.',
+        'default!'
+      ].join('\n');
 
-    it('should keep locals and front-matter data separate.', function () {
-      template.layout({'a.md': {content: '---\nname: AAA\n---\nThis is content.', locals: {c: 'c'}}});
-      template.views.layouts['a.md'].should.have.property('data', { name: 'AAA' });
-      template.views.layouts['a.md'].should.have.property('locals');
-      template.views.layouts['a.md'].locals.should.have.property('c', 'c');
+      template.render('home', function (err, content) {
+        if (err) return done(err);
+        content.should.eql(expected);
+        done();
+      });
     });
+  });
 
-    it('should save both locals and front-matter data to the `file` object.', function () {
-      template.layout({'a.md': {content: '---\nname: AAA\n---\nThis is content.', locals: {name: 'BBB'}}});
-      template.views.layouts['a.md'].data.name.should.equal('AAA');
-      template.views.layouts['a.md'].locals.name.should.equal('BBB');
-    });
 
-    it('should use the key as `file.path` if one does not exist.', function () {
-      template.layout({'a.md': {content: '---\nname: AAA\n---\nThis is content.', data: {c: 'c'}}});
-      template.views.layouts['a.md'].path.should.equal('a.md');
+  describe('custom template types:', function () {
+    var template = new Template();
+    template.create('doc', { isRenderable: true });
+
+    template.layouts('sidebar', { content: '<nav></nav>\n{% body %}', layout: 'default'});
+    template.layouts('default', { content: 'default!\n{% body %}\ndefault!' });
+    template.doc('home', { content: 'This is the home page.', layout: 'sidebar'});
+
+    it('should use layouts defined as strings:', function (done) {
+      var expected = [
+        'default!',
+        '<nav></nav>',
+        'This is the home page.',
+        'default!'
+      ].join('\n');
+
+      template.render('home', function(err, content) {
+        if (err) console.log(err);
+        content.should.eql(expected);
+        done();
+      });
     });
   });
 });

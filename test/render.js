@@ -205,14 +205,12 @@ describe('template.render()', function () {
     });
 
     it('should throw error when engine does not have a render method', function (done) {
-      try {
-        var engine = {};
-        template.renderBase(engine, 'foo', function () {});
-        return done(new Error('Expected an error'));
-      } catch (err) {
-        if (!err) return done(new Error('Expected an error'));
-        return done();
-      }
+      var engine = {};
+      template.renderBase(engine, 'foo', function (err, content) {
+        err.should.be.an.object;
+        err.should.has.property('message');
+        done();
+      });
     });
 
     it('should return error when engine.render has an error', function (done) {
@@ -222,14 +220,16 @@ describe('template.render()', function () {
         }
       };
       template.renderBase(engine, 'foo', function (err) {
-        if (!err) return done(new Error('Expected an error'));
-        return done();
+        err.should.be.an.object;
+        err.should.has.property('message');
+        err.message.should.equal('Error during render.');
+        done();
       });
     });
   });
 
   describe('no locals', function () {
-    it('should handle not having locals', function (done) {
+    it('should allow locals to not be defined:', function (done) {
       template.renderString('foo', function (err, content) {
         if (err) return done(err);
         content.should.eql('foo');

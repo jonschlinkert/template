@@ -23,7 +23,7 @@ describe('custom `renderable` types:', function () {
     template.option('preferLocals', true);
   });
 
-  it('should use `file.path` to determine the correct consolidate engine to render content:', function (done) {
+  it('should get the engine from the `file.path`:', function (done) {
     template.engine('hbs', handlebars);
     template.engine('md', handlebars);
     template.engine('swig', consolidate.swig);
@@ -45,20 +45,18 @@ describe('custom `renderable` types:', function () {
     done();
   });
 
-  it('should prefer template locals over front-matter data:', function (done) {
+  it('should prefer template locals over front-matter data:', function (cb) {
     template.engine('hbs', handlebars);
     template.engine('md', handlebars);
     template.page('fixture.md', '---\nauthor: Brian Woodward\n---\n<title>{{author}}</title>', {
       author: 'Jon Schlinkert'
     });
 
-    forOwn(template.views.pages, function (value, key) {
-      template.render(key, function (err, content) {
-        if (err) console.log(err);
-        content.should.equal('<title>Jon Schlinkert</title>');
-      });
+    template.renderEach('pages', function (err, files) {
+      if (err) console.log(err);
+      files[0].content.should.equal('<title>Jon Schlinkert</title>');
+      cb();
     });
-    done();
   });
 
   describe('when custom template types are passed to a built-in engine:', function () {
@@ -117,14 +115,11 @@ describe('custom `renderable` types:', function () {
         author: 'Jon Schlinkert'
       });
 
-      var keys = Object.keys(template.views.posts);
-      async.each(keys, function (key, next) {
-        template.render(key, function (err, content) {
-          if (err) console.log(err);
-          content.should.equal('Jon Schlinkert\nzzzzzz');
-          next();
-        });
-      }, cb);
+      template.renderEach('posts', function (err, files) {
+        if (err) console.log(err);
+        files[0].content.should.equal('Jon Schlinkert\nzzzzzz');
+        cb();
+      });
     });
   });
 });

@@ -378,6 +378,7 @@ describe('template.use()', function () {
   });
 
   it('should throw error when no middleware is passed', function(done) {
+    template.disable('silent');
     var page = { path: '/foo/bar' };
     try {
       template.use('/foo/bar');

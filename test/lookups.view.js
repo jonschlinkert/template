@@ -17,13 +17,13 @@ describe('template view', function () {
     template = new Template();
   });
 
-  it.only('should `.view()` default template types from the cache.', function () {
-    template.view('partials').should.be.an.object;
-    // template.view('layouts').should.be.an.object;
-    // template.view('pages').should.be.an.object;
+  it('should `.getView()` default template types from the cache.', function () {
+    template.getViews('partials').should.be.an.object;
+    template.getViews('layouts').should.be.an.object;
+    template.getViews('pages').should.be.an.object;
   });
 
-  it('should `.view()` custom template types:', function () {
+  it('should `.getViews()` custom template types:', function () {
     template.create('doc', 'docs');
     template.doc('abc', {content: 'This is a document'});
     template.getDoc('abc').should.be.an.object;

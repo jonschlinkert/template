@@ -28,7 +28,6 @@ describe('built-in helpers:', function () {
     it('should use the `partial` helper.', function (done) {
       template.partial('a.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}});
       template.page('b.md', {path: 'b.md', content: 'foo <%= partial("a.md") %> bar'});
-
       template.render('b.md', function (err, content) {
         if (err) return done(err);
         content.should.equal('foo AAA bar');
@@ -58,10 +57,16 @@ describe('built-in helpers:', function () {
       });
     });
 
-    it('should return an empty string when the partial is missing.', function () {
+    it('should return an empty string when the partial is missing.', function (cb) {
+      var i = 0;
       template.partial('abc.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}});
       template.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("def.md", { name: "CCC" }) %> bar'});
-      template.render('xyz.md', {name: 'DDD'}).should.eql('foo  bar');
+      template.render('xyz.md', {name: 'DDD'}, function (err, content) {
+        i++;
+        content.should.eql('foo  bar');
+        cb()
+      });
+      i.should.equal(1);
     });
 
     it('should throw an error when something is wrong in a partial', function (done) {

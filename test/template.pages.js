@@ -33,9 +33,9 @@ describe('template page', function () {
       template.getPage('a.md').content.should.equal('b');
     });
 
-    it('should get pages with the `.view()` collection method', function () {
+    it('should get pages with the `.getView()` collection method', function () {
       template.pages('a.md', 'b');
-      template.view('pages', 'a.md').content.should.equal('b');
+      template.getView('pages', 'a.md').content.should.equal('b');
     });
 
     it('should add the template string to the `content` property.', function () {

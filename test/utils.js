@@ -12,7 +12,6 @@ var utils = require('../lib');
 var Template = require('./app');
 var template;
 
-
 describe('template utils', function() {
   beforeEach(function() {
     template = new Template();

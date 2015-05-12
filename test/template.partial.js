@@ -34,9 +34,9 @@ describe('template partial', function () {
       template.getPartial('a.md').content.should.equal('b');
     });
 
-    it('should get partials with the `.view()` collection method', function () {
+    it('should get partials with the `.getView()` collection method', function () {
       template.partial('a.md', 'b');
-      template.view('partials', 'a.md').content.should.equal('b');
+      template.getView('partials', 'a.md').content.should.equal('b');
     });
 
     it('should add the template string to the `content` property.', function () {

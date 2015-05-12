@@ -17,24 +17,29 @@ describe('template view', function () {
     template = new Template();
   });
 
-  it.only('should `.view()` default template types from the cache.', function () {
-    template.view('partials').should.be.an.object;
-    // template.view('layouts').should.be.an.object;
-    // template.view('pages').should.be.an.object;
+  describe('.getViews', function () {
+    it('should get a view type from `template.views`.', function () {
+      template.getViews('partials').should.be.an.object;
+      template.getViews('layouts').should.be.an.object;
+      template.getViews('pages').should.be.an.object;
+    });
   });
 
-  it('should `.view()` custom template types:', function () {
-    template.create('doc', 'docs');
-    template.doc('abc', {content: 'This is a document'});
-    template.getDoc('abc').should.be.an.object;
-    template.getDoc('abc').should.have.property('content', 'This is a document');
-    template.getDoc('abc').should.have.property('path', 'abc');
+  describe('should decorate custom `.get` methods onto template subtypes:', function () {
+    it('should get a `doc` with the `.getDoc()` method:', function () {
+      template.create('doc', 'docs');
+      template.doc('abc', {content: 'This is a document'});
+      template.getDoc('abc').should.be.an.object;
+      template.getDoc('abc').should.have.property('content', 'This is a document');
+      template.getDoc('abc').should.have.property('path', 'abc');
+    });
 
-
-    template.create('include', 'includes');
-    template.include('xyz', {content: 'This is an include.'});
-    template.getInclude('xyz').should.be.an.object;
-    template.getInclude('xyz').should.have.property('content', 'This is an include.');
-    template.getInclude('xyz').should.have.property('path', 'xyz');
+    it('should get an `include` with the `.getInclude()` method:', function () {
+      template.create('include', 'includes');
+      template.include('xyz', {content: 'This is an include.'});
+      template.getInclude('xyz').should.be.an.object;
+      template.getInclude('xyz').should.have.property('content', 'This is an include.');
+      template.getInclude('xyz').should.have.property('path', 'xyz');
+    });
   });
 });

@@ -13,8 +13,8 @@ var async = require('async');
 var cloneDeep = require('clone-deep');
 var extend = require('extend-shallow');
 var flatten = require('arr-flatten');
+var relative = require('relative');
 var layouts = require('layouts');
-var merge = require('mixin-deep');
 var pickFrom = require('pick-from');
 var routes = require('en-route');
 var slice = require('array-slice');
@@ -82,6 +82,7 @@ Template.prototype.initTemplate = function() {
   this.loaders = this.loaders || {};
   this.engines = this.engines || {};
   this.inflections = {};
+  this.errorsList = [];
   this.transforms = {};
 
   // Engine-related
@@ -98,13 +99,11 @@ Template.prototype.initTemplate = function() {
 
   // View collections
   this.views = {};
-  this.view('partials', {});
-  this.view('layouts', {});
-  this.view('pages', {});
 
+  // defaults
   this.defaultConfig();
   this.defaultOptions();
-  this.delegateLoaders();
+  this.forwardLoaders();
   this.defaultLoaders();
   this.defaultTransforms();
 };
@@ -125,6 +124,8 @@ Template.prototype.defaultConfig = function() {
  */
 
 Template.prototype.defaultOptions = function() {
+  this.enable('silent');
+
   // defaults
   this.enable('default routes');
   this.enable('default engines');
@@ -167,17 +168,23 @@ Template.prototype.defaultOptions = function() {
 };
 
 /**
- * Mixin methods from [loader-cache] for loading templates.
+ * Forward methods from [loader-cache] onto `Template.prototype`:
+ *   | .loader
+ *   | .loaderAsync
+ *   | .loaderPromise
+ *   | .loaderStream
+ *   | .load
+ *   | .loadAsync
+ *   | .loadPromise
+ *   | .loadStream
  */
 
-Template.prototype.delegateLoaders = function() {
-  var mix = utils.delegate(Template.prototype, this._.loaders);
-  // register methods
+Template.prototype.forwardLoaders = function() {
+  var mix = utils.forward(Template.prototype, this._.loaders);
   mix('loader', 'register');
   mix('loaderAsync', 'registerAsync');
   mix('loaderPromise', 'registerPromise');
   mix('loaderStream', 'registerStream');
-  // load methods
   mix('load');
   mix('loadAsync');
   mix('loadPromise');
@@ -200,6 +207,38 @@ Template.prototype.defaultLoaders = function() {
 Template.prototype.defaultTransforms = function() {
   this.transform('routes', transforms.middleware);
   this.transform('templates', transforms.templates);
+};
+
+/**
+ * Set an error message that will either `throw`, or be pushed onto
+ * `errorsList` when `silent` is enabled.
+ *
+ * ```js
+ * this.error('Error parsing string.');
+ * ```
+ *
+ * @param {String} `methodName` The name of the method where the error is thrown.
+ * @param {String} `msg` Message to use in the Error.
+ * @param {Object} `file` The `value` of a template object
+ * @api public
+ */
+
+Template.prototype.error = function(methodName, msg, file) {
+  var filepath = (file && file.path) ? relative(file.path) : '';
+  var message = ('Template#' + methodName)
+    + ':' + filepath
+    + ':' + msg;
+
+  var err = new Error(message);
+  err.path = filepath;
+  err.reason = msg;
+
+  console.log(chalk.yellow(err));
+  if (this.enabled('silent')) {
+    this.errorsList.push(err);
+  } else {
+    throw err;
+  }
 };
 
 /**
@@ -280,12 +319,12 @@ Template.prototype.handle = function(method, file, done) {
  * @api private
  */
 
-Template.prototype.dispatch = function(verb, file, fns) {
+Template.prototype.dispatch = function(method, file, fns) {
   for (var key in file) {
     if (file.hasOwnProperty(key)) {
       var value = file[key];
       if (fns) this.route(value.path).all(fns);
-      this.handle(verb, value, handleError(verb, {path: key}));
+      this.handle(method, value, handleError(method, {path: key}));
     }
   }
 };
@@ -324,9 +363,7 @@ Template.prototype.param = function(name, fn) {
   this.lazyrouter();
   if (Array.isArray(name)) {
     var len = name.length, i = 0;
-    while (len--) {
-      this.param(name[i++], fn);
-    }
+    while (len--) this.param(name[i++], fn);
     return this;
   }
   this.router.param(name, fn);
@@ -366,7 +403,7 @@ Template.prototype.use = function (fn) {
 
   var fns = flatten(slice(arguments, offset));
   if (fns.length === 0) {
-    throw new TypeError('Template#use() expects middleware functions.');
+    this.error('use', 'expects middleware functions: ' + JSON.stringify(arguments));
   }
 
   this.lazyrouter();
@@ -424,7 +461,7 @@ utils.methods.forEach(function(method) {
  * ```
  *
  * @param {String} `path`
- * @param {Function} Callback
+ * @param {Function} `callback`
  * @return {Object} `Template` for chaining
  * @api public
  */
@@ -455,6 +492,10 @@ Template.prototype.all = function(path) {
 Template.prototype.applyLayout = function(template, locals) {
   debug.layout('applying layout: %j', arguments);
 
+  if (typeOf(template) !== 'object') {
+    this.error('applyLayout', 'expects an object.', template);
+  }
+
   // If a layout has already been applied, return the content
   if (template.options.layoutApplied) {
     return template.content;
@@ -470,13 +511,13 @@ Template.prototype.applyLayout = function(template, locals) {
     || template.data && template.data.layout
     || locals && locals.layout
     || template.options && template.options.layout
-    || template.locals && template.locals.layout
+    || template.locals && template.locals.layout;
 
   // If `layoutExt` is defined on the options, append
   // it to the layout name before passing the name to [layouts]
   var ext = this.option('layoutExt');
   if (ext) {
-    layout += tutil.formatExt(ext);
+    layout += (ext ? tutil.formatExt(ext) : '');
   }
 
   // Merge `layout` collections based on settings
@@ -484,25 +525,6 @@ Template.prototype.applyLayout = function(template, locals) {
   var res = layouts(template.content, layout, stack, locals);
   template.options.layoutStack = res;
   return res.result;
-};
-
-/**
- * Get the given view `collection` from views. Optionally
- * pass a `name` to get a specific template from the
- * collection.
- *
- * @param {String} `collection`
- * @param {String} `name`
- * @return {Object}
- * @api public
- */
-
-Template.prototype.view = function(collection, name) {
-  if (utils.hasOwn(this.views, collection)) {
-    var obj = this.views[collection];
-    return name ? obj[name] : obj;
-  }
-  return null;
 };
 
 /**
@@ -694,15 +716,16 @@ Template.prototype.engineHelpers = function(ext) {
 Template.prototype.defaultHelper = function(subtype, plural) {
   debug.helper('default helper: %s', subtype);
   var self = this;
+
   this.helper(subtype, function (key, locals) {
     debug.helper('sync helper %s: %j', key, arguments);
     var partial = self.views[plural][key];
 
-    if (!partial) {
-      // TODO: use actual delimiters in messages
-      debug.err(chalk.red('helper {{' + subtype + ' "' + key + '"}} not found.'));
-      return '';
+    if (typeOf(partial) !== 'object') {
+      var message =  'cannot find {{' + subtype + ' "' + key + '"}}';
+      self.error('defaultHelper ' + subtype, message);
     }
+
     var locs = extend({}, this.context, locals);
     var content = self.renderTemplate(partial, locs);
     if (content instanceof Error) {
@@ -738,9 +761,9 @@ Template.prototype.defaultAsyncHelper = function(subtype, plural) {
     }
 
     var partial = self.views[plural][key];
-    if (!partial) {
-      // TODO: use actual delimiters in messages
-      debug.err(chalk.red('helper {{' + subtype + ' "' + key + '"}} not found.'));
+    if (typeOf(partial) !== 'object') {
+      var message =  'cannot find {{' + subtype + ' "' + key + '"}}';
+      self.error('defaultAsyncHelper ' + subtype, message);
       return cb(null, '');
     }
 
@@ -777,7 +800,7 @@ Template.prototype._load = function(subtype, plural, options) {
 
     // Default method used to handle sync loading when done
     var cb = function (err, template) {
-      if (err) throw new Error(err);
+      if (err) this.error('_load', err, template);
       return template;
     };
 
@@ -793,7 +816,7 @@ Template.prototype._load = function(subtype, plural, options) {
         continue;
       } else if (i === len - 1 && typeOf(arg) === 'function') {
         if (type !== 'async') {
-          throw new Error(subtype + ' loaders are not async.');
+          this.error('_load callback', subtype + ' loaders are not async.');
         }
         cb = arg;
         args.pop();
@@ -877,7 +900,6 @@ Template.prototype.normalize = function(subtype, plural, template, options) {
     return this.options.normalize.apply(this, arguments);
   }
 
-  var self = this;
   var opts = cloneDeep(options || {});
   opts.subtype = subtype;
   opts.collection = plural;
@@ -977,11 +999,84 @@ Template.prototype.setLoaders = function(subtype, options, stack) {
  * @api public
  */
 
-Template.prototype.getViews = function(name) {
-  if (!this.views.hasOwnProperty(name)) {
-    name = this.inflections[name];
+Template.prototype.getViews = function(type) {
+  if (!this.views.hasOwnProperty(type)) {
+    type = this.inflections[type];
   }
-  return this.views[name];
+  return this.views[type];
+};
+
+/**
+ * Get a specific template from the specified collection.
+ *
+ * @param {String} `name` Template name
+ * @param {String} `collection` Collection name
+ * @return {Object}
+ * @api public
+ */
+
+Template.prototype.getView = function(collection, name) {
+  if (!collection) return this.error('view', 'expects a collection name.');
+  var views = this.getViews(collection);
+  if (!views) return null;
+
+  if (views.hasOwnProperty(name)) {
+    return views[name];
+  }
+
+  var fn = this.option('renameKey');
+  if (typeof fn === 'function') {
+    name = fn(name);
+  }
+
+  if (views.hasOwnProperty(name)) {
+    return views[name];
+  }
+
+  this.error('view', 'cannot find: "' + name + '".');
+  return null;
+};
+
+/**
+ * Convenience method for finding a specific template by `name` on
+ * the given collection. Optionally specify a file extension.
+ *
+ * @param {String} `plural` The view collection to search.
+ * @param {String} `name` The name of the template.
+ * @param {String} `ext` Optionally pass a file extension to append to `name`
+ * @api public
+ */
+
+Template.prototype.lookup = function(collection, name, ext) {
+  var views = this.getViews(collection || 'pages');
+  if (views.hasOwnProperty(name)) {
+    return views[name];
+  }
+
+  var idx = name.indexOf('.');
+  var hasExt = idx !== -1;
+
+  var base = hasExt ? name.slice(0, idx) : name;
+  if (hasExt && views.hasOwnProperty(base)) {
+    return views[base];
+  }
+
+  var key = name + (ext || '.md');
+  if (views.hasOwnProperty(key)) {
+    return views[key];
+  }
+
+  var fn = this.option('renameKey');
+  if (typeof fn === 'function') {
+    name = fn(name);
+  }
+
+  if (views.hasOwnProperty(key)) {
+    return views[key];
+  }
+
+  this.error('view', 'cannot find: "' + collection + '" => "' + name + '".');
+  return null;
 };
 
 /**
@@ -1151,7 +1246,8 @@ Template.prototype.mergePartials = function(context) {
 };
 
 /**
- * Find the first template that matches the given `key`.
+ * Find a template based on its `type`. `.find` returns the first
+ * template that matches the given `key`.
  *
  * Searches all views of [view-subtypes][subtypes] of the given [type], returning
  * the first template found with the given `key`. Optionally pass
@@ -1169,11 +1265,12 @@ Template.prototype.mergePartials = function(context) {
 
 Template.prototype.find = function(type, name, subtypes) {
   if (typeof type !== 'string') {
-    throw new TypeError('Template#find() expects `type` to be a string.');
+    this.error('find', 'expects `type` to be a string.');
   }
   if (typeof name !== 'string') {
-    throw new TypeError('Template#find() expects `name` to be a string.');
+    this.error('find', 'expects `name` to be a string.');
   }
+
   var collection = this.getType(type, subtypes);
   for (var key in collection) {
     if (collection.hasOwnProperty(key)) {
@@ -1235,43 +1332,24 @@ Template.prototype.findPartial = function(key, subtypes) {
 };
 
 /**
- * Convenience method for finding a specific template by `name` on
- * the given collection. Optionally specify a file extension.
- *
- * @param {String} `plural` The view collection to search.
- * @param {String} `name` The name of the template.
- * @param {String} `ext` Optionally pass a file extension to append to `name`
- * @api public
- */
-
-Template.prototype.lookup = function(collection, name, ext) {
-  var views = this.views[collection];
-  if (utils.hasOwn(views, name)) {
-    return views[name];
-  }
-  if (utils.hasOwn(views, name + (ext || '.md'))) {
-    return views[name + (ext || '.md')];
-  }
-  if (this.enabled('strict errors')) {
-    throw new Error('Cannot find ' + collection + ': "' + name + '"');
-  }
-  debug.err('Cannot find ' + collection + ': "' + name + '"');
-  return null;
-};
-
-/**
  * Create a new `view` collection and associated convience methods.
  *
  * Note that when you only specify a name for the type, a plural form is created
  * automatically (e.g. `page` and `pages`). However, you can define the
  * `plural` form explicitly if necessary.
  *
+ * ```js
+ * template.create('include', {isPartial: true});
+ * // now you can load and use includes!
+ * template.includes('*.hbs');
+ * ```
+ *
  * @param {String} `subtype` Singular name of the collection to create, e.g. `page`.
  * @param {String} `plural` Plural name of the collection, e.g. `pages`.
  * @param {Object} `options` Options for the collection.
- *   @option {Boolean} [options] `isRenderable` Templates that may be rendered at some point
- *   @option {Boolean} [options] `isLayout` Templates to be used as layouts
- *   @option {Boolean} [options] `isPartial` Templates to be used as partial views or includes
+ * @option {Boolean} `isRenderable` Templates that may be rendered at some point
+ * @option {Boolean} `isLayout` Templates to be used as layouts
+ * @option {Boolean} `isPartial` Templates to be used as partial views or includes
  * @param {Function|Array} `stack` Loader function or functions to be run for every template of this type.
  * @return {Object} `Template` to enable chaining.
  * @api public
@@ -1359,8 +1437,9 @@ Template.prototype.decorate = function(subtype, plural, options) {
 Template.prototype.compileBase = function(engine, content, options) {
   debug.render('compileBase:', arguments);
   if (!utils.hasOwn(engine, 'compile')) {
-    throw new Error('`.compile` method not found on: "' + engine.name + '".');
+    this.error('compileBase', '`.compile` method not found on: "' + engine.name + '".');
   }
+
   try {
     return engine.compile(content, options);
   } catch (err) {
@@ -1383,8 +1462,7 @@ Template.prototype.compileTemplate = function(template, options, isAsync) {
   debug.render('compileTemplate: %j', template);
 
   if (typeOf(template) !== 'object') {
-    throw new Error('Template#compileTemplate() expects an object, not: "'
-      + typeOf(template) + ' / '+ template + '".');
+    this.error('compileTemplate', 'expects an object, but got: ' + template);
   }
 
   // reference to options in case helpers are needed later
@@ -1428,7 +1506,7 @@ Template.prototype.compileTemplate = function(template, options, isAsync) {
 Template.prototype.compile = function(content, options, isAsync) {
   debug.render('compile:', arguments);
   if (typeof content !== 'string' && typeOf(content) !== 'object') {
-    throw new Error('Template#compile() expects a string or object.');
+    this.error('compile', 'expects a string or object, but got: ' + content);
   }
 
   if (typeOf(content) === 'object') {
@@ -1457,11 +1535,13 @@ Template.prototype.compile = function(content, options, isAsync) {
 
 Template.prototype.compileString = function(str, options, isAsync) {
   debug.render('render string:', arguments);
+  if (typeof str !== 'string') {
+    this.error('compileString', 'expects a string but got: ' + str);
+  }
   if (typeof options === 'boolean') {
     isAsync = options;
     options = {};
   }
-
   options = extend({locals: {}}, options);
   var locals = options.locals;
 
@@ -1511,7 +1591,7 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   }
 
   if (typeOf(template) !== 'object') {
-    throw new Error('Template#renderTemplate() expects an object: ' + template);
+    this.error('renderTemplate', 'expects an object, got: ' + JSON.stringify(arguments));
   }
 
   // find any options passed in on locals
@@ -1582,7 +1662,7 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
 
 Template.prototype.renderSync = function(engine, content, options) {
   if (!utils.hasOwn(engine, 'renderSync')) {
-    throw new Error('`.renderSync` method not found on: "' + engine.name + '".');
+    this.error('renderSync', '.renderSync method not found on engine:' + JSON.stringify(engine));
   }
   try {
     return engine.renderSync(content, options);
@@ -1606,7 +1686,7 @@ Template.prototype.renderSync = function(engine, content, options) {
 
 Template.prototype.renderAsync = function(engine, content, options, cb) {
   if (!utils.hasOwn(engine, 'render')) {
-    throw new Error('`.render` method not found on: "' + engine.name + '".');
+    this.error('renderAsync', 'no .render method found on engine:' + JSON.stringify(engine));
   }
   try {
     var self = this;
@@ -1636,8 +1716,7 @@ Template.prototype.renderAsync = function(engine, content, options, cb) {
 Template.prototype.render = function(content, locals, cb) {
   debug.render('render:', arguments);
   if (content == null) {
-    var args = JSON.stringify([].slice.call(arguments));
-    throw new Error('Template#render() expects a string or object, not:' + args);
+    this.error('render', 'expects a string or object, got: ' + JSON.stringify(arguments));
   }
   if (typeOf(content) === 'object') {
     return this.renderTemplate(content, locals, cb);
@@ -1663,6 +1742,10 @@ Template.prototype.render = function(content, locals, cb) {
 
 Template.prototype.renderString = function(str, locals, cb) {
   debug.render('render string: %s', str);
+  if (typeof str === 'undefined') {
+    var args = JSON.stringify([].slice.call(arguments));
+    this.error('renderString', 'expects a string, but got: ' + args);
+  }
   if (typeof locals === 'function') {
     cb = locals;
     locals = {};
@@ -1691,6 +1774,9 @@ Template.prototype.renderString = function(str, locals, cb) {
 
 Template.prototype.renderSubtype = function(subtype) {
   debug.render('render subtype: [%s / %s]', subtype);
+  if (typeof subtype === 'undefined') {
+    this.error('renderSubtype', 'expects subtype to be a string.');
+  }
 
   // get the plural name of the given subtype
   var plural = this.inflections[subtype];
@@ -1705,8 +1791,8 @@ Template.prototype.renderSubtype = function(subtype) {
 
     // Return the first matching template from a `renderable` subtype
     var template = self.lookup(plural, key);
-    if (template == null) {
-      throw new Error('Template#renderSubtype() Cannot find template: "' + key + '".');
+    if (!template) {
+      this.error('renderSubtype', 'cannot find "' + subtype + ' > ' + key + '".');
     }
     return self.renderTemplate(template, locals, cb);
   };
@@ -1733,8 +1819,8 @@ Template.prototype.renderType = function(type, subtype) {
     }
 
     var template = self.find(type, key, subtype);
-    if (template == null) {
-      throw new Error('Template#renderType() Cannot find template: "' + key + '".');
+    if (!template) {
+      this.error('renderType', 'cannot find template: `' + key + '`.');
     }
     return self.renderTemplate(template, locals, cb);
   };
@@ -1756,10 +1842,13 @@ Template.prototype.renderType = function(type, subtype) {
  */
 
 Template.prototype.renderEach = function(collection, locals, cb) {
-  debug.render('renderEach:', arguments);
   if (typeof locals === 'function') {
     cb = locals;
     locals = {};
+  }
+
+  if (!this.views.hasOwnProperty(collection)) {
+    this.error('renderEach', 'collection `' + collection + '` does not exist.');
   }
 
   var view = this.views[collection];
@@ -1767,11 +1856,12 @@ Template.prototype.renderEach = function(collection, locals, cb) {
   var self = this;
 
   async.map(keys, function (key, next) {
-    var template = view[key];
-
-    self.render(template, locals, function (err, content) {
+    var file = view[key];
+    self.render(file, locals, function (err, content) {
       if (err) return next(err);
-      next(null, content);
+
+      file.content = content;
+      next(null, file);
     });
   }, cb);
 };
@@ -1831,23 +1921,23 @@ Template.prototype.mergeContext = function(template, locals) {
   }
 
   var context = {};
-  merge(context, this.cache.data);
-  merge(context, template.options);
+  extend(context, this.cache.data);
+  extend(context, template.options);
 
-  // control the order in which `locals` and `data` are merged
+  // control the order in which `locals` and `data` are extendd
   if (this.enabled('preferLocals')) {
-    merge(context, template.data);
-    merge(context, template.locals);
+    extend(context, template.data);
+    extend(context, template.locals);
   } else {
-    merge(context, template.locals);
-    merge(context, template.data);
+    extend(context, template.locals);
+    extend(context, template.data);
   }
 
   // Partial templates to pass to engines
-  merge(context, this.mergePartials(locals));
+  extend(context, this.mergePartials(locals));
 
   // Merge in `locals/data` from templates
-  merge(context, this.cache._context.partials);
+  extend(context, this.cache._context.partials);
   return context;
 };
 

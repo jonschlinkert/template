@@ -25,9 +25,11 @@ describe('.renderEach', function () {
   describe('when a collection name is specified:', function () {
     it('should render the template asynchronously:', function (done) {
 
-      template.renderEach('pages', function (err, content) {
+      template.renderEach('pages', function (err, file) {
         if (err) return done(err);
-        content.should.eql(['This is AAA', 'This is BBB', 'This is CCC']);
+        file[0].content.should.equal('This is AAA');
+        file[1].content.should.equal('This is BBB');
+        file[2].content.should.equal('This is CCC');
         done();
       });
     });

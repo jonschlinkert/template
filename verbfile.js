@@ -8,6 +8,8 @@ var mocha = require('gulp-mocha');
 var gutil = require('gulp-util');
 var verb = require('verb');
 
+verb.option({templates: {docs: 'docs/_readme'}});
+
 verb.helper('rename', function(str, a, b, c) {
   str = str.split(a + '.').join(b + '.');
   str = str.split('var ' + a).join('var ' + b);
@@ -48,7 +50,7 @@ verb.task('test', function (cb) {
     .pipe(istanbul({includeUntested: true}))
     .pipe(istanbul.hookRequire())
     .on('finish', function () {
-      verb.src(['test/*.js'])
+      verb.src(['test/*{,.*}.js'])
         .pipe(mocha())
         .pipe(istanbul.writeReports({
           reporters: [ 'text' ],

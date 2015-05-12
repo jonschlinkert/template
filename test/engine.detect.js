@@ -48,6 +48,14 @@ describe('detect engine', function() {
 
   describe('.create():', function() {
     describe('when an engine is defined in the .create() method options:', function() {
+      it('should prefer the create-method defined on `view engine` over others:', function() {
+        template.option('view engine', '.tmpl');
+        template.page('a.hbs', {content: str, ext: '.tmpl'});
+        template.page('b.tmpl', {content: str, ext: '.hbs'});
+        template.render('a.hbs').should.equal('<title>{{title}}RENDERED</title>');
+        template.render('b.tmpl').should.equal('<title>{{title}}RENDERED</title>');
+      });
+
       it('should use the create-method engine on templates:', function() {
         template.doc('doc-a', {content: str});
         template.render('doc-a').should.equal('<title>{{title}}RENDERED</title>');

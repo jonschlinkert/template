@@ -15,41 +15,17 @@
   * [More]
     + [Template Loaders]
     + [Delimiters]
-
 - [Data](#data)
   * [Loading data]
   * [Context]
   * [Transforms]
-
 - [Engines](#engines)
   * [Registering engines]
   * [Creating engines]
-
 - [Helpers](#helpers)
   * [Register helpers]
   * [Creating helpers]
-
 - [Loaders](#loaders)
   * [Built-in loaders]
   * [Creating loaders]
 
-
-## Register templates
-
-**Add a single template**
-
-```js
-template.page('home', 'This is {{title}}.', {title: 'home'});
-template.page('home', {content: 'This is {{title}}.', title: 'home'});
-```
-
-**Add multiple templates**
-
-```js
-template.pages('pages/*.hbs');
-template.pages(['partials/*.hbs', 'includes/*.hbs']);
-```
-
-**More info**
-
-- [loading templates](#loading-templates)

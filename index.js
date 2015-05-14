@@ -1605,8 +1605,8 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
   // Merge `.render` locals with template locals
   locals = this.mergeContext(template, locals);
 
-  // merge options
-  var opts = locals.options || {};
+  // shallow clone any options set on the `locals` object
+  var opts = extend({}, locals.options);
 
   // find the engine to use for rendering templates
   var engine = this.getEngine(template.engine);
@@ -1619,13 +1619,13 @@ Template.prototype.renderTemplate = function(template, locals, cb) {
     template.fn = this.compileTemplate(template, opts, isAsync);
   }
 
-  var content = template.fn;
-
-  // backwards compatibility for engines that don't support compile
+  // for engines that don't support compile, we need to merge
+  // in the `context` and `delims` for backwards compatibility
   if (typeof content === 'string') {
     locals = extend({}, locals, opts);
   }
 
+  var content = template.fn;
   if (!isAsync) {
     template.content = this.renderBase(engine, content, locals, cb);
     // handle post-render middleware routes

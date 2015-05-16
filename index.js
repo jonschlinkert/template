@@ -816,7 +816,7 @@ Template.prototype._load = function(subtype, plural, options) {
         continue;
       } else if (i === len - 1 && typeOf(arg) === 'function') {
         if (type !== 'async') {
-          this.error('_load callback', subtype + ' loaders are not async.');
+          this.error('_load callback', subtype + ' loader is not async.');
         }
         cb = arg;
         args.pop();
@@ -825,7 +825,9 @@ Template.prototype._load = function(subtype, plural, options) {
       args[i] = arg;
     }
 
-    if (args.length === 1) args = args[0];
+    if (args.length === 1 && !Array.isArray(args[0])) {
+      args = args[0];
+    }
 
     var loadOpts = {};
     loadOpts.matchLoader = function () {
@@ -846,24 +848,32 @@ Template.prototype._load = function(subtype, plural, options) {
       return cb(null, template);
     }
 
+    args = [args];
+    args.push(stack);
+    args.push(loadOpts);
+    args = args.filter(function (arg) {
+      if (Array.isArray(arg) && !arg.length) return false;
+      return true;
+    });
+
     // Choose loaders based on loader type
     switch (type) {
       case 'async':
-        self.loadAsync(args, stack, loadOpts, done);
+        self.loadAsync.apply(self, args.concat(done));
         break;
       case 'promise':
-        return self.loadPromise(args, stack, loadOpts)
+        return self.loadPromise.apply(self, args.concat(loadOpts))
           .then(function (template) {
             return done(null, template);
           });
       case 'stream':
-        return self.loadStream(args, stack, loadOpts)
+        return self.loadStream.apply(self, args)
           .on('data', function (template) {
             done(null, template);
           })
           .on('error', done);
       default:
-        return done(null, self.load(args, stack, loadOpts));
+        return done(null, self.load.apply(self, args));
     }
   };
 };

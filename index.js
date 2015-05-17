@@ -10,6 +10,9 @@
 var path = require('path');
 var chalk = require('chalk');
 var async = require('async');
+var merge = require('mixin-deep');
+var through = require('through2');
+var PluginError = require('plugin-error');
 var cloneDeep = require('clone-deep');
 var extend = require('extend-shallow');
 var flatten = require('arr-flatten');
@@ -913,6 +916,7 @@ Template.prototype.normalize = function(subtype, plural, template, options) {
       file.contexts.create = opts;
       file.options.create = opts;
 
+      // run this file's `.onLoad` middleware stack
       this.handle('onLoad', file, handleError('onLoad', {path: key}));
 
       // Add a render method to the template
@@ -1755,6 +1759,54 @@ Template.prototype.renderString = function(str, locals, cb) {
 
   var template = { content: str, locals: locals, options: options };
   return this.renderTemplate(template, locals, cb);
+};
+
+/**
+ * Render the given string with the specified `locals` and `callback`.
+ *
+ * The primary purpose of this method is to get the engine before
+ * passing args to `.renderBase`.
+ *
+ * @param  {String} `str` The string to render.
+ * @param  {Object} `locals` Locals and/or options to pass to registered view engines.
+ * @return {String}
+ * @api public
+ */
+
+Template.prototype.renderVinyl = function(locals) {
+  var self = this;
+  return through.obj(function (file, enc, cb) {
+    if (file.isNull()) {
+      this.push(file);
+      return cb();
+    }
+
+    locals = merge({}, locals, file.locals);
+    locals.options = merge({}, self.options, locals.options);
+
+    if (utils.norender(self, file.ext, file, locals)) {
+      this.push(file);
+      return cb();
+    }
+
+    self.handle('onRender', file, function (err) {
+      if (err) {
+        stream.emit('error', new PluginError('renderFile', err));
+        return cb(err);
+      }
+    });
+
+    var stream = this;
+    file.render(locals, function (err, content) {
+      if (err) {
+        stream.emit('error', new PluginError('renderFile', err));
+        return cb(err);
+      }
+      file.contents = new Buffer(content);
+      stream.push(file);
+      return cb();
+    });
+  });
 };
 
 /**

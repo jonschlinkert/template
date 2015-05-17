@@ -58,8 +58,10 @@
     "option-cache": "^1.3.0",
     "parser-front-matter": "^1.2.1",
     "pick-from": "^0.1.0",
+    "plugin-error": "^0.1.1",
     "relative": "^3.0.0",
-    "template-utils": "^0.6.2"
+    "template-utils": "^0.6.2",
+    "through2": "^0.6.5"
   },
   "devDependencies": {
     "bluebird": "^2.9.25",

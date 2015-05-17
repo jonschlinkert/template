@@ -12,7 +12,7 @@ var should = require('should');
 var Template = require('./app');
 var template;
 
-describe('.renderEach', function () {
+describe('.render', function () {
   beforeEach(function () {
     template = new Template();
 
@@ -25,7 +25,7 @@ describe('.renderEach', function () {
   describe('when a collection name is specified:', function () {
     it('should render an array of template objects:', function (done) {
 
-      template.renderEach('pages', function (err, file) {
+      template.render('pages', function (err, file) {
         if (err) return done(err);
         file[0].content.should.equal('This is AAA');
         file[1].content.should.equal('This is BBB');

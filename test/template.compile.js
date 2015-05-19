@@ -56,7 +56,7 @@ describe('template.compile()', function () {
 
     it('should compile the first matching template if dupes are found:', function () {
       template.page('aaa.md', 'Page: <%= name %>', {name: 'Brian Woodward'});
-      template.create('post', 'posts', { isRenderable: true });
+      template.create('post', { isRenderable: true });
       template.post('aaa.md', 'Post: <%= name %>', {name: 'Jon Schlinkert'});
       template.compile('aaa.md')({name: 'Jon Schlinkert'}).should.eql('Page: Jon Schlinkert');
     });

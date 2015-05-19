@@ -61,8 +61,8 @@ describe('custom `renderable` types:', function () {
 
   describe('when custom template types are passed to a built-in engine:', function () {
     it('should render them with the `.render()` method:', function (cb) {
-      template.create('post', 'posts', { isRenderable: true });
-      template.create('include', 'includes');
+      template.create('post', { isRenderable: true });
+      template.create('include');
 
       template.include('sidebar.md', '<nav>sidebar stuff...</nav>');
       template.post('2014-08-31.md', '---\nauthor: Brian Woodward\n---\n<title><%= author %></title>\n<%= include("sidebar.md") %>', {
@@ -82,8 +82,8 @@ describe('custom `renderable` types:', function () {
       template.engine('hbs', handlebars);
       template.engine('md', handlebars);
 
-      template.create('post', 'posts', { isRenderable: true });
-      template.create('include', 'includes');
+      template.create('post', { isRenderable: true });
+      template.create('include');
 
       template.include('sidebar', '{{sidebar.a}}', {a: 'bbbbbb'});
       template.post('2014-08-31.md', '---\nauthor: Brian Woodward\n---\n{{author}}\n{{> sidebar }}', {
@@ -106,8 +106,8 @@ describe('custom `renderable` types:', function () {
       template.engine('hbs', handlebars);
       template.engine('md', handlebars);
 
-      template.create('post', 'posts', { isRenderable: true });
-      template.create('include', 'includes');
+      template.create('post', { isRenderable: true });
+      template.create('include');
 
       template.include('sidebar', '{{a}}', {a: 'bbbbbb'});
       template.include('navbar', '{{a}}', {a: 'zzzzzz'});

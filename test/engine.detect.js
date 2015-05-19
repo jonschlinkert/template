@@ -173,8 +173,8 @@ describe('detect engine', function() {
         template.engine('fez', engines.handlebars);
         template.engine('bang', engines.lodash);
 
-        template.create('include', 'includes', {engine: '.bang', isRenderable: true });
-        template.create('doc', 'docs', {engine: '.fez', isRenderable: true });
+        template.create('include', {engine: '.bang', isRenderable: true });
+        template.create('doc', {engine: '.fez', isRenderable: true });
 
         template.include('aaa', {content: str});
         template.doc('bbb', {content: str});

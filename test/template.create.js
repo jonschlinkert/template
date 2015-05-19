@@ -18,9 +18,19 @@ describe('template create:', function () {
   });
 
   describe('.create():', function () {
-    it('should create a new template `type`:', function () {
-      template.create('include', 'includes');
-      template.should.have.properties('include', 'includes');
+    it('should create a new template `subtype`:', function () {
+      template.create('include');
+      template.should.have.property('include');
+    });
+
+    it('should create the inflection for a `subtype`:', function () {
+      template.create('include');
+      template.should.have.property('includes');
+    });
+
+    it('should add a view collection for a subtype:', function () {
+      template.create('include');
+      template.views.should.have.property('includes');
     });
   });
 
@@ -42,12 +52,12 @@ describe('template create:', function () {
 
   describe('when a new template type is created:', function () {
     it('should add methods to the cache for that type:', function () {
-      template.create('apple', 'apples');
+      template.create('apple');
       template.should.have.properties('apple', 'apples');
     });
 
     it('should add templates to the cache for a given template type:', function () {
-      template.create('apple', 'apples');
+      template.create('apple');
 
       template.apple('a', 'one');
       template.apple('b', 'two');
@@ -65,10 +75,10 @@ describe('template create:', function () {
         template = new Template();
 
         // create some custom template types
-        template.create('block', 'blocks', { isLayout: true });
-        template.create('include', 'includes', { isPartial: true });
-        template.create('post', 'posts', { isRenderable: true });
-        template.create('doc', 'docs', { isRenderable: true });
+        template.create('block', { isLayout: true });
+        template.create('include', { isPartial: true });
+        template.create('post', { isRenderable: true });
+        template.create('doc', { isRenderable: true });
 
         // intentionally create dupes using different renderable types
         template.page('aaa.md', '<%= name %>', {name: 'Jon Schlinkert'});
@@ -99,7 +109,7 @@ describe('template create:', function () {
 
   describe('when the `isRenderable` flag is set on the options:', function () {
     it('should push the name of the type into the `isRenderable` array:', function () {
-      template.create('apple', 'apples', { isRenderable: true });
+      template.create('apple', { isRenderable: true });
 
       template.type.renderable.should.containEql('pages');
       template.type.renderable.should.containEql('apples');
@@ -109,7 +119,7 @@ describe('template create:', function () {
 
   describe('when the `isLayout` flag is set on the options:', function () {
     it('should push the name of the type into the `isLayout` array:', function () {
-      template.create('orange', 'oranges', { isLayout: true });
+      template.create('orange', { isLayout: true });
 
       template.type.layout.should.containEql('layouts');
       template.type.layout.should.containEql('oranges');
@@ -118,7 +128,7 @@ describe('template create:', function () {
 
   describe('when no type flag is set on the options:', function () {
     it('should push the name of the type into the `isPartial` array:', function () {
-      template.create('banana', 'bananas');
+      template.create('banana');
 
       template.type.partial.should.containEql('partials');
       template.type.partial.should.containEql('bananas');
@@ -127,7 +137,7 @@ describe('template create:', function () {
 
   describe('when the `isPartial` flag is set on the options:', function () {
     it('should push the name of the type into the `isPartial` array:', function () {
-      template.create('banana', 'bananas', { isPartial: true });
+      template.create('banana', { isPartial: true });
 
       template.type.partial.should.containEql('partials');
       template.type.partial.should.containEql('bananas');
@@ -136,7 +146,7 @@ describe('template create:', function () {
 
   describe('when both the `isPartial` and the `isLayout` flags are set:', function () {
     it('should push the type into both arrays:', function () {
-      template.create('banana', 'bananas', { isPartial: true, isLayout: true });
+      template.create('banana', { isPartial: true, isLayout: true });
 
       template.type.partial.should.containEql('bananas');
       template.type.layout.should.containEql('bananas');
@@ -145,7 +155,7 @@ describe('template create:', function () {
 
   describe('when both the `isPartial` and the `isRenderable` flags are set:', function () {
     it('should push the type into both arrays:', function () {
-      template.create('banana', 'bananas', { isPartial: true, isRenderable: true });
+      template.create('banana', { isPartial: true, isRenderable: true });
 
       template.type.partial.should.containEql('bananas');
       template.type.renderable.should.containEql('bananas');
@@ -154,7 +164,7 @@ describe('template create:', function () {
 
   describe('when both the `isLayout` and the `isRenderable` flags are set:', function () {
     it('should push the type into both arrays:', function () {
-      template.create('banana', 'bananas', { isLayout: true, isRenderable: true });
+      template.create('banana', { isLayout: true, isRenderable: true });
 
       template.type.layout.should.containEql('bananas');
       template.type.renderable.should.containEql('bananas');
@@ -163,7 +173,7 @@ describe('template create:', function () {
 
   describe('when all three types flags are set:', function () {
     it('should push the type into all three arrays:', function () {
-      template.create('banana', 'bananas', { isPartial: true, isLayout: true, isRenderable: true });
+      template.create('banana', { isPartial: true, isLayout: true, isRenderable: true });
 
       template.type.layout.should.containEql('bananas');
       template.type.partial.should.containEql('bananas');

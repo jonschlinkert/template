@@ -15,9 +15,12 @@ var through = require('through2');
 var PluginError = require('plugin-error');
 var cloneDeep = require('clone-deep');
 var extend = require('extend-shallow');
+var inflect = require('pluralize');
+var omit = require('object.omit');
 var flatten = require('arr-flatten');
 var relative = require('relative');
 var layouts = require('layouts');
+var matter = require('gray-matter');
 var pickFrom = require('pick-from');
 var routes = require('en-route');
 var slice = require('array-slice');
@@ -96,6 +99,10 @@ Template.prototype.initTemplate = function() {
   this.type.partial = [];
   this.type.renderable = [];
   this.type.layout = [];
+
+  this.contexts = {};
+  this.contexts.subtype = {};
+  this.options.subtype = {};
 
   // context object for partials
   this.set('_context', {});
@@ -236,11 +243,14 @@ Template.prototype.error = function(methodName, msg, file) {
   err.path = filepath;
   err.reason = msg;
 
-  console.log(chalk.yellow(err));
-  if (this.enabled('silent')) {
-    this.errorsList.push(err);
-  } else {
+  if (this.enabled('verbose')) {
+    console.error(chalk.yellow(err));
+  }
+
+  if (this.enabled('strict errors')) {
     throw err;
+  } else {
+    this.errorsList.push(err);
   }
 };
 
@@ -407,6 +417,7 @@ Template.prototype.use = function (fn) {
   var fns = flatten(slice(arguments, offset));
   if (fns.length === 0) {
     this.error('use', 'expects middleware functions: ' + JSON.stringify(arguments));
+    return;
   }
 
   this.lazyrouter();
@@ -499,9 +510,9 @@ Template.prototype.applyLayout = function(template, locals) {
     this.error('applyLayout', 'expects an object.', template);
   }
 
-  // If a layout has already been applied, return the content
+  // return if a layout has already been applied
   if (template.options.layoutApplied) {
-    return template.content;
+    return template;
   }
 
   template.options.layoutApplied = true;
@@ -509,24 +520,49 @@ Template.prototype.applyLayout = function(template, locals) {
     locals.defaultLayout = false;
   }
 
+  var opts = this.session && this.session.get('src') || {};
+
   // Get the name of the (starting) layout to be used
-  var layout = template.layout
+  var layout = locals && locals.layout
+    || template.layout
+    || template.locals && template.locals.layout
     || template.data && template.data.layout
-    || locals && locals.layout
-    || template.options && template.options.layout
-    || template.locals && template.locals.layout;
+    || template.options && template.options.layout;
 
   // If `layoutExt` is defined on the options, append
   // it to the layout name before passing the name to [layouts]
   var ext = this.option('layoutExt');
-  if (ext) {
+  if (typeof ext === 'string') {
     layout += (ext ? tutil.formatExt(ext) : '');
   }
 
   // Merge `layout` collections based on settings
   var stack = this.mergeLayouts(locals);
+
+  // if (layout && stack.hasOwnProperty(layout)) {
+  //   var file = stack[layout];
+  //   if (!file.parsed) {
+  //     var parsed = matter(file.content);
+  //     extend(file, parsed);
+  //     file.content = parsed.content;
+  //     file.parsed = true;
+  //     file.layout = file.layout || file.data.layout;
+  //     this.handle('onLoad', file, handleError('onLoad', {path: file.path}));
+  //     stack[layout] = file;
+  //   }
+  // }
+
   var res = layouts(template.content, layout, stack, locals);
+  if (res.options && res.options.options) {
+    extend(res.options, res.options.options);
+    delete res.options.options;
+  }
+
+  // add the results to the `layoutStack` property of a template
   template.options.layoutStack = res;
+
+  // update the template content to be the
+  template.content = res.result;
   return res.result;
 };
 
@@ -544,7 +580,7 @@ Template.prototype.applyLayout = function(template, locals) {
 Template.prototype.registerEngine = function(ext, fn, options) {
   debug.engine('.registerEngine:', arguments);
   var opts = extend({}, options);
-  ext = tutil.formatExt(ext);
+  ext = ext ? tutil.formatExt(ext) : '';
   this._.engines.setEngine(ext, fn, opts);
   return this;
 };
@@ -793,7 +829,7 @@ Template.prototype.defaultAsyncHelper = function(subtype, plural) {
  * @api private
  */
 
-Template.prototype._load = function(subtype, plural, options) {
+Template.prototype.defaultLoad = function(subtype, plural, options) {
   var opts = extend({}, options);
   var type = opts.load || 'sync';
 
@@ -803,7 +839,7 @@ Template.prototype._load = function(subtype, plural, options) {
 
     // Default method used to handle sync loading when done
     var cb = function (err, template) {
-      if (err) this.error('_load', err, template);
+      if (err) return this.error('defaultLoad', err, template);
       return template;
     };
 
@@ -819,13 +855,22 @@ Template.prototype._load = function(subtype, plural, options) {
         continue;
       } else if (i === len - 1 && typeOf(arg) === 'function') {
         if (type !== 'async') {
-          this.error('_load callback', subtype + ' loaders are not async.');
+          this.error('defaultLoad callback', subtype + ' loaders are not async.');
         }
         cb = arg;
         args.pop();
         continue;
       }
       args[i] = arg;
+    }
+
+    var last = args[args.length -1];
+
+    // extend `file.contexts` with load locals/options
+    opts.contexts = {};
+    opts.contexts.create = cloneDeep(opts);
+    if (typeof last === 'object') {
+      opts.contexts.load = omit(last, ['content', 'path']);
     }
 
     if (args.length === 1) args = args[0];
@@ -841,7 +886,8 @@ Template.prototype._load = function(subtype, plural, options) {
      */
     function done(err, template) {
       if (err) return cb(err);
-      template = self.normalize(subtype, plural, template, options);
+      template = self.normalize(subtype, plural, template, opts);
+
       // validate the template object before moving on
       self.validate(template);
       // Add template to the cache
@@ -904,6 +950,9 @@ Template.prototype.normalize = function(subtype, plural, template, options) {
   }
 
   var opts = cloneDeep(options || {});
+  var context = opts.contexts || {};
+  delete opts.contexts;
+
   opts.subtype = subtype;
   opts.collection = plural;
 
@@ -911,15 +960,13 @@ Template.prototype.normalize = function(subtype, plural, template, options) {
     if (template.hasOwnProperty(key)) {
       var file = template[key];
 
-      file.contexts = file.contexts || {};
+      file.contexts = extend({}, file.contexts, context);
       file.options = extend({}, opts, file.options);
       file.contexts.create = opts;
       file.options.create = opts;
 
       // run this file's `.onLoad` middleware stack
       this.handle('onLoad', file, handleError('onLoad', {path: key}));
-
-      // Add a render method to the template
       template[key] = file;
     }
   }
@@ -938,18 +985,20 @@ Template.prototype.normalize = function(subtype, plural, template, options) {
 
 Template.prototype.setType = function(subtype, plural, options) {
   debug.template('setting subtype: %s', subtype);
+  // shallow clone options
   var opts = extend({}, options);
 
-  // Make an association between `subtype` and its `plural`
+  // set the inflection mapping for `subtype`
   this.inflections[subtype] = plural;
+  // renderable views
   if (opts.isRenderable && this.type.renderable.indexOf(plural) === -1) {
     this.type.renderable.push(plural);
   }
-
+  // layout views
   if (opts.isLayout && this.type.layout.indexOf(plural) === -1) {
     this.type.layout.push(plural);
   }
-
+  // partial views
   if (opts.isPartial || (!opts.isRenderable && !opts.isLayout)) {
     if (this.type.partial.indexOf(plural) === -1) {
       this.type.partial.push(plural);
@@ -969,22 +1018,23 @@ Template.prototype.setType = function(subtype, plural, options) {
  */
 
 Template.prototype.setLoaders = function(subtype, options, stack) {
-  options = options || {};
-  var type = options.load || 'sync';
-
+  var type = (options && options.load) || 'sync';
   if (this._.loaders.cache[type] && this._.loaders.cache[type][subtype]) {
     delete this._.loaders.cache[type][subtype];
   }
-  if (stack.length === 0) {
+
+  if (stack.length === 0 && stack.indexOf('default') === -1) {
     stack.push(['default']);
+  } else if (!Array.isArray(stack[0])) {
+    stack = [stack];
   }
 
   var loader = 'loader';
   if (type !== 'sync') {
     loader = utils.methodName('loader', type);
   }
-
-  this[loader].apply(this, [subtype].concat(stack));
+  stack = [subtype].concat(stack);
+  this[loader].apply(this, stack);
 };
 
 /**
@@ -1079,7 +1129,7 @@ Template.prototype.lookup = function(collection, name, ext) {
     return views[key];
   }
 
-  this.error('view', 'cannot find: "' + collection + '" => "' + name + '".');
+  this.error('lookup', 'cannot find: "' + collection + '" => "' + name + '".');
   return null;
 };
 
@@ -1231,7 +1281,7 @@ Template.prototype.mergePartials = function(context) {
         layoutOpts.layoutDelims = pickFrom('layoutDelims', [layoutOpts, opts]);
 
         // wrap the partial with a layout, if applicable
-        value.content = this.applyLayout(value, layoutOpts);
+        this.applyLayout(value, layoutOpts);
 
         // If `mergePartials` is true combine all `partial` subtypes
         if (mergePartials === true) {
@@ -1359,42 +1409,33 @@ Template.prototype.findPartial = function(key, subtypes) {
  * @api public
  */
 
-Template.prototype.create = function(subtype, plural, opts/*, stack*/) {
+Template.prototype.create = function(subtype, options, stack) {
   debug.template('creating subtype: %s', subtype);
-  var len = arguments.length;
-  var args = new Array(len);
 
-  for (var i = 0; i < len; i++) {
-    args[i] = arguments[i];
+  if (typeof subtype !== 'string') {
+    throw new TypeError('Template#create expects subtype to be a string.');
   }
 
-  // normalize arguments
-  if (typeOf(plural) !== 'string') { args.splice(1, 0, subtype + 's'); }
-  if (typeOf(args[2]) !== 'object') { args.splice(2, 0, {}); }
-  plural = args[1];
-  opts = args[2];
+  // create the plural name for `subtype`
+  var plural = inflect(subtype);
+
+  if (Array.isArray(options)) {
+    stack = options;
+    options = {};
+  }
+
+  // shallow clone options
+  var opts = extend({}, options);
 
   // add an object to `views` for this template type
   this.views[plural] = this.views[plural] || {};
   opts = this.setType(subtype, plural, opts);
 
   // add loaders to default loaders
-  this.setLoaders(subtype, opts, args.slice(3));
+  this.setLoaders(subtype, opts, utils.arrayify(stack || []));
 
   // Add convenience methods for this sub-type
   this.decorate(subtype, plural, opts);
-
-  // create default helpers
-  if (this.enabled('default helpers') && opts && opts.isPartial) {
-    // Create a sync helper for this type
-    if (!utils.hasOwn(this._.helpers, subtype)) {
-      this.defaultHelper(subtype, plural);
-    }
-    // Create an async helper for this type
-    if (!utils.hasOwn(this._.asyncHelpers, subtype)) {
-      this.defaultAsyncHelper(subtype, plural);
-    }
-  }
   return this;
 };
 
@@ -1404,11 +1445,14 @@ Template.prototype.create = function(subtype, plural, opts/*, stack*/) {
  * and `.posts` methods created.
  */
 
-Template.prototype.decorate = function(subtype, plural, options) {
+Template.prototype.decorate = function(subtype, plural, opts) {
   debug.template('decorating subtype:', arguments);
 
   // create a loader for this template subtype
-  var fn = this._load(subtype, plural, options);
+  var fn = this.defaultLoad(subtype, plural, opts);
+
+  // store a context and options for the subtype
+  this.options.subtype[plural] = this.contexts[plural] = opts;
 
   // make a `plural` convenience method, ex: `.pages`
   mixin(plural, fn);
@@ -1425,6 +1469,18 @@ Template.prototype.decorate = function(subtype, plural, options) {
   mixin(utils.methodName('render', subtype), function () {
     return this.renderSubtype(subtype);
   });
+
+  // create default helpers
+  if (this.enabled('default helpers') && opts && opts.isPartial) {
+    // Create a sync helper for this type
+    if (!utils.hasOwn(this._.helpers, subtype)) {
+      this.defaultHelper(subtype, plural);
+    }
+    // Create an async helper for this type
+    if (!utils.hasOwn(this._.asyncHelpers, subtype)) {
+      this.defaultAsyncHelper(subtype, plural);
+    }
+  }
 };
 
 /**
@@ -1479,12 +1535,10 @@ Template.prototype.compileTemplate = function(template, options, isAsync) {
   this.handle('preCompile', template, handleError('preCompile', template));
 
   // if a layout is defined, apply it before compiling
-  var content = this.applyLayout(template, extend({}, context, opts));
-  template.content = content;
+  this.applyLayout(template, extend({}, context, opts));
 
   // handle pre-compile middleware routes
   this.handle('postCompile', template, handleError('postCompile', template));
-  content = template.content;
 
   // Bind context to helpers before passing to the engine.
   this.bindHelpers(opts, context, isAsync);
@@ -1494,7 +1548,7 @@ Template.prototype.compileTemplate = function(template, options, isAsync) {
   var engine = this.getEngine(template.engine);
 
   // compile template
-  return this.compileBase(engine, content, opts);
+  return this.compileBase(engine, template.content, opts);
 };
 
 /**
@@ -1773,7 +1827,7 @@ Template.prototype.renderString = function(str, locals, cb) {
  * @api public
  */
 
-Template.prototype.renderVinyl = function(locals) {
+Template.prototype.renderFile = function(dest, locals) {
   var self = this;
   return through.obj(function (file, enc, cb) {
     if (file.isNull()) {
@@ -1781,14 +1835,13 @@ Template.prototype.renderVinyl = function(locals) {
       return cb();
     }
 
-    locals = merge({}, locals, file.locals);
-    locals.options = merge({}, self.options, locals.options);
-
-    if (utils.norender(self, file.ext, file, locals)) {
+    if (file.rendered) {
       this.push(file);
       return cb();
     }
 
+    locals = merge({}, locals, file.locals);
+    locals.options = merge({}, self.options, locals.options, file.options);
     self.handle('onRender', file, function (err) {
       if (err) {
         stream.emit('error', new PluginError('renderFile', err));
@@ -1796,12 +1849,16 @@ Template.prototype.renderVinyl = function(locals) {
       }
     });
 
+    self.applyLayout(file, locals);
+
     var stream = this;
     file.render(locals, function (err, content) {
       if (err) {
         stream.emit('error', new PluginError('renderFile', err));
         return cb(err);
       }
+
+      file.rendered = true;
       file.contents = new Buffer(content);
       stream.push(file);
       return cb();
@@ -1973,23 +2030,23 @@ Template.prototype.mergeContext = function(template, locals) {
   }
 
   var context = {};
-  extend(context, this.cache.data);
-  extend(context, template.options);
+  merge(context, this.cache.data);
+  merge(context, template.options);
 
   // control the order in which `locals` and `data` are extendd
   if (this.enabled('preferLocals')) {
-    extend(context, template.data);
-    extend(context, template.locals);
+    merge(context, template.data);
+    merge(context, template.locals);
   } else {
-    extend(context, template.locals);
-    extend(context, template.data);
+    merge(context, template.locals);
+    merge(context, template.data);
   }
 
   // Partial templates to pass to engines
-  extend(context, this.mergePartials(locals));
+  merge(context, this.mergePartials(locals));
 
   // Merge in `locals/data` from templates
-  extend(context, this.cache._context.partials);
+  context = merge({}, this.cache._context.partials, context);
   return context;
 };
 

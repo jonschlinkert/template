@@ -179,7 +179,6 @@ describe('layouts:', function () {
   describe('custom template types:', function () {
     var template = new Template();
     template.create('doc', { isRenderable: true });
-
     template.layouts('sidebar', { content: '<nav></nav>\n{% body %}', layout: 'default'});
     template.layouts('default', { content: 'default!\n{% body %}\ndefault!' });
     template.doc('home', { content: 'This is the home page.', layout: 'sidebar'});

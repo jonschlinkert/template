@@ -7,6 +7,7 @@
 
 'use strict';
 
+var assert = require('assert');
 var should = require('should');
 var Template = require('./app');
 var template;
@@ -37,11 +38,8 @@ describe('template.lookup()', function () {
 
   it('should throw error when nothing is found and strict errors is enabled', function () {
     template.enable('strict errors');
-    try {
+    (function () {
       template.lookup('pages', 'd');
-      done(new Error('Expected an error'));
-    } catch (err) {
-      if (!err) throw new Error('Expected an error.');
-    }
+    }).should.throw('Template#lookup::cannot find: "pages" => "d".')
   });
 });

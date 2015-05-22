@@ -13,6 +13,7 @@ var async = require('async');
 var merge = require('mixin-deep');
 var through = require('through2');
 var PluginError = require('plugin-error');
+var toTemplate = require('to-template');
 var cloneDeep = require('clone-deep');
 var extend = require('extend-shallow');
 var inflect = require('pluralize');
@@ -1842,17 +1843,10 @@ Template.prototype.renderFile = function(dest, locals) {
 
     locals = merge({}, locals, file.locals);
     locals.options = merge({}, self.options, locals.options, file.options);
-    self.handle('onRender', file, function (err) {
-      if (err) {
-        stream.emit('error', new PluginError('renderFile', err));
-        return cb(err);
-      }
-    });
-
-    self.applyLayout(file, locals);
+    file = toTemplate(file);
 
     var stream = this;
-    file.render(locals, function (err, content) {
+    self.render(file, locals, function (err, content) {
       if (err) {
         stream.emit('error', new PluginError('renderFile', err));
         return cb(err);

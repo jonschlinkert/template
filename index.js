@@ -1843,21 +1843,20 @@ Template.prototype.renderFile = function(locals) {
       this.push(file);
       return cb();
     }
-
     if (file.rendered) {
       this.push(file);
       return cb();
     }
 
-    locals = merge({}, locals, file.data, file.locals);
+    locals = merge({}, locals, file.locals);
     locals.options = merge({}, self.options, locals.options, file.options);
-    file.content = file.contents.toString();
 
+    // handle onLoad middleware
     self.handle('onLoad', file, handleError('onLoad', {path: file.path}));
-    console.log(file.history)
+    var ctx = merge({}, file.data, locals);
 
     var stream = this;
-    self.render(file, locals, function (err, content) {
+    self.render(file, ctx, function (err, content) {
       if (err) {
         stream.emit('error', new PluginError('renderFile', err));
         return cb(err);

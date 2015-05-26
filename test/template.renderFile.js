@@ -46,6 +46,7 @@ describe('.renderFile', function () {
     });
     stream.end();
   });
+
   it('should render templates in a vinyl file:', function (done) {
     var stream = through.obj();
     var buffer = [];

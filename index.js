@@ -1828,7 +1828,7 @@ Template.prototype.renderString = function(str, locals, cb) {
  * @api public
  */
 
-Template.prototype.renderFile = function(dest, locals) {
+Template.prototype.renderFile = function(locals) {
   var self = this;
   return through.obj(function (file, enc, cb) {
     if (file.isNull()) {
@@ -1841,9 +1841,12 @@ Template.prototype.renderFile = function(dest, locals) {
       return cb();
     }
 
-    locals = merge({}, locals, file.locals);
+    locals = merge({}, locals, file.data, file.locals);
     locals.options = merge({}, self.options, locals.options, file.options);
-    file = toTemplate(file);
+    file.content = file.contents.toString();
+
+    self.handle('onLoad', file, handleError('onLoad', {path: file.path}));
+    console.log(file.history)
 
     var stream = this;
     self.render(file, locals, function (err, content) {
@@ -2040,7 +2043,7 @@ Template.prototype.mergeContext = function(template, locals) {
   merge(context, this.mergePartials(locals));
 
   // Merge in `locals/data` from templates
-  context = merge({}, this.cache._context.partials, context);
+  merge(context, this.cache._context.partials);
   return context;
 };
 

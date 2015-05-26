@@ -47,6 +47,26 @@ describe('template front-matter', function () {
     });
   });
 
+  describe('types:', function () {
+    it('should parse front matter on renderable templates:', function () {
+      template.page('a', '---\nb: c\n---\nd');
+      template.views.pages.a.should.have.property('data');
+      template.views.pages.a.data.should.have.property('b', 'c');
+    });
+
+    it('should parse front matter on partial templates:', function () {
+      template.partial('a', '---\nb: c\n---\nd');
+      template.views.partials.a.should.have.property('data');
+      template.views.partials.a.data.should.have.property('b', 'c');
+    });
+
+    it('should parse front matter on layout templates:', function () {
+      template.layout('a', '---\nb: c\n---\nd');
+      template.views.layouts.a.should.have.property('data');
+      template.views.layouts.a.data.should.have.property('b', 'c');
+    });
+  });
+
   describe('noread:', function () {
     it('should not parse front matter when `noread` is defined:', function () {
       template.page('a', '---\nb: c\n---\nd', {options: {noread: true}});

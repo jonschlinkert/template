@@ -60,7 +60,7 @@ describe('.render() synchronously:', function () {
 
     it('should render the first matching template if dupes are found:', function () {
       template.page('aaa.md', '<%= name %>', {name: 'Brian Woodward'});
-      template.create('post', 'posts', { isRenderable: true });
+      template.create('post', { isRenderable: true });
       template.post('bbb.md', '<%= name %>', {name: 'Jon Schlinkert'});
       template.render('aaa.md').should.equal('Brian Woodward');
     });

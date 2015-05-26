@@ -34,7 +34,7 @@ describe('.render() cached templates', function () {
 
     it('should render the first matching template is dupes are found:', function (done) {
       template.page('aaa.md', '<%= name %>', {name: 'Brian Woodward'});
-      template.create('post', 'posts', { isRenderable: true });
+      template.create('post', { isRenderable: true });
       template.post('aaa.md', '<%= name %>', {name: 'Jon Schlinkert'});
 
       template.render('aaa.md', function (err, content) {

@@ -26,15 +26,8 @@ describe('template engine:', function () {
     template.engine('handlebars', handlebars);
     template.engine('lodash', lodash);
 
-    template.create('apple', 'apples', {
-      engine: 'lodash',
-      isRenderable: true
-    });
-
-    template.create('orange', 'oranges', {
-      engine: 'handlebars',
-      isRenderable: true
-    });
+    template.create('apple', {engine: 'lodash', isRenderable: true});
+    template.create('orange', {engine: 'handlebars', isRenderable: true});
 
     template.apple('foo', {content: '<<= name >>{{ name }}<%= name %>', name: 'Halle'});
     template.orange('bar', {content: '<<= name >>{{ name }}<%= name %>', name: 'Brooke'});
@@ -55,8 +48,8 @@ describe('template engine:', function () {
     template.engine('handlebars', handlebars);
     template.engine('lodash', lodash);
 
-    template.create('apple', 'apples', { isRenderable: true });
-    template.create('orange', 'oranges', { isRenderable: true });
+    template.create('apple', { isRenderable: true });
+    template.create('orange', { isRenderable: true });
 
     template.apple('foo', {content: '<<= name >>{{ name }}<%= name %>', locals: {name: 'Halle'}}, {
       engine: 'lodash'

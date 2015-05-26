@@ -377,15 +377,14 @@ describe('template.use()', function () {
     });
   });
 
-  it('should throw error when no middleware is passed', function(done) {
-    template.disable('silent');
+  it('should throw error when no middleware is passed', function() {
+    template.enable('strict errors');
     var page = { path: '/foo/bar' };
     try {
       template.use('/foo/bar');
-      done(new Error('Expected an error to be thrown.'));
-    } catch (err) {
-      if (err) return done();
-      done(new Error('Expected an error to be thrown'));
+    } catch(err) {
+      err.should.be.an.object;
+      err.message.should.match(/Template#use::expects middleware functions:/);
     }
   });
 

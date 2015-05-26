@@ -19,8 +19,8 @@ describe('.renderType()', function () {
   beforeEach(function () {
     template = new Template();
 
-    template.create('post', 'posts', { isRenderable: true });
-    template.create('doc', 'docs', { isRenderable: true });
+    template.create('post', { isRenderable: true });
+    template.create('doc', { isRenderable: true });
 
     template.page('aaa.md', '<%= name %>', {name: 'Jon Schlinkert'});
     template.post('aaa.md', '<%= name %>', {name: 'Brian Woodward'});

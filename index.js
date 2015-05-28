@@ -910,7 +910,7 @@ Template.prototype.defaultLoad = function(subtype, plural, options) {
         self.loadAsync.apply(self, args.concat(done));
         break;
       case 'promise':
-        return self.loadPromise.apply(self, args.concat(loadOpts))
+        return self.loadPromise.apply(self, args)
           .then(function (template) {
             return done(null, template);
           });

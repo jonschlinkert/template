@@ -19,18 +19,6 @@ describe('template loaders', function () {
     template.engine('md', require('engine-lodash'));
   });
 
-  describe('when a custom loader function is set:', function () {
-    it('should load using the custom loader', function () {
-      template.create('npm', { loadFn: require('./lib/load-npm') });
-
-      template.npm(__dirname + '/fixtures/loaders/npm-load.json');
-      template.npm(__dirname + '/fixtures/loaders/npm-load.js');
-      template.npm(__dirname + '/fixtures/loaders/npm-load.css');
-
-      template.views.npms.should.have.properties(['npm-load.js', 'npm-load.json', 'npm-load.css']);
-    });
-  });
-
   describe('when a custom loader stack is set:', function () {
     it('should allow custom loader stack to be used:', function () {
       var options = {};

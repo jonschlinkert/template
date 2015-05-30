@@ -6,6 +6,7 @@
  */
 
 'use strict';
+require('time-require');
 
 var path = require('path');
 var chalk = require('chalk');
@@ -13,7 +14,6 @@ var async = require('async');
 var merge = require('mixin-deep');
 var through = require('through2');
 var PluginError = require('plugin-error');
-var toTemplate = require('to-template');
 var cloneDeep = require('clone-deep');
 var extend = require('extend-shallow');
 var inflect = require('pluralize');
@@ -21,12 +21,10 @@ var omit = require('object.omit');
 var flatten = require('arr-flatten');
 var relative = require('relative');
 var layouts = require('layouts');
-var matter = require('gray-matter');
 var pickFrom = require('pick-from');
 var routes = require('en-route');
 var slice = require('array-slice');
 var typeOf = require('kind-of');
-var tutil = require('template-utils')._;
 
 /**
  * Extend Template
@@ -534,25 +532,11 @@ Template.prototype.applyLayout = function(template, locals) {
   // it to the layout name before passing the name to [layouts]
   var ext = this.option('layoutExt');
   if (typeof ext === 'string') {
-    layout += (ext ? tutil.formatExt(ext) : '');
+    layout += (ext ? utils.formatExt(ext) : '');
   }
 
   // Merge `layout` collections based on settings
   var stack = this.mergeLayouts(locals);
-
-  // if (layout && stack.hasOwnProperty(layout)) {
-  //   var file = stack[layout];
-  //   if (!file.parsed) {
-  //     var parsed = matter(file.content);
-  //     extend(file, parsed);
-  //     file.content = parsed.content;
-  //     file.parsed = true;
-  //     file.layout = file.layout || file.data.layout;
-  //     this.handle('onLoad', file, handleError('onLoad', {path: file.path}));
-  //     stack[layout] = file;
-  //   }
-  // }
-
   var res = layouts(template.content, layout, stack, locals);
   if (res.options && res.options.options) {
     extend(res.options, res.options.options);
@@ -581,7 +565,7 @@ Template.prototype.applyLayout = function(template, locals) {
 Template.prototype.registerEngine = function(ext, fn, options) {
   debug.engine('.registerEngine:', arguments);
   var opts = extend({}, options);
-  ext = ext ? tutil.formatExt(ext) : '';
+  ext = ext ? utils.formatExt(ext) : '';
   this._.engines.setEngine(ext, fn, opts);
   return this;
 };

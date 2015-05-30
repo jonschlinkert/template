@@ -21,7 +21,8 @@ template.include('button.html', {content: '---\ntext: Click me!\n---\n<%= text %
 template.include('sidebar.html', {content: '---\ntext: Expand me!\n---\n<%= text %>'});
 
 /**
- * Create a custom template helper
+ * Create a custom (async) template helper
+ * for adding includes to a template
  */
 
 template.asyncHelper('include', function (name, locals, cb) {

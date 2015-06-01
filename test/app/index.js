@@ -12,8 +12,7 @@ function App(options) {
   this._defaultTransforms();
 }
 
-Template.extend(App.prototype);
-App.extend = Template.extend;
+Template.mixin(App.prototype);
 App.Router = routes.Router;
 App.Route = routes.Route;
 

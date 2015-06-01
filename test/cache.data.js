@@ -7,20 +7,24 @@
 
 'use strict';
 
+var fs = require('fs');
+var yaml = require('js-yaml');
 var should = require('should');
 var Template = require('./app');
 var pkg = require('../package');
-
+var template;
 
 describe('template data', function() {
-  var template = new Template();
   beforeEach(function() {
-    template.del();
+    template = new Template();
+    
+    template.dataLoader('yml', function(fp) {
+      var str = fs.readFileSync(fp, 'utf8');
+      return yaml.load(str);
+    });
   });
 
-
   describe('.data()', function() {
-    var template = new Template();
     it('should set properties on the `data` object.', function() {
       template.set('data.foo', 'bar');
       template.get('data').foo.should.equal('bar');
@@ -45,7 +49,6 @@ describe('template data', function() {
   });
 
   describe('.extendData()', function() {
-    var template = new Template();
     it('should extend the `data` object.', function() {
       template
         .extendData({x: 'x', y: 'y', z: 'z'})
@@ -82,7 +85,6 @@ describe('template data', function() {
   });
 
   describe('.flattenData()', function() {
-    var template = new Template();
     it('should merge the value of a nested `data` property onto the root of the given object.', function() {
       var root = template.flattenData({data: {x: 'x'}, y: 'y', z: 'z'});
       root.should.have.properties(['x', 'y', 'z']);
@@ -97,7 +99,6 @@ describe('template data', function() {
   });
 
   describe('.plasma()', function() {
-    var template = new Template();
     it('should read JSON files and return an object.', function() {
       var data = template.plasma('package.json');
       data.package.name.should.equal(pkg.name);

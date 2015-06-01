@@ -16,7 +16,7 @@ var template;
 describe('template.process()', function () {
   beforeEach(function() {
     template = new Template();
-    template.omit('abcdefghijklmnopqrstuvwxyz'.split(''));
+    template.del('abcdefghijklmnopqrstuvwxyz'.split(''));
   });
 
   describe('.process()', function () {

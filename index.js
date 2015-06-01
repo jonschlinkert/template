@@ -6,30 +6,36 @@
  */
 
 'use strict';
-require('time-require');
 
 var path = require('path');
-var chalk = require('chalk');
-var async = require('async');
 var merge = require('mixin-deep');
 var through = require('through2');
 var PluginError = require('plugin-error');
-var cloneDeep = require('clone-deep');
 var extend = require('extend-shallow');
 var inflect = require('pluralize');
 var omit = require('object.omit');
 var flatten = require('arr-flatten');
 var relative = require('relative');
-var layouts = require('layouts');
 var pickFrom = require('pick-from');
 var routes = require('en-route');
-var slice = require('array-slice');
 var typeOf = require('kind-of');
+
+/**
+ * Lazy requires
+ */
+
+/* deps: layouts async */
+var lazy = require('lazy-cache');
+var chalk = require('lazy-chalk');
+var async = lazy(require)('async');
+var layouts = lazy(require)('layouts');
+var cloneDeep = lazy(require)('clone-deep');
 
 /**
  * Extend Template
  */
 
+var Plasma = require('plasma-cache');
 var Config = require('config-cache');
 var Engines = require('engine-cache');
 var Helpers = require('helper-cache');
@@ -61,21 +67,19 @@ var utils = require('./lib');
  * @api public
  */
 
-function Template(options) {
-  Options.call(this, options);
-  Config.call(this, options);
+function Template(options, obj) {
+  Config.call(this, this);
+  Options.call(this, options, this);
+  Plasma.call(this, {plasma: require('plasma')}, this);
   this.initTemplate(options);
 }
 
-Config.extend(Template.prototype);
-extend(Template.prototype, Options.prototype);
-Template.extend = Config.extend;
+Config.mixin(Template.prototype);
 
 /**
  * Extend `Template`
  */
 
-Template.extend = Config.extend;
 Template.Router = routes.Router;
 Template.Route = routes.Route;
 
@@ -84,8 +88,9 @@ Template.Route = routes.Route;
  */
 
 Template.prototype.initTemplate = function() {
-  this.loaders = this.loaders || {};
+  this.dataLoaders = this.dataLoaders || {};
   this.engines = this.engines || {};
+  this.loaders = this.loaders || {};
   this.inflections = {};
   this.errorsList = [];
   this.transforms = {};
@@ -243,7 +248,7 @@ Template.prototype.error = function(methodName, msg, file) {
   err.reason = msg;
 
   if (this.enabled('verbose')) {
-    console.error(chalk.yellow(err));
+    console.error(chalk().yellow(err));
   }
 
   if (this.enabled('strict errors')) {
@@ -413,7 +418,7 @@ Template.prototype.use = function (fn) {
     }
   }
 
-  var fns = flatten(slice(arguments, offset));
+  var fns = flatten([].slice.call(arguments, offset));
   if (fns.length === 0) {
     this.error('use', 'expects middleware functions: ' + JSON.stringify(arguments));
     return;
@@ -537,7 +542,7 @@ Template.prototype.applyLayout = function(template, locals) {
 
   // Merge `layout` collections based on settings
   var stack = this.mergeLayouts(locals);
-  var res = layouts(template.content, layout, stack, locals);
+  var res = layouts()(template.content, layout, stack, locals);
   if (res.options && res.options.options) {
     extend(res.options, res.options.options);
     delete res.options.options;
@@ -853,7 +858,7 @@ Template.prototype.defaultLoad = function(subtype, plural, options) {
 
     // extend `file.contexts` with load locals/options
     opts.contexts = {};
-    opts.contexts.create = cloneDeep(opts);
+    opts.contexts.create = cloneDeep()(opts);
     if (typeof last === 'object') {
       opts.contexts.load = omit(last, ['content', 'path']);
     }
@@ -942,7 +947,7 @@ Template.prototype.normalize = function(subtype, plural, template, options) {
     return this.options.normalize.apply(this, arguments);
   }
 
-  var opts = cloneDeep(options || {});
+  var opts = cloneDeep()(options || {});
   var context = opts.contexts || {};
   delete opts.contexts;
 
@@ -1249,7 +1254,7 @@ Template.prototype.mergePartials = function(context) {
 
   var opts = context.options || {};
   if (mergePartials === true) {
-    opts.partials = cloneDeep(context.partials || {});
+    opts.partials = cloneDeep()(context.partials || {});
   }
 
   var mergeTypeContext = this.mergeTypeContext(this, 'partials');
@@ -1952,7 +1957,7 @@ Template.prototype.renderEach = function(collection, locals, cb) {
   var keys = Object.keys(view);
   var self = this;
 
-  async.map(keys, function (key, next) {
+  async().map(keys, function (key, next) {
     var file = view[key];
     self.render(file, locals, function (err, content) {
       if (err) return next(err);
@@ -2070,8 +2075,8 @@ Template.prototype.mergeTypeContext = function (app, type) {
 function handleError(method, template) {
   return function (err) {
     if (err) {
-      console.error(chalk.red('Error running ' + method + ' middleware for', template.path));
-      console.error(chalk.red(err));
+      console.error(chalk().red('Error running ' + method + ' middleware for', template.path));
+      console.error(chalk().red(err));
     }
   };
 }

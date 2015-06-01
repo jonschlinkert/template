@@ -76,16 +76,4 @@ describe('template.get()/.set()', function () {
       template.get('a').should.equal('b');
     });
   });
-
-
-  describe('.exists()', function () {
-    it('should return `false` when not set', function () {
-      template.exists('alsjls').should.be.false;
-    });
-
-    it('should return `true` when set.', function () {
-      template.set('baba', 'zz');
-      template.exists('baba').should.be.ok;
-    });
-  });
 });

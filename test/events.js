@@ -73,7 +73,7 @@ describe('events:', function () {
 
       template.on('set', function (key, value) {
         called = true;
-        template.exists(key).should.be.true;
+        template.cache.should.have.property(key);
       });
 
       template.set('one', 'a');
@@ -125,7 +125,7 @@ describe('events:', function () {
       template.set('six', 'g');
       template.set('sev', 'h');
 
-      template.on('omit', function (keys) {
+      template.on('del', function (keys) {
         called = true;
         for (var i = 0; i < keys.length; i++) {
           var key = keys[i];
@@ -133,7 +133,7 @@ describe('events:', function () {
         }
       });
 
-      template.omit(['one', 'two', 'thr', 'fou', 'fiv', 'six', 'sev']);
+      template.del(['one', 'two', 'thr', 'fou', 'fiv', 'six', 'sev']);
       called.should.be.true;
     });
   });

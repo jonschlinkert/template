@@ -13,13 +13,8 @@ var Template = require('./app');
 
 describe('cache', function () {
   describe('constructor:', function () {
-    it('when new Template() is defined:', function () {
-      var template = new Template({
-        one: 1,
-        two: 2
-      });
-      template.get('one').should.eql(1);
-      template.get('two').should.eql(2);
+    it('should be a constructor:', function () {
+      var template = new Template();
       template.should.be.instanceOf(Template);
     });
   });
@@ -33,7 +28,7 @@ describe('cache', function () {
       template.set('b', 2);
       template.set('c', 3);
 
-      template.keys().should.eql(['a', 'b', 'c']);
+      Object.keys(template.cache).should.eql(['a', 'b', 'c']);
     });
   });
 

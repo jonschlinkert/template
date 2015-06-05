@@ -45,7 +45,7 @@
     "lazy-chalk": "^0.1.0",
     "lazy-globby": "^0.1.1",
     "load-templates": "^0.8.3",
-    "loader-cache": "^0.4.0",
+    "loader-cache": "git://github.com/jonschlinkert/loader-cache#refactor",
     "middleware-utils": "^0.1.2",
     "mixin-deep": "^1.1.1",
     "object.omit": "^1.1.0",
@@ -61,7 +61,7 @@
     "through2": "^0.6.5"
   },
   "devDependencies": {
-    "bluebird": "^2.9.25",
+    "bluebird": "^2.9.27",
     "consolidate": "^0.12.1",
     "coveralls": "^2.11.2",
     "engine-handlebars": "^0.6.1",

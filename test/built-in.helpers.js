@@ -102,12 +102,12 @@ describe('generated helpers:', function () {
 
       template.render('xyz.md', {name: 'DDD'}, function (err, content) {
         err.should.be.an.object;
-        err.message.should.equal('foo is not defined');
+        err.message.should.equal('foo is not defined [resolving `partial`]');
       });
     });
   });
 
-  
+
   describe('helper context:', function () {
     beforeEach(function () {
       template = new Template();

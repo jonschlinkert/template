@@ -21,9 +21,8 @@ var template;
 describe('built-in helpers:', function () {
   /* deps: swig */
   describe('automatically generated helpers for default template types:', function () {
-    beforeEach(function (cb) {
+    beforeEach(function () {
       template = new Template();
-      cb();
     });
     
     it('should use the `partial` helper.', function (done) {
@@ -58,16 +57,15 @@ describe('built-in helpers:', function () {
       });
     });
 
-    it.skip('should return an empty string when the partial is missing.', function (cb) {
-      var i = 0;
+    it('should return an empty string when the partial is missing.', function (done) {
       template.partial('abc.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}});
       template.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("def.md", { name: "CCC" }) %> bar'});
+
       template.render('xyz.md', {name: 'DDD'}, function (err, content) {
-        i++;
+        if (err) return done(err);
         content.should.eql('foo  bar');
-        cb();
+        done();
       });
-      i.should.equal(1);
     });
 
     it('should throw an error when something is wrong in a partial', function (done) {
@@ -96,7 +94,6 @@ describe('built-in helpers:', function () {
       }
     });
   });
-
 
   describe('helper context:', function () {
     beforeEach(function () {
@@ -147,7 +144,6 @@ describe('built-in helpers:', function () {
       });
     });
   });
-
 
   describe('user-defined engines:', function () {
     beforeEach(function () {

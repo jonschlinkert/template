@@ -107,15 +107,12 @@ describe('.renderType()', function () {
     });
 
     it('should throw an error when the template is not found', function (done) {
-      try {
-        template.renderSubtype('page')('nothing.md', function (err, content) {
-          if (!err) return done(new Error('Expected an error.'));
-          return done();
-        });
-      } catch (err) {
-        if (!err) return done(new Error('Expected an error.'));
-        return done();
-      }
+      template.renderSubtype('page')('nothing.md', function (err, content) {
+        err.should.be.an.object;
+        err.method.should.equal('renderSubtype');
+        err.msg.should.equal('can\'t find nothing.md');
+        done();
+      });
     });
   });
 });

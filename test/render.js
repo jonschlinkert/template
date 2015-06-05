@@ -182,26 +182,18 @@ describe('template.render()', function () {
 
   describe('error handling and validation', function () {
     it('should throw error when template is not an object', function (done) {
-      try {
-        return template.renderTemplate('foo', function (err, content) {
-          if (!err) return done(new Error('Expected an error'));
-          return done();
-        });
-        return done(new Error('Expected an error'));
-      } catch (err) {
-        if (!err) return done(new Error('Expected an error'));
-        return done();
-      }
+      template.renderTemplate('foo', function (err, content) {
+        err.should.be.an.object;
+        err.should.has.property('message');
+        done();
+      });
     });
 
     it('should throw error when content is undefined', function (done) {
-      try {
+      (function() {
         template.render();
-        return done(new Error('Expected an error'));
-      } catch (err) {
-        if (!err) return done(new Error('Expected an error'));
-        return done();
-      }
+      }).should.throw('Template#render: expects a string or object: {}');
+      done();
     });
 
     it('should throw error when engine does not have a render method', function (done) {

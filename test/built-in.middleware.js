@@ -27,7 +27,7 @@ describe('default middleware:', function () {
     };
     template.pages({'bad.md': {path: 'bad.md', content: {}}});
     process.stderr.write = stderr;
-    output.length.should.eql(2);
-    output[0].indexOf('Error running onLoad middleware for bad.md').should.not.eql(-1);
+    output.length.should.eql(1);
+    output[0].indexOf('Error running onLoad middleware').should.not.eql(-1);
   });
 });

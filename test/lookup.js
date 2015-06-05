@@ -40,6 +40,6 @@ describe('template.lookup()', function () {
     template.enable('strict errors');
     (function () {
       template.lookup('pages', 'd');
-    }).should.throw('Template#lookup::cannot find: "pages" => "d".')
+    }).should.match(/Template#lookup: cannot find view/);
   });
 });

@@ -384,7 +384,7 @@ describe('template.use()', function () {
       template.use('/foo/bar');
     } catch(err) {
       err.should.be.an.object;
-      err.message.should.match(/Template#use::expects middleware functions:/);
+      err.message.should.match(/Template#use: expects middleware functions:/);
     }
   });
 

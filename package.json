@@ -1,0 +1,32 @@
+{
+  "name": "template-next-next",
+  "description": "template-next, plus another `-next` afterwards.",
+  "version": "0.1.0",
+  "homepage": "https://github.com/jonschlinkert/template-next-next",
+  "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
+  "repository": "jonschlinkert/template-next-next",
+  "bugs": {
+    "url": "https://github.com/jonschlinkert/template-next-next/issues"
+  },
+  "license": "MIT",
+  "files": [
+    "index.js"
+  ],
+  "main": "index.js",
+  "engines": {
+    "node": ">=0.10.0"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "dependencies": {
+    "extend-shallow": "^1.1.4",
+    "pluralize": "^1.1.2",
+    "record": "^0.2.0"
+  },
+  "devDependencies": {
+    "mocha": "*",
+    "should": "*"
+  },
+  "keywords": []
+}

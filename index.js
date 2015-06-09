@@ -25,13 +25,14 @@ Template.prototype.create = function(singular, options, loaders) {
 Template.prototype.decorate = function(singular, plural, options, loaders) {
   this.views[plural] = new Collection({name: plural});
 
-  Template.prototype[plural] = function(key, value, locals, opts) {
-    this.loader(plural).apply(this, arguments);
+  // this still isn't right...
+  Template.prototype[plural] = function(key, opts, stack) {
+    this.views[plural].load(key, this.loader.apply(this, arguments));
     return this;
   };
 
-  Template.prototype[singular] = function(key, value, locals, opts) {
-    this.loader(plural).apply(this, arguments);
+  Template.prototype[singular] = function(key, opts, stack) {
+    this.views[plural].load(key, this.loader.apply(this, arguments));
     return this;
   };
 };
@@ -42,11 +43,7 @@ Template.prototype.inflect = function(name) {
 
 Template.prototype.loader = function(plural, opts, stack) {
   var loader = this.loaders[plural] = new LoaderCache(opts);
-  var load = loader.compose.apply(loader, arguments);
-  return function (key, value, locals, opts) {
-    this.views[plural].load(key, load.apply(this, arguments));
-    return this;
-  };
+  return loader.compose.apply(loader, arguments);
 };
 
 var template = new Template();

@@ -17,94 +17,337 @@ var through = require('through2');
 var Template = require('../');
 var template;
 
-describe('template loaders', function () {
-  beforeEach(function () {
-    template = new Template();
-  });
+function toTemplateAsync(files, next) {
+  async.reduce(files, {}, function (acc, fp, cb) {
+    acc[fp] = {path: fp, content: fs.readFileSync(fp, 'utf8')};
+    cb(null, acc);
+  }, next);
+}
 
+describe('loaders', function () {
   describe('sync:', function () {
-    it('should use an array of functions:', function () {
-      var options = {};
-      template.create('post', { viewType: 'renderable' }, [
-        function (patterns) {
-          return glob.sync(patterns, options);
-        },
-        function (files) {
+    beforeEach(function () {
+      template = new Template();
+    });
+
+    describe('.loader():', function () {
+      it('should register sync loaders', function () {
+        template.loader('a', function () {});
+        template.loader('b', function () {});
+        template.loader('c', function () {});
+        template.loaders.sync.should.have.properties(['a', 'b', 'c']);
+      });
+    });
+
+    describe('.create():', function () {
+      it('should use a loader function defined on the create method:', function () {
+        template.create('post', { viewType: 'renderable' }, function (patterns) {
+          return glob.sync(patterns);
+        });
+
+        template.loader('toTemplate', function (files) {
           return files.reduce(function (acc, fp) {
             acc[fp] = {path: fp, content: fs.readFileSync(fp, 'utf8')};
             return acc;
           }, {});
-        }
-      ]);
+        });
+        template.posts('test/fixtures/*.txt', ['toTemplate']);
+        template.views.posts.should.have.property('test/fixtures/a.txt');
+      });
 
-      template.posts('test/fixtures/*.txt', {a: 'b'});
-      template.views.posts.should.have.property('test/fixtures/a.txt');
+      it('should use an array of registered loaders:', function () {
+        template.loader('first', function (name) {
+          var file = {};
+          file[name] = {path: name, content: 'this is content...'};
+          return file;
+        });
+        template.loader('abc', function (files) {
+          files.abc = {content: 'this is abc...'}
+          return files;
+        });
+        template.loader('xyz', function (files) {
+          files.xyz = {content: 'this is xyz...'}
+          return files;
+        });
+        // loaders are on passed to .create
+        template.create('posts', ['first', 'abc', 'xyz']);
+        template.posts('foo');
+        template.views.posts.should.have.property('foo');
+        template.views.posts.should.have.property('abc');
+        template.views.posts.should.have.property('xyz');
+        template.views.posts.foo.content.should.equal('this is content...');
+      });
+
+      it('should add the values to views:', function () {
+        template.loader('a', function (val) {
+          val = val + 'a';
+          return val
+        });
+        template.loader('b', function (val) {
+          val = val + 'b';
+          return val
+        });
+        template.loader('c', function (val) {
+          val = val + 'c';
+          return val
+        });
+        template.create('posts')
+        template.posts('-', ['a', 'b', 'c'], function (val) {
+          return {foo: {content: val}};
+        });
+        template.views.posts.should.have.property('foo');
+        template.views.posts.foo.content.should.equal('-abc');
+      });
+
+      it('should use an array of functions:', function () {
+        var options = {};
+        template.create('post', { viewType: 'renderable' }, [
+          function (patterns) {
+            return glob.sync(patterns, options);
+          },
+          function (files) {
+            return files.reduce(function (acc, fp) {
+              acc[fp] = {path: fp, content: fs.readFileSync(fp, 'utf8')};
+              return acc;
+            }, {});
+          }
+        ]);
+
+        template.posts('test/fixtures/*.txt', {a: 'b'});
+        template.views.posts.should.have.property('test/fixtures/a.txt');
+      });
+
+      it('should use a list of functions:', function () {
+        var options = {};
+        template.create('post', { viewType: 'renderable' },
+          function (patterns) {
+            return glob.sync(patterns, options);
+          },
+          function (files) {
+            return files.reduce(function (acc, fp) {
+              acc[fp] = {path: fp, content: fs.readFileSync(fp, 'utf8')};
+              return acc;
+            }, {});
+        });
+
+        template.posts('test/fixtures/*.txt', {a: 'b'});
+        template.views.posts.should.have.property('test/fixtures/a.txt');
+      });
+
+      it('should use functions on create and the collection:', function () {
+        var options = {};
+        template.create('post', { viewType: 'renderable' }, function (patterns) {
+          return glob.sync(patterns, options);
+        });
+
+        template.posts('test/fixtures/*.txt', {a: 'b'}, function (files) {
+          return files.reduce(function (acc, fp) {
+            acc[fp] = {path: fp, content: fs.readFileSync(fp, 'utf8')};
+            return acc;
+          }, {});
+        });
+        template.views.posts.should.have.property('test/fixtures/a.txt');
+      });
     });
 
-    it('should use custom loaders in the load function:', function () {
-      var opts = { viewType: 'renderable' };
-      template.create('post', opts, function (patterns) {
-        return glob.sync(patterns);
+    describe('collection:', function () {
+      it('should use an array of registered loaders:', function () {
+        template.loader('first', function (name) {
+          var file = {};
+          file[name] = {path: name, content: 'this is content...'};
+          return file;
+        });
+        template.loader('abc', function (files) {
+          files.abc = {content: 'this is abc...'}
+          return files;
+        });
+        template.loader('xyz', function (files) {
+          files.xyz = {content: 'this is xyz...'}
+          return files;
+        });
+        template.create('posts');
+        // loaders are on the collection
+        template.posts('foo', ['first', 'abc', 'xyz']);
+        template.views.posts.should.have.property('foo');
+        template.views.posts.should.have.property('abc');
+        template.views.posts.should.have.property('xyz');
+        template.views.posts.foo.content.should.equal('this is content...');
       });
 
-      template.loader('toTemplate', function (files) {
-        return files.reduce(function (acc, fp) {
-          acc[fp] = {path: fp, content: fs.readFileSync(fp, 'utf8')};
-          return acc;
-        }, {});
+      it('should use an array of functions:', function () {
+        var options = {};
+        template.create('post', { viewType: 'renderable' });
+
+        template.posts('test/fixtures/*.txt', {a: 'b'}, [
+          function (patterns) {
+            return glob.sync(patterns, options);
+          },
+          function (files) {
+            return files.reduce(function (acc, fp) {
+              acc[fp] = {path: fp, content: fs.readFileSync(fp, 'utf8')};
+              return acc;
+            }, {});
+          }
+        ]);
+        template.views.posts.should.have.property('test/fixtures/a.txt');
       });
-      template.posts('test/fixtures/*.txt', ['toTemplate']);
-      template.views.posts.should.have.property('test/fixtures/a.txt');
+
+      it('should use a list of functions:', function () {
+        var options = {};
+        template.create('post', { viewType: 'renderable' });
+
+        template.posts('test/fixtures/*.txt', {a: 'b'},
+          function (patterns) {
+            return glob.sync(patterns, options);
+          },
+          function (files) {
+            return files.reduce(function (acc, fp) {
+              acc[fp] = {path: fp, content: fs.readFileSync(fp, 'utf8')};
+              return acc;
+            }, {});
+        });
+        template.views.posts.should.have.property('test/fixtures/a.txt');
+      });
+    });
+
+    describe('.getLoaderInstance():', function () {
+      it('should get sync loaders', function () {
+        template.loader('a', function () {});
+        template.loader('b', function () {});
+        template.loader('c', function () {});
+        var loaders = template.getLoaderInstance('sync');
+        loaders.should.have.properties(['cache', 'iterator']);
+        loaders.cache.should.have.properties(['a', 'b', 'c']);
+      });
+    });
+
+    describe('.iterator():', function () {
+      it('should register a sync iterator', function () {
+        template.iterator('sync', function () {});
+        template.iterator('async', function () {});
+        template.iterators.should.have.properties(['sync', 'async']);
+      });
     });
   });
 
-  describe('sync:', function () {
-    it('should catch `err`:', function (done) {
-      template.create('post', { viewType: 'renderable', loaderType: 'async' }, [
-        function () {
-          throw new Error('Something went wrong');
-        }
-      ]);
-
-      template.post('test/fixtures/*.md', function (err) {
-        err.should.be.an.object;
-        err.message.should.equal('Something went wrong');
-        done();
-      });
+  describe('async:', function () {
+    beforeEach(function () {
+      template = new Template();
     });
 
-    it('should use custom async loaders', function (done) {
-      var options = { viewType: 'renderable', loaderType: 'async' };
+    describe('.create():', function () {
 
-      template.create('post', options, function glob_(pattern, opts, next) {
-        if (typeof opts === 'function') {
-          next = opts;
-          opts = {};
-        }
-        glob(pattern, function (err, files) {
-          if (err) return next(err);
+      it('should use an array of registered loaders passed to create:', function (done) {
+        var opts = { loaderType: 'async' };
+
+        // register the loaders
+        template.loader('first', opts, function (name, next) {
+          var file = {};
+          file[name] = {path: name, content: 'this is content...'};
+          next(null, file);
+        });
+        template.loader('abc', opts, function (files, next) {
+          files.abc = {content: 'this is abc...'}
           next(null, files);
+        });
+        template.loader('xyz', opts, function (files, next) {
+          files.xyz = {content: 'this is xyz...'}
+          next(null, files);
+        });
+
+        // pass the array of loaders to .create
+        template.create('posts', opts, ['first', 'abc', 'xyz']);
+        template.posts('foo', opts, function (files, next) {
+          next(null, files);
+        }, function (err) {
+          if (err) return done(err);
+          template.views.posts.should.have.property('foo');
+          template.views.posts.should.have.property('abc');
+          template.views.posts.should.have.property('xyz');
+          template.views.posts.foo.content.should.equal('this is content...');
+          done();
         });
       });
 
-      template.loader('toTemplate', {type: 'async'}, function(files, next) {
-        async.reduce(files, {}, function (acc, fp, cb) {
-          acc[fp] = {path: fp, content: fs.readFileSync(fp, 'utf8')};
-          cb(null, acc);
-        }, next);
+      it('should use an array of registered loaders passed to a collection:', function (done) {
+        var opts = { loaderType: 'async' };
+
+        // register the loaders
+        template.loader('first', opts, function (name, next) {
+          var file = {};
+          file[name] = {path: name, content: 'this is content...'};
+          next(null, file);
+        });
+        template.loader('abc', opts, function (files, next) {
+          files.abc = {content: 'this is abc...'}
+          next(null, files);
+        });
+        template.loader('xyz', opts, function (files, next) {
+          files.xyz = {content: 'this is xyz...'}
+          next(null, files);
+        });
+
+        template.create('posts', opts);
+        // pass the array of loaders to the collection loader
+        template.posts('foo', opts, ['first', 'abc', 'xyz'], function (files, next) {
+          next(null, files);
+        }, function (err) {
+          if (err) return done(err);
+          template.views.posts.should.have.property('foo');
+          template.views.posts.should.have.property('abc');
+          template.views.posts.should.have.property('xyz');
+          template.views.posts.foo.content.should.equal('this is content...');
+          done();
+        });
       });
 
-      template.posts('test/fixtures/*.txt', ['toTemplate'], function (posts, next) {
-        next(null, posts);
-      }, function doneFn(err) {
-        if (err) return done(err);
-        template.views.posts.should.have.property('test/fixtures/a.txt');
-        done();
+      it('should use custom async loaders', function (done) {
+        var opts = { viewType: 'renderable', loaderType: 'async' };
+
+        template.create('post', opts, glob);
+        template.loader('toTemplate', opts, function (files, next) {
+          async.reduce(files, {}, function (acc, fp, cb) {
+            acc[fp] = {path: fp, content: fs.readFileSync(fp, 'utf8')};
+            cb(null, acc);
+          }, next);
+        });
+
+        template.posts('test/fixtures/*.txt', ['toTemplate'], function (posts, next) {
+          next(null, posts);
+        }, function doneFn(err) {
+          if (err) return done(err);
+          template.views.posts.should.have.property('test/fixtures/a.txt');
+          done();
+        });
+      });
+
+      it('should use a loader function defined on the create method:', function (done) {
+        var opts = { viewType: 'renderable', loaderType: 'async' };
+
+        template.create('file', opts, glob);
+        template.loader('toTemplate', opts, function (files, next) {
+          async.reduce(files, {}, function (acc, fp, cb) {
+            acc[fp] = {path: fp, content: fs.readFileSync(fp, 'utf8')};
+            cb(null, acc);
+          }, next);
+        });
+
+        template.files('test/fixtures/*.txt', ['toTemplate'], function (files, next) {
+          next(null, files);
+        }, function doneFn(err) {
+          if (err) return done(err);
+          template.views.files.should.have.property('test/fixtures/a.txt');
+          done();
+        });
       });
     });
   });
 
-  describe('promise', function () {
+  describe('promise:', function () {
+    beforeEach(function () {
+      template = new Template();
+    });
+
     it('should use custom promise loaders', function (done) {
       var Promise = require('bluebird');
       var options = { viewType: 'renderable', loaderType: 'promise' };
@@ -113,14 +356,14 @@ describe('template loaders', function () {
         return glob.sync(patterns, opts);
       }));
 
-      template.loader('toTemplate', {type: 'promise'}, Promise.method(function(files) {
+      template.loader('toTemplate', {loaderType: 'promise'}, Promise.method(function(files) {
         return files.reduce(function (acc, fp) {
           acc[fp] = {path: fp, content: fs.readFileSync(fp, 'utf8')};
           return acc;
         }, {});
       }));
 
-      template.loader('data', {type: 'promise'}, Promise.method(function(files) {
+      template.loader('data', {loaderType: 'promise'}, Promise.method(function(files) {
         for (var key in files) {
           if (files.hasOwnProperty(key)) {
             files[key].data = {title: path.basename(key, path.extname(key))};
@@ -140,10 +383,14 @@ describe('template loaders', function () {
     });
   });
 
-  describe('stream', function () {
+  describe('stream:', function () {
+    beforeEach(function () {
+      template = new Template();
+    });
+
     it('should use custom stream loaders', function (done) {
 
-      template.loader('glob', {type: 'stream'}, function() {
+      template.loader('glob', {loaderType: 'stream'}, function() {
         return through.obj(function (pattern, enc, cb) {
           var stream = this;
           glob(pattern, function (err, files) {
@@ -154,7 +401,7 @@ describe('template loaders', function () {
         });
       });
 
-      template.loader('toVinyl', {type: 'stream'}, ['glob'], through.obj(function toVinyl(files, enc, cb) {
+      template.loader('toVinyl', {loaderType: 'stream'}, ['glob'], through.obj(function toVinyl(files, enc, cb) {
         var stream = this;
         files.forEach(function (fp) {
           stream.push(new File({
@@ -165,7 +412,7 @@ describe('template loaders', function () {
         return cb();
       }));
 
-      template.loader('plugin', {type: 'stream'}, through.obj(function plugin(file, enc, cb) {
+      template.loader('plugin', {loaderType: 'stream'}, through.obj(function plugin(file, enc, cb) {
         var str = file.contents.toString();
         file.contents = new Buffer(str.toLowerCase());
         this.push(file);

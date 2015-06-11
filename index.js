@@ -1,12 +1,16 @@
 'use strict';
 
+var util = require('util');
 var isObject = require('isobject');
 var extend = require('extend-shallow');
 var inflect = require('pluralize');
 var flatten = require('arr-flatten');
 var LoaderCache = require('loader-cache');
+var set = require('set-value');
 var Collection = require('./lib/collection');
 var loaders = require('./lib/loaders/last');
+var assert = require('./lib/error/assert');
+var error = require('./lib/error/base');
 var utils = require('./lib/utils');
 
 /**
@@ -17,22 +21,50 @@ var utils = require('./lib/utils');
  */
 function Template(options) {
   this.options = options || {};
-  this.inflection = {};
-  this.loaders = {};
-  this.stack = {};
-
-  this.views = {};
-  this.options.views = {};
 
   this._ = {};
   this._.loaders = {};
   this.iterators = {};
+  this.loaders = {};
+
+  this.options.views = {};
+  this.views = {};
+  this.inflection = {};
+  this.viewTypes = {};
+
+  // error handling
+  this.mixin('assert', assert.bind(this));
+  this.mixin('error', error.bind(this));
 
   this.loaderType('sync');
   this.loaderType('async');
   this.loaderType('promise');
   this.loaderType('stream');
+
+  this.viewType('renderable');
+  this.viewType('layout');
+  this.viewType('partial');
 }
+
+/**
+ * Transforms are run immediately during init, and are used to
+ * extend or modify the `this` object.
+ *
+ * @param {String} `name` The name of the transform to add.
+ * @param {Function} `fn` The actual transform function.
+ * @return {Object} Returns `Template` for chaining.
+ * @api public
+ */
+Template.prototype.transform = function(name, fn) {
+  if (typeof fn === 'function') {
+    this.transforms[name] = fn;
+  } else {
+    fn = name;
+  }
+  this.assert('transform', 'fn', 'function', fn);
+  fn.call(this, this);
+  return this;
+};
 
 /**
  * Private method for registering loader types.
@@ -43,10 +75,21 @@ function Template(options) {
  * @param  {String} `type`
  */
 Template.prototype.loaderType = function(type) {
+  this.assert('loaderType', 'type', 'string', type);
   this.loaders[type] = this.loaders[type] || {};
   this._.loaders[type] = new LoaderCache({
     cache: this.loaders[type],
   });
+};
+
+/**
+ * Register a new view type.
+ *
+ * @param  {String} `name` The name of the view type to create.
+ * @api public
+ */
+Template.prototype.viewType = function(name) {
+  this.viewTypes[name] = [];
 };
 
 /**
@@ -59,6 +102,7 @@ Template.prototype.loaderType = function(type) {
  * @api public
  */
 Template.prototype.loader = function(name, opts, stack) {
+  this.assert('loader', 'name', 'string', name);
   var args = utils.siftArgs.apply(this, [].slice.call(arguments, 1));
   this.getLoaderInstance(args.opts).register(name, args.stack);
   return this;
@@ -86,7 +130,7 @@ Template.prototype.iterator = function(type, fn) {
  */
 Template.prototype.getLoaderInstance = function(type) {
   if (typeof type === 'undefined') {
-    throw new TypeError('Template#getLoaderInstance expects a string or object.');
+    throw this.error('getLoaderInstance', 'expects a string or object.', type);
   }
   if (typeof type === 'string') return this._.loaders[type];
   return this._.loaders[type.loaderType || 'sync'];
@@ -102,6 +146,7 @@ Template.prototype.getLoaderInstance = function(type) {
  * @api public
  */
 Template.prototype.buildStack = function(type, stack) {
+  this.assert('buildStack', 'type', 'string', type);
   if (!stack || stack.length === 0) return [];
   stack = flatten(stack);
   var len = stack.length, i = -1;
@@ -127,6 +172,28 @@ Template.prototype.inflect = function(name) {
 };
 
 /**
+ * Private method for tracking the `subtypes` created for each
+ * template collection type, to make it easier to get/set templates
+ * and pass them properly to registered engines.
+ *
+ * @param {String} `plural` e.g. `pages`
+ * @param {Object} `options`
+ * @api private
+ */
+
+Template.prototype.setViewTypes = function(plural, opts) {
+  var types = utils.arrayify(opts.viewType || 'renderable');
+  var len = types.length, i = 0;
+  while (len--) {
+    var arr = this.viewTypes[types[i++]];
+    if (arr.indexOf(plural) === -1) {
+      arr.push(plural);
+    }
+  }
+  return types;
+};
+
+/**
  * Create a view collection with the given `name`.
  *
  * @param  {String} `name` Singular-form collection name, such as "page" or "post". The plural inflection is automatically created.
@@ -136,11 +203,15 @@ Template.prototype.inflect = function(name) {
  * @api public
  */
 Template.prototype.create = function(singular, options, stack) {
+  this.assert('create', 'singular', 'string', singular);
   var plural = this.inflect(singular);
 
   var args = [].slice.call(arguments, 1);
   var opts = isObject(options) ? args.shift(): {};
+  opts.viewType = this.setViewTypes(plural, opts);
+  this._set(['contexts', 'create', plural], opts);
   this.options.views[plural] = opts;
+
   stack = flatten(args);
 
   this.views[plural] = new Collection(opts, stack);
@@ -158,6 +229,7 @@ Template.prototype.create = function(singular, options, stack) {
  */
 Template.prototype.decorate = function(singular, plural, options, loaders) {
   var opts = extend({}, options, {plural: plural});
+
   var load = function(key, value, locals, options) {
     var filter = utils.filterLoaders();
     var args = filter.apply(filter, arguments);
@@ -171,6 +243,35 @@ Template.prototype.decorate = function(singular, plural, options, loaders) {
   };
   Template.prototype[singular] = load;
   Template.prototype[plural] = load;
+};
+
+/**
+ * Private method for adding a non-enumerable property to Template.
+ *
+ * @param  {String} `name`
+ * @param  {Function} `fn`
+ * @return {Function}
+ * @private
+ */
+Template.prototype.mixin = function(name, fn) {
+  return Object.defineProperty(this, name, {
+    configurable: true,
+    enumerable: false,
+    value: fn
+  });
+};
+
+/**
+ * Private method for setting a value on Template.
+ *
+ * @param  {Array|String} `prop` Object path.
+ * @param  {Object} `val` The value to set.
+ * @private
+ */
+Template.prototype._set = function(prop, val) {
+  prop = utils.arrayify(prop).join('.');
+  set(this, prop, val);
+  return this;
 };
 
 /**

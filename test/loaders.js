@@ -25,6 +25,36 @@ function toTemplateAsync(files, next) {
 }
 
 describe('loaders', function () {
+  describe('errors:', function () {
+    beforeEach(function () {
+      template = new Template();
+    });
+
+    it('create should throw an error when args are invalid:', function () {
+      (function () {
+        template.create();
+      }).should.throw('Template#create: expects singular to be a string.');
+    });
+
+    it('loaderType should throw an error when args are invalid:', function () {
+      (function () {
+        template.loaderType();
+      }).should.throw('Template#loaderType: expects type to be a string.');
+    });
+
+    it('loader should throw an error when args are invalid:', function () {
+      (function () {
+        template.loader();
+      }).should.throw('Template#loader: expects name to be a string.');
+    });
+
+    it('buildStack should throw an error when args are invalid:', function () {
+      (function () {
+        template.buildStack();
+      }).should.throw('Template#buildStack: expects type to be a string.');
+    });
+  });
+
   describe('sync:', function () {
     beforeEach(function () {
       template = new Template();
@@ -218,6 +248,12 @@ describe('loaders', function () {
         var loaders = template.getLoaderInstance('sync');
         loaders.should.have.properties(['cache', 'iterator']);
         loaders.cache.should.have.properties(['a', 'b', 'c']);
+      });
+
+      it('should throw an error when args are invalid:', function () {
+        (function () {
+          template.getLoaderInstance();
+        }).should.throw('Template#getLoaderInstance: expects a string or object.');
       });
     });
 

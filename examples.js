@@ -49,7 +49,7 @@ template.loader('read', function(files) {
 });
 
 // create a view collection
-template.create('page', ['glob', 'read']);
+template.create('include', { viewType: 'partial' }, ['glob', 'read']);
 
 // define sync plugins
 function one(options) {
@@ -66,12 +66,12 @@ function two() {
   }
 }
 
-var foo = template.pages('test/fixtures/*.txt')
+var foo = template.includes('test/fixtures/*.txt')
   .use(one())
   .use(two())
 // console.log(foo)
 
-
+console.log(template)
 /**
  * stream
  */

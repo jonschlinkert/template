@@ -29,14 +29,13 @@
     "glob-stream": "^5.0.0",
     "isobject": "^1.0.0",
     "lazy-cache": "^0.1.0",
-    "lazypipe": "^0.2.3",
     "loader-cache": "^0.4.0",
+    "pick-first": "^0.1.0",
     "pluralize": "^1.1.2",
     "record": "^0.2.0",
     "through2": "^0.6.5"
   },
   "devDependencies": {
-    "engine-lodash": "^0.7.0",
     "lodash": "^3.9.3",
     "mocha": "*",
     "should": "*",

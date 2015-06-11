@@ -5,43 +5,41 @@ var through = require('through2');
 var Template = require('./');
 var template = new Template();
 var glob = require('glob');
+var File = require('vinyl');
 
 /**
- * ssync
+ * async
  */
 
+var opts = { loaderType: 'async' };
+
 // loaders
-template.loader('base', {loaderType: 'async'}, function baseAsync(key, value, next) {
+template.loader('base', opts, function (key, value, next) {
   var results = {};
   results[key] = value;
   next(null, results);
 });
 
 // create a custom view collection
-template.create('page', { loaderType: 'async' }, ['base']);
+template.create('page', opts, ['base']);
 
-template.pages('home', {content: 'this is content...'}, { loaderType: 'async' }, function (err, views) {
+template.pages('home', {content: 'this is content...'}, opts,
+  function (err, views) {
     if (err) console.error(err);
-    console.log('callback', views);
+    console.log('callback', template.views.pages);
   })
-  // .use(function () {
-  //   console.log('use', template.views.pages);
-  // })
 
 
 /**
  * sync
  */
 
-template.loader('base', function baseSync(pattern) {
-  return pattern;
-});
-
-template.loader('glob', function glob_(pattern) {
+// sync loaders
+template.loader('glob', function(pattern) {
   return glob.sync(pattern);
 });
 
-template.loader('read', function read_(files) {
+template.loader('read', function(files) {
   return files.reduce(function (acc, fp) {
     var str = fs.readFileSync(fp, 'utf8');
     var name = path.basename(fp);
@@ -51,61 +49,77 @@ template.loader('read', function read_(files) {
 });
 
 // create a view collection
-template.create('page', ['base']);
+template.create('page', ['glob', 'read']);
 
-// middleware
+// define sync plugins
 function one(options) {
-  return function(pattern) {
-    // console.log('one:', pattern)
-    return pattern;
+  return function(views) {
+    // console.log('one:', views)
+    return views;
   }
 }
 
 function two() {
-  return function(pattern) {
-    // console.log('two:', pattern)
-    return pattern;
+  return function(views) {
+    // console.log('two:', views)
+    return views;
   }
 }
 
-template.pages('test/fixtures/*.txt', ['glob', 'read'])
-  // .src('test/fixtures/*.txt')
-  // .use(one())
-  // .use(two())
-  // .use(template.pages.done())
-
-// console.log('template.views.pages:', template.views.pages)
+var foo = template.pages('test/fixtures/*.txt')
+  .use(one())
+  .use(two())
+// console.log(foo)
 
 
 /**
  * stream
  */
 
+var opts = { loaderType: 'stream' };
+
 // loaders
-template.loader('base', { loaderType: 'stream' }, function baseStream(key, value) {
-  var stream = through.obj();
-  var results = {};
-  results[key] = value;
-  stream.write(results);
-  return stream;
+template.loader('glob', opts, function() {
+  return through.obj(function (pattern, enc, cb) {
+    var stream = this;
+    glob(pattern, function (err, files) {
+      if (err) return cb(err);
+      stream.push(files);
+      return cb();
+    });
+  });
 });
 
-template.pages('home', {content: 'this is content...'}, { loaderType: 'stream' })
+template.loader('toVinyl', opts, ['glob'], through.obj(function toVinyl(files, enc, cb) {
+  var stream = this;
+  files.forEach(function (fp) {
+    stream.push(new File({
+      path: fp,
+      contents: fs.readFileSync(fp)
+    }));
+  });
+  return cb();
+}));
+
+template.loader('plugin', opts, through.obj(function(file, enc, cb) {
+  var str = file.contents.toString();
+  file.contents = new Buffer(str.toLowerCase());
+  this.push(file);
+  return cb();
+}));
+
+// create a template collection
+template.create('doc', { viewType: 'renderable', loaderType: 'stream' });
+
+// load templates with the collection-loader
+template.docs('test/fixtures/*.txt', ['toVinyl', 'plugin'])
   .on('error', console.error)
-  .pipe(through.obj(function(obj, enc, next) {
-    this.push(obj);
-    next();
-  }, function (cb) {
-    // console.log('flush', template.views.pages);
-    cb();
+  .pipe(through.obj(function(file, enc, cb) {
+    console.log(file)
+    this.push(file);
+    return cb();
   }))
   .on('error', console.error)
   .on('data', function () {
-    // console.log('data', template.views.pages);
-  });
-
-
-// template.pages({}, ['foo', 'bar']).src('abc/*.hbs')
-//   .pipe(one())
-//   .pipe(two())
-//   .pipe(template.pages.dest())
+    // console.log(template.views.docs)
+  })

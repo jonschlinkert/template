@@ -9,7 +9,6 @@ var Collection = require('./lib/collection');
 var loaders = require('./lib/loaders/last');
 var utils = require('./lib/utils');
 
-
 /**
  * Create an instance of `Template` with the given `options`.
  *
@@ -166,7 +165,9 @@ Template.prototype.decorate = function(singular, plural, options, loaders) {
     var type = args.opts.loaderType || 'sync';
     var base = this.buildStack(type, loaders);
     args.stack = this.buildStack(type, base.concat(args.stack));
-    return this.views[plural].load(args);
+    var res = this.views[plural].load(args);
+    if (type === 'stream' || type === 'promise') return res;
+    return this.views[plural];
   };
   Template.prototype[singular] = load;
   Template.prototype[plural] = load;

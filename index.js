@@ -10,15 +10,19 @@
 var isObject = require('isobject');
 var extend = require('extend-shallow');
 var inflect = require('pluralize');
+var flatten = require('arr-flatten');
 var LoaderCache = require('loader-cache');
 var Collection = require('./lib/collection');
+var iterators = require('./lib/iterators');
 
 function Template() {
   this.options = {};
   this.inflection = {};
   this.loaders = {};
   this.stack = {};
+
   this.views = {};
+  this.options.views = {};
 
   this._ = {};
   this._.loaders = {};
@@ -29,99 +33,76 @@ function Template() {
   this.loaderType('stream');
 }
 
-Template.prototype.create = function(singular, options, loaders) {
-  this.decorate(singular, this.inflect(singular), options, loaders);
-};
-
-/**
- * Create a getter function that can either returns
- *  - a function that can be called as a function to pass in `options`, or
- *  - can be used as a property that has all of the `Collection` methods and properties on it.
- */
-
-function buildCollection (plural, options) {
-  var collection = null;
-  var getter = function() {
-    if (collection == null) {
-      collection = new Collection(options, this.views[plural]);
-    }
-    function compose(stack, options) {
-      // compose the loader function to use for loading
-      // items onto this collection
-      this.options[plural] = options || {};
-      return collection;
-    };
-    var self = this;
-    var fn = function() {
-      return compose.apply(self, arguments);
-    };
-    fn.__proto__ = collection;
-    return fn;
-  };
-  return getter;
-}
-
-Template.prototype.create = function(subtype, options) {
-  var plural = inflect(subtype);
-  this.views[plural] = this.views[plural] || {};
-
-  // Add a new getter property to `this` to ensure only this instance
-  // is changed.
-  Object.defineProperty(this, plural, {
-    get: buildCollection.call(this, plural, options)
+Template.prototype.loaderType = function(type) {
+  this.loaders[type] = {};
+  this._.loaders[type] = new LoaderCache({
+    cache: this.loaders[type],
   });
 };
 
-Template.prototype.decorate = function(singular, plural, options, loaders) {
-  this.views[plural] = new Collection({name: plural});
+Template.prototype.siftArgs = function(opts, stack) {
+  stack = [].slice.call(arguments);
+  opts = isObject(opts) ? stack.shift(): {};
+  return {opts: opts, stack: flatten(stack)};
+};
+Template.prototype.getLoader = function(opts) {
+  opts = opts || {};
+  opts.type = (opts.type || opts.loaderType) ? opts.type : 'sync';
+  return this._.loaders[opts.type];
+};
 
-  var args = [].slice.call(arguments, 2);
-  var opts = this.options[plural] = isObject(args[0]) ? args.shift() : {};
-  var stack = this.stack[plural] = args.filter(Boolean);
+Template.prototype.loader = function(name, opts, stack) {
+  var args = this.siftArgs.apply(this, [].slice.call(arguments, 1));
+  this.getLoader(args.opts).register(name, args.stack);
+  return this;
+};
+
+Template.prototype.getStack = function(opts, stack) {
+  var args = this.siftArgs.apply(this, arguments);
+  var type = args.opts.type || args.opts.loaderType;
+
+  return args.stack.map(function (loader) {
+    return this.loaders[opts.type][loader];
+  }.bind(this))
+};
+
+Template.prototype.create = function(singular, options, stack) {
+  var plural = this.inflect(singular);
+  if (!isObject(options)) {
+    stack = options;
+    options = {};
+  }
+  options = extend({name: plural}, options);
+  this.views[plural] = new Collection(options, stack);
+  this.decorate(singular, plural, options, stack);
+};
+
+Template.prototype.decorate = function(singular, plural, options, stack) {
+  stack = this.stack[plural] = [];
+  if (arguments.length > 2) {
+    stack = [].slice.call(arguments, 2);
+  }
+
+  var opts = this.options.views[plural] = isObject(stack[0]) ? stack.shift() : {};
   var type = opts.loaderType || 'sync';
-  var load = this.loaders[type];
 
-  // this still isn't right...
-  this.mixin(plural, function(options, stack) {
-    var args = [].slice.call(arguments);
-    var opts = isObject(options) ? args.shift() : {};
+  var load = function(options, loaders) {
+    loaders = [].slice.call(arguments);
+    options = isObject(options) ? loaders.shift() : {};
+    options.type = options.loaderType || type;
 
-    this.views[plural].load(this.compose.apply(this, arguments));
-    return this;
-  });
+    loaders = this.getStack(options, loaders.concat(stack));
+    this.views[plural].createLoader(options, loaders);
+    return this.views[plural];
+  };
 
-  this.mixin(singular, function(options, stack) {
-    this.views[plural].load(this.compose.apply(this, arguments));
-    return this;
-  });
+  // template.pages({}, ['a', 'b', 'c']);
+  this.mixin(plural, load);
+  this.mixin(singular, load);
 };
 
 Template.prototype.inflect = function(name) {
   return this.inflection[name] || (this.inflection[name] = inflect(name));
-};
-
-Template.prototype.loaderType = function(type) {
-  this._.loaders[type] = new LoaderCache({cache: this.loaders[type]});
-};
-
-Template.prototype.filterArgs = function(name) {
-  var args = [].slice.call(arguments, 1);
-  var opts = isObject(args[0]) ? args.shift() : {};
-  return {name: name, opts: opts, stack: args};
-};
-
-Template.prototype.loader = function(opts, stack) {
-  var args = this.filterArgs.apply(this, arguments);
-  var type = args.opts.type || 'sync';
-  console.log(args)
-  return this._.loaders[type].register(args.name, args.stack);
-};
-
-Template.prototype.compose = function(opts, stack) {
-  var args = this.filterArgs.apply(this, arguments);
-  var type = args.opts.type || 'sync';
-  var load = this._.loaders[type]
-  return load.compose.apply(load, arguments);
 };
 
 /**
@@ -139,24 +120,7 @@ Template.prototype.mixin = function(name, fn) {
   });
 };
 
-var template = new Template();
-template.loader('read', {type: 'stream'}, function() {});
-template.loader('glob', {type: 'sync'}, function() {});
-template.loader('github', {type: 'async'}, function() {});
-
-template.create('page', {loaderType: 'stream'});
-template.create('layout', {loaderType: 'promise'});
-template.create('partial', {loaderType: 'async'});
-template.create('include', ['foo', 'bar', 'baz']);
-// template.pages('a', {contents: 'this is contents'});
-// template.pages('b', {contents: 'this is contents'});
-template.pages({}).load();
-template.pages({});
-// template.pages.load()
-console.log(template)
-// console.log(template.pages('a').contents.toString())
-
-// template.pages({}, ['foo', 'bar']).src('abc/*.hbs')
-//   .pipe(one())
-//   .pipe(two())
-//   .pipe(template.pages.dest())
+/**
+ * Expose `Template`
+ */
+module.exports = Template;

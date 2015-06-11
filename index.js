@@ -86,13 +86,17 @@ Template.prototype.decorate = function(singular, plural, options, stack) {
   var opts = this.options.views[plural] = isObject(stack[0]) ? stack.shift() : {};
   var type = opts.loaderType || 'sync';
 
-  var load = function(options, loaders) {
-    loaders = [].slice.call(arguments);
+  var load = function(key, value, locals, options) {
+    var args = [].slice.call(arguments);
+    var loaders = args.slice(2);
+    args = args.slice(0, 2);
+
     options = isObject(options) ? loaders.shift() : {};
     options.type = options.loaderType || type;
 
-    loaders = this.getStack(options, loaders.concat(stack));
-    this.views[plural].createLoader(options, loaders);
+    loaders = this.getStack(options, loaders.concat(stack)).filter(Boolean);
+    var load = this.views[plural].createLoader(options, loaders).load;
+    load.apply(this.views[plural], args);
     return this.views[plural];
   };
 

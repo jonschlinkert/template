@@ -1,9 +1,10 @@
 
-var Template = require('./');
+var fs = require('fs');
+var path = require('path');
 var through = require('through2');
+var Template = require('./');
 var template = new Template();
 var glob = require('glob');
-var fs = require('fs');
 
 
 template.loader('base', {type: 'async'}, function (key, value, next) {
@@ -23,15 +24,16 @@ template.loader('base', {type: 'stream'}, function (key, value) {
 });
 
 template.loader('glob', function(pattern) {
-  console.log('glob', pattern);
+  // console.log('glob', pattern);
   return glob.sync(pattern);
 });
 
 template.loader('read', function(files) {
-  console.log('read', files);
+  // console.log('read', files);
   return files.reduce(function (acc, fp) {
     var str = fs.readFileSync(fp, 'utf8');
-    acc[fp] = {path: fp, content: str};
+    var name = path.basename(fp);
+    acc[name] = {path: fp, content: str};
     return acc;
   }, {});
 });
@@ -49,19 +51,19 @@ template.create('include', {viewType: 'partial'}, ['base']);
 //   })
 
 
-template.pages({ loaderType: 'stream' })
-  .src('home', {content: 'this is content...'})
-  .on('error', console.error)
-  // .on('data', console.log)
-  .pipe(through.obj(function(obj, enc, next) {
-    console.log('through', obj);
-    this.push(obj);
-    next();
-  }, function (cb) {
-    console.log('flush', template.views.pages);
-    cb();
-  }))
-  .on('error', console.error)
+// template.pages('home', {content: 'this is content...'}, { loaderType: 'stream' })
+//   // .src('home', {content: 'this is content...'})
+//   .on('error', console.error)
+//   // .on('data', console.log)
+//   .pipe(through.obj(function(obj, enc, next) {
+//     console.log('through', obj);
+//     this.push(obj);
+//     next();
+//   }, function (cb) {
+//     console.log('flush', template.views.pages);
+//     cb();
+//   }))
+//   .on('error', console.error)
   // .on('data', console.log);
 
 // console.log(template.views)
@@ -73,20 +75,20 @@ template.pages({ loaderType: 'stream' })
 
 function one(options) {
   return function(pattern) {
-    console.log('one:', pattern)
+    // console.log('one:', pattern)
     return pattern;
   }
 }
 
 function two() {
   return function(pattern) {
-    console.log('two:', pattern)
+    // console.log('two:', pattern)
     return pattern;
   }
 }
 
-template.pages({loaderType: 'sync'}, ['glob', 'read'])
-  .src('test/fixtures/*.txt')
+template.pages('test/fixtures/*.txt', {loaderType: 'sync'}, {}, ['glob', 'read'])
+  // .src('test/fixtures/*.txt')
   .use(one())
   .use(two())
   // .use(template.pages.done())

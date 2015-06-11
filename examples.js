@@ -7,7 +7,7 @@ var template = new Template();
 var glob = require('glob');
 
 
-template.loader('base', {type: 'async'}, function (key, value, next) {
+template.loader('base', {type: 'async'}, function baseAsync(key, value, next) {
   setTimeout(function () {
     var results = {};
     results[key] = value;
@@ -15,7 +15,7 @@ template.loader('base', {type: 'async'}, function (key, value, next) {
   }, 300);
 });
 
-template.loader('base', {type: 'stream'}, function (key, value) {
+template.loader('base', {type: 'stream'}, function baseStream(key, value) {
   var stream = through.obj();
   var results = {};
   results[key] = value;
@@ -23,13 +23,15 @@ template.loader('base', {type: 'stream'}, function (key, value) {
   return stream;
 });
 
-template.loader('glob', function(pattern) {
-  // console.log('glob', pattern);
+template.loader('base', function baseSync(pattern) {
+  return pattern;
+});
+
+template.loader('glob', function glob_(pattern) {
   return glob.sync(pattern);
 });
 
-template.loader('read', function(files) {
-  // console.log('read', files);
+template.loader('read', function read_(files) {
   return files.reduce(function (acc, fp) {
     var str = fs.readFileSync(fp, 'utf8');
     var name = path.basename(fp);
@@ -39,7 +41,7 @@ template.loader('read', function(files) {
 });
 
 
-template.create('page');
+template.create('page', ['base']);
 template.create('include', {viewType: 'partial'}, ['base']);
 // template.pages({ loaderType: 'async' })
 //   .src('home', {content: 'this is content...'}, function (err, views) {
@@ -51,22 +53,21 @@ template.create('include', {viewType: 'partial'}, ['base']);
 //   })
 
 
-// template.pages('home', {content: 'this is content...'}, { loaderType: 'stream' })
-//   // .src('home', {content: 'this is content...'})
-//   .on('error', console.error)
-//   // .on('data', console.log)
-//   .pipe(through.obj(function(obj, enc, next) {
-//     console.log('through', obj);
-//     this.push(obj);
-//     next();
-//   }, function (cb) {
-//     console.log('flush', template.views.pages);
-//     cb();
-//   }))
-//   .on('error', console.error)
-  // .on('data', console.log);
+template.page('home', {content: 'this is content...'}, { loaderType: 'stream' })
+  .on('error', console.error)
+  .pipe(through.obj(function(obj, enc, next) {
+    console.log(obj)
+    this.push(obj);
+    next();
+  }, function (cb) {
+    // console.log('flush', template.views.posts);
+    cb();
+  }))
+  .on('error', console.error)
+  .on('data', function () {
+     // console.log('done', template.views.posts)
+  });
 
-// console.log(template.views)
 
 // template.pages({}, ['foo', 'bar']).src('abc/*.hbs')
 //   .pipe(one())
@@ -92,3 +93,5 @@ template.pages('test/fixtures/*.txt', {loaderType: 'sync'}, {}, ['glob', 'read']
   .use(one())
   .use(two())
   // .use(template.pages.done())
+
+console.log('template.views.pages:', template.views.pages)

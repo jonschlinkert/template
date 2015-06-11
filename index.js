@@ -13,7 +13,7 @@ var inflect = require('pluralize');
 var flatten = require('arr-flatten');
 var LoaderCache = require('loader-cache');
 var Collection = require('./lib/collection');
-var iterators = require('./lib/iterators');
+var loaders = require('./lib/loaders/last');
 var utils = require('./lib/utils');
 
 function Template() {
@@ -35,58 +35,62 @@ function Template() {
 }
 
 Template.prototype.loaderType = function(type) {
-  this.loaders[type] = {};
+  this.loaders[type] = this.loaders[type] || {};
   this._.loaders[type] = new LoaderCache({
     cache: this.loaders[type],
   });
 };
 
-Template.prototype.getLoader = function(opts) {
-  opts = opts || {};
-  if (typeof opts.type === 'undefined') {
-    opts.type = opts.loaderType || 'sync';
-  }
-  return this._.loaders[opts.type];
+Template.prototype.getLoaders = function(opts) {
+  if (typeof opts === 'string') opts = {type: opts};
+  var type = opts && (opts.type || opts.loaderType) || 'sync';
+  return this._.loaders[type];
 };
 
+/**
+ * Register a loader.
+ *
+ * @param  {String} `name` Loader name.
+ * @param  {String} `options`
+ * @param  {Array|Function} `stack` One or more loaders.
+ * @return {Object} `Template` for chaining
+ */
 Template.prototype.loader = function(name, opts, stack) {
   var args = utils.siftArgs.apply(this, [].slice.call(arguments, 1));
-  this.getLoader(args.opts).register(name, args.stack);
+  this.getLoaders(args.opts).register(name, args.stack);
   return this;
 };
 
-Template.prototype.getStack = function(opts, stack) {
-  var args = utils.siftArgs.apply(this, arguments);
-  var type = args.opts.type || args.opts.loaderType;
-
-  return args.stack.map(function (loader) {
-    return this.loaders[opts.type][loader];
-  }.bind(this))
+Template.prototype.buildStack = function(type, stack) {
+  return flatten(stack).map(function (name) {
+    return this.loaders[type][name] || name;
+  }.bind(this));
 };
 
 Template.prototype.create = function(singular, options, stack) {
   var plural = this.inflect(singular);
+
   var args = [].slice.call(arguments, 1);
   var opts = isObject(options) ? args.shift(): {};
+  this.options.views[plural] = opts;
   stack = flatten(args);
 
-  this.options.views[plural] = opts;
   this.views[plural] = new Collection(opts, stack);
-  this.stack[plural] = stack;
-
   this.decorate(singular, plural, opts, stack);
+  return this;
 };
 
-Template.prototype.decorate = function(singular, plural, options, stack) {
-  var opts = extend({name: plural}, options);
-  var type = opts.loaderType || 'sync';
+Template.prototype.decorate = function(singular, plural, options, loaders) {
+  var opts = extend({plural: plural}, options);
 
   var load = function(key, value, locals, options) {
-    var filter = utils.filterArgs();
-    var result = filter.apply(filter, arguments);
-    console.log(result)
-    this.views[plural].createLoader.apply(this.views[plural], result.args);
-    return this.views[plural];
+    var filter = utils.filterLoaders(this.loaders[type]);
+    var args = filter.apply(filter, arguments);
+    args.opts = extend({}, opts, args.opts);
+    var type = args.opts.loaderType || 'sync';
+    var base = this.buildStack(type, loaders);
+    args.stack = this.buildStack(type, base.concat(args.stack));
+    return this.views[plural].load(args);
   };
 
   this.mixin(singular, load);

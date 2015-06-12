@@ -36,12 +36,6 @@ describe('loaders', function () {
       }).should.throw('Template#create: expects singular to be a string.');
     });
 
-    it('loaderType should throw an error when args are invalid:', function () {
-      (function () {
-        template.loaderType();
-      }).should.throw('Template#loaderType: expects type to be a string.');
-    });
-
     it('loader should throw an error when args are invalid:', function () {
       (function () {
         template.loader();
@@ -272,7 +266,6 @@ describe('loaders', function () {
     });
 
     describe('.create():', function () {
-
       it('should use an array of registered loaders passed to create:', function (done) {
         var opts = { loaderType: 'async' };
 

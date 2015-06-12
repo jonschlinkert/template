@@ -71,7 +71,7 @@ var foo = template.includes('test/fixtures/*.txt')
   .use(two())
 // console.log(foo)
 
-console.log(template)
+console.log(foo)
 /**
  * stream
  */

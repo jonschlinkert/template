@@ -70,8 +70,8 @@ var foo = template.includes('test/fixtures/*.txt')
   .use(one())
   .use(two())
 // console.log(foo)
-
 console.log(foo)
+
 /**
  * stream
  */

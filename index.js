@@ -51,6 +51,11 @@ extend(Template.prototype, Plasma.prototype);
  */
 
 Template.prototype.initDefaults = function() {
+  // error handling
+  this.mixin('assert', assert.bind(this));
+  this.mixin('error', error.bind(this));
+
+  // config
   this.transforms = {};
   this.dataLoaders = {};
   this.iterators = {};
@@ -71,10 +76,6 @@ Template.prototype.initDefaults = function() {
   this._.loaders = {};
   this._.helpers = {};
   this._.engines = new Engines(this.engines);
-
-  // error handling
-  this.mixin('assert', assert.bind(this));
-  this.mixin('error', error.bind(this));
 };
 
 /**
@@ -82,10 +83,13 @@ Template.prototype.initDefaults = function() {
  */
 
 Template.prototype.initTypes = function() {
+  // iterators
+  this.iterator('sync', require('iterator-sync'));
+  this.iterator('async', require('iterator-async'));
+  this.iterator('promise', require('iterator-promise'));
+  this.iterator('streams', require('iterator-streams'));
   // loader types
-  this.loaderType('sync', {
-    iterator: iterators.sync,
-  });
+  this.loaderType('sync');
   this.loaderType('async');
   this.loaderType('promise');
   this.loaderType('stream');
@@ -127,6 +131,10 @@ Template.prototype.initConfig = function() {
   this.create('partial', { viewType: 'partial' });
   this.create('layout', { viewType: 'layout' });
 
+  // layouts
+  this.option('layoutDelims', ['{%', '%}']);
+  this.option('layoutTag', 'body');
+
   // engines
   this.option('view engine', '*');
   this.disable('debugEngine');
@@ -138,16 +146,11 @@ Template.prototype.initConfig = function() {
   });
 
   // load default helpers and templates
-  this.loader('helpers', loaders.helpers(this));
-
+  this.loader('helpers', { loaderType: 'sync' }, loaders.helpers(this));
   this.loader('default', { loaderType: 'sync' }, loaders.defaults(this).sync);
   this.loader('default', { loaderType: 'async' }, loaders.defaults(this).async);
   this.loader('default', { loaderType: 'promise' }, loaders.defaults(this).promise);
   this.loader('default', { loaderType: 'stream' }, loaders.defaults(this).stream);
-
-  // layouts
-  this.option('layoutDelims', ['{%', '%}']);
-  this.option('layoutTag', 'body');
 };
 
 /**
@@ -168,6 +171,23 @@ Template.prototype.transform = function(name, fn) {
   }
   this.assert('transform', 'fn', 'function', fn);
   fn.call(this, this);
+  return this;
+};
+
+/**
+ * Register an iterator to use with loaders.
+ *
+ * @param {String} `type`
+ * @param {Function} `fn` Iterator function
+ * @api public
+ */
+
+Template.prototype.iterator = function(type, fn) {
+  this.assert('iterator', 'type', 'string', type);
+  this.assert('iterator', 'fn', 'function', fn);
+  if (!this.iterators.hasOwnProperty(type)) {
+    this.iterators[type] = fn;
+  }
   return this;
 };
 
@@ -198,8 +218,10 @@ Template.prototype.helperType = function(type) {
  * Register a context for a view.
  */
 
-Template.prototype.context = function(view, path, val) {
-  return set(view, ['contexts'].concat(utils.arrayify(path)).join('.'), val);
+Template.prototype.context = function(view, prop, val) {
+  if (!isObject(view)) return;
+  var contexts = ['contexts'].concat(utils.arrayify(prop));
+  return set(view, contexts.join('.'), val);
 };
 
 /**
@@ -227,20 +249,6 @@ Template.prototype.loader = function(name, opts, stack) {
   this.assert('loader', 'name', 'string', name);
   var args = utils.siftArgs.apply(this, [].slice.call(arguments, 1));
   this.getLoaderInstance(args.opts).register(name, args.stack);
-  return this;
-};
-
-/**
- * Register an iterator for one of the registered loader types.
- *
- * @param  {String} `name` Iterator name.
- * @param  {Function} `fn` Iterator function.
- * @return {Object} `Template` for chaining
- * @api public
- */
-
-Template.prototype.iterator = function(type, fn) {
-  this.iterators[type] = fn;
   return this;
 };
 
@@ -331,9 +339,7 @@ Template.prototype.setType = function(plural, opts) {
  */
 
 Template.prototype.getViewType = function(type, subtypes) {
-  if (typeof type !== 'string') {
-    throw this.error('getViewType', 'expects a string', arguments);
-  }
+  this.assert('getViewType', 'type', 'string', type);
   var keys = typeof subtypes !== 'undefined'
     ? utils.arrayify(subtypes)
     : this.viewTypes[type];

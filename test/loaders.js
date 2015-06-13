@@ -33,19 +33,19 @@ describe('loaders', function () {
     it('create should throw an error when args are invalid:', function () {
       (function () {
         template.create();
-      }).should.throw('Template#create: expects singular to be a string.');
+      }).should.throw('Template#create: expects singular to be a string');
     });
 
     it('loader should throw an error when args are invalid:', function () {
       (function () {
         template.loader();
-      }).should.throw('Template#loader: expects name to be a string.');
+      }).should.throw('Template#loader: expects name to be a string');
     });
 
     it('buildStack should throw an error when args are invalid:', function () {
       (function () {
         template.buildStack();
-      }).should.throw('Template#buildStack: expects type to be a string.');
+      }).should.throw('Template#buildStack: expects type to be a string');
     });
   });
 

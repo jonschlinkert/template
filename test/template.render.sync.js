@@ -146,7 +146,7 @@ describe('.render() synchronously:', function () {
     it('should throw error when template is not an object', function () {
       (function () {
         template.renderTemplate('foo');
-      }).should.throw('Template#renderTemplate: expects an object: "foo"');
+      }).should.throw('Template#renderTemplate: expects template to be an object: "foo"');
     });
 
     it('should throw error when content is undefined', function () {

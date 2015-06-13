@@ -7,9 +7,9 @@
 
 'use strict';
 
+require('should');
 var fs = require('fs');
 var path = require('path');
-require('should');
 var consolidate = require('consolidate');
 var Template = require('./app');
 var template = new Template();
@@ -197,9 +197,9 @@ describe('template.render()', function () {
   });
 
   describe('error handling and validation', function () {
-    it.only('should throw error when template is not an object', function (done) {
+    it('should throw error when template is not an object', function (done) {
       template.renderTemplate('foo', function (err, content) {
-        // err.should.has.property('message');
+        err.should.has.property('message');
         done();
       });
     });

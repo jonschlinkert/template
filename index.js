@@ -16,9 +16,9 @@ var Loaders = require('loader-cache');
 var Options = require('option-cache');
 var Plasma = require('plasma-cache');
 
+var iterator = require('./lib/iterators');
 var Collection = require('./lib/collection');
 var transforms = require('./lib/transforms');
-var iterators = require('./lib/iterators');
 var loaders = require('./lib/loaders/index.js');
 var assert = require('./lib/error/assert');
 var debug = require('./lib/debug');
@@ -83,20 +83,24 @@ Template.prototype.initDefaults = function() {
  */
 
 Template.prototype.initTypes = function() {
+  console.log(iterator)
   // iterators
-  this.iterator('sync', require('iterator-sync'));
-  this.iterator('async', require('iterator-async'));
-  this.iterator('promise', require('iterator-promise'));
-  this.iterator('streams', require('iterator-streams'));
+  this.iterator('async', iterator.aync);
+  this.iterator('promise', iterator.promise);
+  this.iterator('stream', iterator.stream);
+  this.iterator('sync', iterator.sync);
+
   // loader types
   this.loaderType('sync');
   this.loaderType('async');
   this.loaderType('promise');
   this.loaderType('stream');
+
   // view types
   this.viewType('renderable');
   this.viewType('layout');
   this.viewType('partial');
+
   // helper types
   this.helperType('sync');
   this.helperType('async');
@@ -245,7 +249,7 @@ Template.prototype.viewType = function(name) {
  * @api public
  */
 
-Template.prototype.loader = function(name, opts, stack) {
+Template.prototype.loader = function(name/*, opts, stack*/) {
   this.assert('loader', 'name', 'string', name);
   var args = utils.siftArgs.apply(this, [].slice.call(arguments, 1));
   this.getLoaderInstance(args.opts).register(name, args.stack);
@@ -432,8 +436,8 @@ Template.prototype.decorate = function(singular, plural, options, loaderStack) {
     var res = this.views[plural].load(actualArgs, options, stack);
     if (type === 'stream' || type === 'promise') return res;
 
-    for (var key in res) {
-      this.handle('onLoad', this.views[plural][key], this.handleError('onLoad', {path: key}));
+    for (var prop in res) {
+      this.handle('onLoad', this.views[plural][prop], this.handleError('onLoad', {path: prop}));
     }
     return this.views[plural];
   };
@@ -493,12 +497,11 @@ Template.prototype.validate = function(/*template*/) {
  * @api public
  */
 
-Template.prototype.mergeType = function(type/*, subtypes*/) {
+Template.prototype.mergeType = function(/*type, subtypes*/) {
   var collections = this.getViewType.apply(this, arguments);
   var res = {};
   for (var key in collections) {
     var collection = collections[key];
-
     for (var name in collection) {
       if (!res.hasOwnProperty(name) && collection.hasOwnProperty(name)) {
         res[name] = collection[name];

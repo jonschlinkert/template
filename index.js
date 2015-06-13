@@ -146,7 +146,7 @@ Template.prototype.initConfig = function() {
   });
 
   // load default helpers and templates
-  this.loader('helpers', { loaderType: 'sync' }, loaders.helpers(this));
+  this.loader('helpers', loaders.helpers(this));
   this.loader('default', { loaderType: 'sync' }, loaders.defaults(this).sync);
   this.loader('default', { loaderType: 'async' }, loaders.defaults(this).async);
   this.loader('default', { loaderType: 'promise' }, loaders.defaults(this).promise);

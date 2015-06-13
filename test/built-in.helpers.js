@@ -8,7 +8,7 @@
 'use strict';
 
 var async = require('async');
-var should = require('should');
+require('should');
 var consolidate = require('consolidate');
 var handlebars = require('engine-handlebars');
 var lodash = consolidate.lodash;
@@ -22,6 +22,7 @@ describe('generated helpers:', function () {
   describe('helpers for built-in template types:', function () {
     beforeEach(function () {
       template = new Template();
+      template.enable('frontMatter');
       template.engine(['*', '.md'], require('engine-lodash'));
     });
 
@@ -111,6 +112,7 @@ describe('generated helpers:', function () {
   describe('helper context:', function () {
     beforeEach(function () {
       template = new Template();
+      template.enable('frontMatter');
       template.engine(['*', '.md'], require('engine-lodash'));
     });
 

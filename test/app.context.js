@@ -8,19 +8,22 @@
 'use strict';
 
 /* deps: mocha load-templates handlebars */
-var should = require('should');
-var Template = require('./app');
+require('should');
+var Template = require('..');
 var template;
 
 describe('app context', function() {
   beforeEach(function() {
     template = new Template();
+    template.enable('frontMatter');
+    template.engine('*', require('engine-lodash'));
+    template.create('page', { viewType: 'renderable' });
   });
 
   describe('context:', function () {
     it('should pass data to templates in the `.render()` method:', function (done) {
-      template.data({ abc: 'xyz'});
-      template.page('aaa.md', '<%= abc %>');
+      template.data({ abc: {foo: 'xyz' }});
+      template.page('aaa.md', '<%= abc.foo %>');
 
       template.render('aaa.md', function (err, content) {
         if (err) console.log(err);

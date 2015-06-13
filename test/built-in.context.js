@@ -7,7 +7,7 @@
 
 'use strict';
 
-var should = require('should');
+require('should');
 var Template = require('..');
 var template;
 
@@ -15,6 +15,7 @@ var template;
 describe('template context', function() {
   beforeEach(function() {
     template = new Template();
+    template.enable('frontMatter');
     template.engine('.md', require('engine-lodash'));
   });
 

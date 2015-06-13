@@ -7,7 +7,7 @@
 
 'use strict';
 
-var should = require('should');
+require('should');
 var Template = require('./app');
 var _ = require('lodash');
 var template;
@@ -19,31 +19,29 @@ describe('template create:', function () {
 
   describe('.create():', function () {
     it('should create a new template `subtype`:', function () {
-      template.create('include');
+      template.create('include', { viewType: 'partial' });
       template.should.have.property('include');
     });
 
     it('should create the inflection for a `subtype`:', function () {
-      template.create('include');
+      template.create('include', { viewType: 'partial' });
       template.should.have.property('includes');
     });
 
     it('should add a view collection for a subtype:', function () {
-      template.create('include');
+      template.create('include', { viewType: 'partial' });
       template.views.should.have.property('includes');
     });
   });
 
   describe('override:', function () {
     it('should override default template subtypes:', function () {
-      template.create('page', { isRenderable: true}, ['default',
-        function (file) {
-          _.forOwn(file, function (value, key) {
-            value.zzz = 'yyy';
-          });
-          return file;
-        }
-      ]);
+      template.create('page', { viewType: 'renderable' }, ['default'], function (file) {
+        _.forOwn(file, function (value, key) {
+          value.zzz = 'yyy';
+        });
+        return file;
+      });
       template.page({'foo.md': {path: 'foo.md', content: 'This is content.'}});
       template.should.have.properties('page', 'pages');
       template.views.pages['foo.md'].should.have.property('zzz', 'yyy');
@@ -66,118 +64,116 @@ describe('template create:', function () {
       template.views.should.have.property('apples');
       template.views.apples.should.have.properties('a', 'b', 'c');
     });
+  });
 
-    describe('.decorate()', function () {
+  describe('.decorate()', function () {
+    beforeEach(function () {
+      template = new Template();
+      template.engine('md', require('engine-lodash'));
 
-      /* setup */
+      // create some custom template types
+      template.create('block', { viewType: 'layout' });
+      template.create('include', { viewType: 'partial' });
+      template.create('post', { viewType: 'renderable' });
+      template.create('doc', { viewType: 'renderable' });
 
-      beforeEach(function () {
-        template = new Template();
+      // intentionally create dupes using different renderable types
+      template.page('aaa.md', '<%= name %>', {name: 'Jon Schlinkert'});
+      template.post('aaa.md', '<%= name %>', {name: 'Brian Woodward'});
+      template.docs('aaa.md', '<%= name %>', {name: 'Halle Nicole'});
 
-        // create some custom template types
-        template.create('block', { isLayout: true });
-        template.create('include', { isPartial: true });
-        template.create('post', { isRenderable: true });
-        template.create('doc', { isRenderable: true });
+      template.include('sidebar.md', '<nav>sidebar</nav>');
+      template.block('default.md', 'abc {% body %} xyz');
+    });
 
-        // intentionally create dupes using different renderable types
-        template.page('aaa.md', '<%= name %>', {name: 'Jon Schlinkert'});
-        template.post('aaa.md', '<%= name %>', {name: 'Brian Woodward'});
-        template.docs('aaa.md', '<%= name %>', {name: 'Halle Nicole'});
+    it('should decorate the type with a `get` method:', function () {
+      template.should.have.properties(['getPage', 'getPost', 'getDoc', 'getInclude']);
+    });
 
-        template.include('sidebar.md', '<nav>sidebar</nav>');
-        template.block('default.md', 'abc {% body %} xyz');
-      });
+    it('should decorate the type with a `render` method:', function () {
+      template.should.have.properties(['renderPage', 'renderPost', 'renderDoc']);
+    });
 
-      /* tests */
-
-      it('should decorate the type with a `get` method:', function () {
-        template.should.have.properties(['getPage', 'getPost', 'getDoc', 'getInclude']);
-      });
-
-      it('should decorate the type with a `render` method:', function () {
-        template.should.have.properties(['renderPage', 'renderPost', 'renderDoc']);
-      });
-
-      it('should use a template subtype\'s `render` method to render the template:', function () {
-        template.post('abc.md', {content: 'aaa <%= name %> zzz'});
-        var render = template.renderPost()
-        render('abc.md', {name: 'Halle'}).should.equal('aaa Halle zzz');
-      });
+    it('should use a template subtype\'s `render` method to render the template:', function () {
+      template.post('abc.md', {content: 'aaa <%= name %> zzz'});
+      var rendered = template.renderPost('abc.md', {name: 'Halle'});
+      rendered.should.equal('aaa Halle zzz');
     });
   });
 
-  describe('when the `isRenderable` flag is set on the options:', function () {
-    it('should push the name of the type into the `isRenderable` array:', function () {
-      template.create('apple', { isRenderable: true });
+  describe('when the `renderable` type is defined on the options:', function () {
+    it('should push the name of the type into the `renderable` array:', function () {
+      template.create('apple', { viewType: 'renderable' });
+      template.create('page', { viewType: 'renderable' });
 
-      template.type.renderable.should.containEql('pages');
-      template.type.renderable.should.containEql('apples');
-      template.type.renderable.should.containEql('apples');
+      template.viewTypes.renderable.should.containEql('pages');
+      template.viewTypes.renderable.should.containEql('apples');
+      template.viewTypes.renderable.should.containEql('apples');
     });
   });
 
-  describe('when the `isLayout` flag is set on the options:', function () {
-    it('should push the name of the type into the `isLayout` array:', function () {
-      template.create('orange', { isLayout: true });
+  describe('when the `layout` type is defined on the options:', function () {
+    it('should push the name of the type into the `layout` array:', function () {
+      template.create('orange', { viewType: 'layout' });
+      template.create('layout', { viewType: 'layout' });
 
-      template.type.layout.should.containEql('layouts');
-      template.type.layout.should.containEql('oranges');
+      template.viewTypes.layout.should.containEql('layouts');
+      template.viewTypes.layout.should.containEql('oranges');
     });
   });
 
-  describe('when no type flag is set on the options:', function () {
-    it('should push the name of the type into the `isPartial` array:', function () {
-      template.create('banana');
+  describe('when no type type is defined on the options:', function () {
+    it('should push the name of the type into the `partial` array:', function () {
+      template.create('banana', { viewType: 'partial' });
 
-      template.type.partial.should.containEql('partials');
-      template.type.partial.should.containEql('bananas');
+      template.viewTypes.partial.should.containEql('partials');
+      template.viewTypes.partial.should.containEql('bananas');
     });
   });
 
-  describe('when the `isPartial` flag is set on the options:', function () {
-    it('should push the name of the type into the `isPartial` array:', function () {
-      template.create('banana', { isPartial: true });
+  describe('when the `partial` type is defined on the options:', function () {
+    it('should push the name of the type into the `partial` array:', function () {
+      template.create('banana', { viewType: 'partial' });
 
-      template.type.partial.should.containEql('partials');
-      template.type.partial.should.containEql('bananas');
+      template.viewTypes.partial.should.containEql('partials');
+      template.viewTypes.partial.should.containEql('bananas');
     });
   });
 
-  describe('when both the `isPartial` and the `isLayout` flags are set:', function () {
+  describe('when both the `partial` and the `layout` flags are set:', function () {
     it('should push the type into both arrays:', function () {
-      template.create('banana', { isPartial: true, isLayout: true });
+      template.create('banana', { viewType: ['partial', 'layout'] });
 
-      template.type.partial.should.containEql('bananas');
-      template.type.layout.should.containEql('bananas');
+      template.viewTypes.partial.should.containEql('bananas');
+      template.viewTypes.layout.should.containEql('bananas');
     });
   });
 
-  describe('when both the `isPartial` and the `isRenderable` flags are set:', function () {
+  describe('when both the `partial` and the `renderable` flags are set:', function () {
     it('should push the type into both arrays:', function () {
-      template.create('banana', { isPartial: true, isRenderable: true });
+      template.create('banana', { viewType: ['partial', 'renderable'] });
 
-      template.type.partial.should.containEql('bananas');
-      template.type.renderable.should.containEql('bananas');
+      template.viewTypes.partial.should.containEql('bananas');
+      template.viewTypes.renderable.should.containEql('bananas');
     });
   });
 
-  describe('when both the `isLayout` and the `isRenderable` flags are set:', function () {
+  describe('when both the `layout` and the `renderable` flags are set:', function () {
     it('should push the type into both arrays:', function () {
-      template.create('banana', { isLayout: true, isRenderable: true });
+      template.create('banana', { viewType: ['layout', 'renderable'] });
 
-      template.type.layout.should.containEql('bananas');
-      template.type.renderable.should.containEql('bananas');
+      template.viewTypes.layout.should.containEql('bananas');
+      template.viewTypes.renderable.should.containEql('bananas');
     });
   });
 
   describe('when all three types flags are set:', function () {
     it('should push the type into all three arrays:', function () {
-      template.create('banana', { isPartial: true, isLayout: true, isRenderable: true });
+      template.create('banana', { viewType: ['partial', 'layout', 'renderable'] });
 
-      template.type.layout.should.containEql('bananas');
-      template.type.partial.should.containEql('bananas');
-      template.type.renderable.should.containEql('bananas');
+      template.viewTypes.layout.should.containEql('bananas');
+      template.viewTypes.partial.should.containEql('bananas');
+      template.viewTypes.renderable.should.containEql('bananas');
     });
   });
 });

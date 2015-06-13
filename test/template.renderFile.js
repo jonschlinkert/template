@@ -7,15 +7,15 @@
 
 'use strict';
 
+require('should');
 var assert = require('assert');
-var should = require('should');
 var through = require('through2');
 var isStream = require('is-stream');
 var File = require('vinyl');
 var Template = require('./app');
 var template;
 
-describe('.renderFile', function () {
+describe.skip('.renderFile', function () {
   beforeEach(function () {
     template = new Template();
   });

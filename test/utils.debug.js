@@ -7,7 +7,7 @@
 
 'use strict';
 
-var should = require('should');
+require('should');
 var debug = require('../lib/debug');
 
 // setup a way to capture output

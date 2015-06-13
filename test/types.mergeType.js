@@ -7,7 +7,7 @@
 
 'use strict';
 
-var should = require('should');
+require('should');
 var Template = require('./app');
 var template;
 
@@ -16,10 +16,10 @@ describe('.mergeType():', function () {
     template = new Template();
 
     // create some template subtypes
-    template.create('post', { isRenderable: true });
-    template.create('doc', { isRenderable: true });
-    template.create('block', { isLayout: true });
-    template.create('include', { isPartial: true });
+    template.create('post', { viewType: 'renderable' });
+    template.create('doc', { viewType: 'renderable' });
+    template.create('block', { viewType: 'layout' });
+    template.create('include', { viewType: 'partial' });
 
     // add some templates
     template.post('a', {content: 'a'});

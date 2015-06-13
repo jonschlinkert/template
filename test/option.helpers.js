@@ -7,13 +7,14 @@
 
 'use strict';
 
-var should = require('should');
+require('should');
 var Template = require('./app');
 var template;
 
 describe('.option():', function () {
   beforeEach(function () {
     template = new Template();
+    template.engine('*', require('engine-lodash'));
   });
 
   it('should use helpers on the global options:', function (done) {
@@ -29,14 +30,13 @@ describe('.option():', function () {
     });
     template.page('foo', { path: 'foo', content: 'A: <%= a(bar) %>\nB: <%= b(bar) %>\nC: <%= c(bar) %>\nD: <%= d(bar) %>' });
     template.options.helpers.should.have.properties('a', 'b');
-    template._.helpers.should.have.properties('c', 'd');
+    template._.helpers.sync.should.have.properties('c', 'd');
 
     template.render('foo', { bar: 'this is a message' }, function (err, content) {
       if (err) return done(err);
       content.should.equal('A: a-this is a message-a\nB: b-this is a message-b\nC: c-this is a message-c\nD: d-this is a message-d');
       done();
     });
-
   });
 
   it('should use helpers passed to the render method:', function (done) {
@@ -45,7 +45,7 @@ describe('.option():', function () {
       d: function(str) { return 'd-' + str + '-d'; }
     });
     template.page('foo', { path: 'foo', content: 'A: <%= a(bar) %>\nB: <%= b(bar) %>\nC: <%= c(bar) %>\nD: <%= d(bar) %>' });
-    template._.helpers.should.have.properties('c', 'd');
+    template._.helpers.sync.should.have.properties('c', 'd');
 
     var locals = {
       bar: 'this is a message',
@@ -63,7 +63,7 @@ describe('.option():', function () {
     });
   });
 
-  it('should use local helpers over global helpers:', function (done) {
+  it('should prefer `helpers` defined on `.helpers`:', function (done) {
     template.helpers({
       c: function(str) { return 'c-' + str + '-c'; },
       d: function(str) { return 'd-' + str + '-d'; }
@@ -75,7 +75,7 @@ describe('.option():', function () {
       }
     });
     template.page('foo', { path: 'foo', content: 'A: <%= a(bar) %>\nB: <%= b(bar) %>\nC: <%= c(bar) %>\nD: <%= d(bar) %>' });
-    template._.helpers.should.have.properties('c', 'd');
+    template._.helpers.sync.should.have.properties('c', 'd');
 
     var locals = {
       bar: 'this is a message',

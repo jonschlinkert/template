@@ -7,22 +7,29 @@
 
 'use strict';
 
+require('should');
 var fs = require('fs');
 var path = require('path');
 var assert = require('assert');
-var should = require('should');
 var Template = require('./app');
-var template = new Template();
+var template;
 
 
 describe('app engines', function() {
-  it('should register default engines automatically.', function() {
-    template.engines.should.have.properties(['.*', '.md']);
+  beforeEach(function () {
+    template = new Template();
   });
 
-  it.skip('should disable default engines.', function() {
+  it('should register engines automatically.', function() {
+    template.engine('a', function () {});
+    template.engine('b', function () {});
+    template.engine('c', function () {});
+    template.engines.should.have.properties(['.a', '.b', '.c']);
+  });
+
+  it.skip('should disable  engines.', function() {
     template.disable('default engines');
-    template.engines.should.not.have.properties(['.*', '.md']);
+    template.engines.should.not.have.property('.*');
   });
 });
 

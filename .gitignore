@@ -1,24 +1,15 @@
-# Numerous always-ignore extensions
 *.DS_Store
-npm-debug.log
-
-# Always-ignore dirs
+*.sublime-*
+_gh_pages
 bower_components
 node_modules
-node_modules
-
+npm-debug.log
+actual
+test/actual
 temp
 tmp
-vendor
-staging
-_gh_pages
-_test
-
-# OS or Editor folders
-.komodotools
-*.sublime-*
-
-# misc
 TODO.md
+vendor
+.idea
 benchmark
 coverage

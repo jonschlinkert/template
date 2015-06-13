@@ -8,7 +8,7 @@
 'use strict';
 
 var path = require('path');
-var should = require('should');
+require('should');
 var consolidate = require('consolidate');
 var Template = require('./app');
 var template;

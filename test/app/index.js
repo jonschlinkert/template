@@ -10,6 +10,9 @@ module.exports = App;
 function App(options) {
   Template.call(this, options);
   this._defaultTransforms();
+  this.create('page', { viewType: 'renderable' });
+  this.create('partial', { viewType: 'partial' });
+  this.create('layout', { viewType: 'layout' });
 }
 
 Template.mixin(App.prototype);

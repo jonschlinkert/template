@@ -7,13 +7,14 @@
 
 'use strict';
 
-var should = require('should');
+require('should');
 var Template = require('./app');
 var template;
 
 describe('template layout:', function () {
   beforeEach(function () {
     template = new Template();
+    template.engine('md', require('engine-lodash'));
   });
 
   describe('default template types:', function () {
@@ -97,7 +98,7 @@ describe('template layout:', function () {
 
   describe('custom template types:', function () {
     it('should use layouts with custom template types:', function (done) {
-      template.create('doc', { isRenderable: true });
+      template.create('doc', { viewType: 'renderable' });
 
       template.layout('sidebar', '<nav></nav>\n{% body %}', {layout: 'default'});
       template.layout('default', 'default!\n{% body %}\ndefault!');
@@ -112,7 +113,7 @@ describe('template layout:', function () {
 
       template.render('home', function(err, content) {
         if (err) return done(err);
-        content.should.eql(expected);
+        content.should.equal(expected);
         done();
       });
     });

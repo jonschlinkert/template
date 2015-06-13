@@ -7,11 +7,11 @@
 
 'use strict';
 
-var should = require('should');
+require('should');
 var Template = require('./app');
 var template;
 
-describe('template.validate()', function () {
+describe.skip('template.validate()', function () {
   beforeEach(function () {
     template = new Template();
   });

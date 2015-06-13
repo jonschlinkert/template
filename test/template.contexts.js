@@ -8,7 +8,7 @@
 'use strict';
 
 var assert = require('assert');
-var should = require('should');
+require('should');
 var Template = require('./app');
 var template;
 
@@ -18,11 +18,13 @@ describe('template contexts', function () {
   });
 
   describe('global contexts', function () {
-    it('should store a global context for a subtype', function () {
+    it('should store a global context for a collection', function () {
       template.create('box', {layout: 'foo'});
       template.layout('a', '...');
-      template.contexts.should.have.property('boxes');
-      template.contexts.boxes.should.have.property('layout', 'foo');
+
+      template.contexts.should.have.property('create');
+      template.contexts.create.should.have.property('boxes');
+      template.contexts.create.boxes.should.have.property('layout', 'foo');
     });
   });
 
@@ -43,8 +45,8 @@ describe('template contexts', function () {
     it('should store a `.load` context:', function () {
       template.create('box', {layout: 'foo'});
       template.box('a', '...', {layout: 'bar'});
-      template.views.boxes.a.contexts.should.have.property('load');
-      template.views.boxes.a.contexts.load.should.have.property('layout', 'bar');
+      template.views.boxes.a.contexts.should.have.property('create');
+      template.views.boxes.a.contexts.create.should.have.property('layout', 'foo');
     });
   });
 });

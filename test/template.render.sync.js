@@ -9,19 +9,24 @@
 
 var fs = require('fs');
 var path = require('path');
-var should = require('should');
+require('should');
 var forOwn = require('for-own');
 var engines = require('engines');
 var Template = require('./app');
-var template = new Template();
+var template;
 
 
 describe('.render() synchronously:', function () {
   beforeEach(function () {
     template = new Template();
+    template.engine(['md', '*'], require('engine-lodash'));
   });
 
   describe('when a string is passed to `.render()` without a callback:', function () {
+    beforeEach(function () {
+      template.engine('lodash', require('engine-lodash'));
+    });
+
     it('should render the string with the default engine:', function () {
       template.render('<%= name %>{{ name }}', {name: 'Jon Schlinkert'}).should.equal('Jon Schlinkert{{ name }}');
     });
@@ -48,6 +53,10 @@ describe('.render() synchronously:', function () {
   });
 
   describe('when the name of a cached template is passed to `.render()`:', function () {
+    beforeEach(function () {
+      template.engine('lodash', require('engine-lodash'));
+    });
+
     it('should render the template with the detected engine:', function () {
       template.page('aaa.md', '<%= name %>', {name: 'Jon Schlinkert'});
       template.render('aaa.md').should.equal('Jon Schlinkert');
@@ -60,7 +69,7 @@ describe('.render() synchronously:', function () {
 
     it('should render the first matching template if dupes are found:', function () {
       template.page('aaa.md', '<%= name %>', {name: 'Brian Woodward'});
-      template.create('post', { isRenderable: true });
+      template.create('post', { viewType: 'renderable' });
       template.post('bbb.md', '<%= name %>', {name: 'Jon Schlinkert'});
       template.render('aaa.md').should.equal('Brian Woodward');
     });
@@ -105,14 +114,14 @@ describe('.render() synchronously:', function () {
       });
     });
 
-    it('should use `ext` defined on locals to determine the engine to use:', function () {
+    it('should use `engine` defined on locals to determine the engine to use:', function () {
       template.engine('hbs', engines.handlebars);
       template.engine('swig', engines.swig);
       template.engine('tmpl', engines.lodash);
 
-      template.page('a', '<title>{{author}}</title>', {author: 'Jon Schlinkert', ext: 'hbs'});
-      template.page('b', '<title><%= author %></title>', {author: 'Jon Schlinkert', ext: 'tmpl'});
-      template.page('d', '<title>{{author}}</title>', {author: 'Jon Schlinkert', ext: 'swig'});
+      template.page('a', '<title>{{author}}</title>', {author: 'Jon Schlinkert', engine: 'hbs'});
+      template.page('b', '<title><%= author %></title>', {author: 'Jon Schlinkert', engine: 'tmpl'});
+      template.page('d', '<title>{{author}}</title>', {author: 'Jon Schlinkert', engine: 'swig'});
       forOwn(template.views.pages, function (value, key) {
         template.render(key).should.equal('<title>Jon Schlinkert</title>');
       });
@@ -135,12 +144,9 @@ describe('.render() synchronously:', function () {
 
   describe('error handling and validation', function () {
     it('should throw error when template is not an object', function () {
-      try {
+      (function () {
         template.renderTemplate('foo');
-        throw new Error('Expected an error');
-      } catch (err) {
-        if (!err) throw new Error('Expected an error');
-      }
+      }).should.throw('Template#renderTemplate: expects template to be an object: "foo"');
     });
 
     it('should throw error when content is undefined', function () {

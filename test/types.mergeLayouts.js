@@ -7,7 +7,7 @@
 
 'use strict';
 
-var should = require('should');
+require('should');
 var Template = require('./app');
 var template;
 
@@ -16,11 +16,11 @@ describe('.mergeLayouts():', function () {
     template = new Template();
 
     // create some template subtypes
-    template.create('post', { isRenderable: true });
-    template.create('doc', { isRenderable: true });
-    template.create('block', { isLayout: true });
-    template.create('section', { isLayout: true });
-    template.create('include', { isPartial: true });
+    template.create('post', { viewType: 'renderable' });
+    template.create('doc', { viewType: 'renderable' });
+    template.create('block', { viewType: 'layout' });
+    template.create('section', { viewType: 'layout' });
+    template.create('include', { viewType: 'partial' });
 
     // add some templates
     template.post('a', {content: 'a'});
@@ -88,8 +88,8 @@ describe('.mergeLayouts():', function () {
   describe('custom `mergeLayouts` function:', function () {
     beforeEach(function () {
       template = new Template();
-      template.create('banana', {isLayout: true});
-      template.create('apple', {isLayout: true});
+      template.create('banana', { viewType: 'layout' });
+      template.create('apple', { viewType: 'layout' });
 
       template.apple('aaa', {content: 'this is an apple'});
       template.banana('aaa', {content: 'this is a banana'});
@@ -108,7 +108,7 @@ describe('.mergeLayouts():', function () {
       var res = template.mergeLayouts(function() {
         return this.mergeType('layout', ['bananas', 'apples']);
       });
-      
+
       res.should.have.property('aaa');
       res['aaa'].should.have.property('content', 'this is a banana');
     });
@@ -117,8 +117,8 @@ describe('.mergeLayouts():', function () {
   describe('custom `mergeLayouts` function passed on options:', function () {
     beforeEach(function () {
       template = new Template();
-      template.create('banana', {isLayout: true});
-      template.create('apple', {isLayout: true});
+      template.create('banana', { viewType: 'layout' });
+      template.create('apple', { viewType: 'layout' });
 
       template.apple('aaa', {content: 'this is an apple'});
       template.banana('aaa', {content: 'this is a banana'});

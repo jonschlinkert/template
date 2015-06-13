@@ -9,7 +9,7 @@
 
 var fs = require('fs');
 var path = require('path');
-var should = require('should');
+require('should');
 var consolidate = require('consolidate');
 var Template = require('./app');
 var template = new Template();
@@ -18,6 +18,7 @@ var template = new Template();
 describe('.render() cached templates', function () {
   beforeEach(function (done) {
     template = new Template();
+    template.engine('md', require('engine-lodash'));
     done();
   });
 
@@ -34,7 +35,7 @@ describe('.render() cached templates', function () {
 
     it('should render the first matching template is dupes are found:', function (done) {
       template.page('aaa.md', '<%= name %>', {name: 'Brian Woodward'});
-      template.create('post', { isRenderable: true });
+      template.create('post', { viewType: 'renderable' });
       template.post('aaa.md', '<%= name %>', {name: 'Jon Schlinkert'});
 
       template.render('aaa.md', function (err, content) {

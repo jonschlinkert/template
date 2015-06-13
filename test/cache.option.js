@@ -7,7 +7,7 @@
 
 'use strict';
 
-var should = require('should');
+require('should');
 var Config = require('..');
 var config;
 var _ = require('lodash');

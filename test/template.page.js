@@ -7,15 +7,16 @@
 
 'use strict';
 
+require('should');
 var assert = require('assert');
-var should = require('should');
 var Template = require('./app');
 var template;
-
 
 describe('template page', function () {
   beforeEach(function () {
     template = new Template();
+    template.engine('md', require('engine-lodash'));
+    template.enable('frontMatter');
   });
 
   describe('.page() strings', function () {

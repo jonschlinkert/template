@@ -9,7 +9,7 @@
 
 var fs = require('fs');
 var yaml = require('js-yaml');
-var should = require('should');
+require('should');
 var Template = require('./app');
 var pkg = require('../package');
 var template;
@@ -17,7 +17,7 @@ var template;
 describe('template data', function() {
   beforeEach(function() {
     template = new Template();
-    
+
     template.dataLoader('yml', function(fp) {
       var str = fs.readFileSync(fp, 'utf8');
       return yaml.load(str);

@@ -7,8 +7,8 @@
 
 'use strict';
 
+require('should');
 var async = require('async');
-var should = require('should');
 var consolidate = require('consolidate');
 var handlebars = require('engine-handlebars');
 var lodash = consolidate.lodash;
@@ -23,8 +23,10 @@ describe('built-in helpers:', function () {
   describe('automatically generated helpers for default template types:', function () {
     beforeEach(function () {
       template = new Template();
+      template.engine('md', require('engine-lodash'));
+      template.enable('frontMatter');
     });
-    
+
     it('should use the `partial` helper.', function (done) {
       template.partial('a.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}});
       template.page('b.md', {path: 'b.md', content: 'foo <%= partial("a.md") %> bar'});
@@ -98,6 +100,8 @@ describe('built-in helpers:', function () {
   describe('helper context:', function () {
     beforeEach(function () {
       template = new Template();
+      template.engine('md', require('engine-lodash'));
+      template.enable('frontMatter');
     });
 
     it('should give preference to front-matter over template locals and helper locals.', function (done) {
@@ -178,7 +182,8 @@ describe('built-in helpers:', function () {
       template.page('g.md', {content: '---\nauthor: Brian Woodward\n---\n<title>{{author}}</title>', locals: {author: 'Halle Nicole'}});
       template.page('with-partial.hbs', {path: 'with-partial.hbs', content: '{{{partial "a.hbs" custom.locals}}}'});
 
-      template.render('a.hbs', {custom: {locals: {name: 'Halle Nicole' }}}, function (err, content) {
+      var locals = {custom: {locals: {name: 'Halle Nicole' }}};
+      template.render('a.hbs', locals, function (err, content) {
         if (err) console.log(err);
         content.should.equal('<title>Halle Nicole</title>');
       });

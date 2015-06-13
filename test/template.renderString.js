@@ -9,7 +9,7 @@
 
 var fs = require('fs');
 var path = require('path');
-var should = require('should');
+require('should');
 var consolidate = require('consolidate');
 var Template = require('./app');
 var template = new Template();
@@ -18,12 +18,13 @@ var template = new Template();
 describe('.renderString()', function () {
   beforeEach(function (done) {
     template = new Template();
+    template.engine('md', require('engine-lodash'));
     done();
   });
 
   describe('when the name of a cached template is passed to `.renderString()`:', function () {
     it('should get engine to use from the `ext` property on locals:', function (done) {
-      var locals = {name: 'Halle', ext: '.md'};
+      var locals = {name: 'Halle', engine: '.md'};
       template.renderString('abc <%= name %> xyz', locals, function (err, content) {
         if (err) console.log(err);
         content.should.equal('abc Halle xyz');

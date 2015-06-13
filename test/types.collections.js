@@ -7,51 +7,50 @@
 
 'use strict';
 
-var should = require('should');
+require('should');
 var Template = require('./app');
 var template;
 
-
-describe('template subtypes', function() {
+describe('template collections', function() {
   beforeEach(function() {
     template = new Template();
   });
 
-  it('should have templates of built-in `subtype: pages`:', function () {
+  it('should have templates of built-in collection `pages`:', function () {
     template.page('abc.md', '<%= abc %>');
     template.views.pages.should.be.an.object;
     template.views.pages.should.have.property('abc.md');
   });
 
-  it('should have templates of custom `subtype: posts`:', function () {
-    template.create('post', { isRenderable: true });
+  it('should have templates of custom collection `posts`:', function () {
+    template.create('post', { viewType: 'renderable' });
     template.post('xyz.md', '<%= abc %>');
     template.views.posts.should.be.an.object;
     template.views.posts.should.have.property('xyz.md');
   });
 
-  it('should have templates of built-in `subtype: partials`:', function () {
+  it('should have templates of built-in collection `partials`:', function () {
     template.partial('abc.md', '<%= abc %>');
     template.views.partials.should.be.an.object;
     template.views.partials.should.have.property('abc.md');
   });
 
-  it('should have templates of custom `subtype: includes`:', function () {
-    template.create('include', { isPartial: true });
+  it('should have templates of custom collection `includes`:', function () {
+    template.create('include', { viewType: 'partial' });
     template.include('xyz.md', '<%= abc %>');
 
     template.views.includes.should.be.an.object;
     template.views.includes.should.have.property('xyz.md');
   });
 
-  it('should have templates of built-in `subtype: layouts`:', function () {
+  it('should have templates of built-in collection `layouts`:', function () {
     template.layout('abc.md', '<%= abc %>');
     template.views.layouts.should.be.an.object;
     template.views.layouts.should.have.property('abc.md');
   });
 
-  it('should have templates of custom `subtype: blocks`:', function () {
-    template.create('block', { isLayout: true });
+  it('should have templates of custom collection `blocks`:', function () {
+    template.create('block', { viewType: 'layout' });
     template.block('xyz.md', '<%= abc %>');
 
     template.views.blocks.should.be.an.object;

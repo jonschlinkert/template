@@ -8,7 +8,7 @@
 'use strict';
 
 var assert = require('assert');
-var should = require('should');
+require('should');
 var Template = require('./app');
 var template;
 
@@ -20,7 +20,7 @@ describe('template options', function () {
   it('should store options defined on .create', function () {
     template.create('box', {layout: 'foo'});
     template.layout('a', '...');
-    template.options.subtype.boxes.should.have.property('layout', 'foo');
+    template.contexts.create.boxes.should.have.property('layout', 'foo');
   });
 
   it('should store options defined on `locals.options`', function () {

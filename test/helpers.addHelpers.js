@@ -7,7 +7,7 @@
 
 'use strict';
 
-var should = require('should');
+require('should');
 var Template = require('./app');
 var template;
 
@@ -23,7 +23,7 @@ describe('.helpers():', function () {
       c: function() {},
       d: function() {},
     });
-    template._.helpers.should.have.properties('a', 'b', 'c', 'd');
+    template._.helpers.sync.should.have.properties('a', 'b', 'c', 'd');
   });
 
   it('should register multiple sync helpers from an array:', function () {
@@ -38,12 +38,12 @@ describe('.helpers():', function () {
       {e: function() {}},
       {f: function() {}}
     ]);
-    template._.helpers.should.have.properties('a', 'b', 'c', 'd', 'e', 'f');
+    template._.helpers.sync.should.have.properties('a', 'b', 'c', 'd', 'e', 'f');
   });
 
   it('should register multiple sync helpers from a glob pattern:', function () {
     template.helpers('test/fixtures/helpers/*.js');
-    template._.helpers.should.have.properties('a', 'b', 'c');
+    template._.helpers.sync.should.have.properties('a', 'b', 'c');
   });
 });
 
@@ -59,7 +59,7 @@ describe('.asyncHelpers():', function () {
       c: function() {},
       d: function() {},
     });
-    template._.asyncHelpers.should.have.properties('a', 'b', 'c', 'd');
+    template._.helpers.async.should.have.properties('a', 'b', 'c', 'd');
   });
 
   it('should register multiple async helpers from an array:', function () {
@@ -74,6 +74,6 @@ describe('.asyncHelpers():', function () {
       {e: function() {}},
       {f: function() {}}
     ]);
-    template._.asyncHelpers.should.have.properties('a', 'b', 'c', 'd', 'e', 'f');
+    template._.helpers.async.should.have.properties('a', 'b', 'c', 'd', 'e', 'f');
   });
 });

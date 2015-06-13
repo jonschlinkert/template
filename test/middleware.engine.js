@@ -7,9 +7,9 @@
 
 'use strict';
 
+require('should');
 var fs = require('fs');
 var path = require('path');
-var should = require('should');
 var pretty = require('verb-prettify');
 var utils = require('template-utils')._;
 var Template = require('./app');
@@ -20,6 +20,7 @@ var tokens;
 describe('middleware', function () {
   beforeEach(function () {
     template = new Template();
+    template.engine('*', require('engine-lodash'));
   });
 
   describe('engine', function () {
@@ -36,7 +37,7 @@ describe('middleware', function () {
     });
 
     it('should set `file.engine` using `file.ext`:', function () {
-      var file = utils.toVinyl({path: 'abc.md', content: 'xyz', ext: 'hbs'});
+      var file = utils.toVinyl({path: 'abc.md', content: 'xyz', engine: 'hbs'});
       template.page('a', utils.toTemplate(file));
 
       var tmpl = template.views.pages.a;
@@ -44,30 +45,6 @@ describe('middleware', function () {
         if (err) console.log(err);
         tmpl.should.have.property('engine');
         tmpl.engine.should.equal('.hbs');
-      });
-    });
-
-    it('should move `file.locals.engine` to `file.engine`:', function () {
-      var file = utils.toVinyl({path: 'abc.md', content: 'xyz', ext: 'hbs', locals: {engine: 'swig'}});
-      template.page('b', utils.toTemplate(file));
-
-      var tmpl = template.views.pages.b;
-      template.render(tmpl, function (err, content) {
-        if (err) console.log(err);
-        tmpl.should.have.property('engine');
-        tmpl.engine.should.equal('.swig');
-      });
-    });
-
-    it('should set `file.engine` using `file.engine`:', function () {
-      var file = utils.toVinyl({path: 'abc.md', content: 'xyz', engine: 'swig'});
-      template.page('c', utils.toTemplate(file));
-
-      var tmpl = template.views.pages.c;
-      template.render(tmpl, function (err, content) {
-        if (err) console.log(err);
-        tmpl.should.have.property('engine');
-        tmpl.engine.should.equal('.swig');
       });
     });
   });

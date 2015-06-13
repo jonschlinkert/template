@@ -9,7 +9,7 @@
 
 var fs = require('fs');
 var path = require('path');
-var should = require('should');
+require('should');
 var parser = require('parser-front-matter');
 var cloneDeep = require('clone-deep');
 var Template = require('./app');
@@ -29,7 +29,9 @@ function frontMatter(collection) {
 describe('template front-matter', function () {
   beforeEach(function () {
     template = new Template();
-    template.create('include');
+    template.create('include', { viewType: 'partial' });
+    template.engine('*', require('engine-lodash'));
+    template.enable('frontMatter');
   });
 
   describe('data:', function () {
@@ -67,15 +69,15 @@ describe('template front-matter', function () {
     });
   });
 
-  describe('noread:', function () {
-    it('should not parse front matter when `noread` is defined:', function () {
-      template.page('a', '---\nb: c\n---\nd', {options: {noread: true}});
+  describe('frontMatter:', function () {
+    it('should not parse front matter when `frontMatter` is disabled:', function () {
+      template.page('a', '---\nb: c\n---\nd', {options: {frontMatter: false}});
       template.views.pages.a.should.have.property('data');
       template.views.pages.a.data.should.not.have.property('b');
     });
 
-    it('should not parse front matter when `noread` is defined on `create`:', function () {
-      template.create('doc', {noread: true});
+    it('should not parse front matter when `frontMatter` disabled on `create`:', function () {
+      template.create('doc', {frontMatter: false});
       template.docs('a', '---\nb: c\n---\nd');
       template.views.docs.a.should.have.property('data');
       template.views.docs.a.data.should.not.have.property('b');
@@ -118,7 +120,7 @@ describe('template front-matter', function () {
       });
     });
 
-    describe('data.include:', function () { 
+    describe('data.include:', function () {
       beforeEach(function () {
         template.onLoad(/./, frontMatter('include'));
       });
@@ -162,7 +164,7 @@ describe('template front-matter', function () {
       });
     });
 
-    it.skip('should correctly handle nested contexts:', function (cb) {
+    it('should correctly handle nested contexts:', function (cb) {
       template.data({title: 'zzz'});
 
       template.include('a', '<%= title %>');
@@ -186,8 +188,7 @@ describe('template front-matter', function () {
       template.renderEach('pages', function (err, res) {
         if (err) console.log(err);
 
-        // console.log(res)
-        // content.should.equal('c');
+        console.log(res)
         cb();
       });
     });

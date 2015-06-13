@@ -7,9 +7,9 @@
 
 'use strict';
 
+require('should');
 var fs = require('fs');
 var path = require('path');
-var should = require('should');
 var handlebars = require('engine-handlebars');
 var lodash = require('engine-lodash');
 var Template = require('./app');
@@ -26,8 +26,8 @@ describe('template engine:', function () {
     template.engine('handlebars', handlebars);
     template.engine('lodash', lodash);
 
-    template.create('apple', {engine: 'lodash', isRenderable: true});
-    template.create('orange', {engine: 'handlebars', isRenderable: true});
+    template.create('apple', {engine: 'lodash', viewType: 'renderable' });
+    template.create('orange', {engine: 'handlebars', viewType: 'renderable' });
 
     template.apple('foo', {content: '<<= name >>{{ name }}<%= name %>', name: 'Halle'});
     template.orange('bar', {content: '<<= name >>{{ name }}<%= name %>', name: 'Brooke'});
@@ -48,8 +48,8 @@ describe('template engine:', function () {
     template.engine('handlebars', handlebars);
     template.engine('lodash', lodash);
 
-    template.create('apple', { isRenderable: true });
-    template.create('orange', { isRenderable: true });
+    template.create('apple', { viewType: 'renderable' });
+    template.create('orange', { viewType: 'renderable' });
 
     template.apple('foo', {content: '<<= name >>{{ name }}<%= name %>', locals: {name: 'Halle'}}, {
       engine: 'lodash'

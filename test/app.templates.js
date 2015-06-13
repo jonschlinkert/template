@@ -7,10 +7,9 @@
 
 'use strict';
 
-var should = require('should');
+require('should');
 var Template = require('./app');
 var template = new Template();
-
 
 describe('app.templates:', function () {
   it('should have `partial` and `partials` on the cache.', function () {

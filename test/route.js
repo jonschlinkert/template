@@ -7,11 +7,11 @@
 
 'use strict';
 
+require('should');
 var async = require('async');
 var consolidate = require('consolidate');
 var parser = require('parser-front-matter');
 var forOwn = require('for-own');
-var should = require('should');
 var Template = require('./app');
 var Route = Template.Route;
 var template = null;
@@ -20,9 +20,10 @@ describe('template.route()', function () {
   describe('.handle()', function () {
     beforeEach(function () {
       template = new Template();
+      template.enable('frontMatter');
     });
 
-    it('should do nothing when the router is null', function (done) {
+    it.skip('should do nothing when the router is null', function (done) {
       template.router = null;
       template.handle({}, done);
     });

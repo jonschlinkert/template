@@ -8,7 +8,7 @@
 'use strict';
 
 var assert = require('assert');
-var should = require('should');
+require('should');
 var Template = require('./app');
 var template;
 
@@ -24,14 +24,13 @@ describe('template view', function () {
   });
 
   it('should `.getViews()` custom template types:', function () {
-    template.create('doc', 'docs');
+    template.create('doc');
     template.doc('abc', {content: 'This is a document'});
     template.getDoc('abc').should.be.an.object;
     template.getDoc('abc').should.have.property('content', 'This is a document');
     template.getDoc('abc').should.have.property('path', 'abc');
 
-
-    template.create('include', 'includes');
+    template.create('include', { viewType: 'partial' });
     template.include('xyz', {content: 'This is an include.'});
     template.getInclude('xyz').should.be.an.object;
     template.getInclude('xyz').should.have.property('content', 'This is an include.');

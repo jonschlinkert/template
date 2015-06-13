@@ -7,14 +7,19 @@
 
 'use strict';
 
-var should = require('should');
+require('should');
 var Template = require('./app');
+var template;
 
 describe('layouts:', function () {
   describe('default engine:', function () {
-    it('should use layouts defined as objects', function (done) {
-      var template = new Template();
+    beforeEach(function () {
+      template = new Template();
+      template.engine('md', require('engine-lodash'));
+      template.enable('frontMatter');
+    });
 
+    it('should use layouts defined as objects', function (done) {
       template.layout({a: { layout: 'b', content: 'A above\n{% body %}\nA below' }});
       template.layout({b: { layout: 'c', content: 'B above\n{% body %}\nB below' }});
       template.layout({c: { layout: 'd', content: 'C above\n{% body %}\nC below' }});
@@ -51,8 +56,6 @@ describe('layouts:', function () {
     });
 
     it('should use layouts defined as objects', function (done) {
-      var template = new Template();
-
       template.layout({a: { layout: 'b', content: 'A above\n{% body %}\nA below' }});
       template.layout({b: { layout: 'c', content: 'B above\n{% body %}\nB below' }});
       template.layout({c: { layout: 'd', content: 'C above\n{% body %}\nC below' }});
@@ -89,8 +92,6 @@ describe('layouts:', function () {
     });
 
     it('should use layouts defined as strings:', function (done) {
-      var template = new Template();
-
       template.layout('first', '{% body %}', {layout: 'a'});
       template.layout('a', 'A above\n{% body %}\nA below', {layout: 'b'});
       template.layout('b', 'B above\n{% body %}\nB below', {layout: 'c'});
@@ -124,10 +125,12 @@ describe('layouts:', function () {
   });
 
   describe('default engine:', function () {
-    var template = new Template();
-
-    template.layout('sidebar', {content: '<nav></nav>\n{% body %}', layout: 'default'});
-    template.layout('default', {content: 'default!\n{% body %}\ndefault!'});
+    beforeEach(function () {
+      template = new Template();
+      template.enable('frontMatter');
+      template.layout('sidebar', {content: '<nav></nav>\n{% body %}', layout: 'default'});
+      template.layout('default', {content: 'default!\n{% body %}\ndefault!'});
+    });
 
     it('should use layouts defined as strings:', function (done) {
       var expected = [
@@ -145,16 +148,13 @@ describe('layouts:', function () {
     });
   });
 
-
-  describe.skip('when an `ext` is defined on a template:', function () {
-    it('should use the layout defined regardless of extension:', function () {
-      //
-    });
-  });
-
   describe('option layoutExt', function () {
+    beforeEach(function () {
+      template = new Template();
+      template.enable('frontMatter');
+    });
+
     it('should append layout ext to layout when applying layout stack', function (done) {
-      var template = new Template();
       template.option('layoutExt', 'hbs');
       template.layout('sidebar.hbs', { content: '<nav></nav>\n{% body %}', layout: 'default.hbs' });
       template.layout('default.hbs', { content: 'default!\n{% body %}\ndefault!' });
@@ -177,11 +177,16 @@ describe('layouts:', function () {
 
 
   describe('custom template types:', function () {
-    var template = new Template();
-    template.create('doc', { isRenderable: true });
-    template.layouts('sidebar', { content: '<nav></nav>\n{% body %}', layout: 'default'});
-    template.layouts('default', { content: 'default!\n{% body %}\ndefault!' });
-    template.doc('home', { content: 'This is the home page.', layout: 'sidebar'});
+    beforeEach(function () {
+      template = new Template();
+      template.enable('frontMatter');
+
+      template.create('doc', { viewType: 'renderable' });
+      template.layouts('sidebar', { content: '<nav></nav>\n{% body %}', layout: 'default'});
+      template.layouts('default', { content: 'default!\n{% body %}\ndefault!' });
+      template.doc('home', { content: 'This is the home page.', layout: 'sidebar'});
+    });
+
 
     it('should use layouts defined as strings:', function (done) {
       var expected = [

@@ -10,7 +10,7 @@
 var fs = require('fs');
 var yaml = require('js-yaml');
 var path = require('path');
-var should = require('should');
+require('should');
 var Template = require('./app');
 var template;
 

@@ -8,7 +8,7 @@
 'use strict';
 
 var assert = require('assert');
-var should = require('should');
+require('should');
 var Template = require('./app');
 var template;
 
@@ -17,14 +17,14 @@ describe('.find...():', function () {
     template = new Template();
 
     // create some layout subtypes
-    template.create('block', { isLayout: true });
-    template.create('section', { isLayout: true });
+    template.create('block', { viewType: 'layout' });
+    template.create('section', { viewType: 'layout' });
 
-    template.create('post', { isRenderable: true });
-    template.create('doc', { isRenderable: true });
+    template.create('post', { viewType: 'renderable' });
+    template.create('doc', { viewType: 'renderable' });
 
-    template.create('include', { isPartial: true });
-    template.create('snippet', { isPartial: true });
+    template.create('include', { viewType: 'partial' });
+    template.create('snippet', { viewType: 'partial' });
 
     // register some actual templates, duplicates intentional
     template.page('a', {content: 'i\'m a page'});

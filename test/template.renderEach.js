@@ -8,13 +8,14 @@
 'use strict';
 
 var assert = require('assert');
-var should = require('should');
+require('should');
 var Template = require('./app');
 var template;
 
 describe('.renderEach', function () {
   beforeEach(function () {
     template = new Template();
+    template.engine('md', require('engine-lodash'));
 
     template.layout('default.md', 'bbb{% body %}bbb');
     template.page('a.md', 'This is <%= name %>', {layout: 'default', name: 'AAA'});

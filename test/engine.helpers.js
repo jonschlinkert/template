@@ -7,9 +7,9 @@
 
 'use strict';
 
+require('should');
 var fs = require('fs');
 var path = require('path');
-var should = require('should');
 var Template = require('./app');
 var template
 var consolidate = require('consolidate');
@@ -18,6 +18,7 @@ var consolidate = require('consolidate');
 describe('generic helpers:', function () {
   beforeEach(function () {
     template = new Template();
+    template.engine('md', consolidate.lodash);
   });
 
   describe('generic helpers:', function () {
@@ -25,7 +26,7 @@ describe('generic helpers:', function () {
       template.helper('a', function () {});
       template.helper('b', function () {});
 
-      template._.helpers.should.have.properties(['a', 'b']);
+      template._.helpers.sync.should.have.properties(['a', 'b']);
     });
   });
 

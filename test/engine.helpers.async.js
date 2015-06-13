@@ -7,13 +7,14 @@
 
 'use strict';
 
-var should = require('should');
+require('should');
 var Template = require('./app');
 var template;
 
 describe('.addAsyncHelper():', function () {
   beforeEach(function () {
     template = new Template();
+    template.engine('md', require('engine-lodash'));
   });
 
   it('should register _bound_ async helper functions by default:', function () {
@@ -100,9 +101,9 @@ describe('.addAsyncHelper():', function () {
         next(null, str.toUpperCase());
       });
 
-    template._.asyncHelpers.should.have.properties(['a', 'b']);
-    template._.asyncHelpers.a.async.should.be.true;
-    template._.asyncHelpers.b.async.should.be.true;
+    template._.helpers.async.should.have.properties(['a', 'b']);
+    template._.helpers.async.a.async.should.be.true;
+    template._.helpers.async.b.async.should.be.true;
 
     template.page('foo.md', {content: 'A: <%= a(name) %>\nB: <%= b(name) %>'});
 

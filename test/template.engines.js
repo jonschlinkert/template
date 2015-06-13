@@ -7,17 +7,18 @@
 
 'use strict';
 
+require('should');
 var fs = require('fs');
 var path = require('path');
 var assert = require('assert');
-var should = require('should');
 var Template = require('./app');
-var template = new Template();
+var template;
 
 
 describe('template engine', function() {
   beforeEach(function () {
     template = new Template();
+    template.engine('md', require('engine-lodash'));
   });
 
   describe('.engine()', function() {

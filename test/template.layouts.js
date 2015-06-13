@@ -7,18 +7,20 @@
 
 'use strict';
 
+require('should');
 var path = require('path');
 var assert = require('assert');
-var should = require('should');
 var Template = require('./app');
 var template;
 
 describe('template layout', function () {
-  beforeEach(function () {
-    template = new Template();
-  });
-
   describe('.layouts()', function () {
+    beforeEach(function () {
+      template = new Template();
+      template.engine('md', require('engine-lodash'));
+      template.enable('frontMatter');
+    });
+
     it('should add layouts defined as strings.', function () {
       template.layout('x.md', 'this is a layout');
       template.layout('y.md', 'this is a layout');
@@ -30,7 +32,7 @@ describe('template layout', function () {
 
     it('should add layouts defined as glob patterns.', function () {
       template.layouts(['test/fixtures/layouts/matter/*.md']);
-      template.views.layouts.should.have.property('a.md');
+      template.views.layouts.should.have.property('test/fixtures/layouts/matter/a.md');
     });
 
     it('should use a custom rename function on layout keys:', function () {
@@ -61,7 +63,6 @@ describe('template layout', function () {
       });
 
       template.layouts(['test/fixtures/layouts/matter/*.md']);
-
       template.views.layouts.should.have.property('a.md:string');
       template.views.layouts.should.have.property('b.md:string');
       template.views.layouts.should.have.property('c.md:string');
@@ -69,6 +70,12 @@ describe('template layout', function () {
   });
 
   describe('when a layout has front matter', function () {
+    beforeEach(function () {
+      template = new Template();
+      template.engine('md', require('engine-lodash'));
+      template.enable('frontMatter');
+    });
+
     it('should parse the layout.', function () {
       template.layouts('a.md', '---\nname: AAA\n---\nThis is content.');
       template.views.layouts.should.have.property('a.md');

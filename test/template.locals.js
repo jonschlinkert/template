@@ -7,15 +7,16 @@
 
 'use strict';
 
+require('should');
 var fs = require('fs');
 var path = require('path');
-var should = require('should');
 var Template = require('./app');
-var template = new Template();
+var template;
 
 describe('template locals', function () {
   beforeEach(function () {
     template = new Template();
+    template.engine('md', require('engine-lodash'));
   });
 
   describe('context:', function () {

@@ -7,12 +7,13 @@
 
 'use strict';
 
+require('should');
 var fs = require('fs');
 var path = require('path');
-var should = require('should');
+var assert = require('assert');
 var consolidate = require('consolidate');
 var Template = require('./app');
-var template = new Template();
+var template;
 
 
 describe('template.compile()', function () {
@@ -20,35 +21,41 @@ describe('template.compile()', function () {
 
   beforeEach(function () {
     template = new Template();
+    template.engine('html', require('engine-lodash'));
   });
 
   describe('when an un-cached string is passed to `.compile()`:', function () {
-    it('should detect the engine from `ext` (with dot) on locals:', function () {
-      var fn = template.compile('<%= name %>', {name: 'Jon Schlinkert', ext: '.html'});
-      fn.should.be.a.function;
-      fn({name: 'Jon Schlinkert', ext: '.html'}).should.eql('Jon Schlinkert');
-    });
-
-    it('should detect the engine from `ext` (without dot) on locals:', function () {
-      var fn = template.compile('<%= name %>', {name: 'Jon Schlinkert', ext: 'html'});
-      fn.should.be.a.function;
-      fn({name: 'Jon Schlinkert', ext: 'html'}).should.eql('Jon Schlinkert');
-    });
-
     it('should detect the engine from `engine` (with dot) on locals:', function () {
       var fn = template.compile('<%= name %>', {name: 'Jon Schlinkert', engine: '.html'});
-      fn.should.be.a.function;
+      assert.equal(typeof fn, 'function');
       fn({name: 'Jon Schlinkert', engine: '.html'}).should.eql('Jon Schlinkert');
     });
 
     it('should detect the engine from `engine` (without dot) on locals:', function () {
       var fn = template.compile('<%= name %>', {name: 'Jon Schlinkert', engine: 'html'});
-      fn.should.be.a.function;
+      assert.equal(typeof fn, 'function');
+      fn({name: 'Jon Schlinkert', engine: 'html'}).should.eql('Jon Schlinkert');
+    });
+
+    it('should detect the engine from `engine` (with dot) on locals:', function () {
+      var fn = template.compile('<%= name %>', {name: 'Jon Schlinkert', engine: '.html'});
+      assert.equal(typeof fn, 'function');
+      fn({name: 'Jon Schlinkert', engine: '.html'}).should.eql('Jon Schlinkert');
+    });
+
+    it('should detect the engine from `engine` (without dot) on locals:', function () {
+      var fn = template.compile('<%= name %>', {name: 'Jon Schlinkert', engine: 'html'});
+      assert.equal(typeof fn, 'function');
       fn({name: 'Jon Schlinkert', engine: 'html'}).should.eql('Jon Schlinkert');
     });
   });
 
   describe('when the name of a cached template is passed to `.compile()`:', function () {
+    beforeEach(function () {
+      template = new Template();
+      template.engine('md', require('engine-lodash'));
+    });
+
     it('should find the template and compile it:', function () {
       template.page('aaa.md', '<%= name %>', {name: 'Jon Schlinkert'});
       template.compile('aaa.md')({name: 'Jon Schlinkert'}).should.eql('Jon Schlinkert');
@@ -56,13 +63,18 @@ describe('template.compile()', function () {
 
     it('should compile the first matching template if dupes are found:', function () {
       template.page('aaa.md', 'Page: <%= name %>', {name: 'Brian Woodward'});
-      template.create('post', { isRenderable: true });
+      template.create('post', { viewType: 'renderable' });
       template.post('aaa.md', 'Post: <%= name %>', {name: 'Jon Schlinkert'});
       template.compile('aaa.md')({name: 'Jon Schlinkert'}).should.eql('Page: Jon Schlinkert');
     });
   });
 
   describe('engine compile:', function () {
+    beforeEach(function () {
+      template = new Template();
+      template.engine('md', require('engine-lodash'));
+    });
+
     it('should determine the engine from the `path` on the given object:', function () {
       var file = {path: 'a/b/c.md', content: '<%= name %>', locals: {name: 'Jon Schlinkert'}};
       template.compile(file)({name: 'Jon Schlinkert'}).should.eql('Jon Schlinkert');

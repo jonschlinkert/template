@@ -7,14 +7,19 @@
 
 'use strict';
 
+require('should');
 var fs = require('fs');
 var path = require('path');
-var should = require('should');
 var Template = require('./app');
-var template = new Template();
+var template;
 var consolidate = require('consolidate');
 
 describe('engine render method:', function () {
+  beforeEach(function () {
+    template = new Template();
+    template.engine('md', consolidate.lodash);
+  });
+
   it('should render a file with the specified engine:', function (done) {
     var lodash = template.getEngine('md');
 

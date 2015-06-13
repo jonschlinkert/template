@@ -1,7 +1,6 @@
 'use strict';
 
 // require('time-require');
-var util = require('util');
 var isObject = require('isobject');
 var extend = require('extend-shallow');
 var inflect = require('pluralize');
@@ -50,6 +49,7 @@ extend(Template.prototype, Plasma.prototype);
 /**
  * Initialize template and loader types
  */
+
 Template.prototype.initDefaults = function() {
   this.transforms = {};
   this.dataLoaders = {};
@@ -80,6 +80,7 @@ Template.prototype.initDefaults = function() {
 /**
  * Initialize template and loader types
  */
+
 Template.prototype.initTypes = function() {
   // loader types
   this.loaderType('sync', {
@@ -100,6 +101,7 @@ Template.prototype.initTypes = function() {
 /**
  * Initialize default transforms.
  */
+
 Template.prototype.initTransforms = function() {
   this.transform('engines', transforms.engines);
   this.transform('helpers', transforms.helpers);
@@ -114,6 +116,7 @@ Template.prototype.initTransforms = function() {
 /**
  * Initialize configuration defaults
  */
+
 Template.prototype.initConfig = function() {
   this.enable('default routes');
   this.enable('default helpers');
@@ -156,6 +159,7 @@ Template.prototype.initConfig = function() {
  * @return {Object} Returns `Template` for chaining.
  * @api public
  */
+
 Template.prototype.transform = function(name, fn) {
   if (typeof fn === 'function') {
     this.transforms[name] = fn;
@@ -173,8 +177,8 @@ Template.prototype.transform = function(name, fn) {
  *  | sync
  *  | stream
  *  | promise
- * @param  {String} `type`
  */
+
 Template.prototype.loaderType = function(type, opts) {
   this.loaders[type] = this.loaders[type] || {};
   this._.loaders[type] = new Loaders(extend({
@@ -185,6 +189,7 @@ Template.prototype.loaderType = function(type, opts) {
 /**
  * Private method for registering helper types.
  */
+
 Template.prototype.helperType = function(type) {
   this._.helpers[type] = new Helpers({bind: false});
 };
@@ -192,6 +197,7 @@ Template.prototype.helperType = function(type) {
 /**
  * Register a context for a view.
  */
+
 Template.prototype.context = function(view, path, val) {
   return set(view, ['contexts'].concat(utils.arrayify(path)).join('.'), val);
 };
@@ -202,6 +208,7 @@ Template.prototype.context = function(view, path, val) {
  * @param  {String} `name` The name of the view type to create.
  * @api public
  */
+
 Template.prototype.viewType = function(name) {
   this.viewTypes[name] = [];
 };
@@ -215,6 +222,7 @@ Template.prototype.viewType = function(name) {
  * @return {Object} `Template` for chaining
  * @api public
  */
+
 Template.prototype.loader = function(name, opts, stack) {
   this.assert('loader', 'name', 'string', name);
   var args = utils.siftArgs.apply(this, [].slice.call(arguments, 1));
@@ -230,6 +238,7 @@ Template.prototype.loader = function(name, opts, stack) {
  * @return {Object} `Template` for chaining
  * @api public
  */
+
 Template.prototype.iterator = function(type, fn) {
   this.iterators[type] = fn;
   return this;
@@ -242,6 +251,7 @@ Template.prototype.iterator = function(type, fn) {
  * @return {Object} The loader object
  * @api public
  */
+
 Template.prototype.getLoaderInstance = function(type) {
   if (typeof type === 'undefined') {
     throw this.error('getLoaderInstance', 'expects a string or object.', type);
@@ -259,6 +269,7 @@ Template.prototype.getLoaderInstance = function(type) {
  * @return {Array}
  * @api public
  */
+
 Template.prototype.buildStack = function(type, stack) {
   this.assert('buildStack', 'type', 'string', type);
   if (!stack || stack.length === 0) return [];
@@ -281,6 +292,7 @@ Template.prototype.buildStack = function(type, stack) {
  * @param  {String} `name`
  * @return {String}
  */
+
 Template.prototype.inflect = function(name) {
   return this.inflection[name] || (this.inflection[name] = inflect(name));
 };
@@ -292,6 +304,7 @@ Template.prototype.inflect = function(name) {
  * @param {Object} `options`
  * @api private
  */
+
 Template.prototype.setType = function(plural, opts) {
   this.assert('setType', 'plural', 'string', plural);
   var types = utils.arrayify(opts.viewType || 'renderable');
@@ -316,6 +329,7 @@ Template.prototype.setType = function(plural, opts) {
  * @param {String} `type` Types are `renderable`, `layout` and `partial`.
  * @api public
  */
+
 Template.prototype.getViewType = function(type, subtypes) {
   if (typeof type !== 'string') {
     throw this.error('getViewType', 'expects a string', arguments);
@@ -344,12 +358,13 @@ Template.prototype.getViewType = function(type, subtypes) {
  */
 
 Template.prototype.isViewType = function(type, opts) {
-  opts = opts || {};
-  if (!opts.hasOwnProperty('viewType')) return false;
-  if (!Array.isArray(opts.viewType)) {
+  if (opts && !opts.hasOwnProperty('viewType')) {
+    return false;
+  }
+  if (!Array.isArray(opts && opts.viewType)) {
     throw this.error('isViewType', 'expects options.viewType to be an array', type);
   }
-  return utils.arrayify(opts.viewType).indexOf(type) !== -1;
+  return utils.arrayify(opts && opts.viewType).indexOf(type) !== -1;
 };
 
 /**
@@ -361,6 +376,7 @@ Template.prototype.isViewType = function(type, opts) {
  * @return {Object} `Template` for chaining
  * @api public
  */
+
 Template.prototype.create = function(singular, options, stack) {
   this.assert('create', 'singular', 'string', singular);
   var plural = this.inflect(singular);
@@ -388,6 +404,7 @@ Template.prototype.create = function(singular, options, stack) {
  * @param  {Object} `options`
  * @param  {Arrays|Functions} `loaders`
  */
+
 Template.prototype.decorate = function(singular, plural, options, loaderStack) {
   var opts = extend({}, options, {plural: plural});
 
@@ -452,6 +469,7 @@ Template.prototype.decorate = function(singular, plural, options, loaderStack) {
  * @param  {String} `template` a template object
  * @api public
  */
+
 Template.prototype.validate = function(/*template*/) {
   return validate.apply(validate, arguments);
 };
@@ -468,6 +486,7 @@ Template.prototype.validate = function(/*template*/) {
  * @param {String} `subtypes` Optionally pass an array of view collection names
  * @api public
  */
+
 Template.prototype.mergeType = function(type/*, subtypes*/) {
   var collections = this.getViewType.apply(this, arguments);
   var res = {};
@@ -490,6 +509,7 @@ Template.prototype.mergeType = function(type/*, subtypes*/) {
  * @param {String} `collections` Optionally pass an array of collections
  * @api public
  */
+
 Template.prototype.mergeLayouts = function(fn) {
   debug.template('mergeLayouts', arguments);
 
@@ -533,6 +553,7 @@ Template.prototype.mergeLayouts = function(fn) {
  * @return {Object}
  * @api public
  */
+
 Template.prototype.mergePartials = function(context) {
   debug.template('mergePartials', arguments);
 
@@ -594,6 +615,7 @@ Template.prototype.mergePartials = function(context) {
  * @return {Function}
  * @private
  */
+
 Template.prototype.mixin = function(name, fn) {
   return Object.defineProperty(this, name, {
     configurable: true,
@@ -609,6 +631,7 @@ Template.prototype.mixin = function(name, fn) {
  * @param  {Object} `val` The value to set.
  * @private
  */
+
 Template.prototype._set = function(prop, val) {
   prop = utils.arrayify(prop).join('.');
   set(this, prop, val);
@@ -622,6 +645,7 @@ Template.prototype._set = function(prop, val) {
  * @param {String} `method` name
  * @api private
  */
+
 Template.prototype.handleError = function(method, template) {
   return function (err) {
     if (err) {

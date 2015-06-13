@@ -97,7 +97,7 @@ describe('template layout:', function () {
   });
 
   describe('custom template types:', function () {
-    it('should use layouts with custom template types:', function (done) {
+    it.only('should use layouts with custom template types:', function (done) {
       template.create('doc', { viewType: 'renderable' });
 
       template.layout('sidebar', '<nav></nav>\n{% body %}', {layout: 'default'});

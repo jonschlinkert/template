@@ -34,137 +34,137 @@ describe('template front-matter', function () {
     template.enable('frontMatter');
   });
 
-  // describe('data:', function () {
-  //   it('should add front matter to the `data` property:', function () {
-  //     template.page('a', '---\nb: c\n---\nd');
-  //     template.views.pages.a.should.have.property('data');
-  //     template.views.pages.a.data.should.have.property('b', 'c');
-  //   });
+  describe('data:', function () {
+    it('should add front matter to the `data` property:', function () {
+      template.page('a', '---\nb: c\n---\nd');
+      template.views.pages.a.should.have.property('data');
+      template.views.pages.a.data.should.have.property('b', 'c');
+    });
 
-  //   it('should extend the data object on a template with front matter:', function () {
-  //     template.page('a', {content: '---\nb: c\n---\nd', data: {e: 'f'}});
-  //     template.views.pages.a.should.have.property('data');
-  //     template.views.pages.a.data.should.have.property('b', 'c');
-  //     template.views.pages.a.data.should.have.property('e', 'f');
-  //   });
-  // });
+    it('should extend the data object on a template with front matter:', function () {
+      template.page('a', {content: '---\nb: c\n---\nd', data: {e: 'f'}});
+      template.views.pages.a.should.have.property('data');
+      template.views.pages.a.data.should.have.property('b', 'c');
+      template.views.pages.a.data.should.have.property('e', 'f');
+    });
+  });
 
-  // describe('types:', function () {
-  //   it('should parse front matter on renderable templates:', function () {
-  //     template.page('a', '---\nb: c\n---\nd');
-  //     template.views.pages.a.should.have.property('data');
-  //     template.views.pages.a.data.should.have.property('b', 'c');
-  //   });
+  describe('types:', function () {
+    it('should parse front matter on renderable templates:', function () {
+      template.page('a', '---\nb: c\n---\nd');
+      template.views.pages.a.should.have.property('data');
+      template.views.pages.a.data.should.have.property('b', 'c');
+    });
 
-  //   it('should parse front matter on partial templates:', function () {
-  //     template.partial('a', '---\nb: c\n---\nd');
-  //     template.views.partials.a.should.have.property('data');
-  //     template.views.partials.a.data.should.have.property('b', 'c');
-  //   });
+    it('should parse front matter on partial templates:', function () {
+      template.partial('a', '---\nb: c\n---\nd');
+      template.views.partials.a.should.have.property('data');
+      template.views.partials.a.data.should.have.property('b', 'c');
+    });
 
-  //   it('should parse front matter on layout templates:', function () {
-  //     template.layout('a', '---\nb: c\n---\nd');
-  //     template.views.layouts.a.should.have.property('data');
-  //     template.views.layouts.a.data.should.have.property('b', 'c');
-  //   });
-  // });
+    it('should parse front matter on layout templates:', function () {
+      template.layout('a', '---\nb: c\n---\nd');
+      template.views.layouts.a.should.have.property('data');
+      template.views.layouts.a.data.should.have.property('b', 'c');
+    });
+  });
 
-  // describe('frontMatter:', function () {
-  //   it('should not parse front matter when `frontMatter` is disabled:', function () {
-  //     template.page('a', '---\nb: c\n---\nd', {options: {frontMatter: false}});
-  //     template.views.pages.a.should.have.property('data');
-  //     template.views.pages.a.data.should.not.have.property('b');
-  //   });
+  describe('frontMatter:', function () {
+    it('should not parse front matter when `frontMatter` is disabled:', function () {
+      template.page('a', '---\nb: c\n---\nd', {options: {frontMatter: false}});
+      template.views.pages.a.should.have.property('data');
+      template.views.pages.a.data.should.not.have.property('b');
+    });
 
-  //   it('should not parse front matter when `frontMatter` disabled on `create`:', function () {
-  //     template.create('doc', {frontMatter: false});
-  //     template.docs('a', '---\nb: c\n---\nd');
-  //     template.views.docs.a.should.have.property('data');
-  //     template.views.docs.a.data.should.not.have.property('b');
-  //   });
+    it('should not parse front matter when `frontMatter` disabled on `create`:', function () {
+      template.create('doc', {frontMatter: false});
+      template.docs('a', '---\nb: c\n---\nd');
+      template.views.docs.a.should.have.property('data');
+      template.views.docs.a.data.should.not.have.property('b');
+    });
 
-  //   it('should extend the data object on a template with front matter:', function () {
-  //     template.page('a', {content: '---\nb: c\n---\nd', data: {e: 'f'}});
-  //     template.views.pages.a.should.have.property('data');
-  //     template.views.pages.a.data.should.have.property('b', 'c');
-  //     template.views.pages.a.data.should.have.property('e', 'f');
-  //   });
-  // });
+    it('should extend the data object on a template with front matter:', function () {
+      template.page('a', {content: '---\nb: c\n---\nd', data: {e: 'f'}});
+      template.views.pages.a.should.have.property('data');
+      template.views.pages.a.data.should.have.property('b', 'c');
+      template.views.pages.a.data.should.have.property('e', 'f');
+    });
+  });
 
-  // describe('when custom middleware for parsing front matter:', function () {
-  //   describe('data.page:', function () {
-  //     beforeEach(function () {
-  //       template.onLoad(/./, frontMatter('page'));
-  //     });
+  describe('when custom middleware for parsing front matter:', function () {
+    describe('data.page:', function () {
+      beforeEach(function () {
+        template.onLoad(/./, frontMatter('page'));
+      });
 
-  //     it('should clone `data` to the a `data.page` property of a page:', function () {
-  //       template.page('a', '---\nb: c\n---\nd');
-  //       template.views.pages.a.data.should.have.property('page');
-  //       template.views.pages.a.data.page.should.have.property('b', 'c');
-  //     });
+      it('should clone `data` to the a `data.page` property of a page:', function () {
+        template.page('a', '---\nb: c\n---\nd');
+        template.views.pages.a.data.should.have.property('page');
+        template.views.pages.a.data.page.should.have.property('b', 'c');
+      });
 
-  //     it('should extend the `data.page` object on a template with front matter:', function () {
-  //       template.page('a', {content: '---\nb: c\n---\nd', data: {e: 'f'}});
-  //       template.views.pages.a.data.should.have.property('page');
-  //       template.views.pages.a.data.page.should.have.property('b', 'c');
-  //       template.views.pages.a.data.page.should.have.property('e', 'f');
-  //     });
+      it('should extend the `data.page` object on a template with front matter:', function () {
+        template.page('a', {content: '---\nb: c\n---\nd', data: {e: 'f'}});
+        template.views.pages.a.data.should.have.property('page');
+        template.views.pages.a.data.page.should.have.property('b', 'c');
+        template.views.pages.a.data.page.should.have.property('e', 'f');
+      });
 
-  //     it('should expose `data.page` to templates:', function (cb) {
-  //       template.page('a', '---\nb: c\n---\n<%= page.b %>');
-  //       template.render('a', function (err, content) {
-  //         if (err) console.log(err);
-  //         content.should.equal('c');
-  //         cb();
-  //       });
-  //     });
-  //   });
+      it('should expose `data.page` to templates:', function (cb) {
+        template.page('a', '---\nb: c\n---\n<%= page.b %>');
+        template.render('a', function (err, content) {
+          if (err) console.log(err);
+          content.should.equal('c');
+          cb();
+        });
+      });
+    });
 
-  //   describe('data.include:', function () {
-  //     beforeEach(function () {
-  //       template.onLoad(/./, frontMatter('include'));
-  //     });
+    describe('data.include:', function () {
+      beforeEach(function () {
+        template.onLoad(/./, frontMatter('include'));
+      });
 
-  //     it('should clone `data` to the a `data.include` property of an include:', function () {
-  //       template.include('a', '---\nb: c\n---\nd');
-  //       template.views.includes.a.data.should.have.property('include');
-  //       template.views.includes.a.data.include.should.have.property('b', 'c');
-  //     });
+      it('should clone `data` to the a `data.include` property of an include:', function () {
+        template.include('a', '---\nb: c\n---\nd');
+        template.views.includes.a.data.should.have.property('include');
+        template.views.includes.a.data.include.should.have.property('b', 'c');
+      });
 
-  //     it('should extend the `data.include` object on a template with front matter:', function () {
-  //       template.include('a', {content: '---\nb: c\n---\nd', data: {e: 'f'}});
-  //       template.views.includes.a.data.should.have.property('include');
-  //       template.views.includes.a.data.include.should.have.property('b', 'c');
-  //       template.views.includes.a.data.include.should.have.property('e', 'f');
-  //     });
-  //   });
+      it('should extend the `data.include` object on a template with front matter:', function () {
+        template.include('a', {content: '---\nb: c\n---\nd', data: {e: 'f'}});
+        template.views.includes.a.data.should.have.property('include');
+        template.views.includes.a.data.include.should.have.property('b', 'c');
+        template.views.includes.a.data.include.should.have.property('e', 'f');
+      });
+    });
 
-  //   describe('`data` context:', function () {
-  //     it('should expose `data` to templates:', function (cb) {
-  //       template.page('a', '---\nb: c\n---\n<%= b %>');
-  //       template.render('a', function (err, content) {
-  //         if (err) console.log(err);
-  //         content.should.equal('c');
-  //         cb();
-  //       });
-  //     });
-  //   });
-  // });
+    describe('`data` context:', function () {
+      it('should expose `data` to templates:', function (cb) {
+        template.page('a', '---\nb: c\n---\n<%= b %>');
+        template.render('a', function (err, content) {
+          if (err) console.log(err);
+          content.should.equal('c');
+          cb();
+        });
+      });
+    });
+  });
 
-  // describe('context handling:', function () {
-  //   beforeEach(function () {
-  //     template.onLoad(/./, function (file, next) {
-  //       var collection = file.options.subtype;
+  describe('context handling:', function () {
+    beforeEach(function () {
+      template.onLoad(/./, function (file, next) {
+        var collection = file.options.subtype;
 
-  //       parser.parse(file, function (err) {
-  //         if (err) return next(err);
-  //         file.data[collection] = cloneDeep(file.data);
-  //         next();
-  //       });
-  //     });
-  //   });
+        parser.parse(file, function (err) {
+          if (err) return next(err);
+          file.data[collection] = cloneDeep(file.data);
+          next();
+        });
+      });
+    });
 
-    it.only('should correctly handle nested contexts:', function (cb) {
+    it('should correctly handle nested contexts:', function (cb) {
       template.data({title: 'zzz'});
 
       template.include('a', '<%= title %>');
@@ -192,5 +192,5 @@ describe('template front-matter', function () {
         cb();
       });
     });
-  // });
+  });
 });

@@ -1,5 +1,0 @@
-## Changes
-
-### Templates
-
-- `getType` > `getViewType`

@@ -11,7 +11,8 @@ require('should');
 var fs = require('fs');
 var path = require('path');
 var pretty = require('verb-prettify');
-var utils = require('template-utils')._;
+var toTemplate = require('to-template');
+var toVinyl = require('to-vinyl');
 var Template = require('./app');
 var template;
 var tokens;
@@ -25,8 +26,8 @@ describe('middleware', function () {
 
   describe('engine', function () {
     it('should set `file.engine` using the file extension:', function () {
-      var file = utils.toVinyl({path: 'abc.md', content: 'xyz'});
-      template.page('foo', utils.toTemplate(file));
+      var file = toVinyl({path: 'abc.md', content: 'xyz'});
+      template.page('foo', toTemplate(file));
 
       var tmpl = template.views.pages.foo;
       template.render(tmpl, function (err, content) {
@@ -37,8 +38,8 @@ describe('middleware', function () {
     });
 
     it('should set `file.engine` using `file.ext`:', function () {
-      var file = utils.toVinyl({path: 'abc.md', content: 'xyz', engine: 'hbs'});
-      template.page('a', utils.toTemplate(file));
+      var file = toVinyl({path: 'abc.md', content: 'xyz', engine: 'hbs'});
+      template.page('a', toTemplate(file));
 
       var tmpl = template.views.pages.a;
       template.render(tmpl, function (err, content) {

@@ -16,8 +16,8 @@ var Loaders = require('loader-cache');
 var Options = require('option-cache');
 var Plasma = require('plasma-cache');
 
-var iterator = require('./lib/iterators');
 var Collection = require('./lib/collection');
+var iterators = require('./lib/iterators');
 var transforms = require('./lib/transforms');
 var loaders = require('./lib/loaders/index.js');
 var assert = require('./lib/error/assert');
@@ -83,12 +83,11 @@ Template.prototype.initDefaults = function() {
  */
 
 Template.prototype.initTypes = function() {
-  console.log(iterator)
   // iterators
-  this.iterator('async', iterator.aync);
-  this.iterator('promise', iterator.promise);
-  this.iterator('stream', iterator.stream);
-  this.iterator('sync', iterator.sync);
+  this.iterator('sync', iterators.sync);
+  this.iterator('async', iterators.async);
+  this.iterator('promise', iterators.promise);
+  this.iterator('stream', iterators.stream);
 
   // loader types
   this.loaderType('sync');

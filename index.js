@@ -391,66 +391,6 @@ Template.prototype.create = function(singular, options, stack) {
   return this;
 };
 
-Template.prototype.load = function(plural, opts, loaderStack) {
-  return function(key, value, locals, options) {
-    var args = [].slice.call(arguments);
-    var idx = utils.loadersIndex(args);
-    var actualArgs = idx !== -1 ? args.slice(0, idx) : args;
-    var stack = idx !== -1 ? args.slice(idx) : [];
-    var optsIdx = (idx === -1 ? 1 : (idx - 1));
-    options = utils.isOptions(actualArgs[optsIdx])
-      ? extend({}, opts, actualArgs.pop())
-      : opts;
-
-    var type = options.loaderType || 'sync';
-    var self = this;
-
-    stack = this.buildStack(type, loaderStack.concat(stack));
-    if (stack.length === 0) {
-      stack = this.loaders[type]['default'];
-    }
-    var res = this.views[plural].load(actualArgs, options, stack);
-
-    var handle = function(file, fp) {
-      return this.handle('onLoad', file, this.handleError('onLoad', {path: fp}));
-    }.bind(this);
-
-    if (type === 'promise') {
-      return this._loadPromise(plural, handle, res);
-    }
-    if (type === 'stream') {
-      return this._loadStream(plural, handle, res);
-    }
-    return this._loadSync(plural, handle, res);
-  }
-};
-
-Template.prototype._loadSync = function(plural, handle, obj) {
-  for (var key in obj) {
-    handle(this.views[plural][key], key);
-  }
-  return this.views[plural];
-};
-
-Template.prototype._loadPromise = function(plural, handle, obj) {
-  var app = this;
-  return obj.then(function(templates) {
-    for (var key in templates) {
-      handle(app.views[plural][key], key);
-    }
-    return templates;
-  });
-};
-
-Template.prototype._loadStream = function(plural, handle, obj) {
-  var app = this;
-  return obj.pipe(through.obj(function(file, enc, cb) {
-    handle(file, file.path);
-    this.push(file);
-    return cb()
-  }));
-};
-
 /**
  * Private method for decorating a view collection with convience methods:
  *
@@ -464,12 +404,12 @@ Template.prototype.decorate = function(singular, plural, options, loaderStack) {
   var opts = extend({}, options, {plural: plural});
   var load = this.load(plural, opts, loaderStack);
 
-  this.mixin(singular, load.bind(this));
-  this.mixin(plural, load.bind(this));
+  this.mixin(singular, load);
+  this.mixin(plural, load);
 
   // Add a `get` method to `Template` for `singular`
   this.mixin(utils.methodName('get', singular), function (key) {
-    return this.views[plural][key];
+    return this.lookup(plural, key);
   });
 
   // Add a `render` method to `Template` for `singular`
@@ -492,6 +432,58 @@ Template.prototype.decorate = function(singular, plural, options, loaderStack) {
       this.defaultAsyncHelper(singular, plural);
     }
   }
+};
+
+Template.prototype.load = function(plural, opts, loaderStack) {
+  return function(key, value, locals, options) {
+    var args = [].slice.call(arguments);
+    var idx = utils.loadersIndex(args);
+    var actualArgs = idx !== -1 ? args.slice(0, idx) : args;
+    var stack = idx !== -1 ? args.slice(idx) : [];
+    var optsIdx = (idx === -1 ? 1 : (idx - 1));
+    options = utils.isOptions(actualArgs[optsIdx])
+      ? extend({}, opts, actualArgs.pop())
+      : opts;
+
+    var type = options.loaderType || 'sync';
+    var self = this;
+
+    stack = this.buildStack(type, loaderStack.concat(stack));
+    if (stack.length === 0) {
+      stack = this.loaders[type]['default'];
+    }
+    var templates = this.views[plural].load(actualArgs, options, stack);
+    return this.loadType(type, plural, templates);
+  }
+};
+
+Template.prototype.loadType = function(type, collection, templates) {
+  var handle = function(file, fp) {
+    return this.handle('onLoad', file, this.handleError('onLoad', {path: fp}));
+  }.bind(this);
+
+  var app = this;
+  if (type === 'promise') {
+    return templates.then(function(obj) {
+      for (var key in obj) {
+        handle(app.views[collection][key], key);
+      }
+      return obj;
+    });
+  }
+
+  if (type === 'stream') {
+    return templates.pipe(through.obj(function(file, enc, cb) {
+      handle(file, file.path);
+      this.push(file);
+      return cb()
+    }));
+  }
+
+  for (var key in templates) {
+    handle(this.views[collection][key], key);
+  }
+  return this.views[collection];
 };
 
 /**

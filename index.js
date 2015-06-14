@@ -1,7 +1,10 @@
 'use strict';
 
 // require('time-require');
+var through = require('through2');
 var isObject = require('isobject');
+var typeOf = require('kind-of');
+var merge = require('mixin-deep');
 var extend = require('extend-shallow');
 var inflect = require('pluralize');
 var flatten = require('arr-flatten');
@@ -17,12 +20,12 @@ var Options = require('option-cache');
 var Plasma = require('plasma-cache');
 
 var Collection = require('./lib/collection');
-var iterators = require('./lib/iterators');
-var transforms = require('./lib/transforms');
-var loaders = require('./lib/loaders/index.js');
-var assert = require('./lib/error/assert');
 var debug = require('./lib/debug');
+var assert = require('./lib/error/assert');
 var error = require('./lib/error/base');
+var iterators = require('./lib/iterators');
+var loaders = require('./lib/loaders/index.js');
+var transforms = require('./lib/transforms');
 var utils = require('./lib/utils');
 var validate = require('./lib/validate');
 
@@ -33,9 +36,11 @@ var validate = require('./lib/validate');
  * @api public
  */
 function Template(options) {
-  Config.call(this, this);
+  Config.call(this);
   Options.call(this, options);
-  Plasma.call(this, {plasma: require('plasma')});
+  Plasma.call(this, {
+    plasma: require('plasma')
+  });
   this.initDefaults();
   this.initTypes();
   this.initTransforms();
@@ -358,25 +363,6 @@ Template.prototype.getViewType = function(type, subtypes) {
 };
 
 /**
- * Return true if the specified `viewType` is defined on the
- * given options object.
- *
- * @param  {String} `viewType` The name of the viewType to check.
- * @return {Boolean} Returns true if the `viewType` exists.
- * @api public
- */
-
-Template.prototype.isViewType = function(type, opts) {
-  if (opts && !opts.hasOwnProperty('viewType')) {
-    return false;
-  }
-  if (!Array.isArray(opts && opts.viewType)) {
-    throw this.error('isViewType', 'expects options.viewType to be an array', type);
-  }
-  return utils.arrayify(opts && opts.viewType).indexOf(type) !== -1;
-};
-
-/**
  * Create a view collection with the given `name`.
  *
  * @param  {String} `name` Singular-form collection name, such as "page" or "post". The plural inflection is automatically created.
@@ -405,6 +391,66 @@ Template.prototype.create = function(singular, options, stack) {
   return this;
 };
 
+Template.prototype.load = function(plural, opts, loaderStack) {
+  return function(key, value, locals, options) {
+    var args = [].slice.call(arguments);
+    var idx = utils.loadersIndex(args);
+    var actualArgs = idx !== -1 ? args.slice(0, idx) : args;
+    var stack = idx !== -1 ? args.slice(idx) : [];
+    var optsIdx = (idx === -1 ? 1 : (idx - 1));
+    options = utils.isOptions(actualArgs[optsIdx])
+      ? extend({}, opts, actualArgs.pop())
+      : opts;
+
+    var type = options.loaderType || 'sync';
+    var self = this;
+
+    stack = this.buildStack(type, loaderStack.concat(stack));
+    if (stack.length === 0) {
+      stack = this.loaders[type]['default'];
+    }
+    var res = this.views[plural].load(actualArgs, options, stack);
+
+    var handle = function(file, fp) {
+      return this.handle('onLoad', file, this.handleError('onLoad', {path: fp}));
+    }.bind(this);
+
+    if (type === 'promise') {
+      return this._loadPromise(plural, handle, res);
+    }
+    if (type === 'stream') {
+      return this._loadStream(plural, handle, res);
+    }
+    return this._loadSync(plural, handle, res);
+  }
+};
+
+Template.prototype._loadSync = function(plural, handle, obj) {
+  for (var key in obj) {
+    handle(this.views[plural][key], key);
+  }
+  return this.views[plural];
+};
+
+Template.prototype._loadPromise = function(plural, handle, obj) {
+  var app = this;
+  return obj.then(function(templates) {
+    for (var key in templates) {
+      handle(app.views[plural][key], key);
+    }
+    return templates;
+  });
+};
+
+Template.prototype._loadStream = function(plural, handle, obj) {
+  var app = this;
+  return obj.pipe(through.obj(function(file, enc, cb) {
+    handle(file, file.path);
+    this.push(file);
+    return cb()
+  }));
+};
+
 /**
  * Private method for decorating a view collection with convience methods:
  *
@@ -416,33 +462,10 @@ Template.prototype.create = function(singular, options, stack) {
 
 Template.prototype.decorate = function(singular, plural, options, loaderStack) {
   var opts = extend({}, options, {plural: plural});
+  var load = this.load(plural, opts, loaderStack);
 
-  var load = function(key, value, locals, options) {
-    var args = [].slice.call(arguments);
-    var idx = utils.loadersIndex(args);
-    var actualArgs = idx !== -1 ? args.slice(0, idx) : args;
-    var stack = idx !== -1 ? args.slice(idx) : [];
-    var optsIdx = (idx === -1 ? 1 : (idx - 1));
-    options = utils.isOptions(actualArgs[optsIdx])
-      ? extend({}, opts, actualArgs.pop())
-      : opts;
-
-    var type = options.loaderType || 'sync';
-    stack = this.buildStack(type, loaderStack.concat(stack));
-    if (stack.length === 0) {
-      stack = this.loaders[type]['default'];
-    }
-    var res = this.views[plural].load(actualArgs, options, stack);
-    if (type === 'stream' || type === 'promise') return res;
-
-    for (var prop in res) {
-      this.handle('onLoad', this.views[plural][prop], this.handleError('onLoad', {path: prop}));
-    }
-    return this.views[plural];
-  };
-
-  this.mixin(singular, load);
-  this.mixin(plural, load);
+  this.mixin(singular, load.bind(this));
+  this.mixin(plural, load.bind(this));
 
   // Add a `get` method to `Template` for `singular`
   this.mixin(utils.methodName('get', singular), function (key) {
@@ -456,7 +479,7 @@ Template.prototype.decorate = function(singular, plural, options, loaderStack) {
     return file.render.apply(this, args);
   });
 
-  var isPartial = this.isViewType('partial', opts);
+  var isPartial = (opts.viewType || []).indexOf('partial') !== -1;
 
   // create default helpers
   if (this.enabled('default helpers') && isPartial) {
@@ -572,7 +595,7 @@ Template.prototype.mergePartials = function(context) {
 
   var opts = context.options || {};
   if (mergePartials === true) {
-    opts.partials = cloneDeep()(context.partials || {});
+    opts.partials = cloneDeep(context.partials || {});
   }
 
   var mergeTypeContext = this.mergeTypeContext(this, 'partials');

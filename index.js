@@ -12,12 +12,12 @@ var pickFrom = require('pick-from');
 var cloneDeep = require('clone-deep');
 var set = require('set-value');
 
-var Config = require('config-cache');
-var Engines = require('engine-cache');
-var Helpers = require('helper-cache');
-var Loaders = require('loader-cache');
-var Options = require('option-cache');
-var Plasma = require('plasma-cache');
+var ConfigCache = require('config-cache');
+var EngineCache = require('engine-cache');
+var HelperCache = require('helper-cache');
+var LoaderCache = require('loader-cache');
+var OptionCache = require('option-cache');
+var PlasmaCache = require('plasma-cache');
 
 var Collection = require('./lib/collection');
 var debug = require('./lib/debug');
@@ -36,9 +36,9 @@ var validate = require('./lib/validate');
  * @api public
  */
 function Template(options) {
-  Config.call(this);
-  Options.call(this, options);
-  Plasma.call(this, {
+  ConfigCache.call(this);
+  OptionCache.call(this, options);
+  PlasmaCache.call(this, {
     plasma: require('plasma')
   });
   this.initDefaults();
@@ -47,9 +47,9 @@ function Template(options) {
   this.initConfig();
 }
 
-Config.mixin(Template.prototype);
-extend(Template.prototype, Options.prototype);
-extend(Template.prototype, Plasma.prototype);
+ConfigCache.mixin(Template.prototype);
+extend(Template.prototype, OptionCache.prototype);
+extend(Template.prototype, PlasmaCache.prototype);
 
 /**
  * Initialize template and loader types
@@ -80,7 +80,7 @@ Template.prototype.initDefaults = function() {
   this._ = {};
   this._.loaders = {};
   this._.helpers = {};
-  this._.engines = new Engines(this.engines);
+  this._.engines = new EngineCache(this.engines);
 };
 
 /**
@@ -209,7 +209,7 @@ Template.prototype.iterator = function(type, fn) {
 
 Template.prototype.loaderType = function(type, opts) {
   this.loaders[type] = this.loaders[type] || {};
-  this._.loaders[type] = new Loaders(extend({
+  this._.loaders[type] = new LoaderCache(extend({
     cache: this.loaders[type]
   }, opts));
 };
@@ -219,7 +219,7 @@ Template.prototype.loaderType = function(type, opts) {
  */
 
 Template.prototype.helperType = function(type) {
-  this._.helpers[type] = new Helpers({bind: false});
+  this._.helpers[type] = new HelperCache({bind: false});
 };
 
 /**

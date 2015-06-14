@@ -1,6 +1,7 @@
 'use strict';
 
 // require('time-require');
+
 var isObject = require('isobject');
 var extend = require('extend-shallow');
 var inflect = require('pluralize');

@@ -3,8 +3,6 @@
 // require('time-require');
 var through = require('through2');
 var isObject = require('isobject');
-var typeOf = require('kind-of');
-var merge = require('mixin-deep');
 var extend = require('extend-shallow');
 var inflect = require('pluralize');
 var flatten = require('arr-flatten');
@@ -20,7 +18,6 @@ var OptionCache = require('option-cache');
 var PlasmaCache = require('plasma-cache');
 
 var Collection = require('./lib/collection');
-var debug = require('./lib/debug');
 var assert = require('./lib/error/assert');
 var error = require('./lib/error/base');
 var iterators = require('./lib/iterators');
@@ -75,7 +72,7 @@ Template.prototype.initDefaults = function() {
   this.cache.context = {};
   this.viewTypes = {};
   this.views = {};
-  this.inflection = {};
+  this.inflections = {};
 
   this._ = {};
   this._.loaders = {};
@@ -310,7 +307,7 @@ Template.prototype.buildStack = function(type, stack) {
  */
 
 Template.prototype.inflect = function(name) {
-  return this.inflection[name] || (this.inflection[name] = inflect(name));
+  return this.inflections[name] || (this.inflections[name] = inflect(name));
 };
 
 /**
@@ -400,9 +397,9 @@ Template.prototype.create = function(singular, options, stack) {
  * @param  {Arrays|Functions} `loaders`
  */
 
-Template.prototype.decorate = function(singular, plural, options, loaderStack) {
+Template.prototype.decorate = function(singular, plural, options, stack) {
   var opts = extend({}, options, {plural: plural});
-  var load = this.load(plural, opts, loaderStack);
+  var load = this.load(plural, opts, stack);
 
   this.mixin(singular, load);
   this.mixin(plural, load);
@@ -446,15 +443,13 @@ Template.prototype.load = function(plural, opts, loaderStack) {
       : opts;
 
     var type = options.loaderType || 'sync';
-    var self = this;
-
     stack = this.buildStack(type, loaderStack.concat(stack));
     if (stack.length === 0) {
       stack = this.loaders[type]['default'];
     }
     var templates = this.views[plural].load(actualArgs, options, stack);
     return this.loadType(type, plural, templates);
-  }
+  };
 };
 
 Template.prototype.loadType = function(type, collection, templates) {
@@ -476,7 +471,7 @@ Template.prototype.loadType = function(type, collection, templates) {
     return templates.pipe(through.obj(function(file, enc, cb) {
       handle(file, file.path);
       this.push(file);
-      return cb()
+      return cb();
     }));
   }
 
@@ -496,138 +491,6 @@ Template.prototype.loadType = function(type, collection, templates) {
 
 Template.prototype.validate = function(/*template*/) {
   return validate.apply(validate, arguments);
-};
-
-/**
- * Merge all collections of the given `type` into a single
- * collection. e.g. `partials` and `includes` would be merged.
- *
- * If an array of `collections` is passed, only those collections
- * will be merged and the order in which the collections are defined
- * in the array will be respected.
- *
- * @param {String} `type` The template type to search.
- * @param {String} `subtypes` Optionally pass an array of view collection names
- * @api public
- */
-
-Template.prototype.mergeType = function(/*type, subtypes*/) {
-  var collections = this.getViewType.apply(this, arguments);
-  var res = {};
-  for (var key in collections) {
-    var collection = collections[key];
-    for (var name in collection) {
-      if (!res.hasOwnProperty(name) && collection.hasOwnProperty(name)) {
-        res[name] = collection[name];
-      }
-    }
-  }
-  return res;
-};
-
-/**
- * Merge all `layout` collections based on user-defined options.
- *
- * @param {String} `type` The template type to search.
- * @param {String} `collections` Optionally pass an array of collections
- * @api public
- */
-
-Template.prototype.mergeLayouts = function(fn) {
-  debug.template('mergeLayouts', arguments);
-
-  var custom = this.option('mergeLayouts');
-  if (typeof custom === 'undefined') custom = fn;
-  var layouts = {};
-
-  if (typeof custom === 'function') {
-    return custom.call(this, arguments);
-  }
-
-  if (Array.isArray(custom)) {
-    layouts = this.mergeType('layout', custom);
-  } else if (custom === false) {
-    layouts = this.views.layouts;
-  } else {
-    layouts = this.mergeType('layout');
-  }
-
-  var mergeTypeContext = this.mergeTypeContext(this, 'layouts');
-  for (var key in layouts) {
-    if (layouts.hasOwnProperty(key)) {
-      var value = layouts[key];
-      mergeTypeContext(key, value.locals, value.data);
-    }
-  }
-  return layouts;
-};
-
-/**
- * Default method for determining how partials are to be passed to
- * engines.
- *
- * ```js
- * template.option('mergePartials', function(locals) {
- *   // do stuff
- * });
- * ```
- *
- * @param {Object} `locals` Locals should have layout delimiters, if defined
- * @return {Object}
- * @api public
- */
-
-Template.prototype.mergePartials = function(context) {
-  debug.template('mergePartials', arguments);
-
-  var mergePartials = this.option('mergePartials');
-  if (typeof mergePartials === 'function') {
-    return mergePartials.call(this, context);
-  }
-
-  var opts = context.options || {};
-  if (mergePartials === true) {
-    opts.partials = cloneDeep(context.partials || {});
-  }
-
-  var mergeTypeContext = this.mergeTypeContext(this, 'partials');
-  var arr = this.viewTypes.partial;
-  var len = arr.length, i = 0;
-
-  // loop over each `partial` collection (e.g. `docs`)
-  while (len--) {
-    var plural = arr[i++];
-    // Example `this.views.docs`
-    var collection = this.views[plural];
-
-    // Loop over each partial in the collection
-    for (var key in collection) {
-      if (collection.hasOwnProperty(key)) {
-        var value = collection[key];
-        mergeTypeContext(key, value.locals, value.data);
-
-        // get the globally stored context that we just created
-        // using `mergeTypeContext` for the current partial
-        var layoutOpts = this.cache.typeContext.partials[key];
-        layoutOpts.layoutDelims = pickFrom('layoutDelims', [layoutOpts, opts]);
-
-        // wrap the partial with a layout, if applicable
-        this.applyLayout(value, layoutOpts);
-
-        // If `mergePartials` is true combine all `partial` subtypes
-        if (mergePartials === true) {
-          opts.partials[key] = value.content;
-
-        // Otherwise, each partial subtype on a separate object
-        } else {
-          opts[plural] = opts[plural] || {};
-          opts[plural][key] = value.content;
-        }
-      }
-    }
-  }
-  context.options = extend({}, context.options, opts);
-  return context;
 };
 
 /**

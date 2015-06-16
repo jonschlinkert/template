@@ -123,3 +123,68 @@ template.docs('test/fixtures/*.txt', ['toVinyl', 'plugin'])
   .on('data', function () {
     // console.log(template.views.docs)
   })
+
+
+
+
+// template.loader('a', function(str) {
+//   return str;
+// });
+// template.loader('b', function(str) {
+//   return str;
+// });
+
+
+// template.create('page', ['a', 'b']);
+
+
+// Template.prototype.load = function(options, stack) {
+//   return function () {
+//     var args = [].slice.call(arguments);
+//     var stack = getStack(args);
+//     args = args.slice(0, stack.length);
+//     var loader = getLoader(args.pop());
+//     return loader.apply(this, args);
+//   };
+// };
+
+// function lastLoader(plural) {
+//   return function () {
+//     //=> loader stuff
+//   };
+// };
+
+// Template.prototype.create = function(singular, plural, options, loaders) {
+//   union(plural, options, loaders);
+
+//   mixin(plural, function(key, value, opts, stack) {
+//     union(plural, opts, stack);
+
+//     return fn.apply(this, args);
+//   });
+// };
+
+
+// function union(name, options, stack) {
+//   var opts = extend({loaderType: 'sync'}, options);
+//   this.loaders[opts.loaderType][name] = stack;
+// }
+
+// stack.map(getLoader(type))
+
+// function getLoader(type) {
+//   var stack = this.loaders[type];
+//   return function (val) {
+//     return typeof val === 'string' ? stack[val] : val;
+//   };
+// }
+
+
+
+// template.loader('base', {loaderType: 'sync'}, function() {});
+// template.loader('base', {loaderType: 'async'}, function() {});
+
+// template.create('pages', ['base']);
+
+
+// template.pages('*.hbs', {loaderType: 'async'}, ['base']);

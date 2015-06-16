@@ -1,13 +1,10 @@
 'use strict';
 
 // require('time-require');
-var through = require('through2');
 var isObject = require('isobject');
 var extend = require('extend-shallow');
-var inflect = require('pluralize');
 var flatten = require('arr-flatten');
-var pickFrom = require('pick-from');
-var cloneDeep = require('clone-deep');
+var inflect = require('pluralize');
 var set = require('set-value');
 
 var ConfigCache = require('config-cache');
@@ -21,7 +18,7 @@ var Collection = require('./lib/collection');
 var assert = require('./lib/error/assert');
 var error = require('./lib/error/base');
 var iterators = require('./lib/iterators');
-var loaders = require('./lib/loaders/index.js');
+var loaders = require('./lib/loaders/');
 var transforms = require('./lib/transforms');
 var utils = require('./lib/utils');
 var validate = require('./lib/validate');
@@ -35,12 +32,12 @@ var validate = require('./lib/validate');
 function Template(options) {
   ConfigCache.call(this);
   OptionCache.call(this, options);
-  PlasmaCache.call(this, {
-    plasma: require('plasma')
-  });
+  // PlasmaCache.call(this, {
+  //   plasma: require('plasma')
+  // });
   this.initDefaults();
-  this.initTypes();
   this.initTransforms();
+  this.initLoaders();
   this.initConfig();
 }
 
@@ -56,6 +53,11 @@ Template.prototype.initDefaults = function() {
   // error handling
   this.mixin('assert', assert.bind(this));
   this.mixin('error', error.bind(this));
+
+  this._ = {};
+  this._.helpers = {};
+  this._.loaders = new LoaderCache(this.loaders);
+  this._.engines = new EngineCache(this.engines);
 
   // config
   this.transforms = {};
@@ -74,24 +76,6 @@ Template.prototype.initDefaults = function() {
   this.views = {};
   this.inflections = {};
 
-  this._ = {};
-  this._.loaders = {};
-  this._.helpers = {};
-  this._.engines = new EngineCache(this.engines);
-};
-
-/**
- * Initialize template and loader types
- */
-
-Template.prototype.initTypes = function() {
-  // iterators
-  this.iterator('sync', iterators.sync);
-  this.iterator('async', iterators.async);
-  this.iterator('promise', iterators.promise);
-  this.iterator('stream', iterators.stream);
-
-  // loader types
   this.loaderType('sync');
   this.loaderType('async');
   this.loaderType('promise');
@@ -150,65 +134,35 @@ Template.prototype.initConfig = function() {
     cb(null, str);
   });
 
+};
+
+Template.prototype.initLoaders = function() {
+  var defaults = loaders.defaults(this);
+  // iterators
+  this.iterator('async', iterators.async);
+  this.iterator('promise', iterators.promise);
+  this.iterator('stream', iterators.stream);
+  this.iterator('sync', function() {
+    var args = [].slice.call(arguments);
+    return this.stack.reduce(function (acc, fn) {
+      return fn.apply(this, utils.arrayify(acc));
+    }.bind(this), args);
+  })
+
   // load default helpers and templates
-  this.loader('helpers', loaders.helpers(this));
-  this.loader('default', { loaderType: 'sync' }, loaders.defaults(this).sync);
-  this.loader('default', { loaderType: 'async' }, loaders.defaults(this).async);
-  this.loader('default', { loaderType: 'promise' }, loaders.defaults(this).promise);
-  this.loader('default', { loaderType: 'stream' }, loaders.defaults(this).stream);
+  // this.loader('default', loaders.helpers(this));
+  this.loader('default', { loaderType: 'sync' }, defaults.sync);
+  this.loader('default', { loaderType: 'async' }, defaults.async);
+  this.loader('default', { loaderType: 'promise' }, defaults.promise);
+  this.loader('default', { loaderType: 'stream' }, defaults.stream);
 };
 
-/**
- * Transforms are run immediately during init, and are used to
- * extend or modify the `this` object.
- *
- * @param {String} `name` The name of the transform to add.
- * @param {Function} `fn` The actual transform function.
- * @return {Object} Returns `Template` for chaining.
- * @api public
- */
-
-Template.prototype.transform = function(name, fn) {
-  if (typeof fn === 'function') {
-    this.transforms[name] = fn;
-  } else {
-    fn = name;
-  }
-  this.assert('transform', 'fn', 'function', fn);
-  fn.call(this, this);
-  return this;
-};
-
-/**
- * Register an iterator to use with loaders.
- *
- * @param {String} `type`
- * @param {Function} `fn` Iterator function
- * @api public
- */
-
-Template.prototype.iterator = function(type, fn) {
-  this.assert('iterator', 'type', 'string', type);
-  this.assert('iterator', 'fn', 'function', fn);
-  if (!this.iterators.hasOwnProperty(type)) {
-    this.iterators[type] = fn;
-  }
-  return this;
-};
-
-/**
- * Private method for registering loader types.
- *  | async
- *  | sync
- *  | stream
- *  | promise
- */
-
-Template.prototype.loaderType = function(type, opts) {
-  this.loaders[type] = this.loaders[type] || {};
-  this._.loaders[type] = new LoaderCache(extend({
-    cache: this.loaders[type]
-  }, opts));
+Template.prototype.listen = function() {
+  this.on('option', function(key, val) {
+    if (key === 'helpers' || key.helpers) {
+      this.helpers(key.helpers);
+    }
+  });
 };
 
 /**
@@ -224,78 +178,136 @@ Template.prototype.helperType = function(type) {
  */
 
 Template.prototype.context = function(view, prop, val) {
-  if (!isObject(view)) return;
-  var contexts = ['contexts'].concat(utils.arrayify(prop));
-  return set(view, contexts.join('.'), val);
+  if (isObject(view)) {
+    return this._set(view, ['contexts', prop], val);
+  }
 };
 
 /**
- * Register a new view type.
+ * Transforms are run immediately during init, and are used to
+ * extend or modify the `this` object.
  *
- * @param  {String} `name` The name of the view type to create.
+ * @param {String} `name` The name of the transform to add.
+ * @param {Function} `fn` The actual transform function.
+ * @return {Object} Returns `Template` for chaining.
+ * @api public
+ */
+
+Template.prototype.transform = function(name, fn) {
+  this.assert('transform', 'name', 'string', name);
+  this.assert('transform', 'fn', 'function', fn);
+  this.transforms[name] = fn;
+  fn.call(this, this);
+  return this;
+};
+
+/**
+ * Register an iterator to use with loaders.
+ *
+ * @param {String} `type`
+ * @param {Function} `fn` Iterator function
+ * @api public
+ */
+
+Template.prototype.iterator = function(type, fn) {
+  this.assert('iterator', 'type', 'string', type);
+  this.assert('iterator', 'fn', 'function', fn);
+  this.iterators[type] = fn;
+  return this;
+};
+
+/**
+ * Create a new view type.
+ *
+ * @param  {String} `name`
  * @api public
  */
 
 Template.prototype.viewType = function(name) {
+  if (this.viewTypes.hasOwnProperty(name)) return;
   this.viewTypes[name] = [];
+  return this;
+};
+
+/**
+ * Create a new loader type.
+ *
+ * @param  {String} `name`
+ * @api public
+ */
+
+Template.prototype.loaderType = function(type) {
+  if (this.loaders.hasOwnProperty(type)) return;
+  this.loaders[type] = {};
+  return this;
+};
+
+Template.prototype.getLoader = function(type) {
+  var stack = this.loaders[type];
+  return function (val) {
+    return stack[val] || val;
+  };
 };
 
 /**
  * Register a loader.
  *
- * @param  {String} `name` Loader name.
- * @param  {String} `options` Loaders default to `sync` when a `type` is not passed.
+ * @param  {String} `name`
+ * @param  {String} `options` If `loaderType` is not passed, defaults to `sync`
  * @param  {Array|Function} `stack` Array or list of loader functions or names.
- * @return {Object} `Template` for chaining
  * @api public
  */
 
-Template.prototype.loader = function(name/*, opts, stack*/) {
-  this.assert('loader', 'name', 'string', name);
-  var args = utils.siftArgs.apply(this, [].slice.call(arguments, 1));
-  this.getLoaderInstance(args.opts).register(name, args.stack);
+Template.prototype.loader = function(name, options, stack) {
+  var args = [].slice.call(arguments, 1);
+  var opts = { loaderType: 'sync' };
+  if (isObject(options)) {
+    extend(opts, args.shift());
+  }
+  var type = this.loaders[opts.loaderType];
+  if (!type[name]) {
+    this._set(type, name, args.filter(Boolean));
+  } else {
+    type[name] = union(type[name], args);
+  }
   return this;
 };
 
 /**
- * Get a cached loader instance.
+ * Register a loader.
  *
- * @param  {String|Object} `type` Pass the type or an options object with `loaderType`.
- * @return {Object} The loader object
+ * @param  {String} `name`
+ * @param  {String} `options` If `loaderType` is not passed, defaults to `sync`
+ * @param  {Array|Function} `stack` Array or list of loader functions or names.
  * @api public
  */
 
-Template.prototype.getLoaderInstance = function(type) {
-  if (typeof type === 'undefined') {
-    throw this.error('getLoaderInstance', 'expects a string or object.', type);
+Template.prototype.load = function(options, stack) {
+  var args = union([].slice.call(arguments));
+  var opts = { loaderType: 'sync' };
+  if (isObject(options)) {
+    extend(opts, args.shift());
   }
-  if (typeof type === 'string') return this._.loaders[type];
-  return this._.loaders[type.loaderType || 'sync'];
+
+  var type = opts.loaderType;
+  var iterator = this.iterators[type];
+
+  stack = union(args, opts.last || []).map(this.getLoader(type));
+  this.stack = flatten(stack);
+
+  return function (key, value, options, cb) {
+    return iterator.apply(this, arguments);
+  }.bind(this);
 };
 
-/**
- * Build an array of loader functions from an array that contains a
- * mixture of cached loader names and functions.
- *
- * @param  {String} `type` The loader type: async, sync, promise or stream, used to get cached loaders.
- * @param  {Array} `stack`
- * @return {Array}
- * @api public
- */
-
-Template.prototype.buildStack = function(type, stack) {
-  this.assert('buildStack', 'type', 'string', type);
-  if (!stack || stack.length === 0) return [];
-  stack = flatten(stack);
-  var len = stack.length, i = -1;
-  var res = [];
-  while (i < len) {
-    var name = stack[++i];
-    var cache = this.loaders[type];
-    if (!name) continue;
-    res.push(cache[name] || name);
-  }
-  return flatten(res);
+Template.prototype.loadStream = function(key, value, options, cb) {
+  return this.load({ loaderType: 'stream' }).apply(this, arguments);
+};
+Template.prototype.loadSync = function(key, value, options, cb) {
+  return this.load({ loaderType: 'sync' }).apply(this, arguments);
+};
+Template.prototype.loadAsync = function(key, value, options, cb) {
+  return this.load({ loaderType: 'async' }).apply(this, arguments);
 };
 
 /**
@@ -318,8 +330,8 @@ Template.prototype.inflect = function(name) {
  * @api private
  */
 
-Template.prototype.setType = function(plural, opts) {
-  this.assert('setType', 'plural', 'string', plural);
+Template.prototype.setViewType = function(plural, opts) {
+  this.assert('setViewType', 'plural', 'string', plural);
   var types = utils.arrayify(opts.viewType || 'renderable');
   var len = types.length, i = 0;
   while (len--) {
@@ -371,19 +383,19 @@ Template.prototype.getViewType = function(type, subtypes) {
 
 Template.prototype.create = function(singular, options, stack) {
   this.assert('create', 'singular', 'string', singular);
-  var plural = this.inflect(singular);
 
+  var plural = this.inflect(singular);
   var args = [].slice.call(arguments, 1);
   var opts = isObject(options) ? args.shift(): {};
-  opts.viewType = this.setType(plural, opts);
+
+  opts.viewType = this.setViewType(plural, opts);
   opts.inflection = singular;
-  opts.collection = plural;
 
   this.options.views[plural] = opts;
   this.contexts.create[plural] = opts;
-  stack = flatten(args);
+  stack = [].concat.apply([], args);
 
-  this.views[plural] = new Collection(opts, stack);
+  this.views[plural] = new Collection(opts);
   this.decorate(singular, plural, opts, stack);
   return this;
 };
@@ -399,86 +411,25 @@ Template.prototype.create = function(singular, options, stack) {
 
 Template.prototype.decorate = function(singular, plural, options, stack) {
   var opts = extend({}, options, {plural: plural});
-  var load = this.load(plural, opts, stack);
+  var last = loaders.last(this)(plural)[opts.loaderType || 'sync'];
+  opts.last = last;
+  if (stack.length === 0) {
+    stack.push('default');
+  }
 
-  this.mixin(singular, load);
-  this.mixin(plural, load);
-
-  // Add a `get` method to `Template` for `singular`
-  this.mixin(utils.methodName('get', singular), function (key) {
-    return this.lookup(plural, key);
-  });
-
-  // Add a `render` method to `Template` for `singular`
-  this.mixin(utils.methodName('render', singular), function () {
-    var args = [].slice.call(arguments);
-    var file = this.lookup(plural, args.shift());
-    return file.render.apply(this, args);
-  });
+  this.mixin(singular, this.load(opts, stack));
+  this.mixin(plural, this.load(opts, stack));
 
   var isPartial = (opts.viewType || []).indexOf('partial') !== -1;
-
-  // create default helpers
+  // create sync and async helpers if viewType is `partial`
   if (this.enabled('default helpers') && isPartial) {
-    // Create a sync helper for this type
     if (!this._.helpers.sync.hasOwnProperty(singular)) {
       this.defaultHelper(singular, plural);
     }
-    // Create an async helper for this type
     if (!this._.helpers.async.hasOwnProperty(singular)) {
       this.defaultAsyncHelper(singular, plural);
     }
   }
-};
-
-Template.prototype.load = function(plural, opts, loaderStack) {
-  return function(key, value, locals, options) {
-    var args = [].slice.call(arguments);
-    var idx = utils.loadersIndex(args);
-    var actualArgs = idx !== -1 ? args.slice(0, idx) : args;
-    var stack = idx !== -1 ? args.slice(idx) : [];
-    var optsIdx = (idx === -1 ? 1 : (idx - 1));
-    options = utils.isOptions(actualArgs[optsIdx])
-      ? extend({}, opts, actualArgs.pop())
-      : opts;
-
-    var type = options.loaderType || 'sync';
-    stack = this.buildStack(type, loaderStack.concat(stack));
-    if (stack.length === 0) {
-      stack = this.loaders[type]['default'];
-    }
-    var templates = this.views[plural].load(actualArgs, options, stack);
-    return this.loadType(type, plural, templates);
-  };
-};
-
-Template.prototype.loadType = function(type, collection, templates) {
-  var handle = function(file, fp) {
-    return this.handle('onLoad', file, this.handleError('onLoad', {path: fp}));
-  }.bind(this);
-
-  var app = this;
-  if (type === 'promise') {
-    return templates.then(function(obj) {
-      for (var key in obj) {
-        handle(app.views[collection][key], key);
-      }
-      return obj;
-    });
-  }
-
-  if (type === 'stream') {
-    return templates.pipe(through.obj(function(file, enc, cb) {
-      handle(file, file.path);
-      this.push(file);
-      return cb();
-    }));
-  }
-
-  for (var key in templates) {
-    handle(this.views[collection][key], key);
-  }
-  return this.views[collection];
 };
 
 /**
@@ -511,17 +462,17 @@ Template.prototype.mixin = function(name, fn) {
 };
 
 /**
- * Private method for setting a value on Template.
+ * Private method for setting a values on an object.
  *
  * @param  {Array|String} `prop` Object path.
  * @param  {Object} `val` The value to set.
  * @private
  */
 
-Template.prototype._set = function(prop, val) {
+Template.prototype._set = function(obj, prop, val) {
   prop = utils.arrayify(prop).join('.');
-  set(this, prop, val);
-  return this;
+  set(obj, prop, val);
+  return obj;
 };
 
 /**
@@ -542,7 +493,32 @@ Template.prototype.handleError = function(method, template) {
   };
 };
 
+
+function union() {
+  var arr = flatten([].concat.apply([], [].slice.call(arguments)));
+  return arr.filter(Boolean);
+}
+
+function isStream(obj) {
+  return obj && isObject(obj) && obj.pipe
+    && typeof obj.pipe === 'function';
+}
+
+function isPromise(obj) {
+  return obj && isObject(obj) && obj.then
+    && typeof obj.then === 'function';
+}
+
 /**
  * Expose `Template`
  */
+
 module.exports = Template;
+
+var template = new Template();
+
+
+template.create('yogurt');
+template.yogurts('test/fixtures/*.hbs');
+
+console.log(template.views);

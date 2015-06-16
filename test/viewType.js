@@ -25,8 +25,7 @@ describe('viewType', function () {
     template.viewType('renderable');
     template.create('posts', { viewType: 'renderable' });
     template.create('pages', { viewType: 'renderable' });
-    template.viewTypes.renderable[0].should.equal('posts');
-    template.viewTypes.renderable[1].should.equal('pages');
+    template.viewTypes.renderable.should.eql(['pages', 'posts']);
   });
 
   it('should set an array of view types for a collection:', function () {
@@ -34,7 +33,8 @@ describe('viewType', function () {
     template.viewType('renderable');
     template.create('pages', { viewType: ['renderable', 'layout'] });
     template.viewTypes.renderable[0].should.equal('pages');
-    template.viewTypes.layout[0].should.equal('pages');
+    template.viewTypes.layout[0].should.equal('layouts');
+    template.viewTypes.layout[1].should.equal('pages');
   });
 
   it('should store viewTypes on views options:', function () {

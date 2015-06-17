@@ -36,17 +36,17 @@ describe('loaders', function () {
       }).should.throw('Template#create: expects singular to be a string');
     });
 
-    it('loader should throw an error when args are invalid:', function () {
-      (function () {
-        template.loader();
-      }).should.throw('Template#loader: expects name to be a string');
-    });
+    // it('loader should throw an error when args are invalid:', function () {
+    //   (function () {
+    //     template.loader();
+    //   }).should.throw('Template#loader: expects name to be a string');
+    // });
 
-    it('buildStack should throw an error when args are invalid:', function () {
-      (function () {
-        template.buildStack();
-      }).should.throw('Template#buildStack: expects type to be a string');
-    });
+    // it('buildStack should throw an error when args are invalid:', function () {
+    //   (function () {
+    //     template.buildStack();
+    //   }).should.throw('Template#buildStack: expects type to be a string');
+    // });
   });
 
   describe('sync:', function () {
@@ -65,11 +65,28 @@ describe('loaders', function () {
 
     describe('.create():', function () {
       it('should use a loader function defined on the create method:', function () {
-        template.create('post', { viewType: 'renderable' }, function (patterns) {
+        template.create('post', { viewType: 'renderable' }, function post(patterns) {
+          var files = glob.sync(patterns);
+          return files.reduce(function (acc, fp) {
+            acc[fp] = {path: fp, content: fs.readFileSync(fp, 'utf8')};
+            return acc;
+          }, {});
+        });
+
+        template.posts('test/fixtures/*.txt');
+        template.views.posts.should.have.property('test/fixtures/a.txt');
+      });
+
+      it('should use a combination of loaders defined on create and the collection loader:', function () {
+        template.create('post', { viewType: 'renderable' }, function post(patterns) {
           return glob.sync(patterns);
         });
 
-        template.loader('toTemplate', function (files) {
+        template.loader('abc', function abc(files) {
+          return files;
+        });
+
+        template.loader('toTemplate', ['abc'], function toTemplate(files) {
           return files.reduce(function (acc, fp) {
             acc[fp] = {path: fp, content: fs.readFileSync(fp, 'utf8')};
             return acc;

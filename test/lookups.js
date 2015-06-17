@@ -7,8 +7,8 @@
 
 'use strict';
 
-var assert = require('assert');
 require('should');
+var assert = require('assert');
 var Template = require('./app');
 var template;
 

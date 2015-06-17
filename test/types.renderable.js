@@ -92,24 +92,22 @@ describe('renderable:', function () {
     beforeEach(function () {
       template = new Template();
       template.enable('frontMatter');
-      template.engine('hbs', handlebars);
-      template.engine('md', handlebars);
+      template.enable('preferLocals');
     });
 
-    it.skip('should render them with the `.render()` method:', function (cb) {
+    it('should render them with the `.render()` method:', function (cb) {
+      template.engine('hbs', handlebars);
+      template.engine('md', handlebars);
 
       template.create('post', { viewType: 'renderable' });
+      template.create('include', { viewType: 'partial' });
 
-      template.partial('sidebar.md', '{{sidebar.a}}', {a: 'bbbbbb'});
-      template.post('2014-08-31.md', '---\nauthor: Brian Woodward\n---\n{{author}}\n{{> sidebar.md }}', {author: 'Jon Schlinkert'});
-      template.post('2014-09-31.md', '---\nauthor: Brian Woodward\n---\n{{author}}\n{{> sidebar.md }}', {author: 'Jon Schlinkert'});
-      template.post('2014-10-31.md', '---\nauthor: Brian Woodward\n---\n{{author}}\n{{> sidebar.md }}', {author: 'Jon Schlinkert'});
+      template.include('sidebar', '{{a}}', {a: 'bbbbbb'});
+      template.post('2014-08-31.md', '---\nauthor: Brian Woodward\n---\n{{author}}\n{{> sidebar sidebar }}', {author: 'Jon Schlinkert'});
 
       template.renderEach('posts', function (err, files) {
         if (err) console.log(err);
-        console.log(files)
-        // content.should.equal('Jon Schlinkert\nbbbbbb');
-        // files[0].content.should.equal('Jon Schlinkert\nbbbbbb');
+        files[0].content.should.equal('Jon Schlinkert\nbbbbbb');
         cb();
       });
     });

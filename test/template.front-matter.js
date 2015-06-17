@@ -151,7 +151,7 @@ describe('template front-matter', function () {
     });
   });
 
-  describe('context handling:', function () {
+  describe.skip('context handling:', function () {
     beforeEach(function () {
       template.onLoad(/./, function (file, next) {
         var collection = file.options.subtype;

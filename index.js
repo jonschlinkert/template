@@ -450,19 +450,21 @@ Template.prototype.decorate = function(singular, plural, opts, stack) {
   this.mixin(singular, this.compose(opts, stack).bind(this));
   this.mixin(plural, this.compose(opts, stack).bind(this));
 
-  var name = function(str) {
-    return utils.methodName(str, singular);
-  };
+  var name = utils.partialRight(this, utils.methodName, singular);
+  // var find = utils.partial(this, this.lookup, plural);
+  var find = utils.partial(this, this.getView, plural);
 
   // Bind a lookup function to this collection. Example: `getPage('foo')`
   this.mixin(name('get'), function (key) {
-    return this.getView(plural, key, opts.renameKey);
+    // return this.getView(plural, key, opts.renameKey);
+    return find(key, opts.renameKey);
   });
 
   // Bind a `render` method to this collection. Example: `renderPage('foo')`
-  this.mixin(name('render', singular), function () {
+  this.mixin(name('render'), function () {
     var args = [].slice.call(arguments);
-    var file = this.lookup(plural, args.shift());
+    var path = args.shift();
+    var file = this.views[plural][path] || find(path, opts.renameKey);
     return file.render.apply(this, args);
   });
 

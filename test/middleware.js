@@ -30,7 +30,7 @@ describe('middleware', function () {
     });
 
     template.pages(__dirname + '/fixtures/html.html');
-    var page = template.views.pages['test/fixtures/html.html'];
+    var page = template.views.pages['html.html'];
 
     template.render(page, {name: 'Halle'}, function (err, content) {
       if (err) console.log(err);
@@ -65,7 +65,7 @@ describe('middleware', function () {
       });
 
       template.pages(__dirname + '/fixtures/md.md');
-      var page = template.views.pages['test/fixtures/md.md'];
+      var page = template.views.pages['md.md'];
       page.content.should.match(/__ID/);
 
       template.renderTemplate(page, function (err, content) {
@@ -93,7 +93,7 @@ describe('middleware', function () {
   describe('should use middleware before and after render:', function () {
     it('should use middleware before and after render:', function (done) {
       template.pages(__dirname + '/fixtures/md.md');
-      var page = template.views.pages['test/fixtures/md.md'];
+      var page = template.views.pages['md.md'];
 
       template.preRender(/\.md/, function (file, next) {
         file.content = tokens.before(file.content, re);
@@ -120,7 +120,7 @@ describe('middleware', function () {
 
     it('should handle errors in before and after render middleware:', function (done) {
       template.pages(__dirname + '/fixtures/md.md');
-      var page = template.views.pages['test/fixtures/md.md'];
+      var page = template.views.pages['md.md'];
 
       template.preRender(/\.md/, function (file, next) {
         file.content = tokens.before(file.content, re);
@@ -158,7 +158,7 @@ describe('middleware', function () {
       };
 
       template.pages(__dirname + '/fixtures/md.md');
-      var page = template.views.pages['test/fixtures/md.md'];
+      var page = template.views.pages['md.md'];
 
       template.preRender(/\.md/, function (file, next) {
         file.content = tokens.before(file.content, re);

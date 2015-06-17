@@ -20,7 +20,7 @@ describe('transforms', function () {
     it('should throw an error when args are invalid:', function () {
       (function () {
         template.transform();
-      }).should.throw('Template#transform: expects fn to be a function');
+      }).should.throw('Template#transform: expects name to be a string');
     });
   });
 });

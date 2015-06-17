@@ -40,6 +40,54 @@ describe('.find...():', function () {
     template.snippet('i', {content: 'i\'m a snippet'});
   });
 
+  describe('find:', function () {
+    it('should get the first template of the type `renderable` by default:', function () {
+      template.create('post', { viewType: 'renderable' });
+      template.page('aaa.md', '<%= abc %>');
+      template.post('aaa.md', '<%= abc %>');
+      template.findRenderable('aaa.md').should.have.property('contexts');
+      template.findRenderable('aaa.md').contexts.should.have.property('create');
+      template.findRenderable('aaa.md').contexts.create.should.have.properties([
+        'loaderType',
+        'lastLoader',
+        'viewType',
+        'collection',
+        'inflection',
+      ]);
+      template.findRenderable('aaa.md', ['posts']).should.have.property('contexts');
+    });
+
+    it('should get the first template of the given collection:', function () {
+      template.create('include', { viewType: 'partial' });
+      template.partial('aaa.md', '<%= abc %>');
+      template.include('aaa.md', '<%= abc %>');
+
+      template.findPartial('aaa.md', ['partials']).should.have.property('contexts');
+      template.findPartial('aaa.md', ['partials']).contexts.should.have.property('create');
+      template.findPartial('aaa.md', ['partials']).contexts.create.should.have.properties([
+        'loaderType',
+        'lastLoader',
+        'viewType',
+        'collection',
+        'inflection',
+      ]);
+    });
+
+    it('should get the first template based on the order of the passed array:', function () {
+      template.create('include', { viewType: 'partial' });
+      template.create('snippet', { viewType: 'partial' });
+
+      template.partial('aaa.md', '<%= abc %>');
+      template.include('aaa.md', '<%= abc %>');
+      template.snippet('aaa.md', '<%= abc %>');
+
+      template.findPartial('aaa.md', ['partials', 'snippets', 'includes']).should.have.property('content');
+
+      var snippets = ['snippets', 'partials', 'includes'];
+      template.findPartial('aaa.md', snippets).should.have.property('content');
+    });
+  });
+
   describe('.findLayout():', function () {
     it('should return `null` when a template is not found:', function () {
       assert(template.findLayout('foo') === null);

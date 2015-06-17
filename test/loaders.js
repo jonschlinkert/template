@@ -11,7 +11,7 @@ require('should');
 var fs = require('fs');
 var async = require('async');
 var path = require('path');
-var glob = require('glob');
+var glob = require('globby');
 var File = require('vinyl');
 var through = require('through2');
 var Template = require('../');
@@ -193,22 +193,23 @@ describe('loaders', function () {
 
     describe('collection:', function () {
       it('should use an array of registered loaders:', function () {
-        template.loader('first', function (name) {
+        template.loader('first', function first(name) {
           var file = {};
           file[name] = {path: name, content: 'this is content...'};
           return file;
         });
-        template.loader('abc', function (files) {
+        template.loader('abc', function abc(files) {
           files.abc = {content: 'this is abc...'}
           return files;
         });
-        template.loader('xyz', function (files) {
+        template.loader('xyz', function xyz(files) {
           files.xyz = {content: 'this is xyz...'}
           return files;
         });
         template.create('posts');
         // loaders are on the collection
         template.posts('foo', ['first', 'abc', 'xyz']);
+        // console.log(template.views.posts)
         template.views.posts.should.have.property('foo');
         template.views.posts.should.have.property('abc');
         template.views.posts.should.have.property('xyz');
@@ -251,23 +252,6 @@ describe('loaders', function () {
       });
     });
 
-    describe('.getLoaderInstance():', function () {
-      it('should get sync loaders', function () {
-        template.loader('a', function () {});
-        template.loader('b', function () {});
-        template.loader('c', function () {});
-        var loaders = template.getLoaderInstance('sync');
-        loaders.should.have.properties(['cache', 'iterator']);
-        loaders.cache.should.have.properties(['a', 'b', 'c']);
-      });
-
-      it('should throw an error when args are invalid:', function () {
-        (function () {
-          template.getLoaderInstance();
-        }).should.throw('Template#getLoaderInstance: expects a string or object.');
-      });
-    });
-
     describe('.iterator():', function () {
       it('should register a sync iterator', function () {
         template.iterator('sync', function () {});
@@ -283,43 +267,46 @@ describe('loaders', function () {
     });
 
     describe('.create():', function () {
-      it('should use an array of registered loaders passed to create:', function (done) {
+      it('should use an array of registered loaders:', function (done) {
         var opts = { loaderType: 'async' };
 
         // register the loaders
-        template.loader('first', opts, function (name, next) {
+        template.loader('first', opts, function first(name, opts, next) {
+          if (typeof opts === 'function') {
+            next = opts;
+            opts = {};
+          }
           var file = {};
           file[name] = {path: name, content: 'this is content...'};
           next(null, file);
         });
-        template.loader('abc', opts, function (files, next) {
+
+        template.loader('abc', opts, function abc(files, next) {
           files.abc = {content: 'this is abc...'}
           next(null, files);
         });
-        template.loader('xyz', opts, function (files, next) {
+
+        template.loader('xyz', opts, function xyz(files, next) {
           files.xyz = {content: 'this is xyz...'}
           next(null, files);
         });
 
         // pass the array of loaders to .create
         template.create('posts', opts, ['first', 'abc', 'xyz']);
-        template.posts('foo', opts, function (files, next) {
+        template.posts('foo', opts, function foo(files, next) {
           next(null, files);
-        }, function (err) {
-          if (err) return done(err);
-          template.views.posts.should.have.property('foo');
-          template.views.posts.should.have.property('abc');
-          template.views.posts.should.have.property('xyz');
-          template.views.posts.foo.content.should.equal('this is content...');
-          done();
-        });
+        }, done);
       });
 
       it('should use an array of registered loaders passed to a collection:', function (done) {
         var opts = { loaderType: 'async' };
 
         // register the loaders
-        template.loader('first', opts, function (name, next) {
+        template.loader('first', opts, function (name, opts, next) {
+          if (typeof opts === 'function') {
+            next = opts;
+            opts = {};
+          }
           var file = {};
           file[name] = {path: name, content: 'this is content...'};
           next(null, file);
@@ -350,15 +337,21 @@ describe('loaders', function () {
       it('should use custom async loaders', function (done) {
         var opts = { viewType: 'renderable', loaderType: 'async' };
 
-        template.create('post', opts, glob);
-        template.loader('toTemplate', opts, function (files, next) {
+        template.create('post', opts, function create(pattern, next) {
+          glob(pattern, function (err, files) {
+            if (err) return next(err);
+            next(null, files);
+          })
+        });
+
+        template.loader('toTemplate', opts, function toTemplate(files, next) {
           async.reduce(files, {}, function (acc, fp, cb) {
             acc[fp] = {path: fp, content: fs.readFileSync(fp, 'utf8')};
             cb(null, acc);
           }, next);
         });
 
-        template.posts('test/fixtures/*.txt', ['toTemplate'], function (posts, next) {
+        template.posts('test/fixtures/*.txt', ['toTemplate'], function posts(posts, next) {
           next(null, posts);
         }, function doneFn(err) {
           if (err) return done(err);
@@ -439,9 +432,10 @@ describe('loaders', function () {
       template.loader('glob', {loaderType: 'stream'}, function() {
         return through.obj(function (pattern, enc, cb) {
           var stream = this;
+
           glob(pattern, function (err, files) {
             if (err) return cb(err);
-            stream.push(files);
+            stream.push([files]);
             return cb();
           });
         });

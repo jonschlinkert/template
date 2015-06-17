@@ -15,8 +15,27 @@ var template;
 describe('template view', function () {
   beforeEach(function () {
     template = new Template();
+    template.create('pages');
+    template.pages('a', {content: 'this is content...'});
   });
+  
+  describe('.getViews()', function () {
+    it('should get a collection by its plural name.', function () {
+      assert.equal(typeof template.getViews('pages'), 'object');
+      template.getViews('pages').should.have.property('a');
+    });
 
+    it('should get a collection by its singular name.', function () {
+      assert.equal(typeof template.getViews('page'), 'object');
+      template.getViews('page').should.have.property('a');
+    });
+
+    it('should return an object if passed:', function () {
+      var a = template.views.pages;
+      template.getViews(a.a).should.eql(a.a);
+    });
+  });
+  
   it('should `.getView()` default template types from the cache.', function () {
     template.getViews('partials').should.be.an.object;
     template.getViews('layouts').should.be.an.object;

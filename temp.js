@@ -6,6 +6,7 @@ var extend = require('extend-shallow');
 var flatten = require('arr-flatten');
 var inflect = require('pluralize');
 var plasma = require('plasma');
+var set = require('set-value');
 var YAML = require('js-yaml');
 
 var ConfigCache = require('config-cache');
@@ -150,27 +151,25 @@ Template.prototype.initConfig = function() {
 };
 
 Template.prototype.initLoaders = function() {
-  var first = loaders.first(this);
+  var defaults = loaders.defaults(this);
 
   // iterators
   this.iterator('async', iterators.async);
   this.iterator('promise', iterators.promise);
   this.iterator('stream', iterators.stream);
-  this.iterator('sync', iterators.sync);
-
-  // this.iterator('sync', function() {
-  //   var args = [].slice.call(arguments);
-  //   return this.stack.reduce(function (acc, fn) {
-  //     return fn.apply(this, utils.arrayify(acc));
-  //   }.bind(this), args);
-  // })
+  this.iterator('sync', function() {
+    var args = [].slice.call(arguments);
+    return this.stack.reduce(function (acc, fn) {
+      return fn.apply(this, utils.arrayify(acc));
+    }.bind(this), args);
+  })
 
   // load default helpers and templates
   this.loader('default', { loaderType: 'helpers' }, loaders.helpers(this));
-  this.loader('default', { loaderType: 'sync' }, first.sync);
-  this.loader('default', { loaderType: 'async' }, first.async);
-  this.loader('default', { loaderType: 'promise' }, first.promise);
-  this.loader('default', { loaderType: 'stream' }, first.stream);
+  this.loader('default', { loaderType: 'sync' }, defaults.sync);
+  this.loader('default', { loaderType: 'async' }, defaults.async);
+  this.loader('default', { loaderType: 'promise' }, defaults.promise);
+  this.loader('default', { loaderType: 'stream' }, defaults.stream);
 };
 
 Template.prototype.listen = function() {
@@ -195,7 +194,7 @@ Template.prototype.helperType = function(type) {
 
 Template.prototype.context = function(view, prop, val) {
   if (isObject(view)) {
-    return utils.set(view, ['contexts', prop], val);
+    return this._set(view, ['contexts', prop], val);
   }
 };
 
@@ -282,44 +281,18 @@ Template.prototype.resolveLoader = function(type) {
  */
 
 Template.prototype.loader = function(name, options, stack) {
-  stack = flatten([].slice.call(arguments, 1));
-  var opts = isObject(options) ? stack.shift() : {};
-  var cache = this.loaders[opts.loaderType || 'sync'];
-
-  if (!cache[name]) {
-    utils.set(cache, [name], utils.arrayify(stack));
+  var args = [].slice.call(arguments, 1);
+  var opts = { loaderType: 'sync' };
+  if (isObject(options)) {
+    extend(opts, args.shift());
+  }
+  var type = this.loaders[opts.loaderType];
+  if (!type[name]) {
+    this._set(type, name, args.filter(Boolean));
   } else {
-    cache[name] = utils.union(cache[name], stack);
+    type[name] = union(type[name], args);
   }
-  cache[name] = this.buildStack(opts, cache[name]);
   return this;
-};
-
-Template.prototype.buildStack = function(opts, stack) {
-  var cache = this.loaders[opts.loaderType || 'sync'];
-  if (!stack || stack.length === 0) return [];
-
-  return flatten(stack).reduce(function (acc, loader) {
-    if (typeof loader === 'string') {
-      acc.push(cache[loader]);
-    } else if (typeof loader === 'function') {
-      acc.push(loader);
-    } else if (Array.isArray(loader)) {
-      acc = acc.concat(loader);
-    }
-    return flatten(acc);
-  }.bind(this), []);
-};
-
-Template.prototype.getLoaders = function(arr) {
-  var len = arr.length;
-  var stack = [];
-  while (len--) {
-    var val = arr[len];
-    if (!utils.isLoader(val) || len === 0) break;
-    stack.unshift(val);
-  }
-  return stack;
 };
 
 /**
@@ -331,43 +304,31 @@ Template.prototype.getLoaders = function(arr) {
  * @api public
  */
 
-Template.prototype.firstLoader = function(type, name) {
-  if (arguments.length === 1 && typeof type === 'string') {
-    return this.loaders[type][name || 'default'];
+Template.prototype.compose = function(options, stack) {
+  var args = union([].slice.call(arguments));
+  var opts = { loaderType: 'sync' };
+  if (isObject(options)) {
+    extend(opts, args.shift());
   }
-};
 
-Template.prototype.compose = function(opts, stack) {
-  this.assert('compose', 'options', 'object', opts);
-  this.loadingOpts = opts;
-  var iterator = this.iterators[opts.loaderType];
   var type = opts.loaderType;
-  var isAsync = type === 'async';
+  var iterator = this.iterators[type];
+  this.stack = flatten(args);
 
-  return function (key, value, locals, options) {
-    var args = [].slice.call(arguments);
-    var loaders = this.getLoaders(args);
-    var len = loaders.length;
-
-    var cb = isAsync ? loaders.pop() : null;
-
-    stack = utils.union(stack, loaders);
-    if (stack.length === 0) {
-      stack = this.firstLoader(type);
-    }
-
-    stack = this.buildStack(opts, stack);
-    stack = stack.concat(opts.lastLoader);
-
-    args = args.slice(0, args.length - len);
-    if (isAsync) {
-      args = args.concat(cb);
-    }
-
-    var fn = iterator.call(this, stack);
-    return fn.apply(this, args);
+  return function (key, value, options, cb) {
+    return iterator.apply(this, args);
   }.bind(this);
 };
+
+function getLoaders(arr) {
+  var len = arr.length;
+  var stack = [];
+  while (len--) {
+    if (!utils.isLoader(arr[len])) break;
+    stack = stack.concat(arr.pop());
+  }
+  return flatten(stack);
+}
 
 /**
  * Private method for setting and mapping the plural name
@@ -403,6 +364,34 @@ Template.prototype.setViewType = function(plural, opts) {
 };
 
 /**
+ * Get all view collections of the given [type].
+ *
+ * ```js
+ * var renderable = template.getViewType('renderable');
+ * //=> { pages: { 'home.hbs': { ... }, 'about.hbs': { ... }}, posts: { ... }}
+ * ```
+ *
+ * @param {String} `type` Types are `renderable`, `layout` and `partial`.
+ * @api public
+ */
+
+Template.prototype.getViewType = function(type, subtypes) {
+  this.assert('getViewType', 'type', 'string', type);
+  var keys = typeof subtypes !== 'undefined'
+    ? utils.arrayify(subtypes)
+    : this.viewTypes[type];
+
+  var len = keys.length, i = 0;
+  var res = {};
+
+  while (len--) {
+    var plural = keys[i++];
+    res[plural] = this.views[plural];
+  }
+  return res;
+};
+
+/**
  * Create a view collection with the given `name`.
  *
  * @param  {String} `name` Singular-form collection name, such as "page" or "post". The plural inflection is automatically created.
@@ -420,9 +409,8 @@ Template.prototype.create = function(singular, options, stack) {
   var opts = isObject(options) ? args.shift(): {};
 
   opts.viewType = this.setViewType(plural, opts);
-  opts.loaderType = opts.loaderType || 'sync';
   opts.inflection = singular;
-  opts.collection = plural;
+  opts.plural = plural;
 
   this.options.views[plural] = opts;
   this.contexts.create[plural] = opts;
@@ -444,27 +432,18 @@ Template.prototype.create = function(singular, options, stack) {
 
 Template.prototype.decorate = function(singular, plural, opts, stack) {
   // get the last loader to use
-  opts.lastLoader = loaders.last(this)(plural)[opts.loaderType];
+  opts.last = loaders.last(this)(plural)[opts.loaderType || 'sync'];
+  if (stack.length === 0) {
+    stack.push('default');
+  }
 
   // add the loader methods for the collection, ex. `.page()` and `.pages()`
-  this.mixin(singular, this.compose(opts, stack).bind(this));
-  this.mixin(plural, this.compose(opts, stack).bind(this));
+  this.mixin(singular, this.compose(opts, stack));
+  this.mixin(plural, this.compose(opts, stack));
 
-  var name = function(str) {
-    return utils.methodName(str, singular);
-  };
-
-  // Bind a lookup function to this collection. Example: `getPage('foo')`
-  this.mixin(name('get'), function (key) {
-    return this.getView(plural, key, opts.renameKey);
-  });
-
-  // Bind a `render` method to this collection. Example: `renderPage('foo')`
-  this.mixin(name('render', singular), function () {
-    var args = [].slice.call(arguments);
-    var file = this.lookup(plural, args.shift());
-    return file.render.apply(this, args);
-  });
+  // create a lookup function bound to this collection, ex. `getPage()`
+  var name = utils.methodName('get', singular);
+  this.mixin(name, this.lookup.bind(this, plural));
 
   // create sync and async helpers if viewType is `partial`
   var isPartial = (opts.viewType || []).indexOf('partial') !== -1;
@@ -508,6 +487,20 @@ Template.prototype.mixin = function(name, fn) {
 };
 
 /**
+ * Private method for setting a values on an object.
+ *
+ * @param  {Array|String} `prop` Object path.
+ * @param  {Object} `val` The value to set.
+ * @private
+ */
+
+Template.prototype._set = function(obj, prop, val) {
+  prop = utils.arrayify(prop).join('.');
+  set(obj, prop, val);
+  return obj;
+};
+
+/**
  * Middleware error handler
  *
  * @param {Object} `template`
@@ -525,6 +518,12 @@ Template.prototype.handleError = function(method, template) {
   };
 };
 
+
+function union() {
+  var arr = flatten([].concat.apply([], [].slice.call(arguments)));
+  return arr.filter(Boolean);
+}
+
 function isStream(obj) {
   return obj && isObject(obj) && obj.pipe
     && typeof obj.pipe === 'function';
@@ -541,17 +540,10 @@ function isPromise(obj) {
 
 module.exports = Template;
 
-// var template = new Template();
+var template = new Template();
 
 
-// template.create('yogurt');
-// template.loader('foo', function (pattern) {
-//   var glob = require('glob');
-//   return glob.sync(pattern).reduce(function (acc, fp) {
-//     acc[fp] = {path: fp}
-//     return acc;
-//   }, {});
-// });
-// template.yogurts('test/fixtures/*.hbs', ['foo']);
+template.create('yogurt');
+template.yogurts('test/fixtures/*.hbs');
 
 // console.log(template.views);

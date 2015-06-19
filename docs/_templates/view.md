@@ -1,21 +1,33 @@
-# Collections
+# View
+
+> A template represents a single view. 
+
+## The facts
+
+- Views are objects
+- Views are stored `template collections
+- Every template has properties
 
 
-## API
 
-## .filter
+## View API
 
+- `.set`
+- `.get`
+- `.recent`
+- `.related`
 
-### function
+## .set
+## .get
 
 **Example**
 
-Pass a custom filter function to get posts that have `2014` or `2015` in the filepath:
+Use a view's `get` method as a handlebars subexpression:
 
-```js
-var filtered = app.posts.filter('path', function (fp) {
-  return mm.isMatch(fp, '/**/201[45]-*');
-});
+```handlebars
+{{#views 'posts'}}
+  {{log (get "data.title")}}
+{{/views}}
 ```
 
 ## .recent
@@ -25,8 +37,7 @@ var filtered = app.posts.filter('path', function (fp) {
 - `limit`: determines the number of items to return
 - `prop`: the property to sort on. by default either the template key is used, or the `data.date` property if it exists in the front-matter of a view.
 
-
-**Example**
+### Example
 
 Get the most recent views from a collection.
 

@@ -288,34 +288,43 @@ Template.prototype.create = function(singular, options, loaders) {
   loaders = [].concat.apply([], args);
 
   // create a new collection
-  this.views[plural] = new Collection(opts, loaders, this);
+  var views = this.views[plural] = new Collection(opts, loaders, this);
   this.collectionHelpers(singular, plural, opts);
 
-  // forward methods from the collection onto template
-  this.forwardMethod(plural, 'related');
-  this.forwardMethod(plural, 'matchKeys');
-  this.forwardMethod(plural, 'matchProp');
-  this.forwardMethod(plural, 'filter');
-  this.forwardMethod(plural, 'recent');
-  this.forwardMethod(plural, 'views');
-  this.forwardMethod(plural, 'use');
-  return this;
+  // Create the loader method for the collection
+  opts.lastLoader = views.loader(opts);
+  var loaderFn = this.compose(opts, loaders);
+
+  // forward methods from the collection intance onto the template loader
+  // function for this view collection.
+  utils.forwardEach(loaderFn, views, [
+    'get',
+    'render',
+    'use',
+    'related',
+    'matchKeys',
+    'filter',
+    'recent'
+  ]);
+
+  this.mixin(opts.inflection, loaderFn);
+  this.mixin(opts.collection, loaderFn);
 };
 
 /**
- * Forward a view collection method onto the corresponding instance
+ * Delegate a view collection method onto the corresponding instance
  * collection method (`this.views.pages.recent` => `this.pages.recent`)
  *
  * @param  {String} `template` a template object
  * @api public
  */
 
-Template.prototype.forwardMethod = function(plural, name) {
+Template.prototype.delegate = function(plural, name) {
   var val = this.views[plural][name];
   if (typeof val === 'function') {
-    utils.defineProperty(this[plural], name, val.bind(this.views[plural]));
+    utils.mixin(this[plural], name, val.bind(this.views[plural]));
   } else {
-    utils.defineProperty(this[plural], name, val);
+    utils.mixin(this[plural], name, val);
   }
 };
 
@@ -368,7 +377,7 @@ Template.prototype.context = function(view, prop, val) {
  */
 
 Template.prototype.mixin = function(name, fn) {
-  utils.defineProperty(this, name, fn);
+  utils.mixin(this, name, fn);
 };
 
 /**

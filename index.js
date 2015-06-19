@@ -1,7 +1,7 @@
 'use strict';
 
 // require('time-require');
-var lazy = require('lazy-cache');
+var lazy = require('lazy-cache')(require);
 var YAML = lazy('js-yaml');
 var plasma = require('plasma');
 var isObject = require('isobject');
@@ -293,6 +293,8 @@ Template.prototype.create = function(singular, options, loaders) {
 
   // forward methods from the collection onto template
   this.forwardMethod(plural, 'related');
+  this.forwardMethod(plural, 'matchKeys');
+  this.forwardMethod(plural, 'matchProp');
   this.forwardMethod(plural, 'filter');
   this.forwardMethod(plural, 'recent');
   this.forwardMethod(plural, 'views');

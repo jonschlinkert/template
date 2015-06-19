@@ -31,9 +31,9 @@ describe('template partial', function () {
       template.views.partials['a.md'].should.have.property('content', 'b');
     });
 
-    it('should get partials with the `.getPartial()` method', function () {
+    it('should get partials with the `.partials.get()` method', function () {
       template.partial('a.md', 'b');
-      template.getPartial('a.md').content.should.equal('b');
+      template.partials.get('a.md').content.should.equal('b');
     });
 
     it('should get partials with the `.getView()` collection method', function () {

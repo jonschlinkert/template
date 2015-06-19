@@ -26,12 +26,12 @@ describe('template render method', function () {
 
   describe('should use the `render` method on a template:', function () {
     it('should render the template synchronously:', function () {
-      var page = template.getPage('home.md');
+      var page = template.pages.get('home.md');
       page.render().should.equal('bbbThis is home page content.\n<a href="https://github.com/jonschlinkert">Brooke</a>bbb');
     });
 
     it('should render the template asynchronously:', function (done) {
-      var page = template.getPage('home.md');
+      var page = template.pages.get('home.md');
 
       page.render(function (err, content) {
         if (err) return done(err);
@@ -43,12 +43,12 @@ describe('template render method', function () {
 
   describe('when a `layout` template\'s own render method is used:', function () {
     it('should render the template synchronously:', function () {
-      var layout = template.getLayout('href.md');
+      var layout = template.layouts.get('href.md');
       layout.render({text: 'Brooke'}).should.equal('<a href="{% body %}">Brooke</a>');
     });
 
     it('should render the template asynchronously:', function (done) {
-      var layout = template.getLayout('href.md');
+      var layout = template.layouts.get('href.md');
 
       layout.render({text: 'Brooke'}, function (err, content) {
         if (err) return done(err);
@@ -60,12 +60,12 @@ describe('template render method', function () {
 
   describe('when a `partial` template\'s own render method is used:', function () {
     it('should render the template synchronously:', function () {
-      var partial = template.getPartial('link.md');
+      var partial = template.partials.get('link.md');
       partial.render({text: 'Brooke'}).should.equal('<a href="https://github.com/jonschlinkert">Brooke</a>');
     });
 
     it('should render the template asynchronously:', function (done) {
-      var partial = template.getPartial('link.md');
+      var partial = template.partials.get('link.md');
 
       partial.render({text: 'Brooke'}, function (err, content) {
         if (err) return done(err);
@@ -89,12 +89,12 @@ describe('collection render method:', function () {
   });
 
   it('should render the template synchronously:', function () {
-    var res = template.renderPage('link.md', {text: 'Brooke'});
+    var res = template.pages.render('link.md', {text: 'Brooke'});
     res.should.equal('<a href="https://github.com/jonschlinkert">Brooke</a>');
   });
 
   it('should render the template asynchronously:', function (cb) {
-    template.renderPage('link.md', {text: 'Brooke'}, function (err, content) {
+    template.pages.render('link.md', {text: 'Brooke'}, function (err, content) {
       if (err) return cb(err);
       content.should.equal('<a href="https://github.com/jonschlinkert">Brooke</a>');
       cb();

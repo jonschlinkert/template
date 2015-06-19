@@ -49,7 +49,7 @@ describe('layout stack:', function () {
         'last!'
       ].join('\n');
 
-      var tmpl = template.getPage('about');
+      var tmpl = template.pages.get('about');
       template.render(tmpl, function(err, content) {
         if (err) return done(err);
 

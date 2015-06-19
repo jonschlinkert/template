@@ -30,16 +30,16 @@ describe('template view', function () {
   });
 
   describe('should decorate custom `.get` methods onto template subtypes:', function () {
-    it('should get a `doc` with the `.getDoc()` method:', function () {
-      assert.equal(typeof template.getDoc('abc'), 'object');
-      template.getDoc('abc').should.have.property('content', 'This is a document');
-      template.getDoc('abc').should.have.property('path', 'abc');
+    it('should get a `doc` with the `.docs.get()` method:', function () {
+      assert.equal(typeof template.docs.get('abc'), 'object');
+      template.docs.get('abc').should.have.property('content', 'This is a document');
+      template.docs.get('abc').should.have.property('path', 'abc');
     });
 
-    it('should get an `include` with the `.getInclude()` method:', function () {
-      assert.equal(typeof template.getInclude('xyz'), 'object');
-      template.getInclude('xyz').should.have.property('content', 'This is an include.');
-      template.getInclude('xyz').should.have.property('path', 'xyz');
+    it('should get an `include` with the `.includes.get()` method:', function () {
+      assert.equal(typeof template.includes.get('xyz'), 'object');
+      template.includes.get('xyz').should.have.property('content', 'This is an include.');
+      template.includes.get('xyz').should.have.property('path', 'xyz');
     });
   });
 });

@@ -34,7 +34,20 @@ describe('template front-matter', function () {
     template.enable('frontMatter');
   });
 
+  describe('content:', function () {
+    it('should not fail when the content property is missing:', function () {
+      template.page('a', {foo: ''});
+      template.views.pages.a.should.have.property('data');
+    });  
+  });
+
   describe('data:', function () {
+    it('should add front matter to the `data` property:', function () {
+      template.page('a', '---\nb: c\n---\nd');
+      template.views.pages.a.should.have.property('data');
+      template.views.pages.a.data.should.have.property('b', 'c');
+    });
+
     it('should add front matter to the `data` property:', function () {
       template.page('a', '---\nb: c\n---\nd');
       template.views.pages.a.should.have.property('data');

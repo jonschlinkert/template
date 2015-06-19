@@ -20,11 +20,10 @@ Assign transform `fn` to `name` or return the value of `name` if no other argume
 * `returns` **{Object}**: Returns `Template` for chaining.  
 
 Transforms are run immediately during init, and are used to
-extend or modify the `cache.data` object, but really anything
-on the `this` object can be tranformed.
+extend or modify anything on the the instance.
 
 ```js
-template.transform('username', function(app) {
+template.transform('username', function() {
   var url = app.cache.data.author.url.split('/');
   app.cache.data.username = url[2];
 });

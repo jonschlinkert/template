@@ -87,16 +87,21 @@ describe('template create:', function () {
     });
 
     it('should decorate the type with a `get` method:', function () {
-      template.should.have.properties(['getPage', 'getPost', 'getDoc', 'getInclude']);
+      template.pages.should.have.property('get');
+      template.posts.should.have.property('get');
+      template.includes.should.have.property('get');
+      template.docs.should.have.property('get');
     });
 
     it('should decorate the type with a `render` method:', function () {
-      template.should.have.properties(['renderPage', 'renderPost', 'renderDoc']);
+      template.pages.should.have.property('render');
+      template.posts.should.have.property('render');
+      template.docs.should.have.property('render');
     });
 
     it('should use a template subtype\'s `render` method to render the template:', function () {
       template.post('abc.md', {content: 'aaa <%= name %> zzz'});
-      var rendered = template.renderPost('abc.md', {name: 'Halle'});
+      var rendered = template.posts.render('abc.md', {name: 'Halle'});
       rendered.should.equal('aaa Halle zzz');
     });
   });

@@ -2,11 +2,11 @@
 var fs = require('fs');
 var async = require('async');
 var path = require('path');
+var glob = require('glob');
+var File = require('vinyl');
 var through = require('through2');
 var Template = require('./');
 var template = new Template();
-var glob = require('glob');
-var File = require('vinyl');
 
 template.engine('hbs', require('engine-handlebars'));
 template.enable('frontMatter');

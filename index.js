@@ -2,6 +2,7 @@
 
 // require('time-require');
 var isObject = require('isobject');
+var cloneDeep = require('clone-deep');
 var extend = require('extend-shallow');
 var inflect = require('pluralize');
 var plasma = require('plasma');
@@ -160,7 +161,7 @@ Template.prototype.initLoaders = function() {
   this.iterator('sync', iterators.sync);
 
   // load default helpers and templates
-  this.loader('default', { loaderType: 'helpers' }, loaders.helpers(this));
+  this.loader('helpers', { loaderType: 'sync' }, loaders.helpers(this));
   this.loader('default', { loaderType: 'sync' }, first.sync);
   this.loader('default', { loaderType: 'async' }, first.async);
   this.loader('default', { loaderType: 'promise' }, first.promise);
@@ -208,21 +209,6 @@ Template.prototype.transform = function(name, fn) {
   this.assert('transform', 'fn', 'function', fn);
   this.transforms[name] = fn;
   fn.call(this, this);
-  return this;
-};
-
-/**
- * Register an iterator to use with loaders.
- *
- * @param {String} `type`
- * @param {Function} `fn` Iterator function
- * @api public
- */
-
-Template.prototype.iterator = function(type, fn) {
-  this.assert('iterator', 'type', 'string', type);
-  this.assert('iterator', 'fn', 'function', fn);
-  this.iterators[type] = fn;
   return this;
 };
 
@@ -314,29 +300,34 @@ Template.prototype.create = function(singular, options, stack) {
 
 Template.prototype.decorate = function(singular, plural, opts, stack) {
   // get the last loader to use
-  opts.lastLoader = loaders.last(this)(plural)[opts.loaderType];
-  this.loadingOpts = opts;
+  var views = this.views[plural];
+  var last = loaders.last(this)(views, this.normalize(views.options));
+  opts.lastLoader = last[opts.loaderType];
 
   // add the loader methods for the collection, ex. `.page()` and `.pages()`
-  var loadFn = this.compose(opts, stack).bind(this);
+  var loadFn = this.compose(opts, stack);
   this.mixin(singular, loadFn);
   this.mixin(plural, loadFn);
 
-  var name = utils.partialRight(this, utils.methodName, singular);
   var find = function (key) {
     return this.getView(plural, key, opts.renameKey);
-  };
+  }.bind(this);
 
-  // Bind a lookup function to this collection. Example: `getPage('foo')`
-  this.mixin(name('get'), find);
+  // Bind a lookup function to this collection. Example: `pages.get('foo')`
+  utils.defineProperty(this[plural], 'get', find);
 
-  // Bind a `render` method to this collection. Example: `renderPage('foo')`
-  this.mixin(name('render'), function () {
+  // Bind a matching function to this collection. Example: `pages.match('*')`
+  utils.defineProperty(this[plural], 'match', function(patterns, options) {
+    return utils.matchKeys(views, patterns, options);
+  }.bind(this));
+
+  // Bind a `render` method to this collection. Example: `pages.render('foo')`
+  utils.defineProperty(this[plural], 'render', function () {
     var args = [].slice.call(arguments);
     var key = args.shift();
     var file = find.call(this, key);
     return file.render.apply(this, args);
-  });
+  }.bind(this));
 
   // create sync and async helpers if viewType is `partial`
   var isPartial = (opts.viewType || []).indexOf('partial') !== -1;
@@ -348,6 +339,20 @@ Template.prototype.decorate = function(singular, plural, opts, stack) {
       this.defaultAsyncHelper(singular, plural);
     }
   }
+};
+
+
+Template.prototype.normalize = function(options) {
+  var opts = cloneDeep(options || {});
+  return function (file) {
+    var context = opts.contexts || {};
+    delete opts.contexts;
+    file.contexts = extend({}, file.contexts, context);
+    file.contexts.create = opts;
+    file.options = extend({}, opts, file.options);
+    this.handle('onLoad', file, this.handleError('onLoad', {path: file.path}));
+    return file;
+  }.bind(this);
 };
 
 /**
@@ -372,11 +377,7 @@ Template.prototype.validate = function(/*template*/) {
  */
 
 Template.prototype.mixin = function(name, fn) {
-  return Object.defineProperty(this, name, {
-    configurable: true,
-    enumerable: false,
-    value: fn
-  });
+  utils.defineProperty(this, name, fn);
 };
 
 /**
@@ -403,17 +404,3 @@ Template.prototype.handleError = function(method, template) {
 
 module.exports = Template;
 
-// var template = new Template();
-
-
-// template.create('yogurt');
-// template.loader('foo', function (pattern) {
-//   var glob = require('glob');
-//   return glob.sync(pattern).reduce(function (acc, fp) {
-//     acc[fp] = {path: fp}
-//     return acc;
-//   }, {});
-// });
-// template.yogurts('test/fixtures/*.hbs', ['foo']);
-
-// console.log(template.views);

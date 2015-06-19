@@ -30,9 +30,9 @@ describe('template page', function () {
       template.views.pages['a.md'].should.have.property('content', 'b');
     });
 
-    it('should get pages with the `.getPage()` method', function () {
+    it('should get pages with the `.pages.get()` method', function () {
       template.pages('a.md', 'b');
-      template.getPage('a.md').content.should.equal('b');
+      template.pages.get('a.md').content.should.equal('b');
     });
 
     it('should get pages with the `.getView()` collection method', function () {

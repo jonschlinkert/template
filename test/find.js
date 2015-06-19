@@ -49,7 +49,6 @@ describe('.find...():', function () {
       template.findRenderable('aaa.md').contexts.should.have.property('create');
       template.findRenderable('aaa.md').contexts.create.should.have.properties([
         'loaderType',
-        'lastLoader',
         'viewType',
         'collection',
         'inflection',
@@ -66,7 +65,6 @@ describe('.find...():', function () {
       template.findPartial('aaa.md', ['partials']).contexts.should.have.property('create');
       template.findPartial('aaa.md', ['partials']).contexts.create.should.have.properties([
         'loaderType',
-        'lastLoader',
         'viewType',
         'collection',
         'inflection',

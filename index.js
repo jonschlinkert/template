@@ -2,7 +2,6 @@
 
 // require('time-require');
 var isObject = require('isobject');
-var cloneDeep = require('clone-deep');
 var extend = require('extend-shallow');
 var inflect = require('pluralize');
 var plasma = require('plasma');
@@ -31,10 +30,10 @@ var utils = require('./lib/utils');
  * @api public
  */
 function Template(options) {
-  ConfigCache.call(this);
   OptionCache.call(this, options);
+  ConfigCache.call(this);
   PlasmaCache.call(this, { plasma: plasma });
-  LoaderCache.call(this, { plasma: plasma });
+  LoaderCache.call(this);
   this.initDefaults();
   this.initTransforms();
   this.initLoaders();
@@ -82,7 +81,6 @@ Template.prototype.initDefaults = function() {
   this.inflections = {};
 
   this._.helpers = {};
-  // this._.loaders = new LoaderCache(this.loaders);
   this._.engines = new EngineCache(this.engines);
 
   this.loaderType('helpers');
@@ -100,10 +98,6 @@ Template.prototype.initDefaults = function() {
   this.viewType('renderable');
   this.viewType('layout');
   this.viewType('partial');
-
-  // helper types
-  this.helperType('sync');
-  this.helperType('async');
 };
 
 /**
@@ -126,6 +120,10 @@ Template.prototype.initTransforms = function() {
  */
 
 Template.prototype.initConfig = function() {
+  // init helper types
+  this.helperType('sync');
+  this.helperType('async');
+
   this.enable('default routes');
   this.enable('default helpers');
   this.enable('mergePartials');
@@ -168,20 +166,16 @@ Template.prototype.initLoaders = function() {
   this.loader('default', { loaderType: 'stream' }, first.stream);
 };
 
+/**
+ * Setup listeners for options events
+ */
+
 Template.prototype.listen = function() {
   this.on('option', function(key, val) {
     if (key === 'helpers' || typeof key === 'object' && key.helpers) {
       this.helpers(key.helpers);
     }
   });
-};
-
-/**
- * Private method for registering helper types.
- */
-
-Template.prototype.helperType = function(type) {
-  this._.helpers[type] = new HelperCache({bind: false});
 };
 
 /**
@@ -223,6 +217,19 @@ Template.prototype.viewType = function(name) {
   if (this.viewTypes.hasOwnProperty(name)) return;
   this.viewTypes[name] = [];
   return this;
+};
+
+/**
+ * Return true if a collection belongs to the given `viewType`.
+ *
+ * @param  {String} `type`
+ * @param  {Object} `options` Pass the collection's options object.
+ * @api public
+ */
+
+Template.prototype.isViewType = function(type, options) {
+  var opts = extend({viewType: []}, options);
+  return opts.viewType.indexOf(type) !== -1;
 };
 
 /**
@@ -268,13 +275,13 @@ Template.prototype.setViewType = function(plural, opts) {
  * @api public
  */
 
-Template.prototype.create = function(singular, options, stack) {
+Template.prototype.create = function(singular, options, loaders) {
   this.assert('create', 'singular', 'string', singular);
 
-  var plural = this.inflect(singular);
   var args = [].slice.call(arguments, 1);
   var opts = isObject(options) ? args.shift(): {};
 
+  var plural = this.inflect(singular);
   opts.viewType = this.setViewType(plural, opts);
   opts.loaderType = opts.loaderType || 'sync';
   opts.inflection = singular;
@@ -282,77 +289,20 @@ Template.prototype.create = function(singular, options, stack) {
 
   this.options.views[plural] = opts;
   this.contexts.create[plural] = opts;
-  stack = [].concat.apply([], args);
+  loaders = [].concat.apply([], args);
 
-  this.views[plural] = new Collection(opts);
-  this.decorate(singular, plural, opts, stack);
-  return this;
-};
-
-/**
- * Private method for decorating a view collection with convience methods:
- *
- * @param  {String} `singular`
- * @param  {String} `plural`
- * @param  {Object} `options`
- * @param  {Arrays|Functions} `loaders`
- */
-
-Template.prototype.decorate = function(singular, plural, opts, stack) {
-  // get the last loader to use
-  var views = this.views[plural];
-  var last = loaders.last(this)(views, this.normalize(views.options));
-  opts.lastLoader = last[opts.loaderType];
-
-  // add the loader methods for the collection, ex. `.page()` and `.pages()`
-  var loadFn = this.compose(opts, stack);
-  this.mixin(singular, loadFn);
-  this.mixin(plural, loadFn);
-
-  var find = function (key) {
-    return this.getView(plural, key, opts.renameKey);
-  }.bind(this);
-
-  // Bind a lookup function to this collection. Example: `pages.get('foo')`
-  utils.defineProperty(this[plural], 'get', find);
-
-  // Bind a matching function to this collection. Example: `pages.match('*')`
-  utils.defineProperty(this[plural], 'match', function(patterns, options) {
-    return utils.matchKeys(views, patterns, options);
-  }.bind(this));
-
-  // Bind a `render` method to this collection. Example: `pages.render('foo')`
-  utils.defineProperty(this[plural], 'render', function () {
-    var args = [].slice.call(arguments);
-    var key = args.shift();
-    var file = find.call(this, key);
-    return file.render.apply(this, args);
-  }.bind(this));
+  this.views[plural] = new Collection(opts, loaders, this);
 
   // create sync and async helpers if viewType is `partial`
-  var isPartial = (opts.viewType || []).indexOf('partial') !== -1;
-  if (this.enabled('default helpers') && isPartial) {
-    if (!this._.helpers.sync.hasOwnProperty(singular)) {
+  if (this.enabled('default helpers') && this.isViewType('partial', opts)) {
+    if (!this.getHelper(singular)) {
       this.defaultHelper(singular, plural);
     }
-    if (!this._.helpers.async.hasOwnProperty(singular)) {
+    if (!this.getAsyncHelper(singular)) {
       this.defaultAsyncHelper(singular, plural);
     }
   }
-};
-
-
-Template.prototype.normalize = function(options) {
-  var opts = cloneDeep(options || {});
-  return function (file) {
-    var context = opts.contexts || {};
-    delete opts.contexts;
-    file.contexts = extend({}, file.contexts, context);
-    file.contexts.create = opts;
-    file.options = extend({}, opts, file.options);
-    this.handle('onLoad', file, this.handleError('onLoad', {path: file.path}));
-    return file;
-  }.bind(this);
+  return this;
 };
 
 /**
@@ -378,24 +328,6 @@ Template.prototype.validate = function(/*template*/) {
 
 Template.prototype.mixin = function(name, fn) {
   utils.defineProperty(this, name, fn);
-};
-
-/**
- * Middleware error handler
- *
- * @param {Object} `template`
- * @param {String} `method` name
- * @api private
- */
-
-Template.prototype.handleError = function(method, template) {
-  return function (err) {
-    if (err) {
-      err.reason = 'Error running ' + method + ' middleware: ' + JSON.stringify(template);
-      console.error(err);
-      return err;
-    }
-  };
 };
 
 /**

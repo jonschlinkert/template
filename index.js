@@ -1,11 +1,12 @@
 'use strict';
 
 // require('time-require');
+var lazy = require('lazy-cache');
+var YAML = lazy('js-yaml');
+var plasma = require('plasma');
 var isObject = require('isobject');
 var extend = require('extend-shallow');
 var inflect = require('pluralize');
-var plasma = require('plasma');
-var YAML = require('js-yaml');
 
 var ConfigCache = require('config-cache');
 var EngineCache = require('engine-cache');
@@ -91,7 +92,8 @@ Template.prototype.initDefaults = function() {
 
   // data
   this.dataLoader('yml', function () {
-    return YAML.load.apply(YAML, arguments);
+    var yaml = YAML();
+    return yaml.load.apply(yaml, arguments);
   });
 
   // view types
@@ -285,12 +287,16 @@ Template.prototype.create = function(singular, options, loaders) {
   this.contexts.create[plural] = opts;
   loaders = [].concat.apply([], args);
 
+  // create a new collection
   this.views[plural] = new Collection(opts, loaders, this);
+  this.collectionHelpers(singular, plural, opts);
+
+  // forward methods from the collection onto template
   this.forwardMethod(plural, 'related');
   this.forwardMethod(plural, 'filter');
   this.forwardMethod(plural, 'recent');
+  this.forwardMethod(plural, 'views');
   this.forwardMethod(plural, 'use');
-  this.collectionHelpers(singular, plural, opts);
   return this;
 };
 
@@ -303,8 +309,12 @@ Template.prototype.create = function(singular, options, loaders) {
  */
 
 Template.prototype.forwardMethod = function(plural, name) {
-  var fn = this.views[plural][name];
-  utils.defineProperty(this[plural], name, fn.bind(this.views[plural]));
+  var val = this.views[plural][name];
+  if (typeof val === 'function') {
+    utils.defineProperty(this[plural], name, val.bind(this.views[plural]));
+  } else {
+    utils.defineProperty(this[plural], name, val);
+  }
 };
 
 /**

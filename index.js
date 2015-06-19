@@ -149,6 +149,10 @@ Template.prototype.initConfig = function() {
   this.create('layout', { viewType: 'layout' });
 };
 
+/**
+ * Initialize loaders
+ */
+
 Template.prototype.initLoaders = function() {
   var first = loaders.first(this);
 
@@ -176,16 +180,6 @@ Template.prototype.listen = function() {
       this.helpers(key.helpers);
     }
   });
-};
-
-/**
- * Register a context for a view.
- */
-
-Template.prototype.context = function(view, prop, val) {
-  if (isObject(view)) {
-    return utils.set(view, ['contexts', prop], val);
-  }
 };
 
 /**
@@ -292,9 +286,35 @@ Template.prototype.create = function(singular, options, loaders) {
   loaders = [].concat.apply([], args);
 
   this.views[plural] = new Collection(opts, loaders, this);
+  this.forwardMethod(plural, 'related');
+  this.forwardMethod(plural, 'filter');
+  this.forwardMethod(plural, 'recent');
+  this.forwardMethod(plural, 'use');
+  this.collectionHelpers(singular, plural, opts);
+  return this;
+};
 
-  // create sync and async helpers if viewType is `partial`
-  if (this.enabled('default helpers') && this.isViewType('partial', opts)) {
+/**
+ * Forward a view collection method onto the corresponding instance
+ * collection method (`this.views.pages.recent` => `this.pages.recent`)
+ *
+ * @param  {String} `template` a template object
+ * @api public
+ */
+
+Template.prototype.forwardMethod = function(plural, name) {
+  var fn = this.views[plural][name];
+  utils.defineProperty(this[plural], name, fn.bind(this.views[plural]));
+};
+
+/**
+ * Create sync and async helpers if viewType is `partial`
+ *
+ * @param {String} `options`
+ */
+
+Template.prototype.collectionHelpers = function(singular, plural, options) {
+  if (this.enabled('default helpers') && this.isViewType('partial', options)) {
     if (!this.getHelper(singular)) {
       this.defaultHelper(singular, plural);
     }
@@ -302,7 +322,6 @@ Template.prototype.create = function(singular, options, loaders) {
       this.defaultAsyncHelper(singular, plural);
     }
   }
-  return this;
 };
 
 /**
@@ -315,6 +334,16 @@ Template.prototype.create = function(singular, options, loaders) {
 
 Template.prototype.validate = function(/*template*/) {
   return validate.apply(validate, arguments);
+};
+
+/**
+ * Register a context for a view.
+ */
+
+Template.prototype.context = function(view, prop, val) {
+  if (isObject(view)) {
+    return utils.set(view, ['contexts', prop], val);
+  }
 };
 
 /**

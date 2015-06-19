@@ -17,8 +17,6 @@ describe('template layout', function () {
   describe('.layouts()', function () {
     beforeEach(function () {
       template = new Template();
-      template.engine('md', require('engine-lodash'));
-      template.enable('frontMatter');
     });
 
     it('should add layouts defined as strings.', function () {

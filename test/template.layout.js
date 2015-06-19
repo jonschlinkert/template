@@ -15,19 +15,17 @@ describe('layouts:', function () {
   describe('default engine:', function () {
     beforeEach(function () {
       template = new Template();
-      template.engine('md', require('engine-lodash'));
-      template.enable('frontMatter');
     });
 
     it('should use layouts defined as objects', function (done) {
-      template.layout({a: { layout: 'b', content: 'A above\n{% body %}\nA below' }});
-      template.layout({b: { layout: 'c', content: 'B above\n{% body %}\nB below' }});
-      template.layout({c: { layout: 'd', content: 'C above\n{% body %}\nC below' }});
-      template.layout({d: { layout: 'e', content: 'D above\n{% body %}\nD below' }});
-      template.layout({last: { layout: undefined, content: 'last!\n{% body %}\nlast!' }});
-      template.layout({e: { layout: 'f', content: 'E above\n{% body %}\nE below' }});
-      template.layout({f: { layout: 'last', content: 'F above\n{% body %}\nF below' }});
-      template.layout({first: { layout: 'a', content: '{% body %}' }});
+      template.layout('a', { layout: 'b', content: 'A above\n{% body %}\nA below' });
+      template.layout('b', { layout: 'c', content: 'B above\n{% body %}\nB below' });
+      template.layout('c', { layout: 'd', content: 'C above\n{% body %}\nC below' });
+      template.layout('d', { layout: 'e', content: 'D above\n{% body %}\nD below' });
+      template.layout('last', { layout: undefined, content: 'last!\n{% body %}\nlast!' });
+      template.layout('e', { layout: 'f', content: 'E above\n{% body %}\nE below' });
+      template.layout('f', { layout: 'last', content: 'F above\n{% body %}\nF below' });
+      template.layout('first', { layout: 'a', content: '{% body %}' });
       template.page('about', 'This is the about page.', {layout: 'first'}, {ext: '.html'});
 
       var expected = [
@@ -127,7 +125,6 @@ describe('layouts:', function () {
   describe('default engine:', function () {
     beforeEach(function () {
       template = new Template();
-      template.enable('frontMatter');
       template.layout('sidebar', {content: '<nav></nav>\n{% body %}', layout: 'default'});
       template.layout('default', {content: 'default!\n{% body %}\ndefault!'});
     });
@@ -151,7 +148,6 @@ describe('layouts:', function () {
   describe('option layoutExt', function () {
     beforeEach(function () {
       template = new Template();
-      template.enable('frontMatter');
     });
 
     it('should append layout ext to layout when applying layout stack', function (done) {
@@ -179,7 +175,6 @@ describe('layouts:', function () {
   describe('custom template types:', function () {
     beforeEach(function () {
       template = new Template();
-      template.enable('frontMatter');
 
       template.create('doc', { viewType: 'renderable' });
       template.layouts('sidebar', { content: '<nav></nav>\n{% body %}', layout: 'default'});

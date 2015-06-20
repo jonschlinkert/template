@@ -301,43 +301,6 @@ Template.prototype.create = function(singular, options, loaders) {
   // create a new collection
   var views = this.views[plural] = new Collection(opts, loaders, this);
   this.collectionHelpers(singular, plural, opts);
-
-  // Create the loader method for the collection
-  opts.lastLoader = views.loader(opts);
-  var loaderFn = this.compose(opts, loaders);
-
-  // forward methods from the collection intance onto the template loader
-  // function for this view collection.
-  utils.forwardEach(loaderFn, views, [
-    'get',
-    'render',
-    'context',
-    'use',
-    'related',
-    'matchKeys',
-    'filter',
-    'recent'
-  ]);
-
-  this.mixin(opts.inflection, loaderFn);
-  this.mixin(opts.collection, loaderFn);
-};
-
-/**
- * Delegate a view collection method onto the corresponding instance
- * collection method (`this.views.pages.recent` => `this.pages.recent`)
- *
- * @param  {String} `template` a template object
- * @api public
- */
-
-Template.prototype.delegate = function(plural, name) {
-  var val = this.views[plural][name];
-  if (typeof val === 'function') {
-    utils.mixin(this[plural], name, val.bind(this.views[plural]));
-  } else {
-    utils.mixin(this[plural], name, val);
-  }
 };
 
 /**

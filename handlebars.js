@@ -6,20 +6,20 @@ var glob = require('glob');
 var File = require('vinyl');
 var through = require('through2');
 var Template = require('./');
-var template = new Template();
+var app = new Template();
 
-template.engine('hbs', require('engine-handlebars'));
-template.enable('frontMatter');
+app.engine('hbs', require('engine-handlebars'));
+app.enable('frontMatter');
 
 var mm = require('micromatch');
 
-template.create('post');
+app.create('post');
 
-template.post('a', {content: 'this is A...'});
-template.post('b', {content: 'this is B...'});
-template.post('c', {content: 'this is C...'});
+app.post('a', {content: 'this is A...'});
+app.post('b', {content: 'this is B...'});
+app.post('c', {content: 'this is C...'});
 
-template.asyncHelper('post', function (name, options, cb) {
+app.asyncHelper('post', function (name, options, cb) {
   var file = this.app.views.posts[name];
   if (typeof options === 'function') {
     cb = options;
@@ -33,7 +33,7 @@ template.asyncHelper('post', function (name, options, cb) {
   });
 });
 
-template.asyncHelper('posts', function(options, cb) {
+app.asyncHelper('posts', function(options, cb) {
   if (typeof options === 'function') {
     cb = options;
     options = {};
@@ -54,7 +54,7 @@ template.asyncHelper('posts', function(options, cb) {
   });
 });
 
-// template.asyncHelper('posts', function(options, cb) {
+// app.asyncHelper('posts', function(options, cb) {
 //   if (typeof options === 'function') {
 //     cb = options;
 //     options = {};
@@ -75,7 +75,7 @@ template.asyncHelper('posts', function(options, cb) {
 //   });
 // });
 
-// template.asyncHelper('foo', function (name, locals, cb) {
+// app.asyncHelper('foo', function (name, locals, cb) {
 //   if (typeof locals === 'function') {
 //     cb = locals;
 //     locals = {};
@@ -90,7 +90,7 @@ template.asyncHelper('posts', function(options, cb) {
 //   });
 // });
 
-// template.asyncHelper('views', function(collection, pattern, locals, cb) {
+// app.asyncHelper('views', function(collection, pattern, locals, cb) {
 //   if (typeof locals === 'function') {
 //     cb = locals;
 //     locals = {};
@@ -113,7 +113,7 @@ template.asyncHelper('posts', function(options, cb) {
 // });
 
 
-template.helper('pages', function (pattern, context, options) {
+app.helper('pages', function (pattern, context, options) {
   if (typeof pattern !== 'string') {
     context = pattern;
     pattern = '*';
@@ -130,11 +130,11 @@ template.helper('pages', function (pattern, context, options) {
  */
 
 // sync loaders
-template.loader('glob', function(pattern) {
+app.loader('glob', function(pattern) {
   return glob.sync(pattern);
 });
 
-template.loader('read', function(files) {
+app.loader('read', function(files) {
   return files.reduce(function (acc, fp) {
     var str = fs.readFileSync(fp, 'utf8');
     var name = path.basename(fp);
@@ -144,11 +144,12 @@ template.loader('read', function(files) {
 });
 
 // create a view collection
-template.create('page', { viewType: 'renderable' }, ['glob', 'read']);
+app.create('page', { viewType: 'renderable' }, ['glob', 'read']);
 
 // define sync plugins
 function one(options) {
   return function(views) {
+  console.log(this)
     // console.log('one:', views)
     return views;
   }
@@ -161,16 +162,26 @@ function two() {
   }
 }
 
-var pages = template.pages('test/fixtures/*.hbs')
-  .use(one())
-  .use(two());
+var pages = app.pages('test/fixtures/*.hbs')
+  // .use(function (views) {
+  //   console.log('this:', this);
+  // })
+  // .use(function (views) {
+  //   console.log('views:', views);
+  // })
+  .use(function (views) {
+    console.log('get:', this.get('c.hbs'));
+  })
 
-for (var key in pages) {
-  if (pages.hasOwnProperty(key)) {
-    template.render(pages[key], function (err, res) {
-      // console.log(res);
-    });
-  }
-}
+// console.log(pages);
 
-// console.log(template.views)
+
+// for (var key in pages) {
+//   if (pages.hasOwnProperty(key)) {
+//     app.render(pages[key], function (err, res) {
+//       // console.log(res);
+//     });
+//   }
+// }
+
+// console.log(app.views)

@@ -12,17 +12,9 @@ var fs = require('fs');
 var async = require('async');
 var path = require('path');
 var glob = require('globby');
-var File = require('vinyl');
 var through = require('through2');
 var Template = require('../');
 var template;
-
-function toTemplateAsync(files, next) {
-  async.reduce(files, {}, function (acc, fp, cb) {
-    acc[fp] = {path: fp, content: fs.readFileSync(fp, 'utf8')};
-    cb(null, acc);
-  }, next);
-}
 
 describe('loaders', function () {
   describe('errors:', function () {
@@ -35,18 +27,6 @@ describe('loaders', function () {
         template.create();
       }).should.throw('Template#create: expects singular to be a string');
     });
-
-    // it('loader should throw an error when args are invalid:', function () {
-    //   (function () {
-    //     template.loader();
-    //   }).should.throw('Template#loader: expects name to be a string');
-    // });
-
-    // it('buildStack should throw an error when args are invalid:', function () {
-    //   (function () {
-    //     template.buildStack();
-    //   }).should.throw('Template#buildStack: expects type to be a string');
-    // });
   });
 
   describe('sync:', function () {
@@ -431,42 +411,43 @@ describe('loaders', function () {
       var opts = {loaderType: 'stream'};
 
       template.loader('glob', opts, function() {
-        return through.obj(function (pattern, enc, cb) {
+        return through.obj(function (pattern, enc, next) {
           var stream = this;
 
           glob(pattern, function (err, files) {
-            if (err) return cb(err);
-            stream.push([files]);
-            return cb();
+            if (err) return next(err);
+            stream.push(files);
+            return next();
           });
         });
       });
 
-      template.loader('toVinyl', opts, ['glob'], through.obj(function toVinyl(files, enc, cb) {
+      template.loader('toVinyl', opts, ['glob'], through.obj(function toVinyl(files, enc, next) {
         var stream = this;
         files.forEach(function (fp) {
-          stream.push(new File({
+          stream.push({
             path: fp,
             contents: fs.readFileSync(fp)
-          }));
+          });
         });
-        return cb();
+        return next();
       }));
 
-      template.loader('plugin', opts, through.obj(function plugin(file, enc, cb) {
+      template.loader('plugin', opts, through.obj(function plugin(file, enc, next) {
         var str = file.contents.toString();
+        var res = {};
         file.contents = new Buffer(str.toLowerCase());
-        this.push(file);
-        return cb();
+        res[file.path] = file;
+        this.push(res);
+        return next();
       }));
 
       template.create('post', { viewType: 'renderable', loaderType: 'stream' });
 
       template.posts('test/fixtures/*.txt', ['toVinyl', 'plugin'])
-        .on('error', console.error)
-        .pipe(through.obj(function(file, enc, cb) {
+        .pipe(through.obj(function(file, enc, next) {
           this.push(file);
-          return cb();
+          return next();
         }, function () {
           done();
         }))

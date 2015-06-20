@@ -20,6 +20,39 @@
 ## .set
 ## .get
 
+## .context
+
+Build the context object for a single view.
+
+```js
+var ctx = view.context();
+```
+
+Extend the context object for a single view.
+
+```js
+var ctx = view.context({foo: 'bar'});
+```
+
+Pass a custom function for modifying the context.
+
+```js
+// return data only
+var ctx = view.context(function (data, locals) {
+  return data;
+});
+
+// return locals only
+var ctx = view.context(function (data, locals) {
+  return locals;
+});
+
+// extend however you want
+var ctx = view.context(function (data, locals) {
+  return extend({foo: 'bar'}, locals, data);
+});
+```
+
 **Example**
 
 Use a view's `get` method as a handlebars subexpression:

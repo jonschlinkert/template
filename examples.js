@@ -2,8 +2,7 @@
 var fs = require('fs');
 var path = require('path');
 var through = require('through2');
-var Template = require('./');
-var template = new Template();
+var template = require('./');
 var glob = require('glob');
 var File = require('vinyl');
 

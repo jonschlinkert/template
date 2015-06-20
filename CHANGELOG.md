@@ -1,5 +1,11 @@
 ## Changes
 
+## Front matter
+
+```js
+app.enable('frontMatter');
+```
+
 ### Templates
 
 - `getType` > `getViewType`

@@ -8,7 +8,8 @@
 'use strict';
 
 require('should');
-var debug = require('../lib/debug');
+var utils = require('../lib/utils');
+var debug = utils.debug;
 
 // setup a way to capture output
 var output = [];

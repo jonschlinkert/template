@@ -1,26 +1,27 @@
 'use strict';
 
+
 // require('time-require');
-var lazy = require('lazy-cache')(require);
-var YAML = lazy('js-yaml');
+
+/**
+ * Module dependencies
+ */
+
+var Config = require('config-cache');
+var Engine = require('engine-cache');
+var Loader = require('loader-cache');
+var Option = require('option-cache');
+var Plasma = require('plasma-cache');
 var plasma = require('plasma');
-var isObject = require('isobject');
-var extend = require('extend-shallow');
-var inflect = require('pluralize');
 
-var ConfigCache = require('config-cache');
-var EngineCache = require('engine-cache');
-var HelperCache = require('helper-cache');
-var LoaderCache = require('loader-cache');
-var OptionCache = require('option-cache');
-var PlasmaCache = require('plasma-cache');
+/**
+ * Local dependencies
+ */
 
-var assert = require('./lib/error/assert');
 var error = require('./lib/error/base');
+var assert = require('./lib/error/assert');
 var transforms = require('./lib/transforms');
 var Collection = require('./lib/collection');
-var iterators = require('./lib/iterators');
-var validate = require('./lib/validate');
 var loaders = require('./lib/loaders/');
 var utils = require('./lib/utils');
 
@@ -30,25 +31,41 @@ var utils = require('./lib/utils');
  * @param {Object} `options`
  * @api public
  */
+
 function Template(options) {
-  OptionCache.call(this, options);
-  ConfigCache.call(this);
-  PlasmaCache.call(this, { plasma: plasma });
-  LoaderCache.call(this);
+  Option.call(this, options);
+  Config.call(this);
+  Loader.call(this);
+  Plasma.call(this, {
+    plasma: plasma
+  });
+  this.init();
+}
+
+
+/**
+ * Extend template
+ */
+
+Config.mixin(Template.prototype);
+utils.extend(Template.prototype, Option.prototype);
+utils.extend(Template.prototype, Plasma.prototype);
+utils.extend(Template.prototype, Loader.prototype);
+
+/**
+ * Initialize template
+ */
+
+Template.prototype.init = function() {
   this.initDefaults();
   this.initTransforms();
   this.initLoaders();
   this.initConfig();
   this.listen();
-}
-
-ConfigCache.mixin(Template.prototype);
-extend(Template.prototype, OptionCache.prototype);
-extend(Template.prototype, PlasmaCache.prototype);
-extend(Template.prototype, LoaderCache.prototype);
+};
 
 /**
- * Initialize template and loader types
+ * Initialize defaults
  */
 
 Template.prototype.initDefaults = function() {
@@ -82,19 +99,13 @@ Template.prototype.initDefaults = function() {
   this.inflections = {};
 
   this._.helpers = {};
-  this._.engines = new EngineCache(this.engines);
+  this._.engines = new Engine(this.engines);
 
   this.loaderType('helpers');
   this.loaderType('sync');
   this.loaderType('async');
   this.loaderType('promise');
   this.loaderType('stream');
-
-  // data
-  this.dataLoader('yml', function () {
-    var yaml = YAML();
-    return yaml.load.apply(yaml, arguments);
-  });
 
   // view types
   this.viewType('renderable');
@@ -159,13 +170,13 @@ Template.prototype.initLoaders = function() {
   var first = loaders.first(this);
 
   // iterators
-  this.iterator('async', iterators.async);
-  this.iterator('promise', iterators.promise);
-  this.iterator('stream', iterators.stream);
-  this.iterator('sync', iterators.sync);
+  this.iterator('async', loaders.iterators.async);
+  this.iterator('promise', loaders.iterators.promise);
+  this.iterator('stream', loaders.iterators.stream);
+  this.iterator('sync', loaders.iterators.sync);
 
   // load default helpers and templates
-  this.loader('helpers', { loaderType: 'sync' }, loaders.helpers(this));
+  this.loader('helpers', { loaderType: 'sync' }, loaders.helpers);
   this.loader('default', { loaderType: 'sync' }, first.sync);
   this.loader('default', { loaderType: 'async' }, first.async);
   this.loader('default', { loaderType: 'promise' }, first.promise);
@@ -186,7 +197,7 @@ Template.prototype.listen = function() {
 
 /**
  * Transforms are run immediately during init, and are used to
- * extend or modify the `this` object.
+ * utils.extend or modify the `this` object.
  *
  * @param {String} `name` The name of the transform to add.
  * @param {Function} `fn` The actual transform function.
@@ -224,7 +235,7 @@ Template.prototype.viewType = function(name) {
  */
 
 Template.prototype.isViewType = function(type, options) {
-  var opts = extend({viewType: []}, options);
+  var opts = utils.extend({viewType: []}, options);
   return opts.viewType.indexOf(type) !== -1;
 };
 
@@ -237,7 +248,7 @@ Template.prototype.isViewType = function(type, options) {
  */
 
 Template.prototype.inflect = function(name) {
-  return this.inflections[name] || (this.inflections[name] = inflect(name));
+  return this.inflections[name] || (this.inflections[name] = utils.inflect(name));
 };
 
 /**
@@ -275,7 +286,7 @@ Template.prototype.create = function(singular, options, loaders) {
   this.assert('create', 'singular', 'string', singular);
 
   var args = [].slice.call(arguments, 1);
-  var opts = isObject(options) ? args.shift(): {};
+  var opts = utils.isObject(options) ? args.shift(): {};
 
   var plural = this.inflect(singular);
   opts.viewType = this.setViewType(plural, opts);
@@ -300,6 +311,7 @@ Template.prototype.create = function(singular, options, loaders) {
   utils.forwardEach(loaderFn, views, [
     'get',
     'render',
+    'context',
     'use',
     'related',
     'matchKeys',
@@ -354,7 +366,7 @@ Template.prototype.collectionHelpers = function(singular, plural, options) {
  */
 
 Template.prototype.validate = function(/*template*/) {
-  return validate.apply(validate, arguments);
+  return utils.validate.apply(this, arguments);
 };
 
 /**
@@ -362,8 +374,8 @@ Template.prototype.validate = function(/*template*/) {
  */
 
 Template.prototype.context = function(view, prop, val) {
-  if (isObject(view)) {
-    return utils.set(view, ['contexts', prop], val);
+  if (utils.isObject(view)) {
+    return utils.setProp(view, ['contexts', prop], val);
   }
 };
 
@@ -385,4 +397,3 @@ Template.prototype.mixin = function(name, fn) {
  */
 
 module.exports = Template;
-

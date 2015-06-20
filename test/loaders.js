@@ -428,8 +428,9 @@ describe('loaders', function () {
     });
 
     it('should use custom stream loaders', function (done) {
+      var opts = {loaderType: 'stream'};
 
-      template.loader('glob', {loaderType: 'stream'}, function() {
+      template.loader('glob', opts, function() {
         return through.obj(function (pattern, enc, cb) {
           var stream = this;
 
@@ -441,7 +442,7 @@ describe('loaders', function () {
         });
       });
 
-      template.loader('toVinyl', {loaderType: 'stream'}, ['glob'], through.obj(function toVinyl(files, enc, cb) {
+      template.loader('toVinyl', opts, ['glob'], through.obj(function toVinyl(files, enc, cb) {
         var stream = this;
         files.forEach(function (fp) {
           stream.push(new File({
@@ -452,7 +453,7 @@ describe('loaders', function () {
         return cb();
       }));
 
-      template.loader('plugin', {loaderType: 'stream'}, through.obj(function plugin(file, enc, cb) {
+      template.loader('plugin', opts, through.obj(function plugin(file, enc, cb) {
         var str = file.contents.toString();
         file.contents = new Buffer(str.toLowerCase());
         this.push(file);

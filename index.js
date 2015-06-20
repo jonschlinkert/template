@@ -42,7 +42,6 @@ function Template(options) {
   this.init();
 }
 
-
 /**
  * Extend template
  */
@@ -114,21 +113,6 @@ Template.prototype.initDefaults = function() {
 };
 
 /**
- * Initialize default transforms.
- */
-
-Template.prototype.initTransforms = function() {
-  this.transform('engines', transforms.engines);
-  this.transform('helpers', transforms.helpers);
-  this.transform('lookups', transforms.lookups);
-  this.transform('routes', transforms.routes);
-  this.transform('layouts', transforms.layouts);
-  this.transform('middleware', transforms.middleware);
-  this.transform('context', transforms.context);
-  this.transform('render', transforms.render);
-};
-
-/**
  * Initialize configuration defaults
  */
 
@@ -160,6 +144,21 @@ Template.prototype.initConfig = function() {
   this.create('page', { viewType: 'renderable' });
   this.create('partial', { viewType: 'partial' });
   this.create('layout', { viewType: 'layout' });
+};
+
+/**
+ * Initialize default transforms.
+ */
+
+Template.prototype.initTransforms = function() {
+  this.transform('engines', transforms.engines);
+  this.transform('helpers', transforms.helpers);
+  this.transform('lookups', transforms.lookups);
+  this.transform('routes', transforms.routes);
+  this.transform('layouts', transforms.layouts);
+  this.transform('middleware', transforms.middleware);
+  this.transform('context', transforms.context);
+  this.transform('render', transforms.render);
 };
 
 /**
@@ -285,21 +284,28 @@ Template.prototype.setViewType = function(plural, opts) {
 Template.prototype.create = function(singular, options, loaders) {
   this.assert('create', 'singular', 'string', singular);
 
-  var args = [].slice.call(arguments, 1);
-  var opts = utils.isObject(options) ? args.shift(): {};
-
+  // get the plural inflection of the collection name
   var plural = this.inflect(singular);
+  var args = [].slice.call(arguments, 1);
+
+  // make sure we have the correct args for options and loaders
+  var opts = utils.isObject(options) ? args.shift(): {};
+  loaders = [].concat.apply([], args);
+
+  // add loaderType, viewType, and collection inflections to the opts
   opts.viewType = this.setViewType(plural, opts);
   opts.loaderType = opts.loaderType || 'sync';
   opts.inflection = singular;
   opts.collection = plural;
 
+  // track `.create` method options, so they can be used later
   this.options.views[plural] = opts;
   this.contexts.create[plural] = opts;
-  loaders = [].concat.apply([], args);
 
-  // create a new collection
-  var views = this.views[plural] = new Collection(opts, loaders, this);
+  // create the new view collection
+  this.views[plural] = new Collection(opts, loaders, this);
+
+  // add built-in template helpers for the collection
   this.collectionHelpers(singular, plural, opts);
 };
 

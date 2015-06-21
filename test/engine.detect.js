@@ -191,7 +191,7 @@ describe('detect engine', function() {
     });
 
     describe('render async (uses `consolidate` lib):', function() {
-      it('should use the `ext` property defined on the template options.', function() {
+      it('should use the `engine` property defined on the template options.', function() {
         template.page('b', {content: str, options: {engine: 'handlebars'}});
         template.render('b', function (err, content) {
           if (err) console.log(err);

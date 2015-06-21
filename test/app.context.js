@@ -10,7 +10,7 @@
 /* deps: mocha load-templates handlebars */
 require('should');
 var Template = require('..');
-var template;
+var template = new Template();
 
 describe('app context', function() {
   beforeEach(function() {

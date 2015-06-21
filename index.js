@@ -69,8 +69,8 @@ Template.prototype.init = function() {
 
 Template.prototype.initDefaults = function() {
   // error handling
-  this.mixin('assert', assert.bind(this));
-  this.mixin('error', error.bind(this));
+  this.defineProp('assert', assert.bind(this));
+  this.defineProp('error', error.bind(this));
 
   // make plasma options non-enumerable
   Object.defineProperty(this.options, 'plasma', {
@@ -303,7 +303,16 @@ Template.prototype.create = function(singular, options, loaders) {
   this.contexts.create[plural] = opts;
 
   // create the new view collection
-  this.views[plural] = new Collection(opts, loaders, this);
+  var views = this.views[plural] = new Collection(opts, loaders, this);
+
+  // Create the loader method for the collection
+  opts.lastLoader = views.loader(opts);
+  var fn = this.compose(opts, loaders);
+
+  // forward methods from the collection instance onto `fn`
+  fn.__proto__ = views;
+  this.defineProp(singular, fn);
+  this.defineProp(plural, fn);
 
   // add built-in template helpers for the collection
   this.collectionHelpers(singular, plural, opts);
@@ -357,8 +366,19 @@ Template.prototype.context = function(view, prop, val) {
  * @private
  */
 
-Template.prototype.mixin = function(name, fn) {
-  utils.mixin(this, name, fn);
+Template.prototype.defineProp = function(name, fn) {
+  utils.defineProp(this, name, fn);
+};
+
+/**
+ * Private method for forwarding `Template` instance methods onto the
+ * given object.
+ *
+ * @param  {Object|Function} `value`
+ */
+
+Template.prototype.forward = function(value) {
+  return utils.forward(value, this);
 };
 
 /**

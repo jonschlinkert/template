@@ -2,8 +2,9 @@
 var fs = require('fs');
 var path = require('path');
 var through = require('through2');
-var template = require('./');
-var glob = require('glob');
+var Template = require('./');
+var template = new Template();
+var glob = require('globby');
 var File = require('vinyl');
 
 /**
@@ -13,7 +14,11 @@ var File = require('vinyl');
 var opts = { loaderType: 'async' };
 
 // loaders
-template.loader('base', opts, function (key, value, next) {
+template.loader('base', opts, function (key, value, opts, next) {
+  if (typeof opts === 'function') {
+    next = opts;
+    opts = {};
+  }
   var results = {};
   results[key] = value;
   next(null, results);
@@ -69,7 +74,6 @@ var foo = template.includes('test/fixtures/*.txt')
   .use(one())
   .use(two())
 // console.log(foo)
-console.log(foo)
 
 /**
  * stream
@@ -92,18 +96,18 @@ template.loader('glob', opts, function() {
 template.loader('toVinyl', opts, ['glob'], through.obj(function toVinyl(files, enc, cb) {
   var stream = this;
   files.forEach(function (fp) {
-    stream.push(new File({
+    stream.push({
       path: fp,
       contents: fs.readFileSync(fp)
-    }));
+    });
   });
   return cb();
 }));
 
 template.loader('plugin', opts, through.obj(function(file, enc, cb) {
-  var str = file.contents.toString();
-  file.contents = new Buffer(str.toLowerCase());
-  this.push(file);
+  var res = {};
+  res[file.path] = file;
+  this.push(res);
   return cb();
 }));
 
@@ -112,15 +116,13 @@ template.create('doc', { viewType: 'renderable', loaderType: 'stream' });
 
 // load templates with the collection-loader
 template.docs('test/fixtures/*.txt', ['toVinyl', 'plugin'])
-  .on('error', console.error)
   .pipe(through.obj(function(file, enc, cb) {
-    console.log(file)
     this.push(file);
     return cb();
   }))
   .on('error', console.error)
   .on('data', function () {
-    // console.log(template.views.docs)
+    console.log(template.views.docs)
   })
 
 

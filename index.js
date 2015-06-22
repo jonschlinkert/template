@@ -2,10 +2,9 @@
 
 var path = require('path');
 var extend = require('extend-shallow');
-var isObject = require('isobject');
 var Loaders = require('loader-cache');
-var set = require('set-value');
 var Views = require('./lib/views');
+var utils = require('./lib/utils');
 
 /**
  * Create a new instance of `Template` with the given `options.
@@ -20,7 +19,6 @@ function Template(options) {
   }
   this.loaders = new Loaders(options);
   this.options = options || {};
-  this.router = this.options.router;
   this.engines = {};
   this.views = {};
   this.cache = {};
@@ -38,7 +36,7 @@ Template.prototype = {
    */
 
   create: function (name, options, loaders) {
-    var views = new Views(options, loaders);
+    var views = new Views(options, loaders, this);
 
     this.views[name] = views;
     this.mixin(name, function () {
@@ -89,13 +87,37 @@ Template.prototype = {
   },
 
   /**
-   * Add a new `Loader` to the instance.
+   * Lazily initalize `router`, to allow options to
+   * be passed in after init.
    */
 
-  handle: function (method, view, cb) {
+  lazyRouter: function() {
+    if (typeof this.router === 'undefined') {
+      var Router = this.options.router;
+      this.router = new Router({
+        methods: utils.methods
+      });
+    }
+  },
+
+  /**
+   * Handle middleware for the given `view` and locals.
+   */
+
+  handle: function (method, view, locals, cb) {
+    if (typeof locals === 'function') {
+      cb = locals;
+      locals = {};
+    }
+
+    view.context(locals, method);
     view.options = view.options || {};
     view.options.method = method;
-    this.router.handle(view, cb);
+
+    this.router.handle(view, function (err) {
+      if (err) return cb(err);
+      cb(null, view);
+    });
   },
 
   /**
@@ -103,20 +125,18 @@ Template.prototype = {
    */
 
   render: function (view, locals, cb) {
+    this.handle('preRender', view, cb);
+
     var ext = path.extname(view.path);
     var ctx = this.context(view, locals);
-    var str = view.content;
     var engine = this.engine(ext);
+    var str = view.content;
 
     return engine.render(str, ctx, function (err, res) {
       if (err) return cb(err);
       view.content = res;
 
-      this.handle('all', view, function (err) {
-        if (err) return cb(err);
-
-        cb(null, view);
-      });
+      this.handle('postRender', view, cb);
     }.bind(this));
   },
 
@@ -141,6 +161,21 @@ Template.prototype = {
     Template.prototype[name] = fn;
   }
 };
+
+/**
+ * Add Router methods to Template.
+ */
+
+utils.methods.forEach(function(method) {
+  Template.prototype[method] = function(path) {
+    this.lazyRouter();
+
+    var route = this.router.route(path);
+    var args = [].slice.call(arguments, 1);
+    route[method].apply(route, args);
+    return this;
+  };
+});
 
 /**
  * Expose `Template`

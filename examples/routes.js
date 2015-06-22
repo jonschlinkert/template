@@ -1,15 +1,25 @@
 'use strict';
 
 var Router = require('en-route').Router;
-var router = new Router();
+var Template = require('..');
+var template = new Template({ router: Router });
 
-router.all(/\.tmpl/, function (file, next) {
+
+template.onLoad(/\.tmpl/, function (file, next) {
   file.content = file.content.toUpperCase();
   next();
 });
 
-var Template = require('..');
-var template = new Template({ router: router });
+template.preRender(/\.tmpl/, function (file, next) {
+  file.content = 'pre - ' + file.content;
+  next();
+});
+
+template.postRender(/\.tmpl/, function (file, next) {
+  file.content = file.content + ' - post';
+  next();
+});
+
 
 /**
  * Loader
@@ -40,9 +50,15 @@ template.pages('d.tmpl', {path: 'd.tmpl', content: '<%= name %>', name: 'ddd'})
     // console.log(arguments)
   })
 
-var page = template.getView('pages', 'a.tmpl');
+var a = template.getView('pages', 'a.tmpl');
 
-template.render(page, {}, function (err, res) {
+template.render(a, {}, function (err, res) {
   if (err) return console.log(err);
-  console.log(res)
+  console.log('Template#render:', arguments)
+});
+
+
+var b = template.getView('pages', 'b.tmpl');
+b.render({}, function () {
+  console.log('View#render:', arguments)
 });

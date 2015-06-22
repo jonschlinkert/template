@@ -34,6 +34,7 @@
     "set-value": "^0.2.0"
   },
   "devDependencies": {
+    "engine-lodash": "^0.7.1",
     "iterator-async": "^0.1.1",
     "iterator-sync": "^0.1.1",
     "mocha": "*",

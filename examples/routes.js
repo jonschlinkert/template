@@ -50,7 +50,7 @@ template.pages('d.tmpl', {path: 'd.tmpl', content: '<%= name %>', name: 'ddd'})
     // console.log(arguments)
   })
 
-var a = template.getView('pages', 'a.tmpl');
+var a = template.pages.get('a.tmpl');
 
 template.render(a, {}, function (err, res) {
   if (err) return console.log(err);
@@ -58,7 +58,8 @@ template.render(a, {}, function (err, res) {
 });
 
 
-var b = template.getView('pages', 'b.tmpl');
+var b = template.pages.get('b.tmpl');
+
 b.render({}, function () {
   console.log('View#render:', arguments)
 });

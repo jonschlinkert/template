@@ -109,11 +109,9 @@ Template.prototype = {
       cb = locals;
       locals = {};
     }
-
     view.context(locals, method);
     view.options = view.options || {};
     view.options.method = method;
-
     this.router.handle(view, function (err) {
       if (err) return cb(err);
       cb(null, view);
@@ -125,9 +123,9 @@ Template.prototype = {
    */
 
   render: function (view, locals, cb) {
-    this.handle('preRender', view, cb);
+    this.handle('preRender', view, locals, cb);
 
-    var ext = path.extname(view.path);
+    var ext = view.getExt(locals);
     var ctx = this.context(view, locals);
     var engine = this.engine(ext);
     var str = view.content;
@@ -136,7 +134,7 @@ Template.prototype = {
       if (err) return cb(err);
       view.content = res;
 
-      this.handle('postRender', view, cb);
+      this.handle('postRender', view, locals, cb);
     }.bind(this));
   },
 

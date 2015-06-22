@@ -1,7 +1,7 @@
 'use strict';
 
 var isObject = require('isobject');
-var Loader = require('./lib/loader');
+var Loaders = require('loader-cache');
 var Views = require('./lib/views');
 
 /**
@@ -15,7 +15,7 @@ function Template(options) {
   if (!(this instanceof Template)) {
     return new Template(options);
   }
-  this.loaders = {};
+  this.loaders = new Loaders(options);
   this.views = {};
   this.cache = {};
 }
@@ -39,6 +39,16 @@ Template.prototype = {
       return views.load.apply(views, arguments);
     });
 
+    this[name].__proto__ = views;
+    return this;
+  },
+
+  /**
+   * Add a new `Iterator` to the instance.
+   */
+
+  iterator: function (name, fn) {
+    this.loaders.iterator(name, fn);
     return this;
   },
 
@@ -47,7 +57,7 @@ Template.prototype = {
    */
 
   loader: function (name, opts, fn) {
-    this.loaders[name] = new Loader(name, opts, fn);
+    this.loaders.loader(name, opts, fn);
     return this;
   },
 

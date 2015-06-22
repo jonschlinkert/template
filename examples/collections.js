@@ -18,13 +18,18 @@ template.create('include', { viewType: 'partial' });
  * load some `posts`! (make sure to pass the name of our custom loader
  * as the last argument)
  */
-template.post('' {});
+template.post('test/fixtures/*.*');
 
+console.log(template.views.posts.hasOwnProperty('a.txt'));
+console.log(template.posts
+  .filter('path', '*.txt')
+  .hasOwnProperty('a.txt')
+);
 
 /**
  * Since the `renameKey` function was passed on the `create` method,
  * the `posts` template collection will use it in the collection's
  * `get` method, like so:
  */
-var a = template.posts.get('fixtures/a');
+var a = template.posts.get('a.txt');
 console.log(a);

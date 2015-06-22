@@ -1,6 +1,7 @@
 'use strict';
 
 var path = require('path');
+var Router = require('en-route').Router;
 var extend = require('extend-shallow');
 var Loaders = require('loader-cache');
 var Views = require('./lib/views');
@@ -19,6 +20,7 @@ function Template(options) {
   }
   this.loaders = new Loaders(options);
   this.options = options || {};
+  this.Router = Router;
   this.engines = {};
   this.views = {};
   this.cache = {};
@@ -93,8 +95,7 @@ Template.prototype = {
 
   lazyRouter: function() {
     if (typeof this.router === 'undefined') {
-      var Router = this.options.router;
-      this.router = new Router({
+      this.router = new this.Router({
         methods: utils.methods
       });
     }
@@ -109,6 +110,7 @@ Template.prototype = {
       cb = locals;
       locals = {};
     }
+    this.lazyRouter();
     view.context(locals, method);
     view.options = view.options || {};
     view.options.method = method;

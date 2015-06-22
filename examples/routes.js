@@ -1,8 +1,7 @@
 'use strict';
 
-var Router = require('en-route').Router;
 var Template = require('..');
-var template = new Template({ router: Router });
+var template = new Template();
 
 
 template.onLoad(/\.tmpl/, function (file, next) {

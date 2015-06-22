@@ -32,7 +32,7 @@ template.pages('d.tmpl', {path: 'd.tmpl', content: '<%= name %>', name: 'ddd'})
     // console.log(arguments)
   })
 
-var page = template.getView('pages', 'a.tmpl');
+var page = template.pages.get('a.tmpl');
 
 template.render(page, {}, function (err, res) {
   if (err) return console.log(err);

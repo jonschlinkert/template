@@ -1,10 +1,15 @@
 'use strict';
 
 var path = require('path');
-var Router = require('en-route').Router;
-var inflect = require('pluralize');
+var router = require('en-route');
+var layouts = require('layouts');
+var Engines = require('engine-cache');
+var Emitter = require('component-emitter');
 var extend = require('extend-shallow');
 var Loaders = require('loader-cache');
+var inflect = require('pluralize');
+var engines = require('./lib/engines');
+var helpers = require('./lib/helpers');
 var Views = require('./lib/views');
 var utils = require('./lib/utils');
 
@@ -19,12 +24,12 @@ function Template(options) {
   if (!(this instanceof Template)) {
     return new Template(options);
   }
+  Emitter.call(this);
   this.loaders = new Loaders(options);
-  this.options = options || {};
-  this.engines = {};
-  this.views = {};
-  this.cache = {};
+  this.init();
 }
+
+Emitter(Template.prototype);
 
 /**
  * Template methods
@@ -33,24 +38,42 @@ function Template(options) {
 Template.prototype = {
   constructor: Template,
 
+  init: function () {
+    this._ = {};
+    engines(this);
+    helpers(this);
+    this.options = {
+      layoutDelims: ['{%', '%}'],
+      layoutTag: 'body'
+    };
+    this.cache = {};
+    this.views = {};
+    this.viewTypes = {
+      layout: [],
+      renderable: [],
+      partial: []
+    };
+    this.inflections = {};
+  },
+
   /**
    * Create a new `Views` collection.
    */
 
-  create: function (single, options, loaders) {
-    var views = new Views(options, loaders, this);
-    var plural = inflect(single);
+  create: function (single, opts, loaders) {
+    var views = new Views(opts, loaders, this);
+    var plural = this.inflect(single);
+
+    views.option('collection', plural);
+    views.option('inflection', single);
+    this.viewType(plural, views.viewType());
 
     // add the collection to `views`
     this.views[plural] = views;
 
     // add loader methods to the instance
-    this.mixin(single, function () {
-      return views.load.apply(views, arguments);
-    });
-    this.mixin(plural, function () {
-      return views.load.apply(views, arguments);
-    });
+    this.mixin(single, views.load.bind(views));
+    this.mixin(plural, views.load.bind(views));
 
     // forward collection methods onto loaders
     this[single].__proto__ = views;
@@ -59,11 +82,35 @@ Template.prototype = {
   },
 
   /**
-   * Add a new `Iterator` to the instance.
+   * Set and map the plural name for a view collection.
+   *
+   * @param  {String} `name`
+   * @return {String}
+   * @api private
    */
 
-  getView: function (collection, name) {
-    return this.views[collection][name];
+  inflect: function(name) {
+    return this.inflections[name] || (this.inflections[name] = inflect(name));
+  },
+
+  /**
+   * Set view types for a collection.
+   *
+   * @param {String} `plural` e.g. `pages`
+   * @param {Object} `options`
+   * @api private
+   */
+
+  viewType: function(plural, types) {
+    var len = types.length, i = 0;
+    while (len--) {
+      var type = types[i++];
+      this.viewTypes[type] = this.viewTypes[type] || [];
+      if (this.viewTypes[type].indexOf(plural) === -1) {
+        this.viewTypes[type].push(plural);
+      }
+    }
+    return types;
   },
 
   /**
@@ -85,23 +132,10 @@ Template.prototype = {
   },
 
   /**
-   * Add a new `Loader` to the instance.
-   */
-
-  engine: function (ext, fn) {
-    if (ext[0] !== '.') ext = '.' + ext;
-    if (arguments.length === 1) {
-      return this.engines[ext];
-    }
-    this.engines[ext] = fn;
-    return this;
-  },
-
-  /**
    * Add `Router` to the prototype
    */
 
-  Router: Router,
+  Router: router.Router,
 
   /**
    * Lazily initalize `router`, to allow options to
@@ -110,7 +144,9 @@ Template.prototype = {
 
   lazyRouter: function() {
     if (typeof this.router === 'undefined') {
-      this.router = new this.Router({ methods: utils.methods });
+      utils.defineProp(this, 'router', new this.Router({
+        methods: utils.methods
+      }));
     }
   },
 
@@ -129,7 +165,7 @@ Template.prototype = {
 
     this.lazyRouter();
     view.options.method = method;
-    view.options.methods.push(method);
+    view.options.handled.push(method);
     view.emit('handle', method);
 
     this.router.handle(view, function (err) {
@@ -148,7 +184,7 @@ Template.prototype = {
    */
 
   handleView: function (method, view, locals, cb) {
-    if (view.options.methods.indexOf(method) === -1) {
+    if (view.options.handled.indexOf(method) === -1) {
       this.handle.apply(this, arguments);
     }
   },
@@ -198,49 +234,55 @@ Template.prototype = {
     return this;
   },
 
-  applyLayout: function(view, locals) {
-    // return if a layout has already been applied
+  /**
+   * Apply a layout to the given `view`.
+   *
+   * @param  {Object} `view`
+   * @param  {Object} `locals`
+   * @return {Object}
+   */
+
+  applyLayout: function(view) {
+
     if (view.options.layoutApplied) {
       return view;
     }
 
-    view.options.layoutApplied = true;
+    // handle pre-layout middleware
+    this.handle('preLayout', view);
+
     var opts = {};
-    var config = extend({}, view, locals, opts);
+    extend(opts, this.options);
+    extend(opts, view.options);
+    extend(opts, view.context());
 
-    var type = utils.arrayify(view.options.viewType || []);
-    if (type.indexOf('partial') !== -1) {
-      config.defaultLayout = false;
+    // get the layout stack
+    var stack = {};
+    var alias = this.viewTypes.layout;
+    var len = alias.length, i = 0;
+
+    while (len--) {
+      var views = this.views[alias[i++]];
+      for (var key in views) {
+        if (views.hasOwnProperty(key)) {
+          stack[key] = views[key];
+        }
+      }
     }
 
-    // Get the name of the (starting) layout to be used
-    var layout = config.layout
-      || config.locals && config.locals.layout
-      || config.data && config.data.layout
-      || config.options && config.options.layout;
+    // get the name of the first layout
+    var name = view.layout;
+    var str = view.content;
 
-    // If `layoutExt` is defined on the options, append
-    // it to the layout name before passing the name to [layouts]
-    var ext = this.option('layoutExt');
-    if (typeof ext === 'string') {
-      layout += utils.formatExt(ext);
-    }
-
-    var layouts = lazyLayouts();
-    // Merge `layout` collections based on settings
-    var stack = this.mergeLayouts(config);
-    var res = layouts(view.content, layout, stack, config);
-    if (res.options && res.options.options) {
-      extend(res.options, res.options.options);
-      delete res.options.options;
-    }
-
-    view.emit('layoutApplied');
-
-    // add the results to the `layoutStack` property of a view
-    view.options.layoutStack = res;
-    // update the view content to be the
+    // apply the layout
+    var res = layouts(str, name, stack, opts);
+    view.option('stack', res.stack);
+    view.option('layoutApplied', true);
     view.content = res.result;
+
+
+    // handle post-layout middleware
+    this.handle('postLayout', view);
     return view;
   },
 
@@ -254,22 +296,22 @@ Template.prototype = {
       locals = {};
     }
 
-    // handle `preCompile` middleware
-    this.handleView('preCompile', view, locals);
-
+    // hard-wire async for now
+    var isAsync = true;
     var ext = view.getEngine(locals);
     var engine = this.engine(ext);
 
     var ctx = this.context(view, locals);
-    var str = view.content;
-
-    // this.applyLayout(view, extend({}, context, opts));
+    view = this.applyLayout(view, ctx);
 
     // Bind context to helpers before passing to the engine.
-    // this.bindHelpers(locals, ctx);
+    // this.bindHelpers(locals, ctx, isAsync);
+
+    // handle `preCompile` middleware
+    this.handleView('preCompile', view, ctx);
 
     // compile the string
-    engine.compile(str, locals, function (err, fn) {
+    engine.compile(view.content, ctx, function (err, fn) {
       if (err) return cb(err);
       view.fn = fn;
 
@@ -292,18 +334,24 @@ Template.prototype = {
     // handle `preRender` middleware
     this.handleView('preRender', view, locals);
 
+    // get the engine
     var ext = view.getEngine(locals);
-    var ctx = this.context(view, locals);
-    var str = view.content;
     var engine = this.engine(ext);
 
+    // build the context for the view
+    var ctx = this.context(view, locals);
+
+    // if it's not already compiled, do that first
     if (typeof view.fn !== 'function') {
-      this.compile(view, locals, function(err, res) {
-        // console.log(arguments)
-      });
+      return this.compile(view, ctx, function(err, res) {
+        if (err) return cb.call(this, err);
+
+        this.render(res, locals, cb);
+      }.bind(this));
     }
 
-    return engine.render(str, ctx, function (err, res) {
+    // render the view
+    return engine.render(view.content, ctx, function (err, res) {
       if (err) return cb.call(this, err);
       view.content = res;
 
@@ -318,22 +366,31 @@ Template.prototype = {
 
   bindHelpers: function (locals, context, isAsync) {
     var helpers = {};
-
     extend(helpers, this.options.helpers);
     extend(helpers, this._.helpers.sync);
-    if (isAsync) {
-      extend(helpers, this._.helpers.async);
-    }
+    extend(helpers, this._.helpers.async);
     extend(helpers, locals.helpers);
 
-    // build the context to be exposed as `this` in helpers
+    // build the context (exposed as `this` in helpers)
     var ctx = {};
-    var opts = this.option('helper') || {};
-    ctx.options = extend({}, opts, locals);
+    ctx.options = extend({}, this.options.helper, locals);
     ctx.context = context || {};
     ctx.app = this;
 
     locals.helpers = utils.bindAll(helpers, ctx);
+  },
+
+  /**
+   * Set or get an option on the instance.
+   */
+
+  option: function (prop, value) {
+    if (typeof prop === 'object') {
+      this.visit('option', prop);
+    } else {
+      this.options[prop] = value;
+    }
+    return this;
   },
 
   /**
@@ -346,6 +403,15 @@ Template.prototype = {
     extend(ctx, view);
     extend(ctx, view.context(locals));
     return ctx;
+  },
+
+  /**
+   * Call the given method on each value in `obj`.
+   */
+
+  visit: function (method, obj) {
+    utils.visit(this, method, obj);
+    return this;
   },
 
   /**

@@ -6,7 +6,7 @@ var should = require('should');
 var App = require('..');
 var app
 
-describe('engines', function () {
+describe.skip('compile', function () {
   beforeEach(function () {
     app = new App();
     app.engine('tmpl', require('engine-lodash'));

@@ -2,14 +2,14 @@
 
 // require('time-require');
 
-var path = require('path');
+var forOwn = require('for-own');
 var router = require('en-route');
 var layouts = require('layouts');
-var Engines = require('engine-cache');
 var Emitter = require('component-emitter');
 var extend = require('extend-shallow');
 var Loaders = require('loader-cache');
 var inflect = require('pluralize');
+
 var engines = require('./lib/engines');
 var helpers = require('./lib/helpers');
 var Views = require('./lib/views');
@@ -31,13 +31,11 @@ function Template(options) {
   this.init();
 }
 
-Emitter(Template.prototype);
-
 /**
  * Template methods
  */
 
-Template.prototype = {
+Template.prototype = Emitter({
   constructor: Template,
 
   init: function () {
@@ -49,6 +47,7 @@ Template.prototype = {
       layoutTag: 'body'
     };
     this.cache = {};
+    this.cache.data = {};
     this.views = {};
     this.viewTypes = {
       layout: [],
@@ -56,6 +55,14 @@ Template.prototype = {
       partial: []
     };
     this.inflections = {};
+    this.listen();
+  },
+
+  listen: function () {
+    // this.onMerge(/./, function (view, next) {
+    //   this.applyLayout(view, locals);
+    //   next();
+    // });
   },
 
   /**
@@ -182,10 +189,10 @@ Template.prototype = {
    *
    * @param  {Object} `collection` Collection name
    * @param  {Object} `locals`
-   * @return {Array} Returns an array of template objects with rendered content.
+   * @return {Array} Returns an array of view objects with rendered content.
    */
 
-  handleView: function (method, view, locals, cb) {
+  handleView: function (method, view/*, locals, cb*/) {
     if (view.options.handled.indexOf(method) === -1) {
       this.handle.apply(this, arguments);
     }
@@ -230,7 +237,7 @@ Template.prototype = {
    * @api public
    */
 
-  param: function(name, fn) {
+  param: function(/*name, fn*/) {
     this.lazyRouter();
     this.router.param.apply(this.router, arguments);
     return this;
@@ -291,16 +298,17 @@ Template.prototype = {
    */
 
   compile: function(view, locals, isAsync) {
-    if (typeof locals === 'Boolean') {
+    if (typeof locals === 'boolean') {
       isAsync = locals;
       locals = {};
     }
-    locals = locals || {};
 
-    var ext = view.getEngine(locals);
-    var engine = this.engine(ext);
+    locals = locals || {};
+    var engine = this.engine(view.getEngine(locals));
 
     var ctx = this.context(view, locals);
+
+    // apply layout
     view = this.applyLayout(view, ctx);
 
     // Bind context to helpers before passing to the engine.
@@ -311,6 +319,7 @@ Template.prototype = {
 
     // compile the string
     view.fn = engine.compile(view.content, locals);
+
     // handle `postCompile` middleware
     this.handleView('postCompile', view, locals);
     return view;
@@ -326,13 +335,11 @@ Template.prototype = {
       locals = {};
     }
 
-
     // handle `preRender` middleware
     this.handleView('preRender', view, locals);
 
     // get the engine
-    var ext = view.getEngine(locals);
-    var engine = this.engine(ext);
+    var engine = this.engine(view.getEngine(locals));
 
     // build the context for the view
     var ctx = this.context(view, locals);
@@ -366,7 +373,9 @@ Template.prototype = {
     var helpers = {};
     extend(helpers, this.options.helpers);
     extend(helpers, this._.helpers.sync);
-    extend(helpers, this._.helpers.async);
+    if (isAsync) {
+      extend(helpers, this._.helpers.async);
+    }
     extend(helpers, locals.helpers);
 
     // build the context (exposed as `this` in helpers)
@@ -379,6 +388,19 @@ Template.prototype = {
   },
 
   /**
+   * Load data onto `app.cache.data`
+   */
+
+  data: function (prop, value) {
+    if (typeof prop === 'object') {
+      this.visit('data', prop);
+    } else {
+      this.cache.data[prop] = value;
+    }
+    return this;
+  },
+
+  /**
    * Set or get an option on the instance.
    */
 
@@ -386,17 +408,57 @@ Template.prototype = {
     if (typeof prop === 'object') {
       this.visit('option', prop);
     } else {
+      this.emit('option', prop, value);
       this.options[prop] = value;
     }
     return this;
   },
 
   /**
+   * Merge "partials" view types. This is necessary for template
+   * engines that only support one class of partials.
+   */
+
+  mergePartials: function (locals, keys) {
+    var names = keys || this.viewTypes.partial;
+    var opts = extend({}, this.options, locals);
+
+    return names.reduce(function (acc, name) {
+      var collection = this.views[name];
+
+      forOwn(collection, function (view, key) {
+        // handle `onMerge` middleware
+        this.handle('onMerge', view, locals);
+
+        if (view.options.nomerge) return;
+        if (opts.mergePartials === true) {
+          name = 'partials';
+        }
+        acc[name] = acc[name] || {};
+        acc[name][key] = view.content;
+      }, this);
+      return acc;
+    }.bind(this), {});
+  },
+
+  /**
    * Build the context for the given `view` and `locals`.
+   * This can be overridden by passing a function to the
+   * `mergeContext` option.
+   *
+   * @param  {Object} `view` Template object
+   * @param  {Object} `locals`
+   * @return {Object} The object to be passed to engines/views as context.
    */
 
   context: function (view, locals) {
     var ctx = {};
+
+    // add partials to the context to pass to engines
+    extend(ctx, this.mergePartials(locals));
+    // Merge in `locals/data` from views
+    // extend(ctx, this.cache.context.partials);
+
     extend(ctx, this.cache.data);
     extend(ctx, view);
     extend(ctx, view.context(locals));
@@ -419,7 +481,7 @@ Template.prototype = {
   mixin: function (name, fn) {
     Template.prototype[name] = fn;
   }
-};
+});
 
 /**
  * Add Router methods to Template.

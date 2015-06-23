@@ -290,14 +290,13 @@ Template.prototype = {
    * Compile a view.
    */
 
-  compile: function(view, locals, cb) {
-    if (typeof locals === 'function') {
-      cb = locals;
+  compile: function(view, locals, isAsync) {
+    if (typeof locals === 'Boolean') {
+      isAsync = locals;
       locals = {};
     }
+    locals = locals || {};
 
-    // hard-wire async for now
-    var isAsync = true;
     var ext = view.getEngine(locals);
     var engine = this.engine(ext);
 
@@ -305,20 +304,16 @@ Template.prototype = {
     view = this.applyLayout(view, ctx);
 
     // Bind context to helpers before passing to the engine.
-    // this.bindHelpers(locals, ctx, isAsync);
+    this.bindHelpers(locals, ctx, isAsync);
 
     // handle `preCompile` middleware
     this.handleView('preCompile', view, ctx);
 
     // compile the string
-    engine.compile(view.content, ctx, function (err, fn) {
-      if (err) return cb(err);
-      view.fn = fn;
-
-      // handle `postCompile` middleware
-      this.handleView('postCompile', view, locals);
-      cb(null, view);
-    }.bind(this));
+    view.fn = engine.compile(view.content, locals);
+    // handle `postCompile` middleware
+    this.handleView('postCompile', view, locals);
+    return view;
   },
 
   /**
@@ -343,11 +338,12 @@ Template.prototype = {
 
     // if it's not already compiled, do that first
     if (typeof view.fn !== 'function') {
-      return this.compile(view, ctx, function(err, res) {
-        if (err) return cb.call(this, err);
-
-        this.render(res, locals, cb);
-      }.bind(this));
+      try {
+        view = this.compile(view, ctx, (typeof cb === 'function'));
+        return this.render(view, locals, cb);
+      } catch (err) {
+        return cb.call(this, err);
+      }
     }
 
     // render the view

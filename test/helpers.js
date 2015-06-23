@@ -28,6 +28,7 @@ describe('sync helpers', function () {
 
     var page = app.pages.get('a.tmpl');
     app.render(page, function (err, view) {
+      console.log(err);
       if (err) return done(err);
 
       assert.equal(typeof view.content, 'string');

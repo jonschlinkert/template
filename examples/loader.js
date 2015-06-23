@@ -1,22 +1,22 @@
 'use strict';
 
-var Template = require('..');
-var template = new Template();
+var App = require('..');
+var app = new App();
 
-template.iterator('sync', require('iterator-sync'));
-template.iterator('async', require('iterator-async'));
+app.iterator('sync', require('iterator-sync'));
+app.iterator('async', require('iterator-async'));
 
-template.loader('a', function a() {});
-template.loader('b', function b() {});
-template.loader('c', function c() {});
-template.loader('d', {e: 'f'}, function d() {});
-template.loader('c', function a() {});
-template.loader('c', function a() {});
-template.loader('c', function a() {});
-template.loader('c', function b() {
+app.loader('a', function a() {});
+app.loader('b', function b() {});
+app.loader('c', function c() {});
+app.loader('d', {e: 'f'}, function d() {});
+app.loader('c', function a() {});
+app.loader('c', function a() {});
+app.loader('c', function a() {});
+app.loader('c', function b() {
   }, function c() {
   }, function d() {
   }, function e() {
 });
 
-console.log(template.loaders);
+console.log(app.loaders);

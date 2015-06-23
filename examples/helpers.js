@@ -27,14 +27,5 @@ app.pages('d', {path: 'd', content: 'ddd...'})
     // console.log(arguments)
   })
 
-var page = app.pages.get('d')
-  .use(function (view) {
-    console.log('view:', view)
-  })
 
-console.log('page:', page);
-console.log('------');
-
-var a = app.pages.get('d').clone()
-console.log('page:', a);
 

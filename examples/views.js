@@ -34,13 +34,18 @@ var pages = template.pages('e', {path: 'e', content: 'eee...'})
   .filter(function (val, key, views) {
     return /^[a-c]/.test(key);
   })
-  .filter(function (val, key, views) {
-    return /^c/.test(key);
-  })
+  // .filter(function (val, key, views) {
+  //   return /^c/.test(key);
+  // })
   .value()
 
-console.log('pages:\n', pages);
-console.log('-----');
-console.log('template.views.pages:\n', template.views.pages);
-console.log('-----');
-console.log('get:\n', template.pages.get('a'));
+var pages2 = template.pages.filter(function (val, key, views) {
+    return /^[a-f]/.test(key);
+  }).value();
+
+// console.log('pages:\n', pages);
+console.log('pages2:\n', pages2);
+// console.log('-----');
+// console.log('template.views.pages:\n', template.views.pages);
+// console.log('-----');
+// console.log('get:\n', template.pages.get('a'));

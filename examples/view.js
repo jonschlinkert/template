@@ -27,9 +27,14 @@ template.pages('d', {path: 'd', content: 'ddd...'})
     // console.log(arguments)
   })
 
-var page = template.views.pages.d
+var page = template.pages.get('d')
   .use(function (view) {
     console.log('view:', view)
   })
 
 console.log('page:', page);
+console.log('------');
+
+var a = template.pages.get('d').clone()
+console.log('page:', a);
+

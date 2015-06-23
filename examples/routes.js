@@ -1,20 +1,20 @@
 'use strict';
 
-var Template = require('..');
-var template = new Template();
+var App = require('..');
+var app = new App();
 
 
-template.onLoad(/\.tmpl/, function (file, next) {
+app.onLoad(/\.tmpl/, function (file, next) {
   file.content = file.content.toUpperCase();
   next();
 });
 
-template.preRender(/\.tmpl/, function (file, next) {
+app.preRender(/\.tmpl/, function (file, next) {
   file.content = 'pre - ' + file.content;
   next();
 });
 
-template.postRender(/\.tmpl/, function (file, next) {
+app.postRender(/\.tmpl/, function (file, next) {
   file.content = file.content + ' - post';
   next();
 });
@@ -23,41 +23,41 @@ template.postRender(/\.tmpl/, function (file, next) {
 /**
  * Loader
  */
-template.engine('tmpl', require('engine-lodash'));
+app.engine('tmpl', require('engine-lodash'));
 
 /**
  * Loader
  */
-template.iterator('sync', require('iterator-sync'));
-template.loader('sync', function (key, value) {
+app.iterator('sync', require('iterator-sync'));
+app.loader('sync', function (key, value) {
   return (this[key] = value);
 });
 
 /**
  * Create
  */
-template.create('pages', { loaderType: 'sync' });
+app.create('pages', { loaderType: 'sync' });
 
 /**
  * Load
  */
-template.pages('a.tmpl', {path: 'a.tmpl', content: '<%= name %>', name: 'aaa'});
-template.pages('b.tmpl', {path: 'b.tmpl', content: '<%= name %>', name: 'bbb'});
-template.pages('c.tmpl', {path: 'c.tmpl', content: '<%= name %>', name: 'ccc'});
-template.pages('d.tmpl', {path: 'd.tmpl', content: '<%= name %>', name: 'ddd'})
+app.pages('a.tmpl', {path: 'a.tmpl', content: '<%= name %>', name: 'aaa'});
+app.pages('b.tmpl', {path: 'b.tmpl', content: '<%= name %>', name: 'bbb'});
+app.pages('c.tmpl', {path: 'c.tmpl', content: '<%= name %>', name: 'ccc'});
+app.pages('d.tmpl', {path: 'd.tmpl', content: '<%= name %>', name: 'ddd'})
   .use(function (views, options, loaders) {
     // console.log(arguments)
   })
 
-var a = template.pages.get('a.tmpl');
+var a = app.pages.get('a.tmpl');
 
-template.render(a, {}, function (err, res) {
+app.render(a, {}, function (err, res) {
   if (err) return console.log(err);
   console.log('Template#render:', arguments)
 });
 
 
-var b = template.pages.get('b.tmpl');
+var b = app.pages.get('b.tmpl');
 
 b.render({}, function () {
   console.log('View#render:', arguments)

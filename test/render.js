@@ -20,6 +20,8 @@ describe('engines', function () {
     app.render(page, function (err, view) {
       if (err) return done(err);
 
+      console.log(view.review(['path', 'content']))
+
       assert.equal(typeof view.content, 'string');
       done();
     });

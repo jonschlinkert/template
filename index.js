@@ -1,5 +1,7 @@
 'use strict';
 
+// require('time-require');
+
 var path = require('path');
 var router = require('en-route');
 var layouts = require('layouts');
@@ -243,7 +245,6 @@ Template.prototype = {
    */
 
   applyLayout: function(view) {
-
     if (view.options.layoutApplied) {
       return view;
     }
@@ -279,7 +280,6 @@ Template.prototype = {
     view.option('stack', res.stack);
     view.option('layoutApplied', true);
     view.content = res.result;
-
 
     // handle post-layout middleware
     this.handle('postLayout', view);
@@ -326,6 +326,7 @@ Template.prototype = {
       locals = {};
     }
 
+
     // handle `preRender` middleware
     this.handleView('preRender', view, locals);
 
@@ -339,7 +340,8 @@ Template.prototype = {
     // if it's not already compiled, do that first
     if (typeof view.fn !== 'function') {
       try {
-        view = this.compile(view, ctx, (typeof cb === 'function'));
+        var isAsync = typeof cb === 'function';
+        view = this.compile(view, ctx, isAsync);
         return this.render(view, locals, cb);
       } catch (err) {
         return cb.call(this, err);

@@ -5,10 +5,12 @@
 var forOwn = require('for-own');
 var router = require('en-route');
 var layouts = require('layouts');
+var MapCache = require('map-cache');
 var Emitter = require('component-emitter');
 var extend = require('extend-shallow');
 var Loaders = require('loader-cache');
 var inflect = require('pluralize');
+var get = require('get-value');
 
 var engines = require('./lib/engines');
 var helpers = require('./lib/helpers');
@@ -29,6 +31,7 @@ function Template(options) {
   Emitter.call(this);
   this.loaders = new Loaders(options);
   this.init();
+  this.initMethods();
 }
 
 /**
@@ -46,8 +49,10 @@ Template.prototype = Emitter({
       layoutDelims: ['{%', '%}'],
       layoutTag: 'body'
     };
+    this.stash = new MapCache();
     this.cache = {};
     this.cache.data = {};
+    this.cache.context = {};
     this.views = {};
     this.viewTypes = {
       layout: [],
@@ -120,6 +125,15 @@ Template.prototype = Emitter({
       }
     }
     return types;
+  },
+
+  /**
+   * Find a stashed view.
+   */
+
+  lookup: function (key) {
+    var collection = this.stash.get(key);
+    return this.views[collection][key];
   },
 
   /**
@@ -305,7 +319,6 @@ Template.prototype = Emitter({
 
     locals = locals || {};
     var engine = this.engine(view.getEngine(locals));
-
     var ctx = this.context(view, locals);
 
     // apply layout
@@ -395,6 +408,7 @@ Template.prototype = Emitter({
     if (typeof prop === 'object') {
       this.visit('data', prop);
     } else {
+      this.emit('data', prop, value);
       this.cache.data[prop] = value;
     }
     return this;
@@ -407,6 +421,8 @@ Template.prototype = Emitter({
   option: function (prop, value) {
     if (typeof prop === 'object') {
       this.visit('option', prop);
+    } else if (typeof prop == 'string' && arguments.length === 1) {
+      return this.options[prop];
     } else {
       this.emit('option', prop, value);
       this.options[prop] = value;
@@ -480,23 +496,28 @@ Template.prototype = Emitter({
 
   mixin: function (name, fn) {
     Template.prototype[name] = fn;
+  },
+
+
+  /**
+   * Add Router methods to Template.
+   */
+
+  initMethods: function () {
+    var methods = utils.methods;
+    utils.methods.forEach(function(method) {
+      this[method] = function(path) {
+        this.lazyRouter();
+
+        var route = this.router.route(path);
+        var args = [].slice.call(arguments, 1);
+        route[method].apply(route, args);
+        return this;
+      }.bind(this);
+    }.bind(this));
   }
 });
 
-/**
- * Add Router methods to Template.
- */
-
-utils.methods.forEach(function(method) {
-  Template.prototype[method] = function(path) {
-    this.lazyRouter();
-
-    var route = this.router.route(path);
-    var args = [].slice.call(arguments, 1);
-    route[method].apply(route, args);
-    return this;
-  };
-});
 
 /**
  * Expose `Template`

@@ -23,4 +23,15 @@ describe('engines', function () {
       done();
     });
   });
+
+  it('should render a template:', function (done) {
+    app.pages('a.tmpl', {path: 'a.tmpl', content: '<%= a %>', a: 'b'});
+    var page = app.pages.get('a.tmpl');
+
+    app.render(page, function (err, view) {
+      if (err) return done(err);
+      assert.equal(typeof view.content, 'string');
+      done();
+    });
+  });
 });

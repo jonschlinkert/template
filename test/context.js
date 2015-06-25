@@ -10,7 +10,7 @@ describe('context', function () {
   beforeEach(function () {
     app = new App();
     app.engine('tmpl', require('engine-lodash'));
-    app.create('pages');
+    app.create('page');
   })
 
   it('should build the context for a template:', function () {

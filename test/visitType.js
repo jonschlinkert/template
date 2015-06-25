@@ -12,7 +12,7 @@ describe('mergeTypeContext', function () {
   beforeEach(function () {
     app = new App();
     app.engine('tmpl', require('engine-lodash'));
-    app.create('pages');
+    app.create('page');
 
     app.onLoad(/./, function (file, next) {
       // console.log(file.options.collection)

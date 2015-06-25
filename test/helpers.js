@@ -10,7 +10,7 @@ describe('sync helpers', function () {
   beforeEach(function () {
     app = new App();
     app.engine('tmpl', require('engine-lodash'));
-    app.create('pages');
+    app.create('page');
   })
 
   it('should register a helper:', function () {
@@ -42,7 +42,7 @@ describe('async helpers', function () {
   beforeEach(function () {
     app = new App();
     app.engine('tmpl', require('engine-lodash'));
-    app.create('pages');
+    app.create('page');
   })
 
   it('should register an async helper:', function () {

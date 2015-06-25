@@ -61,7 +61,7 @@ describe('mergePartials', function () {
     actual.should.eql({ foos: { a: 'aaa' }, bars: { b: 'bbb' }, bazs: { c: 'ccc' } });
   });
 
-  it('should handle `onMerge` middleware:', function () {
+  it.only('should handle `onMerge` middleware:', function () {
     var opts = { viewType: 'partial' };
     app.create('foo', opts);
     app.create('bar', opts);

@@ -10,7 +10,7 @@ describe('view.option()', function () {
   beforeEach(function () {
     app = new App();
     app.engine('tmpl', require('engine-lodash'));
-    app.create('pages');
+    app.create('page');
   });
 
 

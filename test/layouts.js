@@ -11,7 +11,7 @@ describe('layouts', function () {
     app = new App();
     app.engine('tmpl', require('engine-lodash'));
     app.create('layout', { viewType: 'layout' });
-    app.create('pages');
+    app.create('page');
   })
 
   it('should apply a layout to a view:', function (done) {

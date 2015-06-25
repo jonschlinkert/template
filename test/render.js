@@ -10,7 +10,7 @@ describe('engines', function () {
   beforeEach(function () {
     app = new App();
     app.engine('tmpl', require('engine-lodash'));
-    app.create('pages');
+    app.create('page');
   })
 
   it('should render a template:', function (done) {

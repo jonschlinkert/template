@@ -13,6 +13,7 @@ var inflect = require('pluralize');
 var get = require('get-value');
 
 var engines = require('./lib/engines');
+var loaders = require('./lib/loaders/index');
 var helpers = require('./lib/helpers');
 var Views = require('./lib/views');
 var utils = require('./lib/utils');
@@ -64,9 +65,8 @@ Template.prototype = Emitter({
     };
     this.inflections = {};
     this.handlers(utils.methods);
-    this.iterator('sync', function () {
 
-    });
+    this.iterator('sync', loaders.iterators.sync);
   },
 
   /**
@@ -81,28 +81,45 @@ Template.prototype = Emitter({
    * Create a new `Views` collection.
    */
 
-  create: function (single, opts, loaders) {
-    var views = new Views(opts, loaders, this);
-    var plural = this.inflect(single);
+  create: function (single, options, loaders) {
+    var args = utils.slice(arguments, 1);
+    var opts = args.shift();
 
-    views.option('collection', plural);
-    views.option('inflection', single);
+    var plural = this.inflect(single);
+    opts.loaderType = opts.loaderType || 'sync';
+    opts.collection = plural;
+    opts.inflection = single;
+
+    var views = new Views(opts, args, this);
     this.viewType(plural, views.viewType());
 
     // add the collection to `views`
     this.views[plural] = views;
+    var self = this;
+
+    var load = function(key, val) {
+      views.set(key, val);
+      return views;
+    }.bind(views);
+
+    // load views onto the collection
+    this.loaders.on('preLoad', function (args, stack) {
+      if (stack.length === 0) {
+        stack.push(load);
+      }
+    });
+
+    // load views onto the collection
+    this.loaders.on('data', load);
 
     // get the loader for the collection
-    var loader = views.load.bind(views);
-    this.loader(plural, opts, loader);
+    var loaders = this.loaders.resolve(args);
+    var loader = this.loaders.compose(plural);
 
     // decorate named loader methods to the collection.
     // this allows chaining `.pages` etc
     utils.defineProp(views, plural, loader);
     utils.defineProp(views, single, loader);
-
-    // decorate collection loaders onto the collection
-    utils.defineProp(views, 'loaders', this.loader(plural));
 
     // forward collection methods onto loader
     loader.__proto__ = views;
@@ -180,11 +197,11 @@ Template.prototype = Emitter({
    */
 
   loader: function (name, opts, fn) {
-    if (arguments.length === 1) {
-      opts = extend({loaderType: 'sync'}, opts);
-      return this.loaders[opts.loaderType];
-    }
-    this.loaders.loader(name, opts, fn);
+    // if (arguments.length === 1) {
+    //   opts = extend({loaderType: 'sync'}, opts);
+    //   return this.loaders[opts.loaderType];
+    // }
+    this.loaders.set(name, opts, fn);
     return this;
   },
 

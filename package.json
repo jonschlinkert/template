@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "arr-flatten": "^1.0.1",
+    "arr-map": "^2.0.0",
     "clone-deep": "^0.1.1",
     "component-emitter": "^1.2.0",
     "debug": "^2.2.0",
@@ -36,6 +37,7 @@
     "isobject": "^1.0.0",
     "layouts": "^0.9.0",
     "loader-cache": "jonschlinkert/loader-cache#classes",
+    "lodash": "^3.9.3",
     "make-iterator": "^0.1.1",
     "map-cache": "^0.2.0",
     "object.omit": "^1.1.0",

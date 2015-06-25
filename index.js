@@ -31,7 +31,6 @@ function Template(options) {
   Emitter.call(this);
   this.loaders = new Loaders(options);
   this.init();
-  this.initMethods();
 }
 
 /**
@@ -50,6 +49,10 @@ Template.prototype = Emitter({
       layoutTag: 'body'
     };
     this.stash = new MapCache();
+    this.errors = {
+      compile: 'Template#compile expects engines to have a compile method',
+      render: 'Template#render expects engines to have a render method',
+    };
     this.cache = {};
     this.cache.data = {};
     this.cache.context = {};
@@ -60,14 +63,18 @@ Template.prototype = Emitter({
       partial: []
     };
     this.inflections = {};
-    this.listen();
+    this.handlers(utils.methods);
+    this.iterator('sync', function () {
+
+    });
   },
 
-  listen: function () {
-    // this.onMerge(/./, function (view, next) {
-    //   this.applyLayout(view, locals);
-    //   next();
-    // });
+  /**
+   * Format an error
+   */
+
+  error: function(id, msg) {
+    throw new Error(this.errors[id] + msg);
   },
 
   /**
@@ -85,14 +92,37 @@ Template.prototype = Emitter({
     // add the collection to `views`
     this.views[plural] = views;
 
-    // add loader methods to the instance
-    this.mixin(single, views.load.bind(views));
-    this.mixin(plural, views.load.bind(views));
+    // get the loader for the collection
+    var loader = views.load.bind(views);
+    this.loader(plural, opts, loader);
 
-    // forward collection methods onto loaders
-    this[single].__proto__ = views;
-    this[plural].__proto__ = views;
+    // decorate named loader methods to the collection.
+    // this allows chaining `.pages` etc
+    utils.defineProp(views, plural, loader);
+    utils.defineProp(views, single, loader);
+
+    // decorate collection loaders onto the collection
+    utils.defineProp(views, 'loaders', this.loader(plural));
+
+    // forward collection methods onto loader
+    loader.__proto__ = views;
+
+    // add loader methods to the instance
+    this.mixin(single, loader);
+    this.mixin(plural, loader);
     return this;
+  },
+
+  /**
+   * Placeholder for initializing views that have not been
+   * inititalized already.
+   */
+
+  lazyLoad: function(view) {
+    if (typeof view.options === 'undefined') {
+      view.options = view.options || {};
+      view.options.handled = view.options.handled || [];
+    }
   },
 
   /**
@@ -150,6 +180,10 @@ Template.prototype = Emitter({
    */
 
   loader: function (name, opts, fn) {
+    if (arguments.length === 1) {
+      opts = extend({loaderType: 'sync'}, opts);
+      return this.loaders[opts.loaderType];
+    }
     this.loaders.loader(name, opts, fn);
     return this;
   },
@@ -182,14 +216,19 @@ Template.prototype = Emitter({
       cb = locals;
       locals = {};
     }
+
+    this.lazyRouter();
+    this.lazyLoad(view);
+
     if (typeof cb !== 'function') {
       cb = this.handleError(method, view);
     }
 
-    this.lazyRouter();
     view.options.method = method;
     view.options.handled.push(method);
-    view.emit('handle', method);
+    if (view.emit) {
+      view.emit('handle', method);
+    }
 
     this.router.handle(view, function (err) {
       if (err) return cb(err);
@@ -318,7 +357,14 @@ Template.prototype = Emitter({
     }
 
     locals = locals || {};
+
+    // get the engine to use
     var engine = this.engine(view.getEngine(locals));
+    if (!engine || !engine.hasOwnProperty('compile')) {
+      this.error('compile', engine);
+    }
+
+    // build the context to pass to the engine
     var ctx = this.context(view, locals);
 
     // apply layout
@@ -353,6 +399,9 @@ Template.prototype = Emitter({
 
     // get the engine
     var engine = this.engine(view.getEngine(locals));
+    if (!engine || !engine.hasOwnProperty('render')) {
+      this.error('render', engine);
+    }
 
     // build the context for the view
     var ctx = this.context(view, locals);
@@ -376,28 +425,6 @@ Template.prototype = Emitter({
       // handle `postRender` middleware
       this.handle('postRender', view, locals, cb);
     }.bind(this));
-  },
-
-  /**
-   * Build the context for the given `view` and `locals`.
-   */
-
-  bindHelpers: function (locals, context, isAsync) {
-    var helpers = {};
-    extend(helpers, this.options.helpers);
-    extend(helpers, this._.helpers.sync);
-    if (isAsync) {
-      extend(helpers, this._.helpers.async);
-    }
-    extend(helpers, locals.helpers);
-
-    // build the context (exposed as `this` in helpers)
-    var ctx = {};
-    ctx.options = extend({}, this.options.helper, locals);
-    ctx.context = context || {};
-    ctx.app = this;
-
-    locals.helpers = utils.bindAll(helpers, ctx);
   },
 
   /**
@@ -476,9 +503,31 @@ Template.prototype = Emitter({
     // extend(ctx, this.cache.context.partials);
 
     extend(ctx, this.cache.data);
-    extend(ctx, view);
+    extend(ctx, view.omit(view.keys()));
     extend(ctx, view.context(locals));
     return ctx;
+  },
+
+  /**
+   * Build the context for the given `view` and `locals`.
+   */
+
+  bindHelpers: function (locals, context, isAsync) {
+    var helpers = {};
+    extend(helpers, this.options.helpers);
+    extend(helpers, this._.helpers.sync);
+    if (isAsync) {
+      extend(helpers, this._.helpers.async);
+    }
+    extend(helpers, locals.helpers);
+
+    // build the context (exposed as `this` in helpers)
+    var ctx = {};
+    ctx.options = extend({}, this.options.helper, locals);
+    ctx.context = context || {};
+    ctx.app = this;
+
+    locals.helpers = utils.bindAll(helpers, ctx);
   },
 
   /**
@@ -498,22 +547,31 @@ Template.prototype = Emitter({
     Template.prototype[name] = fn;
   },
 
-
   /**
-   * Add Router methods to Template.
+   * Add a router handler.
+   *
+   * @param  {String} `method` Method name.
+   * @return {[type]}
    */
 
-  initMethods: function () {
-    var methods = utils.methods;
-    utils.methods.forEach(function(method) {
-      this[method] = function(path) {
-        this.lazyRouter();
+  handler: function (methods) {
+    this.handlers(methods);
+  },
 
+  /**
+   * Add default Router handlers to Template.
+   */
+
+  handlers: function (methods) {
+    this.lazyRouter();
+    this.router.method(methods);
+    utils.arrayify(methods).forEach(function (method) {
+      utils.defineProp(this, method, function(path) {
         var route = this.router.route(path);
         var args = [].slice.call(arguments, 1);
         route[method].apply(route, args);
         return this;
-      }.bind(this);
+      }.bind(this));
     }.bind(this));
   }
 });

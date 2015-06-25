@@ -12,22 +12,35 @@ describe('custom handlers', function () {
   beforeEach(function () {
     app = new App();
     app.engine('tmpl', require('engine-lodash'));
-    app.create('pages');
-    app.option('methods', ['foo', 'bar']);
+    app.create('page');
+  });
+
+  it('should add custom middleware handlers:', function () {
+    app.handler('foo');
+    app.router.should.have.property('foo');
+    assert.equal(typeof app.router.foo, 'function');
+  });
+
+  it('should add custom middleware handlers:', function () {
+    app.handler('foo');
 
     app.foo(/./, function (file, next) {
-      // console.log(file.options.collection)
+      console.log(file)
       next();
     });
-  })
 
-  it('should map visit over all templates of the given viewType:', function () {
+    app.pages('foo', {path: 'foo', content: 'this is content'});
+
     app.pages('test/fixtures/*.txt', function (pattern) {
       var opts = { cwd: process.cwd() };
-      return glob.sync(pattern, opts).reduce(function (acc, fp) {
-        acc[fp] = {path: fp, content: fs.readFileSync(fp, 'utf8')}
-        return acc;
-      }, {});
+      var collection = this;
+
+      glob.sync(pattern, opts).forEach(function (fp) {
+        var view = {path: fp, content: fs.readFileSync(fp, 'utf8')}
+
+        app.handle('foo', view);
+        collection[fp] = view;
+      });
     });
   });
 });

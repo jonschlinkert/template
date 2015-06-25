@@ -3,9 +3,10 @@
 var fs = require('fs');
 var path = require('path');
 var extend = require('extend-shallow');
-var utils = require('./utils');
+var utils = require('./lib/utils');
 var glob = require('globby');
-var map = require('arr-map')
+var map = require('arr-map');
+var _ = require('lodash');
 
 /**
  * Create an instance of `Loaders` with the given `options`.
@@ -44,6 +45,10 @@ Loaders.prototype.union = function(name, fns) {
 
 Loaders.prototype.get = function(name) {
   return this[name] ? this[name].stack : name;
+};
+
+Loaders.prototype.seq = function(name) {
+  return _.compose.apply(_, this.resolve(name));
 };
 
 Loaders.prototype.first = function(name, fn) {
@@ -153,9 +158,9 @@ loaders.iterator('sync', function (stack) {
 });
 
 loaders.set('glob', glob.sync.bind(glob));
-loaders.set('foo', loaders.get('glob'));
+loaders.set('foo', loaders.seq('glob'));
 
-loaders.first('a', loaders.get('foo'));
+loaders.first('a', loaders.seq('foo'));
 
 loaders.set('a', function a(files) {
   return files;
@@ -177,17 +182,55 @@ var collection = {
 
 function last(opts, collection) {
   return function(files) {
-    return files.reduce(function (acc, fp) {
-      acc[path.basename(fp)] = {
+    files.forEach(function (fp) {
+      collection[path.basename(fp)] = {
         content: fs.readFileSync(fp, 'utf8'),
         path: fp
       };
-      return acc;
-    }, collection);
+    });
+    return collection;
   };
 }
 
-loaders.last('a', last(opts, collection));
+// loaders.set('read', function (fp) {
+//   return fs.readFileSync(fp, 'utf8');
+// });
+
+// loaders.set('map', function (arr, fn, thisArg) {
+//   return arr.map(function (item) {
+//     return fn.call(thisArg || this, item);
+//   }.bind(this));
+// });
+
+loaders.set('toView', function (fp) {
+  return {content: fs.readFileSync(fp, 'utf8'), path: fp};
+});
+
+loaders.set('toTemplate', function (acc, fp) {
+  acc[fp] = loaders.seq('toView')(fp);
+  return acc;
+});
+
+loaders.set('toViews', function (files) {
+  var stack = loaders.seq('toTemplate');
+  return files.reduce(stack, collection);
+});
+
+loaders.first('last', function (opts, collection) {
+  return loaders.seq('toViews');
+});
+
+// loaders.first('last', function (opts, collection) {
+//   return function(files) {
+//     return files.reduce(function (acc, fp) {
+//       acc[path.basename(fp)] = {content: fs.readFileSync(fp, 'utf8'), path: fp};
+//       return acc;
+//     }, collection);
+//   };
+// });
+
+loaders.last('a', loaders.compose('last')(opts, collection));
+// loaders.last('a', last(opts, collection));
 
 loaders.first('b', function bFirst() {});
 

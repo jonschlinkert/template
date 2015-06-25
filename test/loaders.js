@@ -8,12 +8,6 @@ var app
 describe('loaders', function () {
   beforeEach(function () {
     app = new App();
-  })
-
-  it('should throw an error when a loader is registered without an iterator:', function () {
-    (function () {
-      app.loader('a', function () {});
-    }).should.throw('LoaderCache: invalid loader type: sync');
   });
 
   it('should register an iterator:', function () {

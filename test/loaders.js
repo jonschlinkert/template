@@ -23,4 +23,11 @@ describe('loaders', function () {
     app.loaders.should.have.property('sync');
     app.loaders.sync.should.have.property('a');
   });
+
+  it('should register a loader:', function () {
+    app.iterator('async', function () {});
+    app.loader('a', {loaderType: 'async'}, function () {});
+    app.loaders.should.have.property('async');
+    app.loaders.async.should.have.property('a');
+  });
 });

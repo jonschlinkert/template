@@ -45,6 +45,7 @@ Template.prototype = Emitter({
     this._ = {};
     engines(this);
     helpers(this);
+
     this.options = {
       layoutDelims: ['{%', '%}'],
       layoutTag: 'body'
@@ -54,6 +55,7 @@ Template.prototype = Emitter({
       compile: 'Template#compile expects engines to have a compile method',
       render: 'Template#render expects engines to have a render method',
     };
+
     this.cache = {};
     this.cache.data = {};
     this.cache.context = {};
@@ -63,10 +65,18 @@ Template.prototype = Emitter({
       renderable: [],
       partial: []
     };
+
     this.inflections = {};
     this.handlers(utils.methods);
+    this.initIterators();
+  },
 
+  initIterators: function() {
+    this.iterator('async', loaders.iterators.async);
+    this.iterator('promise', loaders.iterators.promise);
+    this.iterator('stream', loaders.iterators.stream);
     this.iterator('sync', loaders.iterators.sync);
+    this.loader('helpers', { loaderType: 'sync' }, loaders.helpers);
   },
 
   /**
@@ -89,31 +99,15 @@ Template.prototype = Emitter({
     opts.loaderType = opts.loaderType || 'sync';
     opts.collection = plural;
     opts.inflection = single;
+    utils.defineProp(opts, 'app', this);
 
     var views = new Views(opts, args, this);
     this.viewType(plural, views.viewType());
 
     // add the collection to `views`
     this.views[plural] = views;
-    var self = this;
-
-    var load = function(key, val) {
-      views.set(key, val);
-      return views;
-    }.bind(views);
-
-    // load views onto the collection
-    this.loaders.on('preLoad', function (args, stack) {
-      if (stack.length === 0) {
-        stack.push(load);
-      }
-    });
-
-    // load views onto the collection
-    this.loaders.on('data', load);
 
     // get the loader for the collection
-    var loaders = this.loaders.resolve(args);
     var loader = this.loaders.compose(plural);
 
     // decorate named loader methods to the collection.
@@ -196,15 +190,42 @@ Template.prototype = Emitter({
    * Add a new `Loader` to the instance.
    */
 
-  loader: function (name, opts, fn) {
-    // if (arguments.length === 1) {
-    //   opts = extend({loaderType: 'sync'}, opts);
-    //   return this.loaders[opts.loaderType];
-    // }
-    this.loaders.set(name, opts, fn);
+  loader: function (name, opts, fns) {
+    this.loaders.set.apply(this.loaders, arguments);
     return this;
   },
 
+  /**
+   * Register the last loader for a loader stack.
+   */
+
+  lastLoader: function (name, opts, fns) {
+    this.loaders.last.apply(this.loaders, arguments);
+    return this;
+  },
+
+  // firstLoader: function(plural, views, options) {
+  //   var opts = extend({}, options);
+  //   var load = loaders.first(views)[opts.loaderType];
+  //   var stack = [plural].concat(load);
+  //   this.loaders.first.apply(this.loaders, stack);
+  //   return views;
+  // },
+
+  /**
+   * Load views onto the collection.
+   */
+
+  // lastLoader: function(plural, views, options) {
+  //   var opts = extend({}, options);
+  //   var type = opts.loaderType;
+  //   var load = loaders.last(views, function(key, val) {
+  //     return views.set(key, val);
+  //   });
+  //   var stack = [plural].concat(load[type]);
+  //   this.loaders.last.apply(this.loaders, stack);
+  //   return this;
+  // },
   /**
    * Add `Router` to the prototype
    */
@@ -428,7 +449,7 @@ Template.prototype = Emitter({
       try {
         var isAsync = typeof cb === 'function';
         view = this.compile(view, ctx, isAsync);
-        return this.render(view, locals, cb);
+        return this.render(view, ctx, cb);
       } catch (err) {
         return cb.call(this, err);
       }
@@ -520,7 +541,7 @@ Template.prototype = Emitter({
     // extend(ctx, this.cache.context.partials);
 
     extend(ctx, this.cache.data);
-    extend(ctx, view.omit(view.keys()));
+    extend(ctx, view.omit([view.protoKeys(), 'locals']));
     extend(ctx, view.context(locals));
     return ctx;
   },
@@ -531,6 +552,7 @@ Template.prototype = Emitter({
 
   bindHelpers: function (locals, context, isAsync) {
     var helpers = {};
+
     extend(helpers, this.options.helpers);
     extend(helpers, this._.helpers.sync);
     if (isAsync) {
@@ -543,7 +565,6 @@ Template.prototype = Emitter({
     ctx.options = extend({}, this.options.helper, locals);
     ctx.context = context || {};
     ctx.app = this;
-
     locals.helpers = utils.bindAll(helpers, ctx);
   },
 

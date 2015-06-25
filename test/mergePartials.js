@@ -77,6 +77,7 @@ describe('mergePartials', function () {
     app.baz('c', {path: 'c', content: 'ccc'});
 
     var actual = app.mergePartials();
+    // console.log(actual)
     actual.should.eql({
       foos: {a: 'aaa onMerge'},
       bars: {b: 'bbb onMerge'},

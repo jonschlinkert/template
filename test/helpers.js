@@ -28,7 +28,6 @@ describe('sync helpers', function () {
 
     var page = app.pages.get('a.tmpl');
     app.render(page, function (err, view) {
-      console.log(err);
       if (err) return done(err);
 
       assert.equal(typeof view.content, 'string');
@@ -53,19 +52,20 @@ describe('async helpers', function () {
   });
 
 
-  // it.only('should use an async helper:', function (done) {
-  //   app.pages('a.tmpl', {path: 'a.tmpl', content: '<%= lower(a) %>', a: 'BBB'});
-  //   app.asyncHelper('lower', function (str, next) {
-  //     next(null, str.toUpperCase());
-  //   });
+  it.skip('should use an async helper:', function (done) {
+    app.pages('a.tmpl', {path: 'a.tmpl', content: '<%= lower(a) %>', a: 'BBB'});
+    app.asyncHelper('lower', function (str, next) {
+      console.log(arguments)
+      // next(null, str.toUpperCase());
+    });
 
-  //   var page = app.pages.get('a.tmpl');
-  //   app.render(page, function (err, view) {
-  //     if (err) return done(err);
-  //     // console.log(arguments)
-  //     // assert.equal(typeof view.content, 'string');
-  //     // assert.equal(view.content, 'BBB');
-  //     done();
-  //   });
-  // });
+    var page = app.pages.get('a.tmpl');
+    app.render(page, function (err, view) {
+      if (err) return done(err);
+      // console.log(arguments)
+      // assert.equal(typeof view.content, 'string');
+      // assert.equal(view.content, 'BBB');
+      done();
+    });
+  });
 });

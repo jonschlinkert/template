@@ -17,6 +17,7 @@ describe('compile', function () {
     app.pages('a.tmpl', {path: 'a.tmpl', content: '<%= a %>', a: 'b'});
 
     var page = app.pages.get('a.tmpl');
+    console.log(page)
     var view = app.compile(page);
     assert.equal(typeof view.fn, 'function');
   });

@@ -30,7 +30,7 @@ function Template(options) {
     return new Template(options);
   }
   Emitter.call(this);
-  this.loaders = new Loaders(options);
+  // this.loaders = new Loaders(options);
   this.init();
 }
 
@@ -46,6 +46,8 @@ Template.prototype = Emitter({
     engines(this);
     helpers(this);
 
+    this.loaders = {};
+    this.iterators = {};
     this.options = {
       layoutDelims: ['{%', '%}'],
       layoutTag: 'body'
@@ -68,16 +70,16 @@ Template.prototype = Emitter({
 
     this.inflections = {};
     this.handlers(utils.methods);
-    this.initIterators();
+    // this.initIterators();
   },
 
-  initIterators: function() {
-    this.iterator('async', loaders.iterators.async);
-    this.iterator('promise', loaders.iterators.promise);
-    this.iterator('stream', loaders.iterators.stream);
-    this.iterator('sync', loaders.iterators.sync);
-    this.loader('helpers', { loaderType: 'sync' }, loaders.helpers);
-  },
+  // initIterators: function() {
+  //   this.iterator('async', loaders.iterators.async);
+  //   this.iterator('promise', loaders.iterators.promise);
+  //   this.iterator('stream', loaders.iterators.stream);
+  //   this.iterator('sync', loaders.iterators.sync);
+  //   this.loader('helpers', { loaderType: 'sync' }, loaders.helpers);
+  // },
 
   /**
    * Format an error
@@ -108,7 +110,10 @@ Template.prototype = Emitter({
     this.views[plural] = views;
 
     // get the loader for the collection
-    var loader = this.loaders.compose(plural);
+    var loader = function(key, value) {
+      views.set(key, value);
+      return views;
+    };
 
     // decorate named loader methods to the collection.
     // this allows chaining `.pages` etc
@@ -122,18 +127,6 @@ Template.prototype = Emitter({
     this.mixin(single, loader);
     this.mixin(plural, loader);
     return this;
-  },
-
-  /**
-   * Placeholder for initializing views that have not been
-   * inititalized already.
-   */
-
-  lazyLoad: function(view) {
-    if (typeof view.options === 'undefined') {
-      view.options = view.options || {};
-      view.options.handled = view.options.handled || [];
-    }
   },
 
   /**
@@ -178,55 +171,6 @@ Template.prototype = Emitter({
   },
 
   /**
-   * Add a new `Iterator` to the instance.
-   */
-
-  iterator: function (name, fn) {
-    this.loaders.iterator(name, fn);
-    return this;
-  },
-
-  /**
-   * Add a new `Loader` to the instance.
-   */
-
-  loader: function (name, opts, fns) {
-    this.loaders.set.apply(this.loaders, arguments);
-    return this;
-  },
-
-  /**
-   * Register the last loader for a loader stack.
-   */
-
-  lastLoader: function (name, opts, fns) {
-    this.loaders.last.apply(this.loaders, arguments);
-    return this;
-  },
-
-  // firstLoader: function(plural, views, options) {
-  //   var opts = extend({}, options);
-  //   var load = loaders.first(views)[opts.loaderType];
-  //   var stack = [plural].concat(load);
-  //   this.loaders.first.apply(this.loaders, stack);
-  //   return views;
-  // },
-
-  /**
-   * Load views onto the collection.
-   */
-
-  // lastLoader: function(plural, views, options) {
-  //   var opts = extend({}, options);
-  //   var type = opts.loaderType;
-  //   var load = loaders.last(views, function(key, val) {
-  //     return views.set(key, val);
-  //   });
-  //   var stack = [plural].concat(load[type]);
-  //   this.loaders.last.apply(this.loaders, stack);
-  //   return this;
-  // },
-  /**
    * Add `Router` to the prototype
    */
 
@@ -256,7 +200,8 @@ Template.prototype = Emitter({
     }
 
     this.lazyRouter();
-    this.lazyLoad(view);
+    view.options = view.options || {};
+    view.options.handled = view.options.handled || [];
 
     if (typeof cb !== 'function') {
       cb = this.handleError(method, view);

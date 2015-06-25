@@ -21,7 +21,6 @@
   },
   "dependencies": {
     "arr-flatten": "^1.0.1",
-    "arr-map": "^2.0.0",
     "bluebird": "^2.9.30",
     "clone-deep": "^0.1.1",
     "component-emitter": "^1.2.0",
@@ -35,7 +34,6 @@
     "get-value": "^1.1.5",
     "globby": "^2.0.0",
     "helper-cache": "^0.7.1",
-    "is-glob": "^2.0.0",
     "isobject": "^1.0.0",
     "iterator-promise": "^0.1.1",
     "iterator-streams": "^0.1.0",
@@ -48,6 +46,7 @@
     "make-iterator": "^0.1.1",
     "map-cache": "^0.2.0",
     "map-values": "^1.0.1",
+    "mixin-deep": "^1.1.1",
     "object.omit": "^1.1.0",
     "object.pick": "^1.1.1",
     "object.reduce": "^0.1.7",

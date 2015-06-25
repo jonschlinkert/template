@@ -41,7 +41,7 @@ describe('mergePartials', function () {
     actual.should.eql({ foos: { a: 'aaa' }, bars: { b: 'bbb' }, bazs: { c: 'ccc' } });
   });
 
-  it.skip('should emit `mergePartials`:', function () {
+  it('should emit `mergePartials`:', function () {
     var opts = { viewType: 'partial' };
     app.create('foo', opts);
     app.create('bar', opts);
@@ -61,7 +61,7 @@ describe('mergePartials', function () {
     actual.should.eql({ foos: { a: 'aaa' }, bars: { b: 'bbb' }, bazs: { c: 'ccc' } });
   });
 
-  it.only('should handle `onMerge` middleware:', function () {
+  it('should handle `onMerge` middleware:', function () {
     var opts = { viewType: 'partial' };
     app.create('foo', opts);
     app.create('bar', opts);
@@ -77,7 +77,6 @@ describe('mergePartials', function () {
     app.baz('c', {path: 'c', content: 'ccc'});
 
     var actual = app.mergePartials();
-    // console.log(actual)
     actual.should.eql({
       foos: {a: 'aaa onMerge'},
       bars: {b: 'bbb onMerge'},

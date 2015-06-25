@@ -55,3 +55,4 @@ app.pages('a', {
     console.log(this)
   })
 
+console.log(app.views.pages)

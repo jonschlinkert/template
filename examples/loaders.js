@@ -3,63 +3,51 @@
 var fs = require('fs');
 var path = require('path');
 var glob = require('globby');
-var LoaderCache = require('../lib/loader-cache');
+var App = require('../lib/loaders.js');
 var utils = require('../lib/utils');
 
-function Loaders(options) {
-  this.options = options || {};
-  this.decorate('loader', 'set');
-  this.decorate('seq');
-  this.decorate('first');
-  this.decorate('last');
-  this.decorate('get');
-  this.decorate('resolve');
-  this.decorate('compose');
-}
+// function App(options) {
+//   this.options = options || {};
+//   this.decorate('iterator');
+//   this.decorate('loader', 'set');
+//   this.decorate('seq');
+//   this.decorate('first');
+//   this.decorate('last');
+//   this.decorate('get');
+//   this.decorate('resolve');
+//   this.decorate('compose');
+// }
 
-Loaders.prototype.iterator = function(type, options, fn) {
-  if (typeof options === 'function') {
-    fn = options;
-    options = {};
-  }
-  options = options || {};
-  options.type = type;
-  this[type] = new LoaderCache(options, fn);
-};
+// App.prototype.iterator = function(type, options, fn) {
+//   if (typeof options === 'function') {
+//     fn = options;
+//     options = {};
+//   }
+//   options = options || {};
+//   options.type = type;
+//   this[type] = new LoaderCache(options, fn);
+// };
 
-Loaders.prototype.getType = function(args, options, stack) {
-  var args = [].slice.call(args, 1);
-  var opts = !utils.isLoader(options) ? args.shift() : {};
-  if (!opts || typeof opts === 'function') return 'sync';
-  return opts.loaderType || 'sync';
-};
+// App.prototype.getType = function(args, options, stack) {
+//   var args = [].slice.call(args, 1);
+//   var opts = !utils.isLoader(options) ? args.shift() : {};
+//   if (!opts || typeof opts === 'function') return 'sync';
+//   return opts.loaderType || 'sync';
+// };
 
-Loaders.prototype.decorate = function(method, alias) {
-  utils.defineProp(this, method, function(name, opts, stack) {
-    var type = this.getType(arguments);
-    var inst = this[type];
-    return inst[alias || method].apply(inst, arguments);
-  });
-};
-
-function App() {
-  this.options = {};
-  this.loaders = new LoaderCache(this.options);
-}
-
-App.prototype.loader = function(name, opts, stack) {
-  this.loaders.loader(name, opts, stack);
-};
-
-App.prototype.iterator = function(type, fn) {
-  this.loaders.iterator(type, fn);
-};
+// App.prototype.decorate = function(method, alias) {
+//   utils.defineProp(this, method, function(name, opts, stack) {
+//     var type = this.getType(arguments);
+//     var inst = this[type];
+//     return inst[alias || method].apply(inst, arguments);
+//   });
+// };
 
 /**
  * Example
  */
 
-var app = new App({type: 'sync'});
+var app = new App({iterator: 'sync'});
 
 app.iterator('sync', function (stack) {
   return function () {
@@ -147,7 +135,7 @@ app.first('last', function (opts, collection) {
 //   };
 // });
 
-app.last('a', app.compose('last')(opts, collection));
+// app.last('a', app.compose('last')(opts, collection));
 app.last('a', last(opts, collection));
 
 app.first('b', function bFirst() {});

@@ -7,6 +7,9 @@ app.iterator('sync', require('iterator-sync'));
 app.iterator('async', require('iterator-async'));
 
 app.loader('a', function a() {});
+app.first('a', function a() {});
+app.last('a', function a() {});
+
 app.loader('b', function b() {});
 app.loader('c', function c() {});
 app.loader('d', {e: 'f'}, function d() {});

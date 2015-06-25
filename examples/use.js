@@ -3,23 +3,11 @@
 var App = require('..');
 var app = new App();
 
-app.helper('double', function (str) {
-  return str + '-' + str;
-});
-
-app.helper('before', function (str) {
-  return 'before-' + str;
-});
-
-app.helper('after', function (str) {
-  return str + '-after';
-});
-
 /**
  * Loader
  */
 app.iterator('sync', require('iterator-sync'));
-app.loader('sync', function (key, value) {
+app.loader('view', function (key, value) {
   return (this[key] = value);
 });
 
@@ -51,7 +39,7 @@ app.pages('a', {
     name: 'd',
     content: '<%= name %>'
   })
-  .render(function (views, options, loader) {
+  .use(function (views, options, loader) {
     console.log(this)
   })
 

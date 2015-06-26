@@ -12,40 +12,69 @@ describe('collection methods', function () {
   beforeEach(function () {
     app = new App();
     app.engine('tmpl', require('engine-lodash'));
-    app.loader('glob', function (views, opts) {
-      return glob.sync.bind(glob);
-    });
-
-    app.loader('toViews', function (views, opts) {
-      return function (files) {
-        return files.reduce(function (acc, fp) {
-          views.set(fp, {path: fp, content: fs.readFileSync(fp, 'utf8')});
-          return acc;
-        }, {});
-      }
-    });
-
-    app.create('page', { loaderType: 'sync' }, ['glob']);
+    app.create('page');
   });
 
   describe('loaders', function () {
     it('should use generic loaders:', function () {
+      app.loader('glob', function (views, opts) {
+        return glob.sync.bind(glob);
+      });
+
+      app.loader('toViews', ['glob'], function (views, opts) {
+        return function (files) {
+          return files.reduce(function (acc, fp) {
+            views.set(fp, {path: fp, content: fs.readFileSync(fp, 'utf8')});
+            return acc;
+          }, {});
+        }
+      });
+
       app.pages('test/fixtures/*.txt', ['toViews']);
       app.views.pages.should.have.property('test/fixtures/a.txt');
     });
   });
 
+  describe('chaining', function () {
+    it('should allow collection methods to be chained:', function () {
+      app.pages('test/fixtures/*.txt')
+        .pages('test/fixtures/*.md');
+
+      app.views.pages.should.have.properties([
+        'test/fixtures/a.txt',
+        'test/fixtures/a.md'
+      ]);
+    });
+  });
+
   describe('.use', function () {
     it('should expose `.use` for running plugins on a view:', function () {
-      app.pages('test/fixtures/*.txt', ['toViews'], function (views, opts) {
-        return function () {
-          return views;
-        }
-      })
-        .render('a.tmpl', function (err, res) {
-          if (err) return console.log(err);
+      app.pages('test/fixtures/*.txt')
+        .use(function (views, options) {
+          for (var key in views) {
+            if (views.hasOwnProperty(key)) {
+              views[path.basename(key)] = views[key];
+              delete views[key];
+            }
+          }
         });
 
+      app.views.pages.should.have.properties('a.txt', 'b.txt', 'c.txt');
+    });
+  });
+
+  describe('.forOwn:', function (done) {
+    it('should expose `own` collection items as params on the given function:', function () {
+      app.pages('a', {path: 'a', content: '<%= a %>', a: 'bbb'});
+      app.pages('b', {path: 'a', content: '<%= a %>', a: 'bbb'});
+      app.pages('c', {path: 'a', content: '<%= a %>', a: 'bbb'});
+      var keys = [];
+
+      app.pages.forOwn(function (view, key) {
+        keys.push(key);
+      });
+
+      keys.should.eql(['a', 'b', 'c']);
     });
   });
 
@@ -62,52 +91,52 @@ describe('collection methods', function () {
     });
   });
 
-  // describe('.context', function (done) {
-  //   it('should expose `.context` for calculating the context of a view:', function (done) {
-  //     app.pages('foo.tmpl', {path: 'foo.tmpl', content: '<%= a %>'});
-  //     var page = app.pages.get('foo.tmpl');
-  //     assert.equal(typeof page.context, 'function');
-  //     done();
-  //   });
+  describe('.context', function (done) {
+    it('should expose `.context` for calculating the context of a view:', function (done) {
+      app.pages('foo.tmpl', {path: 'foo.tmpl', content: '<%= a %>'});
+      var page = app.pages.get('foo.tmpl');
+      assert.equal(typeof page.context, 'function');
+      done();
+    });
 
-  //   it('should calculate view locals:', function (done) {
-  //     app.pages('foo.tmpl', {path: 'foo.tmpl', content: '<%= a %>', locals: {a: 'b'}});
-  //     var page = app.pages.get('foo.tmpl');
-  //     var ctx = page.context();
-  //     ctx.should.eql({a: 'b'});
-  //     done();
-  //   });
+    it('should calculate view locals:', function (done) {
+      app.pages('foo.tmpl', {path: 'foo.tmpl', content: '<%= a %>', locals: {a: 'b'}});
+      var page = app.pages.get('foo.tmpl');
+      var ctx = page.context();
+      ctx.should.eql({a: 'b'});
+      done();
+    });
 
-  //   it('should calculate view data:', function (done) {
-  //     app.pages('foo.tmpl', {path: 'foo.tmpl', content: '<%= a %>', locals: {a: 'b'}, data: {c: 'd'}});
-  //     var page = app.pages.get('foo.tmpl');
-  //     var ctx = page.context();
-  //     ctx.should.eql({a: 'b', c: 'd'});
-  //     done();
-  //   });
+    it('should calculate view data:', function (done) {
+      app.pages('foo.tmpl', {path: 'foo.tmpl', content: '<%= a %>', locals: {a: 'b'}, data: {c: 'd'}});
+      var page = app.pages.get('foo.tmpl');
+      var ctx = page.context();
+      ctx.should.eql({a: 'b', c: 'd'});
+      done();
+    });
 
-  //   it('should give locals preference over data:', function (done) {
-  //     app.pages('foo.tmpl', {path: 'foo.tmpl', content: '<%= a %>', locals: {a: 'b'}, data: {a: 'd'}});
-  //     var page = app.pages.get('foo.tmpl');
-  //     var ctx = page.context();
-  //     ctx.should.eql({a: 'b'});
-  //     done();
-  //   });
+    it('should give locals preference over data:', function (done) {
+      app.pages('foo.tmpl', {path: 'foo.tmpl', content: '<%= a %>', locals: {a: 'b'}, data: {a: 'd'}});
+      var page = app.pages.get('foo.tmpl');
+      var ctx = page.context();
+      ctx.should.eql({a: 'b'});
+      done();
+    });
 
-  //   it('should extend the context with an object passed to the method:', function (done) {
-  //     app.pages('foo.tmpl', {path: 'foo.tmpl', content: '<%= a %>', locals: {a: 'b'}, data: {a: 'd'}});
-  //     var page = app.pages.get('foo.tmpl');
-  //     var ctx = page.context({foo: 'bar'});
-  //     ctx.should.eql({a: 'b', foo: 'bar'});
-  //     done();
-  //   });
+    it('should extend the context with an object passed to the method:', function (done) {
+      app.pages('foo.tmpl', {path: 'foo.tmpl', content: '<%= a %>', locals: {a: 'b'}, data: {a: 'd'}});
+      var page = app.pages.get('foo.tmpl');
+      var ctx = page.context({foo: 'bar'});
+      ctx.should.eql({a: 'b', foo: 'bar'});
+      done();
+    });
 
-  //   it('should extend `view.locals` with the object passed to the method:', function (done) {
-  //     app.pages('foo.tmpl', {path: 'foo.tmpl', content: '<%= a %>', locals: {a: 'b'}, data: {a: 'd'}});
-  //     var page = app.pages.get('foo.tmpl');
-  //     var ctx = page.context({foo: 'bar'});
-  //     page.locals.should.eql({a: 'b', foo: 'bar'});
-  //     done();
-  //   });
-  // });
+    it('should extend `view.locals` with the object passed to the method:', function (done) {
+      app.pages('foo.tmpl', {path: 'foo.tmpl', content: '<%= a %>', locals: {a: 'b'}, data: {a: 'd'}});
+      var page = app.pages.get('foo.tmpl');
+      var ctx = page.context({foo: 'bar'});
+      page.locals.should.eql({a: 'b', foo: 'bar'});
+      done();
+    });
+  });
 });

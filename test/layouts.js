@@ -44,23 +44,23 @@ describe('layouts', function () {
     });
   });
 
-  it.only('should get layouts from `layout` viewTypes:', function (done) {
+  it('should get layouts from `layout` viewTypes:', function (done) {
     app.create('section', { viewType: 'layout' });
     app.create('block', { viewType: 'layout' });
 
     app.section('a', {path: 'a.tmpl', content: 'a {% body %} a', layout: 'b'});
     app.block('b', {path: 'b.tmpl', content: 'b {% body %} b', layout: 'c'});
     app.section('c', {path: 'c.tmpl', content: 'c {% body %} c', layout: 'base'});
-    // app.block('base', {path: 'base.tmpl', content: 'outter {% body %} outter'});
+    app.block('base', {path: 'base.tmpl', content: 'outter {% body %} outter'});
 
-    // app.pages('z.tmpl', {path: 'a.tmpl', content: 'inner', layout: 'a'});
-    // var page = app.pages.get('z.tmpl');
+    app.pages('z.tmpl', {path: 'a.tmpl', content: 'inner', layout: 'a'});
+    var page = app.pages.get('z.tmpl');
 
-    // app.render(page, function (err, view) {
-    //   if (err) return done(err);
-    //   assert.equal(typeof view.content, 'string');
-    //   assert.equal(view.content, 'outter c b a inner a b c outter');
+    app.render(page, function (err, view) {
+      if (err) return done(err);
+      assert.equal(typeof view.content, 'string');
+      assert.equal(view.content, 'outter c b a inner a b c outter');
       done();
-    // });
+    });
   });
 });

@@ -25,7 +25,7 @@ app.loader('read', ['glob'], function _read(views, opts) {
 });
 
 
-app.create('pages');
+app.create('page');
 app.pages('test/fixtures/*.txt', ['read']);
 
 console.log(app.views.pages)

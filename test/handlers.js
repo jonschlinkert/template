@@ -2,6 +2,7 @@
 
 /* deps: mocha */
 var fs = require('fs');
+var extend = require('extend-shallow');
 var assert = require('assert');
 var should = require('should');
 var glob = require('globby');
@@ -22,25 +23,36 @@ describe('custom handlers', function () {
   });
 
   it('should add custom middleware handlers:', function () {
+    app.option('defaultLoader', false);
     app.handler('foo');
 
     app.foo(/./, function (file, next) {
-      console.log(file)
+      file.foo = 'bar';
       next();
     });
 
+    app.pages('test/fixtures/*.txt', { cwd: process.cwd() }, function (views, options) {
+      return function (pattern, opts) {
+          extend(options, opts);
+
+          glob.sync(pattern, opts).forEach(function (fp) {
+            var view = {path: fp, content: fs.readFileSync(fp, 'utf8')}
+
+            app.handle('foo', view);
+            views.set(fp, view);
+          });
+
+          return views;
+        };
+      })
+      .pages('test/fixtures/*.md', function (views, options) {
+        console.log(options)
+        return function () {
+          return views;
+        }
+      })
+
     app.pages('foo', {path: 'foo', content: 'this is content'});
-
-    app.pages('test/fixtures/*.txt', function (pattern) {
-      var opts = { cwd: process.cwd() };
-      var collection = this;
-
-      glob.sync(pattern, opts).forEach(function (fp) {
-        var view = {path: fp, content: fs.readFileSync(fp, 'utf8')}
-
-        app.handle('foo', view);
-        collection[fp] = view;
-      });
-    });
+    var page = app.pages.get('foo');
   });
 });

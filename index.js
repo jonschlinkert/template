@@ -2,6 +2,7 @@
 
 // require('time-require');
 
+var util = require('util');
 var forOwn = require('for-own');
 var router = require('en-route');
 var layouts = require('layouts');
@@ -11,7 +12,6 @@ var extend = require('extend-shallow');
 var Loaders = require('loader-cache');
 var inflect = require('pluralize');
 var clone = require('clone-deep');
-var get = require('get-value');
 
 var engines = require('./lib/engines');
 var loaders = require('./lib/loaders/index');
@@ -81,29 +81,10 @@ Template.prototype = Emitter({
       'createStack',
       'iterator',
     ]);
-    this.initIterators();
 
-    var LoadTemplates = require('load-templates');
-
-    this.loader('default', function (views, opts) {
-      return function(key, value) {
-        var loader = new LoadTemplates(opts);
-        var res = loader.load.apply(loader, arguments);
-        console.log(res)
-        forOwn(res, function (val, key) {
-          views.set(key, val);
-        });
-        return res;
-      };
-    });
-  },
-
-  initIterators: function() {
-    this.iterator('async', loaders.iterators.async);
-    this.iterator('promise', loaders.iterators.promise);
-    this.iterator('stream', loaders.iterators.stream);
-    this.iterator('sync', loaders.iterators.sync);
-    this.loader('helpers', { loaderType: 'sync' }, loaders.helpers);
+    // initialize iterators and loaders
+    loaders.iterators(this);
+    loaders.first(this);
   },
 
   /**
@@ -129,7 +110,7 @@ Template.prototype = Emitter({
    * Create a new `Views` collection.
    */
 
-  create: function (single, options, loaders) {
+  create: function (single/*, options, loaders*/) {
     var args = utils.slice(arguments, 1);
     var opts = clone(args.shift());
 
@@ -145,14 +126,15 @@ Template.prototype = Emitter({
 
     // init the collection object on `views`
     this.views[plural] = views;
+    this.loader(plural, args);
 
-    // wrap loaders so that views and opts are exposed
-    if (opts.defaultLoader !== false) {
-      this.loader(plural, opts, ['default']);
-    }
+    // wrap loaders to expose the collection and opts
+    utils.defineProp(opts, 'wrap', views.wrap.bind(views, opts));
+    opts.defaultLoader = 'default';
 
-    opts.wrap = views.wrap.bind(views, opts);
-    var fn = this.compose(plural, opts, args);
+    // create the actual loader function
+    var fn = this.compose(plural, opts);
+    views.mixin(fn, ['forOwn']);
 
     // forward collection methods onto loader
     fn.__proto__ = views;
@@ -437,7 +419,7 @@ Template.prototype = Emitter({
       try {
         var isAsync = typeof cb === 'function';
         view = this.compile(view, ctx, isAsync);
-        return this.render(view, ctx, cb);
+        return this.render(view, locals, cb);
       } catch (err) {
         return cb.call(this, err);
       }
@@ -591,7 +573,6 @@ Template.prototype = Emitter({
    * Add a router handler.
    *
    * @param  {String} `method` Method name.
-   * @return {[type]}
    */
 
   handler: function (methods) {
@@ -613,6 +594,14 @@ Template.prototype = Emitter({
         return this;
       }.bind(this));
     }.bind(this));
+  },
+
+  /**
+   * Show the `ownPropertyNames` on the given object or the instance.
+   */
+
+  debug: function (obj) {
+    return utils.makeEnumerable(obj || this);
   }
 });
 

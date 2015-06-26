@@ -22,6 +22,7 @@
   "dependencies": {
     "arr-flatten": "^1.0.1",
     "bluebird": "^2.9.30",
+    "braces": "^1.8.0",
     "clone-deep": "^0.1.1",
     "component-emitter": "^1.2.0",
     "en-route": "^0.7.0",

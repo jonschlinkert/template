@@ -19,7 +19,7 @@ app.loader('sync', function (key, value) {
 /**
  * Create
  */
-app.create('pages', { loaderType: 'sync' });
+app.create('page', { loaderType: 'sync' });
 
 /**
  * Load

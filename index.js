@@ -89,6 +89,7 @@ Template.prototype = Emitter({
       return function(key, value) {
         var loader = new LoadTemplates(opts);
         var res = loader.load.apply(loader, arguments);
+        console.log(res)
         forOwn(res, function (val, key) {
           views.set(key, val);
         });
@@ -130,7 +131,7 @@ Template.prototype = Emitter({
 
   create: function (single, options, loaders) {
     var args = utils.slice(arguments, 1);
-    var opts = args.shift();
+    var opts = clone(args.shift());
 
     var plural = this.inflect(single);
 

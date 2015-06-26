@@ -12,13 +12,14 @@ describe('loaders', function () {
 
   it('should register an iterator:', function () {
     app.iterator('sync', function () {});
-    app.loaders.iterators.should.have.property('sync');
-    assert.equal(typeof app.loaders.iterators.sync, 'function');
+    app.loaders.sync.should.have.property('iterator');
+    app.loaders.sync.iterator.should.have.property('fn');
+    assert.equal(typeof app.loaders.sync.iterator.fn, 'function');
   });
 
-  it('should register a loader:', function () {
+  it('should register a sync loader by default:', function () {
     app.loader('a', function () {});
-    app.loaders.should.have.property('a');
+    app.loaders.sync.should.have.property('a');
   });
 
   it('should register a loader:', function () {

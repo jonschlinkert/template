@@ -84,19 +84,12 @@ describe('mergePartials', function () {
     });
   });
 
-  it.only('should skip views with `nomerge=true`:', function () {
+  it('should skip views with `nomerge=true`:', function () {
     var opts = { viewType: 'partial' };
 
-    app.loader('foo', function (views, options) {
-      // console.log(options)
-      return function (val) {
-        return val
-      };
-    });
-
-    app.create('foo', opts, ['foo']);
-    app.create('bar', opts, ['foo']);
-    app.create('baz', opts, ['foo']);
+    app.create('foo', opts);
+    app.create('bar', opts);
+    app.create('baz', opts);
 
     app.onMerge(/[ab]/, function (view, next) {
       view.options.nomerge = true;

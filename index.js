@@ -85,8 +85,6 @@ Template.prototype = Emitter({
     var LoadTemplates = require('load-templates');
 
     this.loader('default', function (views, opts) {
-      console.log(opts)
-      console.log('---------')
       return function(key, value) {
         var loader = new LoadTemplates(opts);
         var res = loader.load.apply(loader, arguments);
@@ -96,7 +94,6 @@ Template.prototype = Emitter({
         return res;
       };
     });
-
   },
 
   initIterators: function() {
@@ -148,14 +145,11 @@ Template.prototype = Emitter({
     this.views[plural] = views;
 
     // wrap loaders so that views and opts are exposed
-    this.loader(plural, opts, args);
-
-    var stack = this.loaders[opts.loaderType].get(plural);
-    if (stack.length === 0) {
+    if (opts.defaultLoader !== false) {
       this.loader(plural, opts, ['default']);
     }
+    this.loader(plural, opts, args);
 
-    // console.log(this.loaders[opts.loaderType].get(plural))
     opts.wrap = views.wrap.bind(views, opts);
     var fn = this.compose(plural, opts);
 

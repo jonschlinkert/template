@@ -86,7 +86,15 @@ describe('mergePartials', function () {
 
   it('should skip views with `nomerge=true`:', function () {
     var opts = { viewType: 'partial' };
-    app.create('foo', opts);
+
+    app.loader('foo', function (views, opts) {
+      console.log(opts)
+      return function (val) {
+        return val
+      };
+    });
+
+    app.create('foo', opts, ['foo']);
     app.create('bar', opts);
     app.create('baz', opts);
 

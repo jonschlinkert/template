@@ -8,7 +8,7 @@ var layouts = require('layouts');
 var MapCache = require('map-cache');
 var Emitter = require('component-emitter');
 var extend = require('extend-shallow');
-var Loaders = require('./lib/loaders.js');
+var Loaders = require('loader-cache');
 var inflect = require('pluralize');
 var get = require('get-value');
 
@@ -80,15 +80,32 @@ Template.prototype = Emitter({
       'createStack',
       'iterator',
     ]);
+    this.initIterators();
+
+    var LoadTemplates = require('load-templates');
+
+    this.loader('default', function (views, opts) {
+      console.log(opts)
+      console.log('---------')
+      return function(key, value) {
+        var loader = new LoadTemplates(opts);
+        var res = loader.load.apply(loader, arguments);
+        forOwn(res, function (val, key) {
+          views.set(key, val);
+        });
+        return res;
+      };
+    });
+
   },
 
-  // initIterators: function() {
-  //   this.iterator('async', loaders.iterators.async);
-  //   this.iterator('promise', loaders.iterators.promise);
-  //   this.iterator('stream', loaders.iterators.stream);
-  //   this.iterator('sync', loaders.iterators.sync);
-  //   this.loader('helpers', { loaderType: 'sync' }, loaders.helpers);
-  // },
+  initIterators: function() {
+    this.iterator('async', loaders.iterators.async);
+    this.iterator('promise', loaders.iterators.promise);
+    this.iterator('stream', loaders.iterators.stream);
+    this.iterator('sync', loaders.iterators.sync);
+    this.loader('helpers', { loaderType: 'sync' }, loaders.helpers);
+  },
 
   /**
    * Lazily initalize `router`, to allow options to
@@ -97,7 +114,7 @@ Template.prototype = Emitter({
 
   lazyLoaders: function() {
     if (typeof this.loaders === 'undefined') {
-      utils.defineProp(this, 'loaders', new Loaders(this.options));
+      this.loaders = new Loaders(this.options);
     }
   },
 
@@ -118,7 +135,6 @@ Template.prototype = Emitter({
     var opts = args.shift();
 
     var plural = this.inflect(single);
-    this._current = plural;
 
     opts.loaderType = opts.loaderType || 'sync';
     opts.collection = plural;
@@ -131,20 +147,23 @@ Template.prototype = Emitter({
     // init the collection object on `views`
     this.views[plural] = views;
 
-    // get the loader for the collection
-    this.last(plural, function () {
-      console.log(arguments)
-      return views.set.apply(views, arguments);
-    });
+    // wrap loaders so that views and opts are exposed
+    this.loader(plural, opts, args);
 
-    opts.thisArg = views;
-    var fn = this.compose(plural, opts, args);
+    var stack = this.loaders[opts.loaderType].get(plural);
+    if (stack.length === 0) {
+      this.loader(plural, opts, ['default']);
+    }
+
+    // console.log(this.loaders[opts.loaderType].get(plural))
+    opts.wrap = views.wrap.bind(views, opts);
+    var fn = this.compose(plural, opts);
 
     // forward collection methods onto loader
     fn.__proto__ = views;
 
-    // decorate named loader methods to the collection.
-    // this allows chaining `.pages` etc
+    // decorate named loader methods back to the collection
+    // to allow chaining like `.pages().pages()` etc
     utils.defineProp(views, plural, fn);
     utils.defineProp(views, single, fn);
 
@@ -403,7 +422,7 @@ Template.prototype = Emitter({
     }
 
     if (typeof view === 'function') {
-      return this.views[this._current];
+      // TODO
     }
 
     // handle `preRender` middleware

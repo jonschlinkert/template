@@ -75,8 +75,7 @@ app.first('pages', app.loader('foo'));
 //   return;
 // });
 
-app.loader('aaa', function last(opts, collection) {
-  console.log(arguments)
+app.loader('aaa', function (views, opts) {
   return function(files) {
     return files.reduce(function (acc, fp) {
       acc[path.basename(fp)] = {

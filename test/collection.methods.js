@@ -8,64 +8,59 @@ var should = require('should');
 var App = require('..');
 var app;
 
-describe('view.option()', function () {
+describe('collection methods', function () {
   beforeEach(function () {
     app = new App();
     app.engine('tmpl', require('engine-lodash'));
-    app.loader('glob', glob.sync.bind(glob));
-
-    app.loader('toView', function toView(fp) {
-      var view = {path: fp, content: fs.readFileSync(fp, 'utf8')};
-      this.app.emit('data', fp, view);
-      return view;
+    app.loader('glob', function (views, opts) {
+      return glob.sync.bind(glob);
     });
 
-    app.loader('toTemplate', function toTemplate(acc, fp) {
-      acc[fp] = this.app.compose('toView')(fp);
-      return acc;
+    app.loader('toViews', function (views, opts) {
+      return function (files) {
+        return files.reduce(function (acc, fp) {
+          views.set(fp, {path: fp, content: fs.readFileSync(fp, 'utf8')});
+          return acc;
+        }, {});
+      }
     });
 
-    app.loader('toViews', function toViews(files) {
-      return files.reduce(function (acc, fp) {
-        this.app.compose('toTemplate')(acc, fp);
-        return acc;
-      }.bind(this), {});
-    });
-
-    app.create('page', { loaderType: 'sync' }, ['toViews']);
-    app.loaders.first('pages', ['glob']);
+    app.create('page', { loaderType: 'sync' }, ['glob']);
   });
 
   describe('loaders', function () {
     it('should use generic loaders:', function () {
-      app.pages('test/fixtures/*.txt');
-      console.log(app.views.pages);
+      app.pages('test/fixtures/*.txt', ['toViews']);
+      app.views.pages.should.have.property('test/fixtures/a.txt');
     });
   });
 
-  // describe('.use', function () {
-  //   it('should expose `.use` for running plugins on a view:', function () {
-  //     app.pages('test/fixtures/*.txt', ['toViews'])
-  //       .render('a.tmpl', function (err, res) {
-  //         if (err) return console.log(err);
-  //         console.log(res);
-  //       });
+  describe('.use', function () {
+    it('should expose `.use` for running plugins on a view:', function () {
+      app.pages('test/fixtures/*.txt', ['toViews'], function (views, opts) {
+        return function () {
+          return views;
+        }
+      })
+        .render('a.tmpl', function (err, res) {
+          if (err) return console.log(err);
+        });
 
-  //   });
-  // });
+    });
+  });
 
-  // describe('.render:', function (done) {
-  //   it('should expose `.render` for rendering a view:', function (done) {
-  //     app.pages('a.tmpl', {path: 'a.tmpl', content: '<%= a %>', a: 'bbb'});
-  //     var page = app.pages.get('a.tmpl');
+  describe('.render:', function (done) {
+    it('should expose `.render` for rendering a view:', function (done) {
+      app.pages('a.tmpl', {path: 'a.tmpl', content: '<%= a %>', a: 'bbb'});
+      var page = app.pages.get('a.tmpl');
 
-  //     page.render({}, function (err, res) {
-  //       if (err) return done(err);
-  //       res.content.should.equal('bbb');
-  //       done();
-  //     });
-  //   });
-  // });
+      page.render({}, function (err, res) {
+        if (err) return done(err);
+        res.content.should.equal('bbb');
+        done();
+      });
+    });
+  });
 
   // describe('.context', function (done) {
   //   it('should expose `.context` for calculating the context of a view:', function (done) {

@@ -112,6 +112,13 @@ app.loader('toView', function (fp) {
   return {content: fs.readFileSync(fp, 'utf8'), path: fp};
 });
 
+app.loader('wrapper', function (collection, options, stack) {
+  var len = stack.length, i = 0;
+  var loaders = new Array(len);
+  while (len--) loaders[i] = stack[i++](collection, options);
+  return loaders;
+});
+
 app.loader('toTemplate', function (acc, fp) {
   acc[fp] = app.seq('toView')(fp);
   return acc;

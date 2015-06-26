@@ -6,7 +6,7 @@ var should = require('should');
 var App = require('..');
 var app
 
-describe('view.option()', function () {
+describe('collection.option()', function () {
   beforeEach(function () {
     app = new App();
     app.engine('tmpl', require('engine-lodash'));

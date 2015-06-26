@@ -10,6 +10,7 @@ var Emitter = require('component-emitter');
 var extend = require('extend-shallow');
 var Loaders = require('loader-cache');
 var inflect = require('pluralize');
+var clone = require('clone-deep');
 var get = require('get-value');
 
 var engines = require('./lib/engines');
@@ -148,10 +149,9 @@ Template.prototype = Emitter({
     if (opts.defaultLoader !== false) {
       this.loader(plural, opts, ['default']);
     }
-    this.loader(plural, opts, args);
 
     opts.wrap = views.wrap.bind(views, opts);
-    var fn = this.compose(plural, opts);
+    var fn = this.compose(plural, opts, args);
 
     // forward collection methods onto loader
     fn.__proto__ = views;

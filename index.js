@@ -11,7 +11,6 @@ var extend = require('extend-shallow');
 var Loaders = require('loader-cache');
 var inflect = require('pluralize');
 var clone = require('clone-deep');
-var merge = require('mixin-deep');
 var get = require('get-value');
 var set = require('set-value');
 
@@ -266,7 +265,7 @@ Template.prototype = Emitter({
 
     // wrap loaders to expose the collection and opts
     utils.defineProp(opts, 'wrap', views.wrap.bind(views, opts));
-    opts.defaultLoader = 'default';
+    opts.defaultLoader = opts.defaultLoader || 'default';
 
     // create the actual loader function
     var fn = this.compose(plural, opts);

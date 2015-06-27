@@ -1,12 +1,8 @@
 'use strict';
 
-// require('time-require');
-
-var util = require('util');
 var forOwn = require('for-own');
 var router = require('en-route');
 var layouts = require('layouts');
-var MapCache = require('map-cache');
 var Emitter = require('component-emitter');
 var extend = require('extend-shallow');
 var Loaders = require('loader-cache');
@@ -51,7 +47,7 @@ Template.prototype = Emitter({
       layoutDelims: ['{%', '%}'],
       layoutTag: 'body'
     };
-    this.stash = new MapCache();
+
     this.errors = {
       compile: 'Template#compile expects engines to have a compile method',
       render: 'Template#render expects engines to have a render method',
@@ -61,6 +57,7 @@ Template.prototype = Emitter({
     this.cache.data = {};
     this.cache.context = {};
     this.views = {};
+
     this.viewTypes = {
       layout: [],
       renderable: [],
@@ -134,10 +131,10 @@ Template.prototype = Emitter({
 
     // create the actual loader function
     var fn = this.compose(plural, opts);
-    views.mixin(fn, ['forOwn']);
+    views.forward(fn, ['forOwn']);
 
     // forward collection methods onto loader
-    fn.__proto__ = views;
+    utils.lang.setProto(fn, views);
 
     // decorate named loader methods back to the collection
     // to allow chaining like `.pages().pages()` etc
@@ -441,13 +438,7 @@ Template.prototype = Emitter({
    */
 
   data: function (prop, value) {
-    if (typeof prop === 'object') {
-      this.visit('data', prop);
-    } else {
-      this.emit('data', prop, value);
-      this.cache.data[prop] = value;
-    }
-    return this;
+    return utils.data(this, prop, value);
   },
 
   /**
@@ -455,15 +446,7 @@ Template.prototype = Emitter({
    */
 
   option: function (prop, value) {
-    if (typeof prop === 'object') {
-      this.visit('option', prop);
-    } else if (typeof prop == 'string' && arguments.length === 1) {
-      return this.options[prop];
-    } else {
-      this.emit('option', prop, value);
-      this.options[prop] = value;
-    }
-    return this;
+    return utils.option(this, prop, value);
   },
 
   /**
@@ -536,24 +519,7 @@ Template.prototype = Emitter({
     ctx.options = extend({}, this.options.helper, locals);
     ctx.context = context || {};
     ctx.app = this;
-    locals.helpers = utils.bindAll(helpers, ctx);
-  },
-
-  /**
-   * Call the given method on each value in `obj`.
-   */
-
-  visit: function (method, obj) {
-    utils.visit(this, method, obj);
-    return this;
-  },
-
-  /**
-   * Add a method to the Template prototype
-   */
-
-  mixin: function (name, fn) {
-    Template.prototype[name] = fn;
+    locals.helpers = utils.object.bindAll(helpers, ctx);
   },
 
   /**
@@ -598,6 +564,32 @@ Template.prototype = Emitter({
   },
 
   /**
+   * Call the given method on each value in `obj`.
+   */
+
+  visit: function (method, obj) {
+    utils.visit(this, method, obj);
+    return this;
+  },
+
+  /**
+   * Add a method to the Template prototype
+   */
+
+  mixin: function (name, fn) {
+    Template.prototype[name] = fn;
+  },
+
+  /**
+   * Build a tree of all property names on the given object and
+   * its ancestor objects.
+   */
+
+  showKeys: function (obj) {
+    return utils.lang.protoTree(obj);
+  },
+
+  /**
    * Show the `ownPropertyNames` on the given object or the instance.
    */
 
@@ -605,7 +597,6 @@ Template.prototype = Emitter({
     return utils.makeEnumerable(obj || this);
   }
 });
-
 
 /**
  * Expose `Template`

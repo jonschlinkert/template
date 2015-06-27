@@ -5,8 +5,10 @@ var path = require('path');
 var glob = require('globby');
 var assert = require('assert');
 var should = require('should');
+var utils = require('../lib/utils');
 var App = require('..');
 var app;
+
 
 describe('collection methods', function () {
   beforeEach(function () {
@@ -15,25 +17,6 @@ describe('collection methods', function () {
     app.create('page');
   });
 
-  describe('loaders', function () {
-    it('should use generic loaders:', function () {
-      app.loader('glob', function (views, opts) {
-        return glob.sync.bind(glob);
-      });
-
-      app.loader('toViews', ['glob'], function (views, opts) {
-        return function (files) {
-          return files.reduce(function (acc, fp) {
-            views.set(fp, {path: fp, content: fs.readFileSync(fp, 'utf8')});
-            return acc;
-          }, {});
-        }
-      });
-
-      app.pages('test/fixtures/*.txt', ['toViews']);
-      app.views.pages.should.have.property('test/fixtures/a.txt');
-    });
-  });
 
   describe('chaining', function () {
     it('should allow collection methods to be chained:', function () {
@@ -44,50 +27,6 @@ describe('collection methods', function () {
         'test/fixtures/a.txt',
         'test/fixtures/a.md'
       ]);
-    });
-  });
-
-  describe('.use', function () {
-    it('should expose `.use` for running plugins on a view:', function () {
-      app.pages('test/fixtures/*.txt')
-        .use(function (views, options) {
-          for (var key in views) {
-            if (views.hasOwnProperty(key)) {
-              views[path.basename(key)] = views[key];
-              delete views[key];
-            }
-          }
-        });
-
-      app.views.pages.should.have.properties('a.txt', 'b.txt', 'c.txt');
-    });
-  });
-
-  describe('.forOwn:', function (done) {
-    it('should expose `own` collection items as params on the given function:', function () {
-      app.pages('a', {path: 'a', content: '<%= a %>', a: 'bbb'});
-      app.pages('b', {path: 'a', content: '<%= a %>', a: 'bbb'});
-      app.pages('c', {path: 'a', content: '<%= a %>', a: 'bbb'});
-      var keys = [];
-
-      app.pages.forOwn(function (view, key) {
-        keys.push(key);
-      });
-
-      keys.should.eql(['a', 'b', 'c']);
-    });
-  });
-
-  describe('.render:', function (done) {
-    it('should expose `.render` for rendering a view:', function (done) {
-      app.pages('a.tmpl', {path: 'a.tmpl', content: '<%= a %>', a: 'bbb'});
-      var page = app.pages.get('a.tmpl');
-
-      page.render({}, function (err, res) {
-        if (err) return done(err);
-        res.content.should.equal('bbb');
-        done();
-      });
     });
   });
 
@@ -137,6 +76,83 @@ describe('collection methods', function () {
       var ctx = page.context({foo: 'bar'});
       page.locals.should.eql({a: 'b', foo: 'bar'});
       done();
+    });
+  });
+
+  describe('.get', function () {
+    it('should get the given page:', function () {
+      var page = app.pages('test/fixtures/*.txt')
+        .get('test/fixtures/a.txt')
+
+      page.path.should.equal('test/fixtures/a.txt');
+      app.views.pages.should.have.property('test/fixtures/a.txt');
+    });
+
+    it('should run a middleware then the given page:', function () {
+      var page = app.pages('test/fixtures/*.txt')
+        .use(utils.rename)
+        .get('a.txt');
+
+      page.path.should.equal('test/fixtures/a.txt');
+      app.views.pages.should.have.properties('a.txt', 'b.txt', 'c.txt');
+    });
+  });
+
+  describe('.forOwn:', function (done) {
+    it('should expose `own` collection items as params on the given function:', function () {
+      app.pages('a', {path: 'a', content: '<%= a %>', a: 'bbb'});
+      app.pages('b', {path: 'a', content: '<%= a %>', a: 'bbb'});
+      app.pages('c', {path: 'a', content: '<%= a %>', a: 'bbb'});
+      var keys = [];
+
+      app.pages.forOwn(function (view, key) {
+        keys.push(key);
+      });
+
+      keys.should.eql(['a', 'b', 'c']);
+    });
+  });
+
+  describe('loaders', function () {
+    it('should use generic loaders:', function () {
+      app.loader('glob', function (views, opts) {
+        return glob.sync.bind(glob);
+      });
+
+      app.loader('toViews', ['glob'], function (views, opts) {
+        return function (files) {
+          return files.reduce(function (acc, fp) {
+            views.set(fp, {path: fp, content: fs.readFileSync(fp, 'utf8')});
+            return acc;
+          }, {});
+        }
+      });
+
+      app.pages('test/fixtures/*.txt', ['toViews']);
+      app.views.pages.should.have.property('test/fixtures/a.txt');
+    });
+  });
+
+  describe('.render:', function (done) {
+    it('should expose `.render` for rendering a view:', function (done) {
+      app.pages('a.tmpl', {path: 'a.tmpl', content: '<%= a %>', a: 'bbb'});
+      var page = app.pages.get('a.tmpl');
+
+      page.render({}, function (err, res) {
+        if (err) return done(err);
+        res.content.should.equal('bbb');
+        done();
+      });
+    });
+  });
+
+  describe('.use', function () {
+    it('should expose `.use` for running plugins on a view:', function () {
+      app
+        .pages('test/fixtures/*.txt')
+        .use(utils.rename);
+
+      app.views.pages.should.have.properties('a.txt', 'b.txt', 'c.txt');
     });
   });
 });

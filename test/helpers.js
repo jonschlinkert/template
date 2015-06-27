@@ -51,7 +51,6 @@ describe('async helpers', function () {
     app._.helpers.async.should.have.property('b');
   });
 
-
   it('should use an async helper:', function (done) {
     app.pages('a.tmpl', {path: 'a.tmpl', content: '<%= lower(a) %>', a: 'BBB'});
     app.asyncHelper('lower', function (str, next) {

@@ -372,8 +372,7 @@ Template.prototype = Emitter({
     view = this.applyLayout(view, ctx);
 
     // Bind context to helpers before passing to the engine.
-    this.bindHelpers(locals, ctx, isAsync);
-    locals.async = isAsync;
+    this.bindHelpers(locals, ctx, (locals.async = isAsync));
 
     // handle `preCompile` middleware
     this.handleView('preCompile', view, ctx);

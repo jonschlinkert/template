@@ -6,7 +6,6 @@ var glob = require('globby');
 var App = require('..');
 var app = new App();
 
-
 /**
  * Load "pages" with custom loaders
  */

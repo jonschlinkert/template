@@ -1,5 +1,7 @@
 'use strict';
 
+// require('time-require');
+
 var forOwn = require('for-own');
 var router = require('en-route');
 var layouts = require('layouts');
@@ -12,6 +14,7 @@ var clone = require('clone-deep');
 var engines = require('./lib/engines');
 var loaders = require('./lib/loaders/index');
 var helpers = require('./lib/helpers');
+var lookup = require('./lib/lookup');
 var Views = require('./lib/views');
 var utils = require('./lib/utils');
 
@@ -39,8 +42,11 @@ Template.prototype = Emitter({
 
   init: function () {
     this._ = {};
+    this.listen();
+
     engines(this);
-    helpers(this);
+    helpers.methods(this);
+    lookup(this);
 
     this.iterators = {};
     this.options = {
@@ -48,6 +54,7 @@ Template.prototype = Emitter({
       layoutTag: 'body'
     };
 
+    // temporary.
     this.errors = {
       compile: 'Template#compile expects engines to have a compile method',
       render: 'Template#render expects engines to have a render method',
@@ -57,6 +64,7 @@ Template.prototype = Emitter({
     this.cache.data = {};
     this.cache.context = {};
     this.views = {};
+    this.stash = {};
 
     this.viewTypes = {
       layout: [],
@@ -67,21 +75,73 @@ Template.prototype = Emitter({
     this.inflections = {};
     this.handlers(utils.methods);
     this.decorateLoaders([
-      'getLoader',
-      'seq',
       'loader',
-      'union',
-      'first',
-      'last',
       'resolve',
       'compose',
-      'createStack',
       'iterator',
     ]);
 
     // initialize iterators and loaders
     loaders.iterators(this);
     loaders.first(this);
+  },
+
+  /**
+   * Listen for events
+   */
+
+  listen: function () {
+    this.on('error', function (err) {
+      // console.error(err);
+    });
+  },
+
+  /**
+   * Load data onto `app.cache.data`
+   */
+
+  data: function (prop, value) {
+    return utils.data(this, prop, value);
+  },
+
+  /**
+   * Set or get an option on the instance.
+   */
+
+  option: function (prop, value) {
+    return utils.option(this, prop, value);
+  },
+
+  /**
+   * Enable an option.
+   */
+
+  enable: function (key) {
+    return this.option(key, true);
+  },
+
+  /**
+   * Disable an option.
+   */
+
+  disable: function (key) {
+    return this.option(key, false);
+  },
+
+  /**
+   * Return true if `option` is enabled.
+   */
+
+  enabled: function (key) {
+    return this.options[key] === true;
+  },
+
+  /**
+   * Return true if `option` is disabled.
+   */
+
+  disabled: function (key) {
+    return this.options[key] === false;
   },
 
   /**
@@ -100,7 +160,7 @@ Template.prototype = Emitter({
    */
 
   error: function(id, msg) {
-    throw new Error(this.errors[id] + msg);
+    return new Error(this.errors[id] + msg);
   },
 
   /**
@@ -110,7 +170,6 @@ Template.prototype = Emitter({
   create: function (single/*, options, loaders*/) {
     var args = utils.slice(arguments, 1);
     var opts = clone(args.shift());
-
     var plural = this.inflect(single);
 
     opts.loaderType = opts.loaderType || 'sync';
@@ -118,12 +177,12 @@ Template.prototype = Emitter({
     opts.inflection = single;
     utils.defineProp(opts, 'app', this);
 
-    var views = new Views(opts, args, this);
+    var views = new Views(this, args, opts);
     this.viewType(plural, views.viewType());
 
     // init the collection object on `views`
     this.views[plural] = views;
-    this.loader(plural, args);
+    this.loader(plural, opts, args);
 
     // wrap loaders to expose the collection and opts
     utils.defineProp(opts, 'wrap', views.wrap.bind(views, opts));
@@ -144,6 +203,25 @@ Template.prototype = Emitter({
     // add loader methods to the instance
     this.mixin(single, fn);
     this.mixin(plural, fn);
+
+    // add collection and view (item) helpers
+    helpers.collection(this, views, opts);
+    helpers.view(this, views, opts);
+    return this;
+  },
+
+  /**
+   * Keep a reference to a `view` on the `stash`, for faster lookups.
+   *
+   * @param  {String} `path` The `view.path` property
+   * @param  {String} `key` the view key
+   * @param  {String} `collection` Name of the collection, e.g. `pages`
+   * @return {Object} Returns the instance, for chaining
+   * @api private
+   */
+
+  keep: function (path, key, collection) {
+    this.stash[path] = {key: key, collection: collection};
     return this;
   },
 
@@ -177,15 +255,6 @@ Template.prototype = Emitter({
       }
     }
     return types;
-  },
-
-  /**
-   * Find a stashed view.
-   */
-
-  lookup: function (key) {
-    var collection = this.stash.get(key);
-    return this.views[collection][key];
   },
 
   /**
@@ -247,6 +316,7 @@ Template.prototype = Emitter({
    */
 
   handleView: function (method, view/*, locals, cb*/) {
+    // console.log(view)
     if (view.options.handled.indexOf(method) === -1) {
       this.handle.apply(this, arguments);
     }
@@ -357,16 +427,17 @@ Template.prototype = Emitter({
       locals = {};
     }
 
-    locals = locals || {};
-
     // get the engine to use
+    locals = locals || {};
     var engine = this.engine(view.getEngine(locals));
     if (!engine || !engine.hasOwnProperty('compile')) {
-      this.error('compile', engine);
+      throw this.error('compile', engine);
     }
 
+    view.ctx('compile', locals);
+
     // build the context to pass to the engine
-    var ctx = this.context(view, locals);
+    var ctx = view.context(locals);
 
     // apply layout
     view = this.applyLayout(view, ctx);
@@ -375,7 +446,7 @@ Template.prototype = Emitter({
     this.bindHelpers(locals, ctx, (locals.async = isAsync));
 
     // handle `preCompile` middleware
-    this.handleView('preCompile', view, ctx);
+    this.handleView('preCompile', view, locals);
 
     // compile the string
     view.fn = engine.compile(view.content, locals);
@@ -395,57 +466,55 @@ Template.prototype = Emitter({
       locals = {};
     }
 
+    // if `view` is a function, it's probably from chaining
+    // a collection method
     if (typeof view === 'function') {
-      // TODO
+      return view.call(this);
     }
+
+    // if `view` is a string, see if it's a cache view
+    if (typeof view === 'string') {
+      view = this.lookup(view);
+    }
+
+    locals = locals || {};
+    view.ctx('render', locals);
 
     // handle `preRender` middleware
     this.handleView('preRender', view, locals);
 
-    // get the engine
-    var engine = this.engine(view.getEngine(locals));
-    if (!engine || !engine.hasOwnProperty('render')) {
-      this.error('render', engine);
-    }
-
     // build the context for the view
-    var ctx = this.context(view, locals);
+    var ctx = view.context(locals);
+
+    // get the engine
+    var engine = this.engine(view.getEngine(ctx));
+    if (!engine || !engine.hasOwnProperty('render')) {
+      throw this.error('render', engine);
+    }
 
     // if it's not already compiled, do that first
     if (typeof view.fn !== 'function') {
       try {
         var isAsync = typeof cb === 'function';
-        view = this.compile(view, ctx, isAsync);
+        view = this.compile(view, locals, isAsync);
         return this.render(view, locals, cb);
       } catch (err) {
+        this.emit('error', err);
         return cb.call(this, err);
       }
     }
 
     // render the view
     return engine.render(view.fn, ctx, function (err, res) {
-      if (err) return cb.call(this, err);
-      view.content = res;
+      if (err) {
+        this.emit('error', err);
+        return cb.call(this, err);
+      }
 
       // handle `postRender` middleware
+      view.content = res;
       this.handle('postRender', view, locals, cb);
     }.bind(this));
-  },
-
-  /**
-   * Load data onto `app.cache.data`
-   */
-
-  data: function (prop, value) {
-    return utils.data(this, prop, value);
-  },
-
-  /**
-   * Set or get an option on the instance.
-   */
-
-  option: function (prop, value) {
-    return utils.option(this, prop, value);
   },
 
   /**
@@ -462,7 +531,7 @@ Template.prototype = Emitter({
 
       forOwn(collection, function (view, key) {
         // handle `onMerge` middleware
-        this.handle('onMerge', view, locals);
+        this.handleView('onMerge', view, locals);
 
         if (view.options.nomerge) return;
         if (opts.mergePartials === true) {
@@ -518,6 +587,7 @@ Template.prototype = Emitter({
     ctx.options = extend({}, this.options.helper, locals);
     ctx.context = context || {};
     ctx.app = this;
+
     locals.helpers = utils.object.bindAll(helpers, ctx);
   },
 

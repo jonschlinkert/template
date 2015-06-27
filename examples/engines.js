@@ -9,14 +9,6 @@ var app = new App();
 app.engine('tmpl', require('engine-lodash'));
 
 /**
- * Loader
- */
-app.iterator('sync', require('iterator-sync'));
-app.loader('sync', function (key, value) {
-  return (this[key] = value);
-});
-
-/**
  * Create
  */
 app.create('page', { loaderType: 'sync' });

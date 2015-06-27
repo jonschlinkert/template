@@ -1,0 +1,105 @@
+'use strict';
+
+/* deps: mocha */
+var assert = require('assert');
+var should = require('should');
+var extend = require('extend-shallow');
+var matter = require('parser-front-matter');
+var App = require('..');
+var app = new App();
+
+// engine
+app.engine('md', require('engine-lodash'));
+app.create('page');
+
+
+// middleware for parsing front matter
+app.onLoad(/\.md$/, function (view, next) {
+  matter.parse(view, next);
+});
+
+
+// define a page
+app.page('example.md', '<%= title %>');
+
+
+// global (default) data
+app.data({ title: 'app.cache.data'});
+
+app.render('example.md', function (err, res) {
+  if (err) return console.log(err);
+  // console.log(res.contexts);
+  console.log('app.cache.data:', res.content);
+  //=> 'app.cache.data'
+});
+
+
+
+// pass data on the `.render` method
+app.render('example.md', { title: 'render locals' }, function (err, res) {
+  if (err) return console.log(err);
+  // console.log(res.contexts);
+  console.log('render locals:', res.content);
+  //=> 'render locals: render locals
+});
+
+
+
+// pass data on `view.locals`
+app.page('example.md', '<%= title %>', { title: 'view locals' });
+
+app.render('example.md', function (err, res) {
+  if (err) return console.log(err);
+  // console.log(res.contexts);
+  console.log('view locals:', res.content);
+  //=> 'view locals'
+});
+
+
+
+// should prefer `view.locals` over `view.data` (front matter)
+app.page('example.md', '---\ntitle: front matter\n---\n<%= title %>', { title: 'view locals' });
+
+app.render('example.md', function (err, res) {
+  if (err) return console.log(err);
+  // console.log(res.contexts);
+  console.log('view locals:', res.content);
+  //=> 'view locals: view locals'
+});
+
+
+
+// should prefer `view.data` (front matter) over `view.locals`
+// when `prefer locals` is disabled
+app.pages.option('context', function (keys, contexts, fn) {
+  this.title = contexts.matter.title;
+  return this;
+});
+
+app.page('example.md', '---\ntitle: front matter\n---\n<%= title %>', { title: 'view locals' });
+
+app.render('example.md', function (err, res) {
+  if (err) return console.log(err);
+  // console.log(res.contexts);
+  console.log('front matter:', res.content);
+  //=> 'front matter'
+});
+
+
+
+// should use a custom `context` function
+app.page('example.md', '<%= title %>', { title: 'view locals' });
+
+var page = app.pages.get('example.md')
+  .context(function (keys, contexts, fn) {
+    fn(keys, contexts);
+    this.title = 'custom context method';
+    return this;
+  });
+
+app.render(page, function (err, res) {
+  if (err) return console.log(err);
+  // console.log(res.contexts);
+  console.log('custom context method:', res.content);
+  //=> 'custom context method: custom context method'
+});

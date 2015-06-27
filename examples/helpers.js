@@ -15,13 +15,6 @@ app.helper('after', function (str) {
   return str + '-after';
 });
 
-/**
- * Loader
- */
-app.iterator('sync', require('iterator-sync'));
-app.loader('sync', function (key, value) {
-  return (this[key] = value);
-});
 
 /**
  * Create
@@ -52,7 +45,7 @@ app.pages('a', {
     content: '<%= name %>'
   })
   .render(function (views, options, loader) {
-    console.log(this)
+    console.log(arguments)
   })
 
-console.log(app.views.pages)
+// console.log(app.views.pages);

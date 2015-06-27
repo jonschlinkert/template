@@ -12,17 +12,19 @@ describe('collection.option()', function () {
     app.create('page');
   })
 
-  it('should set an option:', function () {
-    app.pages.options.should.not.have.property('foo');
-    app.pages.option('foo', 'bar');
-    app.pages.options.should.have.property('foo');
-  });
-
-  it('should extend options:', function () {
+  it('should emit events:', function () {
     app.pages('a.tmpl', {path: 'a.tmpl', content: '<%= a %>'});
+    var events = [];
+
+    app.pages.on('option', function (key, value) {
+      events.push(key);
+    });
+
     app.pages.option('a', 'b');
     app.pages.option('c', 'd');
     app.pages.option('e', 'f');
-    app.pages.options.should.have.properties(['a', 'c', 'e']);
+    app.pages.option({g: 'h'});
+
+    events.should.eql(['a', 'c', 'e', 'g']);
   });
 });

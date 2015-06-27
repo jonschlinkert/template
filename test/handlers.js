@@ -14,7 +14,6 @@ describe('handlers', function () {
   describe('custom handlers', function () {
     beforeEach(function () {
       app = new App();
-      app.engine('tmpl', require('engine-lodash'));
       app.create('page');
     });
 
@@ -60,7 +59,6 @@ describe('handlers', function () {
       app.pages.get('a.md').should.not.have.property('one');
       app.pages.get('a.md').should.have.property('two');
     });
-
 
     it('should add custom middleware handlers:', function () {
       app.handler('foo');

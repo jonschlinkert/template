@@ -17,7 +17,6 @@ describe('collection methods', function () {
     app.create('page');
   });
 
-
   describe('chaining', function () {
     it('should allow collection methods to be chained:', function () {
       app.pages('test/fixtures/*.txt')

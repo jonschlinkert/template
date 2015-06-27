@@ -376,6 +376,7 @@ Template.prototype = Emitter({
 
     // Bind context to helpers before passing to the engine.
     this.bindHelpers(locals, ctx, isAsync);
+    locals.async = isAsync;
 
     // handle `preCompile` middleware
     this.handleView('preCompile', view, ctx);
@@ -426,7 +427,7 @@ Template.prototype = Emitter({
     }
 
     // render the view
-    return engine.render(view.content, ctx, function (err, res) {
+    return engine.render(view.fn, ctx, function (err, res) {
       if (err) return cb.call(this, err);
       view.content = res;
 

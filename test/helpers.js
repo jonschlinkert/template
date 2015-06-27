@@ -56,16 +56,14 @@ describe('async helpers', function () {
     app.pages('a.tmpl', {path: 'a.tmpl', content: '<%= lower(a) %>', a: 'BBB'});
     app.asyncHelper('lower', function (str, next) {
       if (typeof next !== 'function') return str;
-      next(null, str.toUpperCase());
+      next(null, str.toLowerCase());
     });
 
     var page = app.pages.get('a.tmpl');
     app.render(page, function (err, view) {
       if (err) return done(err);
-
-      console.log(arguments)
       assert.equal(typeof view.content, 'string');
-      assert.equal(view.content, 'BBB');
+      assert.equal(view.content, 'bbb');
       done();
     });
   });

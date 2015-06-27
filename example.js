@@ -1,46 +1,54 @@
+'use strict';
 
-var engine = require('engine-lodash');
-var Template = require('./');
-var template = new Template();
+var App = require('./');
+var app = new App();
 var _ = require('lodash');
 
-template.engine('.html', engine, {delims: ['<%', '%>']});
+/**
+ * Define a template engine for rendering templates
+ * in `.html` files
+ */
+app.engine('html', require('engine-lodash'), {
+  delims: ['<%', '%>']
+});
+
 
 /**
  * Create custom template types
  */
+app.create('page', { viewType: 'renderable' });
+app.create('include', { viewType: 'partial' });
+app.create('layout', { viewType: 'layout' });
 
-template.create('include');
-template.create('block', {isLayout: true});
 
 /**
  * Load templates
  */
+app.include('button.html', {content: '---\ntext: Click me!\n---\n<%= text %>'});
+app.include('sidebar.html', {content: '---\ntext: Expand me!\n---\n<%= text %>'});
 
-template.include('button.html', {content: '---\ntext: Click me!\n---\n<%= text %>'});
-template.include('sidebar.html', {content: '---\ntext: Expand me!\n---\n<%= text %>'});
 
 /**
- * Create a custom (async) template helper
- * for adding includes to a template
+ * Register a custom async template helper for adding includes
  */
-
-template.asyncHelper('include', function (name, locals, cb) {
-  var file = template.getInclude(name);
-  locals = _.extend({}, locals, file.data);
-
-  file.render(locals, function (err, content) {
-    if (err) return cb(err);
-    // do stuff to post-rendered content
-    cb(null, content);
-  });
+app.asyncHelper('include', function (name, locals, cb) {
+  var view = app.includes.get(name);
+  locals = _.extend({}, locals, view.data);
+  view.render(locals, cb);
 });
 
-template.page('home.html', {
-  content: '---\ntext: Click something else!\n---\n<%= include("button.html", {text: "Click something"}) %>'
-});
 
-template.render('home.html', function (err, content) {
-  console.log(content)
+/**
+ * Define a `page` that uses our new `include` helper
+ */
+app.page('home.html', {content: '<%= include("button.html", {text: "Click something"}) %>'});
+
+
+/**
+ * Render
+ */
+app.render('home.html', function (err, content) {
+  if (err) return console.error(err);
+  console.log(content);
 });
 

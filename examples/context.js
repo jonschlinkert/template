@@ -90,17 +90,20 @@ app.render('example.md', function (err, res) {
 
 // should use a custom `context` function
 app.page('example.md', '<%= title %>', { title: 'view locals' });
+var res = {};
 
-// var page = app.pages.get('example.md')
-//   .context(function (keys, contexts, fn) {
-//     fn(keys, contexts);
-//     this.title = 'custom context method';
-//     return this;
-//   });
+var page = app.pages.get('example.md')
+  .context(function (ctx, contexts, keys, fn) {
+    fn(ctx, keys, contexts);
+    ctx.title = 'custom context method';
+    return ctx;
+  });
 
-// app.render(page, function (err, res) {
-//   if (err) return console.log(err);
-//   // console.log(res.contexts);
-//   console.log('custom context method:', res.content);
-//   //=> 'custom context method: custom context method'
-// });
+  console.log(page);
+
+app.render(page, function (err, res) {
+  if (err) return console.log(err);
+  // console.log(res.contexts);
+  console.log('custom context method:', res.content);
+  //=> 'custom context method: custom context method'
+});

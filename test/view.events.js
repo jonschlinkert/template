@@ -4,7 +4,7 @@
 var assert = require('assert');
 var should = require('should');
 var App = require('..');
-var app
+var app;
 
 describe('view.option()', function () {
   beforeEach(function () {

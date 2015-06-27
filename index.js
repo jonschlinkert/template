@@ -6,10 +6,14 @@ var forOwn = require('for-own');
 var router = require('en-route');
 var layouts = require('layouts');
 var Emitter = require('component-emitter');
+var isObject = require('is-object');
 var extend = require('extend-shallow');
 var Loaders = require('loader-cache');
 var inflect = require('pluralize');
 var clone = require('clone-deep');
+var merge = require('mixin-deep');
+var get = require('get-value');
+var set = require('set-value');
 
 var engines = require('./lib/engines');
 var loaders = require('./lib/loaders/index');
@@ -48,7 +52,6 @@ Template.prototype = Emitter({
     helpers.methods(this);
     lookup(this);
 
-    this.iterators = {};
     this.options = {
       layoutDelims: ['{%', '%}'],
       layoutTag: 'body'
@@ -74,7 +77,7 @@ Template.prototype = Emitter({
 
     this.inflections = {};
     this.handlers(utils.methods);
-    this.decorateLoaders([
+    this.delegateLoaders([
       'loader',
       'resolve',
       'compose',
@@ -92,7 +95,7 @@ Template.prototype = Emitter({
 
   listen: function () {
     this.on('error', function (err) {
-      // console.error(err);
+      console.error('error', err);
     });
   },
 
@@ -100,48 +103,125 @@ Template.prototype = Emitter({
    * Load data onto `app.cache.data`
    */
 
-  data: function (prop, value) {
-    return utils.data(this, prop, value);
+  data: function(key, val) {
+    var args = [].slice.call(arguments);
+    var len = args.length;
+
+    if (len === 1 && typeof key === 'string') {
+      if (key.indexOf('.') === -1) {
+        return this.cache.data[key];
+      }
+      return get(this.cache.data, key);
+    }
+
+    if (isObject(key)) {
+      this.visit('data', key);
+      return this;
+    }
+
+    set(this.cache.data, key, val);
+    this.emit('data', key, val);
+    return this;
   },
 
   /**
    * Set or get an option on the instance.
    */
 
-  option: function (prop, value) {
-    return utils.option(this, prop, value);
+  option: function(key, val) {
+    var args = [].slice.call(arguments);
+    var len = args.length;
+
+    if (len === 1 && typeof key === 'string') {
+      if (key.indexOf('.') === -1) {
+        return this.options[key];
+      }
+      return get(this.options, key);
+    }
+
+    if (isObject(key)) {
+      this.visit('option', key);
+      return this;
+    }
+
+    set(this.options, key, val);
+    this.emit('option', key, val);
+    return this;
   },
 
   /**
-   * Enable an option.
+   * Enable `key`.
+   *
+   * ```js
+   * app.enable('a');
+   * ```
+   * @param {String} `key`
+   * @return {Object} `Options`to enable chaining
+   * @api public
    */
 
-  enable: function (key) {
-    return this.option(key, true);
+  enable: function(key) {
+    this.option(key, true);
+    return this;
   },
 
   /**
-   * Disable an option.
+   * Disable `key`.
+   *
+   * ```js
+   * app.disable('a');
+   * ```
+   *
+   * @param {String} `key` The option to disable.
+   * @return {Object} `Options`to enable chaining
+   * @api public
    */
 
-  disable: function (key) {
-    return this.option(key, false);
+  disable: function(key) {
+    this.option(key, false);
+    return this;
   },
 
   /**
-   * Return true if `option` is enabled.
+   * Check if `key` is enabled (truthy).
+   *
+   * ```js
+   * app.enabled('a');
+   * //=> false
+   *
+   * app.enable('a');
+   * app.enabled('a');
+   * //=> true
+   * ```
+   *
+   * @param {String} `key`
+   * @return {Boolean}
+   * @api public
    */
 
-  enabled: function (key) {
-    return this.options[key] === true;
+  enabled: function(key) {
+    return Boolean(this.options[key]);
   },
 
   /**
-   * Return true if `option` is disabled.
+   * Check if `key` is disabled (falsey).
+   *
+   * ```js
+   * app.disabled('a');
+   * //=> true
+   *
+   * app.enable('a');
+   * app.disabled('a');
+   * //=> false
+   * ```
+   *
+   * @param {String} `key`
+   * @return {Boolean} Returns true if `key` is disabled.
+   * @api public
    */
 
-  disabled: function (key) {
-    return this.options[key] === false;
+  disabled: function(key) {
+    return !Boolean(this.options[key]);
   },
 
   /**
@@ -315,11 +395,11 @@ Template.prototype = Emitter({
    * @return {Array} Returns an array of view objects with rendered content.
    */
 
-  handleView: function (method, view/*, locals, cb*/) {
-    // console.log(view)
+  handleView: function (method, view, locals/*, cb*/) {
     if (view.options.handled.indexOf(method) === -1) {
       this.handle.apply(this, arguments);
     }
+    this.emit(method, view, locals);
   },
 
   /**
@@ -477,7 +557,6 @@ Template.prototype = Emitter({
       view = this.lookup(view);
     }
 
-    locals = locals || {};
     view.ctx('render', locals);
 
     // handle `preRender` middleware
@@ -499,6 +578,7 @@ Template.prototype = Emitter({
         view = this.compile(view, locals, isAsync);
         return this.render(view, locals, cb);
       } catch (err) {
+
         this.emit('error', err);
         return cb.call(this, err);
       }
@@ -574,28 +654,26 @@ Template.prototype = Emitter({
 
   bindHelpers: function (locals, context, isAsync) {
     var helpers = {};
-
     extend(helpers, this.options.helpers);
     extend(helpers, this._.helpers.sync);
-    if (isAsync) {
-      extend(helpers, this._.helpers.async);
-    }
+
+    if (isAsync) extend(helpers, this._.helpers.async);
     extend(helpers, locals.helpers);
 
-    // build the context (exposed as `this` in helpers)
-    var ctx = {};
-    ctx.options = extend({}, this.options.helper, locals);
-    ctx.context = context || {};
-    ctx.app = this;
+    // build the context to expose as `this` in helpers
+    var thisArg = {};
+    thisArg.options = extend({}, this.options.helper, locals);
+    thisArg.context = context || {};
+    thisArg.app = this;
 
-    locals.helpers = utils.object.bindAll(helpers, ctx);
+    locals.helpers = utils.object.bindAll(helpers, thisArg);
   },
 
   /**
-   * Loader methods
+   * Delegate loader methods
    */
 
-  decorateLoaders: function (methods) {
+  delegateLoaders: function (methods) {
     this.lazyLoaders();
     var loaders = this.loaders, self = this;
     utils.arrayify(methods).forEach(function (method) {

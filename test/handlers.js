@@ -8,7 +8,7 @@ var should = require('should');
 var glob = require('globby');
 var utils = require('../lib/utils');
 var App = require('..');
-var app
+var app;
 
 describe('handlers', function () {
   describe('custom handlers', function () {

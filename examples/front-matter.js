@@ -1,20 +1,23 @@
 'use strict';
 
-var App = require('./');
+var extend = require('extend-shallow');
+var matter = require('parser-front-matter');
+var App = require('..');
 var app = new App();
-var _ = require('lodash');
 
-/**
- * Define a template engine for rendering templates
- * in `.html` files
- */
-app.engine('html', require('engine-lodash'), {
-  delims: ['<%', '%>']
+app.onLoad(/\.html$/, function (view, next) {
+  matter.parse(view, next);
 });
 
+/**
+ * Template engine for rendering '.html' templates.
+ * Any consolidate engine will work.
+ */
+app.engine('html', require('engine-lodash'));
+
 
 /**
- * Create custom template types
+ * Custom view collections
  */
 app.create('page', { viewType: 'renderable' });
 app.create('include', { viewType: 'partial' });
@@ -33,8 +36,14 @@ app.include('sidebar.html', {content: '---\ntext: Expand me!\n---\n<%= text %>'}
  */
 app.asyncHelper('include', function (name, locals, cb) {
   var view = app.includes.get(name);
-  locals = _.extend({}, locals, view.data);
-  view.render(locals, cb);
+  locals = extend({}, locals, view.data);
+
+  view.render(locals, function (err, res) {
+    if (err) return cb(err);
+
+    // return `content`, not `res`
+    cb(null, res.content);
+  });
 });
 
 
@@ -47,8 +56,10 @@ app.page('home.html', {content: '<%= include("button.html", {text: "Click someth
 /**
  * Render
  */
-app.render('home.html', function (err, content) {
+var page = app.pages.get('home.html');
+app.render(page, function (err, view) {
   if (err) return console.error(err);
-  console.log(content);
+
+  console.log(view);
 });
 

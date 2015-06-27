@@ -5,7 +5,7 @@ var App = require('..');
 var app = new App();
 
 /**
- * Create a collection
+ * Create a collection (pass arbitrary options)
  */
 app.create('page', {foo: 'bar'});
 

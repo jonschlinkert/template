@@ -52,7 +52,7 @@ app.render('example.md', function (err, res) {
   if (err) return console.log(err);
   // console.log(res.contexts);
   console.log('view locals:', res.content);
-  //=> 'view locals'
+  //=> 'view locals: view locals'
 });
 
 
@@ -71,18 +71,19 @@ app.render('example.md', function (err, res) {
 
 // should prefer `view.data` (front matter) over `view.locals`
 // when `prefer locals` is disabled
-app.pages.option('context', function (keys, contexts, fn) {
-  this.title = contexts.matter.title;
-  return this;
+app.pages.option('context', function contextFn(ctx, contexts, keys, fn) {
+  fn(ctx, keys, contexts);
+  ctx.title = contexts.matter.title;
+  return ctx;
 });
 
 app.page('example.md', '---\ntitle: front matter\n---\n<%= title %>', { title: 'view locals' });
 
 app.render('example.md', function (err, res) {
   if (err) return console.log(err);
-  // console.log(res.contexts);
+  // console.log(res);
   console.log('front matter:', res.content);
-  //=> 'front matter'
+  //=> 'front matter: front matter'
 });
 
 
@@ -90,16 +91,16 @@ app.render('example.md', function (err, res) {
 // should use a custom `context` function
 app.page('example.md', '<%= title %>', { title: 'view locals' });
 
-var page = app.pages.get('example.md')
-  .context(function (keys, contexts, fn) {
-    fn(keys, contexts);
-    this.title = 'custom context method';
-    return this;
-  });
+// var page = app.pages.get('example.md')
+//   .context(function (keys, contexts, fn) {
+//     fn(keys, contexts);
+//     this.title = 'custom context method';
+//     return this;
+//   });
 
-app.render(page, function (err, res) {
-  if (err) return console.log(err);
-  // console.log(res.contexts);
-  console.log('custom context method:', res.content);
-  //=> 'custom context method: custom context method'
-});
+// app.render(page, function (err, res) {
+//   if (err) return console.log(err);
+//   // console.log(res.contexts);
+//   console.log('custom context method:', res.content);
+//   //=> 'custom context method: custom context method'
+// });

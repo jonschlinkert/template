@@ -278,14 +278,14 @@ Template.prototype = Emitter({
     utils.lang.setProto(fn, views);
     views.forward(fn, ['forOwn']);
 
+    // add loader methods to the instance: `app.pages()`
+    this.mixin(single, fn);
+    this.mixin(plural, fn);
+
     // decorate named loader methods back to the collection
     // to allow chaining like `.pages().pages()` etc
     utils.defineProp(views, plural, fn);
     utils.defineProp(views, single, fn);
-
-    // add loader methods to the instance
-    this.mixin(single, fn);
-    this.mixin(plural, fn);
 
     // add collection and view (item) helpers
     helpers.collection(this, views, opts);

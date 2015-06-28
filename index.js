@@ -259,6 +259,10 @@ Template.prototype = Emitter({
     var views = new Views(this, args, opts);
     this.viewType(plural, views.viewType());
 
+    views.on('cwd', function (dir) {
+      opts.cwd = dir;
+    });
+
     // init the collection object on `views`
     this.views[plural] = views;
     this.loader(plural, opts, args);
@@ -269,10 +273,10 @@ Template.prototype = Emitter({
 
     // create the actual loader function
     var fn = this.compose(plural, opts);
-    views.forward(fn, ['forOwn']);
 
     // forward collection methods onto loader
     utils.lang.setProto(fn, views);
+    views.forward(fn, ['forOwn']);
 
     // decorate named loader methods back to the collection
     // to allow chaining like `.pages().pages()` etc

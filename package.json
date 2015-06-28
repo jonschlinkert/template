@@ -61,7 +61,6 @@
     "async": "^1.2.1",
     "consolidate": "^0.13.1",
     "coveralls": "^2.11.2",
-    "engine-assemble": "^0.4.1",
     "engine-handlebars": "^0.6.1",
     "engine-lodash": "^0.7.1",
     "globby": "^2.0.0",

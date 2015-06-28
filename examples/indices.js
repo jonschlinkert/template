@@ -36,6 +36,11 @@ app.loader('paginate', function (views, options) {
     this.path = collection + '-index-' + pageNum;
   }
 
+  /**
+   * This needs to be extracted into another module and is
+   * only an example. Ideally, many of this logic will
+   * exist in methods on the `Views` object
+   */
   return function (collection, opts) {
     opts = _.extend({
       limit: 10

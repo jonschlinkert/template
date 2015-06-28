@@ -27,30 +27,27 @@ app.create('page', { loaderType: 'sync' });
  */
 app.pages('a.tmpl', {
     path: 'a.tmpl',
-    title: 'aaa',
-    content: '<%= title %>'
+    data: { date: '2015-12-01' },
+    content: '<%= name %>'
   })
   .pages('b', {
     path: 'b.tmpl',
-    title: 'bbb',
-    content: '<%= title %>'
+    data: { date: '2015-12-02' },
+    content: '<%= name %>'
   })
   .pages('c', {
     path: 'c.tmpl',
-    title: 'ccc',
-    content: '<%= title %>'
+    data: { date: '2015-12-03' },
+    content: '<%= name %>'
   })
   .pages('d', {
     path: 'd.tmpl',
-    title: 'ddd',
-    content: '<%= title %>'
+    data: { date: '2015-12-04' },
+    content: '<%= name %>'
   })
-  .compile('a.tmpl');
-  // .render('a.tmpl', function (err, res) {
-  //   if (err) return console.log(err);
-  //   console.log(res);
-  // });
 
-var page = app.pages.get('a.tmpl');
 
-console.log(page.fn)
+var recent = app.pages.recent();
+
+console.log(recent)
+

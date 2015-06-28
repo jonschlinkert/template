@@ -8,7 +8,7 @@ var _ = require('lodash');
  * Define a template engine for rendering templates
  * in `.hbs` files
  */
-app.engine('hbs', require('engine-assemble'));
+app.engine('hbs', require('engine-handlebars'));
 
 
 /**
@@ -42,9 +42,8 @@ app.loader('paginate', function (views, options) {
    * exist in methods on the `Views` object
    */
   return function (collection, opts) {
-    opts = _.extend({
-      limit: 10
-    }, options, opts);
+    opts = _.extend({ limit: 10 }, options, opts);
+
     var col = app.views[collection];
     var keys = Object.keys(col);
     var len = keys.length, i = 0, pageNum = 1;
@@ -110,9 +109,9 @@ app.page('page3.hbs', {content: '{{ include "button.hbs"  btn }}'});
 /**
  * Load index pages for `pages`
  */
-app.indices('pages', { limit: 2 });
+app.indices('pages', { limit: 5 });
 
-console.log(app.views.indices);
+console.log(app.views.indices['pages-index-2']);
 
 
 // /**

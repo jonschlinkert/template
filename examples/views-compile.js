@@ -3,15 +3,8 @@
 var App = require('..');
 var app = new App();
 
-/**
- * engine
- */
-app.engine('md', require('engine-lodash'));
+app.engine('tmpl', require('engine-lodash'));
 
-
-/**
- * Helpers
- */
 app.helper('double', function (str) {
   return str + '-' + str;
 });
@@ -24,38 +17,38 @@ app.helper('after', function (str) {
   return str + '-after';
 });
 
-
 /**
- * Cust template collection
+ * Create
  */
 app.create('page', { loaderType: 'sync' });
 
-
 /**
- * Load templates
+ * Load
  */
-app.pages('a.md', {
-    path: 'a.md',
-    title: 'a',
+app.pages('a.tmpl', {
+    path: 'a.tmpl',
+    title: 'aaa',
     content: 'This is <%= title %>'
   })
-  .pages('b.md', {
-    path: 'b.md',
-    title: 'b',
+  .pages('b.tmpl', {
+    path: 'b.tmpl',
+    title: 'bbb',
     content: 'This is <%= title %>'
   })
-  .pages('c.md', {
-    path: 'c.md',
-    title: 'c',
+  .pages('c.tmpl', {
+    path: 'c.tmpl',
+    title: 'ccc',
     content: 'This is <%= title %>'
   })
-  .pages('d.md', {
-    path: 'd.md',
-    title: 'd',
+  .compile('c.tmpl')
+  .pages('d.tmpl', {
+    path: 'd.tmpl',
+    title: 'ddd',
     content: 'This is <%= title %>'
   })
-  .render('a.md', function (err, res) {
-    console.log(arguments)
-  })
+  .compile('a.tmpl');
 
-// console.log(app.views.pages);
+
+var page = app.pages.get('c.tmpl');
+
+console.log(page.fn({title: 'Foo'}))

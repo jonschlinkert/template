@@ -2,11 +2,12 @@
 
 // require('time-require');
 
+var typeOf = require('kind-of');
 var forOwn = require('for-own');
 var router = require('en-route');
 var layouts = require('layouts');
 var Emitter = require('component-emitter');
-var isObject = require('is-object');
+var isObject = require('isobject');
 var extend = require('extend-shallow');
 var Loaders = require('loader-cache');
 var inflect = require('pluralize');
@@ -93,29 +94,46 @@ Template.prototype = Emitter({
    */
 
   listen: function () {
-    this.on('error', function (err) {
-      console.error('error', err);
-    });
+    this.on('error', console.error);
   },
+
+  // set: function (key, val) {
+  //   if (isObject(key)) {
+  //     this.visit('set', key);
+  //     return this;
+  //   }
+  //   set(this.cache, key, val);
+  //   this.emit('cache', key, val);
+  //   return this;
+  // },
+
+  // get: function (key) {
+  //   key = [].concat.apply([], arguments).join('.');
+  //   if (key.indexOf('.') === -1) {
+  //     return this.cache[key];
+  //   }
+  //   return get(this.cache, key);
+  // },
 
   /**
    * Load data onto `app.cache.data`
    */
 
   data: function(key, val) {
-    var args = [].slice.call(arguments);
-    var len = args.length;
+    if (arguments.length === 1) {
+      var type = typeOf(key);
 
-    if (len === 1 && typeof key === 'string') {
-      if (key.indexOf('.') === -1) {
-        return this.cache.data[key];
+      if (type === 'string') {
+        if (key.indexOf('.') === -1) {
+          return this.cache.data[key];
+        }
+        return get(this.cache.data, key);
       }
-      return get(this.cache.data, key);
-    }
 
-    if (isObject(key)) {
-      this.visit('data', key);
-      return this;
+      if (type === 'object') {
+        this.visit('data', key);
+        return this;
+      }
     }
 
     set(this.cache.data, key, val);
@@ -128,9 +146,7 @@ Template.prototype = Emitter({
    */
 
   option: function(key, val) {
-    var args = [].slice.call(arguments);
-    var len = args.length;
-
+    var len = arguments.length;
     if (len === 1 && typeof key === 'string') {
       if (key.indexOf('.') === -1) {
         return this.options[key];

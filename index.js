@@ -1,6 +1,6 @@
 'use strict';
 
-require('time-require');
+// require('time-require');
 
 var typeOf = require('kind-of');
 var forOwn = require('for-own');
@@ -280,7 +280,7 @@ Template.prototype = Emitter({
     views.forward(fn, ['forOwn']);
 
     // forward collection methods onto loader
-    utils.lang.setProto(fn, views);
+    utils.setProto(fn, views);
 
     // add loader methods to the instance: `app.pages()`
     this.mixin(single, fn);
@@ -677,7 +677,7 @@ Template.prototype = Emitter({
     thisArg.context = context || {};
     thisArg.app = this;
 
-    locals.helpers = utils.object.bindAll(helpers, thisArg);
+    locals.helpers = utils.bindAll(helpers, thisArg);
   },
 
   /**

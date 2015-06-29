@@ -2,10 +2,12 @@
 
 var fs = require('fs');
 var async = require('async');
+var forIn = require('for-in');
 var path = require('path');
 var glob = require('globby');
 var assert = require('assert');
 var should = require('should');
+var globber = require('./support/globber');
 var through = require('through2');
 var File = require('vinyl');
 var App = require('..');
@@ -112,141 +114,118 @@ describe('loaders', function () {
     });
   });
 
-  describe.skip('when a custom loader stack is set:', function () {
+  describe('when a custom loader stack is set:', function () {
+    beforeEach(function () {
+      app = new App();
+      app.engine('md', require('engine-lodash'));
+    });
+
     it('should allow custom loader stack to be used:', function () {
       var options = {};
-      app.create('post', { viewType: 'renderable' },
-        function (patterns) {
-          return globber(patterns, options);
-        },
-        function (file) {
-          _.forIn(file, function (value, key) {
-            value.options = value.options || {};
-          });
-          return file;
-        },
-        function (file) {
-          return file;
-        });
-      app.posts(__dirname + '/fixtures/layouts/matter/*.md');
-      app.views.posts.should.have.properties(['a.md', 'b.md', 'c.md', 'd.md']);
-    });
-
-    it('should load templates from files using a custom function:', function () {
-      app.create('post', { viewType: 'renderable' }, function (patterns, opts) {
-        return globber(patterns, opts);
+      app.loader('foo', function (views, options) {
+        return function (patterns, opts) {
+          return glob.sync(patterns, opts);
+        };
       });
-      app.post('test/fixtures/*.md');
-      app.views.posts.should.have.property('md.md');
+
+      app.loader('bar', ['foo'], function (views, options) {
+        return function (files) {
+          return files.reduce(function (acc, fp) {
+            return acc.set(fp, {path: fp, content: fs.readFileSync(fp, 'utf8')});
+          }, views);
+        };
+      });
+
+      app.create('post', ['bar'], {
+        renameKey: function (key) {
+          return path.basename(key);
+        }
+      });
+
+      app.posts('test/fixtures/*.md', {});
+      app.views.posts.should.have.properties(['a.md', 'b.md', 'c.md']);
     });
 
-    it('should load templates from files using a custom function:', function () {
-      var options = {};
-      app.create('post', { viewType: 'renderable' },
-        function (patterns) {
-          return globber(patterns, options);
+    it('should use a list of functions:', function () {
+      app.create('post',
+        function (views, opts) {
+          return function (patterns) {
+            return globber(patterns, opts);
+          };
         },
-        function (template) {
-          _.transform(template, function (acc, value, key) {
-            acc[key] = JSON.parse(value.content)[key];
-          });
-          return template;
+        function (views, opts) {
+          return function (res) {
+            for (var key in res) {
+              if (res.hasOwnProperty(key)) {
+                views.set(key, res[key]);
+              }
+            }
+            return views;
+          }
         });
       app.post('test/fixtures/loaders/npm-load.json');
       app.views.posts.should.have.property('npm-load.json');
     });
 
     it('should modify data:', function (done) {
-      var options = {};
       app.data('test/fixtures/data/*.json');
-      app.create('post', { viewType: 'renderable' },
-        function (patterns) {
-          return globber(patterns, options);
+      app.create('post',
+        function (views, opts) {
+          return function (patterns) {
+            return globber(patterns, opts);
+          };
         },
-        function (template) {
-          _.transform(template, function (acc, value, key) {
-            value.options = value.options || {};
-            value.data = value.data || {};
-            value.data.a = 'b';
-          });
-          return template;
+        function (views, opts) {
+          return function (res) {
+            for (var key in res) {
+              if (res.hasOwnProperty(key)) {
+                views.set(key, res[key]);
+              }
+            }
+            return views;
+          }
         });
 
       app.post('test/fixtures/*.md');
-      app.render('md.md', function (err, content) {
+      app.views.posts.should.have.property('a.md');
+      
+      app.render('a.md', function (err, res) {
+        if (err) return done(err);
         done();
       });
     });
 
-    it.skip('should expose `err`:', function (done) {
-      app.create('post', { viewType: 'renderable' }, [
-        function (patterns, next) {
-          next(new Error('Something went wrong'));
+    it('should expose `err`:', function (done) {
+      app.create('post', {loaderType: 'async'}, function (views, opts) {
+        return function (patterns, next) {
+          next(new Error('Something went wrong!'));
         }
-      ], function (err, result) {
-        if (!err) done('Expected an error');
       });
 
       app.post('test/fixtures/*.md', function (err) {
+        err.message.should.equal('Something went wrong!');
         if (err) done();
       });
     });
 
-    it.skip('should catch `err`:', function (done) {
-      app.create('post', { viewType: 'renderable' }, [
-        function (patterns, next) {
-          throw new Error('Something went wrong');
-        }
-      ], function (err, result) {
-        if (!err) done('Expected an error');
+    it.skip('should use custom async loaders', function (done) {
+      var options = { viewType: 'renderable', loaderType: 'async' };
+      app.create('post', options, function (views, opts) {
+        return function (patterns, opts, next) {
+          next(null, globber(patterns, opts));
+        };
       });
 
-      app.post('test/fixtures/*.md', function (err) {
-        if (err) done();
-      });
-    });
-
-    it('should add functions on individual templates to the `subtype` loader stack:', function () {
-      var options = {};
-      app.create('post', { viewType: 'renderable' }, [
-        function (args) {
-          var patterns = args[0];
-          return globber(patterns, options);
-        }
-      ]);
-
-      app.posts('test/fixtures/*.md', {a: 'b'});
-      app.views.posts.should.have.property('md.md');
-    });
-
-    it('should use custom loaders in the load function:', function () {
-      var options = {};
-      app.loader('test-post', function (templates) {
-        templates['added'] = { content: 'This was added' };
-        return templates;
-      });
-
-      app.create('post', { viewType: 'renderable' }, function (patterns) {
-        return globber(patterns, options);
-      });
-      app.posts('test/fixtures/*.md', ['test-post']);
-      app.views.posts.should.have.property('md.md');
-      app.views.posts.should.have.property('added');
-    });
-
-    it('should use custom async loaders', function (done) {
-      var options = {};
-      app.create('post', { viewType: 'renderable', loaderType: 'async' }, function (patterns, opts, next) {
-        next(null, globber(patterns, options));
-      });
-
-      app.posts('test/fixtures/*.md', function (err, posts) {
-        app.views.posts.should.have.property('md.md');
-        done();
+      app.posts('test/fixtures/*.md', function () {
+        return function (err, posts) {
+          console.log(arguments)
+          app.views.posts.should.have.property('md.md');
+          done();
+        };
       });
     });
 
-    it('should use custom promise loaders', function (done) {
+    it.skip('should use custom promise loaders', function (done) {
       var Promise = require('bluebird');
       var options = {};
       app.create('post', { viewType: 'renderable', loaderType: 'promise' }, Promise.method(function (patterns) {
@@ -260,7 +239,7 @@ describe('loaders', function () {
         });
     });
 
-    it('should use custom stream loaders', function (done) {
+    it.skip('should use custom stream loaders', function (done) {
       var es = require('event-stream');
       var options = {};
       app.create('post', { viewType: 'renderable', loaderType: 'stream' }, es.through(function (patterns) {
@@ -303,7 +282,7 @@ describe('loaders', function () {
 
     describe('.create():', function () {
       it('should use a loader function defined on the create method:', function () {
-        app.create('post', { viewType: 'renderable' }, function post(patterns) {
+        app.create('post', function post(patterns) {
           var files = glob.sync(patterns);
           return files.reduce(function (acc, fp) {
             acc[fp] = {path: fp, content: fs.readFileSync(fp, 'utf8')};
@@ -316,7 +295,7 @@ describe('loaders', function () {
       });
 
       it('should use a combination of loaders defined on create and the collection loader:', function () {
-        app.create('post', { viewType: 'renderable' }, function post(patterns) {
+        app.create('post', function post(patterns) {
           return glob.sync(patterns);
         });
 
@@ -380,7 +359,7 @@ describe('loaders', function () {
 
       it('should use an array of functions:', function () {
         var options = {};
-        app.create('post', { viewType: 'renderable' }, [
+        app.create('post', [
           function (patterns) {
             return glob.sync(patterns, options);
           },
@@ -398,7 +377,7 @@ describe('loaders', function () {
 
       it('should use a list of functions:', function () {
         var options = {};
-        app.create('post', { viewType: 'renderable' },
+        app.create('post',
           function (patterns) {
             return glob.sync(patterns, options);
           },
@@ -415,7 +394,7 @@ describe('loaders', function () {
 
       it('should use functions on create and the collection:', function () {
         var options = {};
-        app.create('post', { viewType: 'renderable' }, function (patterns) {
+        app.create('post', function (patterns) {
           return glob.sync(patterns, options);
         });
 
@@ -447,7 +426,6 @@ describe('loaders', function () {
         app.create('posts');
         // loaders are on the collection
         app.posts('foo', ['first', 'abc', 'xyz']);
-        // console.log(app.views.posts)
         app.views.posts.should.have.property('foo');
         app.views.posts.should.have.property('abc');
         app.views.posts.should.have.property('xyz');
@@ -456,7 +434,7 @@ describe('loaders', function () {
 
       it('should use an array of functions:', function () {
         var options = {};
-        app.create('post', { viewType: 'renderable' });
+        app.create('post');
 
         app.posts('test/fixtures/*.txt', {a: 'b'}, [
           function (patterns) {
@@ -474,7 +452,7 @@ describe('loaders', function () {
 
       it('should use a list of functions:', function () {
         var options = {};
-        app.create('post', { viewType: 'renderable' });
+        app.create('post');
 
         app.posts('test/fixtures/*.txt', {a: 'b'},
           function (patterns) {
@@ -604,7 +582,7 @@ describe('loaders', function () {
         });
       });
 
-      it('should use a loader function defined on the create method:', function (done) {
+      it.skip('should use a loader function defined on the create method:', function (done) {
         var opts = { viewType: 'renderable', loaderType: 'async' };
 
         app.create('file', opts, glob);
@@ -704,14 +682,9 @@ describe('loaders', function () {
         });
       });
 
-      app.create('post', {
-        viewType: 'renderable',
-        loaderType: 'stream'
-      });
-
+      app.create('post', {viewType: 'renderable', loaderType: 'stream'});
       app.posts('test/fixtures/*.txt', ['glob'])
         .pipe(through.obj(function(file, enc, next) {
-          console.log(app.views.posts)
           this.push(file);
           return next();
         }, function () {

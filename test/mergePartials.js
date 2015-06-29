@@ -49,7 +49,7 @@ describe('mergePartials', function () {
 
     // temporary until we decide on a middleware stage for this
     app.on('mergePartials', function (key, view, locals) {
-      console.log('foo', arguments)
+      // console.log('foo', arguments)
     });
 
     app.foo('a', {path: 'a', content: 'aaa'});

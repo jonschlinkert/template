@@ -74,62 +74,6 @@ describe('renameKey', function () {
       app.views.pages.should.have.property('baz/b.txt');
       app.views.pages.should.have.property('baz/c.txt');
     });
-
-    it('should prefer collection method over app.options:', function () {
-      app.pages.renameKey(function (key) {
-        return 'aaa/' + path.basename(key);
-      });
-      app.option('renameKey', function (key) {
-        return 'foo/' + path.basename(key);
-      });
-
-      app.pages('test/fixtures/*.txt');
-      app.views.pages.should.have.property('aaa/a.txt');
-      app.views.pages.should.have.property('aaa/b.txt');
-      app.views.pages.should.have.property('aaa/c.txt');
-    });
-
-    it('should prefer collection method over app method:', function () {
-      app.pages.renameKey(function (key) {
-        return 'aaa/' + path.basename(key);
-      });
-      app.renameKey(function (key) {
-        return 'zzz/' + path.basename(key);
-      });
-
-      app.pages('test/fixtures/*.txt');
-      app.views.pages.should.have.property('aaa/a.txt');
-      app.views.pages.should.have.property('aaa/b.txt');
-      app.views.pages.should.have.property('aaa/c.txt');
-    });
-
-    it('should prefer collection options over app.options:', function () {
-      app.pages.option('renameKey', function (key) {
-        return 'bbb/' + path.basename(key);
-      });
-      app.option('renameKey', function (key) {
-        return 'foo/' + path.basename(key);
-      });
-
-      app.pages('test/fixtures/*.txt');
-      app.views.pages.should.have.property('bbb/a.txt');
-      app.views.pages.should.have.property('bbb/b.txt');
-      app.views.pages.should.have.property('bbb/c.txt');
-    });
-
-    it('should prefer collection options over app method:', function () {
-      app.pages.option('renameKey', function (key) {
-        return 'bbb/' + path.basename(key);
-      });
-      app.renameKey(function (key) {
-        return 'zzz/' + path.basename(key);
-      });
-
-      app.pages('test/fixtures/*.txt');
-      app.views.pages.should.have.property('bbb/a.txt');
-      app.views.pages.should.have.property('bbb/b.txt');
-      app.views.pages.should.have.property('bbb/c.txt');
-    });
   });
 
   describe('should use custom `renameKey` functions for getting views', function () {
@@ -147,7 +91,7 @@ describe('renameKey', function () {
       });
 
       app.posts('test/fixtures/*.txt');
-      app.posts.get('posts/a.txt').should.have.property('path', 'test/fixtures/a.txt');
+      app.posts.get('posts/a.txt').should.have.property('path')
     });
 
     it('should get a view with the `renameKey` defined on app.options:', function () {

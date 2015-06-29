@@ -308,6 +308,7 @@ Template.prototype = Emitter({
     opts.inflection = single;
     utils.defineProp(opts, 'app', this);
 
+    var Views = this.get('Views');
     var views = new Views(this, args, opts);
     this.viewType(plural, views.viewType());
 

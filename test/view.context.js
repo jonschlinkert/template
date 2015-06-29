@@ -63,7 +63,7 @@ describe('context', function () {
     });
   });
 
-  it.skip('should give preference to front matter when `prefer locals` is disabled:', function (done) {
+  it('should give preference to front matter when `prefer locals` is disabled:', function (done) {
     app.data({ title: 'b'});
     app.disable('prefer locals');
 

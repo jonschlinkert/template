@@ -175,7 +175,7 @@ describe('built-in helpers:', function () {
       });
     });
 
-    it.skip('should prefer front-matter over view locals and helper locals.', function (done) {
+    it('should prefer front-matter over view locals and helper locals.', function (done) {
       app.disable('prefer locals');
       app.partial('a.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}});
       app.page('b.md', {path: 'b.md', content: 'foo <%= partial("a.md") %> bar'})

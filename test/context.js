@@ -7,7 +7,7 @@ var matter = require('parser-front-matter');
 var App = require('..');
 var app;
 
-describe('data', function () {
+describe('content', function () {
   beforeEach(function () {
     app = new App();
     app.create('post');

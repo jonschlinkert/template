@@ -137,7 +137,6 @@ describe('built-in helpers:', function () {
     it('should return an empty string when the partial is missing.', function (done) {
       app.partial('abc.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}});
       app.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("def.md", { name: "CCC" }) %> bar'});
-
       app.render('xyz.md', {name: 'DDD'}, function (err, res) {
         if (err) return done(err);
         res.content.should.equal('foo  bar');
@@ -176,7 +175,7 @@ describe('built-in helpers:', function () {
       });
     });
 
-    it.skip('should prefer front-matter over view locals and helper locals.', function (done) {
+    it('should prefer front-matter over view locals and helper locals.', function (done) {
       app.disable('prefer locals');
       app.partial('a.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}});
       app.page('b.md', {path: 'b.md', content: 'foo <%= partial("a.md") %> bar'})
@@ -218,7 +217,6 @@ describe('built-in helpers:', function () {
 
       app.render('xyz.md', {name: 'DDD'}, function (err, res) {
         if (err) return done(err);
-        console.log(res)
         // res.content.should.equal('foo DDD bar');
         done();
       });

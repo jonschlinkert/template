@@ -34,8 +34,8 @@ verb.task('readme', function() {
 });
 
 verb.task('docs', function() {
-  verb.src('docs/_verb/*.md')
-    .pipe(verb.dest('docs'));
+  verb.src('docs/_verb/temp/**/*.md')
+    .pipe(verb.dest('docs/temp'));
 });
 
 verb.task('lint', function () {

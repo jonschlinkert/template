@@ -2,11 +2,13 @@
 
 // require('time-require');
 
+var typeOf = require('kind-of');
 var forOwn = require('for-own');
 var router = require('en-route');
 var layouts = require('layouts');
 var Emitter = require('component-emitter');
-var isObject = require('is-object');
+var isObject = require('isobject');
+var isGlob = require('is-glob');
 var extend = require('extend-shallow');
 var Loaders = require('loader-cache');
 var inflect = require('pluralize');
@@ -90,6 +92,7 @@ Template.prototype = Emitter({
     // initialize iterators and loaders
     loaders.iterators(this);
     loaders.first(this);
+    loaders.data(this);
 
     // set internal classes on cache to allow overriding
     this.set('Collection', Collection);
@@ -103,8 +106,8 @@ Template.prototype = Emitter({
    */
 
   listen: function () {
-    this.on('error', function (err) {
-      console.error('error', err);
+    this.on('error', function (msg, err) {
+      console.error(msg, err);
     });
   },
 
@@ -113,21 +116,24 @@ Template.prototype = Emitter({
    */
 
   data: function(key, val) {
-    var args = [].slice.call(arguments);
-    var len = args.length;
+    if (arguments.length === 1) {
+      var type = typeOf(key);
 
-    if (len === 1 && typeof key === 'string') {
-      if (key.indexOf('.') === -1) {
-        return this.cache.data[key];
+      if (type === 'string') {
+        if (key.indexOf('.') === -1) {
+          return this.cache.data[key];
+        }
+        if (isGlob(key)) {
+          this.compose('data')(key, val);
+          return this;
+        }
+        return get(this.cache.data, key);
       }
-      return get(this.cache.data, key);
+      if (type === 'object') {
+        this.visit('data', key);
+        return this;
+      }
     }
-
-    if (isObject(key)) {
-      this.visit('data', key);
-      return this;
-    }
-
     set(this.cache.data, key, val);
     this.emit('data', key, val);
     return this;
@@ -138,9 +144,7 @@ Template.prototype = Emitter({
    */
 
   option: function(key, val) {
-    var args = [].slice.call(arguments);
-    var len = args.length;
-
+    var len = arguments.length;
     if (len === 1 && typeof key === 'string') {
       if (key.indexOf('.') === -1) {
         return this.options[key];
@@ -326,10 +330,10 @@ Template.prototype = Emitter({
 
     // create the actual loader function
     var fn = this.compose(plural, opts);
+    views.forward(fn, ['forOwn']);
 
     // forward collection methods onto loader
-    utils.lang.setProto(fn, views);
-    views.forward(fn, ['forOwn']);
+    utils.setProto(fn, views);
 
     // add loader methods to the instance: `app.pages()`
     this.mixin(single, fn);
@@ -347,21 +351,6 @@ Template.prototype = Emitter({
   },
 
   /**
-   * Keep a reference to a `view` on the `stash`, for faster lookups.
-   *
-   * @param  {String} `path` The `view.path` property
-   * @param  {String} `key` the view key
-   * @param  {String} `collection` Name of the collection, e.g. `pages`
-   * @return {Object} Returns the instance, for chaining
-   * @api private
-   */
-
-  keep: function (path, key, collection) {
-    this.stash[path] = {key: key, collection: collection};
-    return this;
-  },
-
-  /**
    * Set and map the plural name for a view collection.
    *
    * @param  {String} `name`
@@ -371,6 +360,25 @@ Template.prototype = Emitter({
 
   inflect: function(name) {
     return this.inflections[name] || (this.inflections[name] = inflect(name));
+  },
+
+  /**
+   * Rename view keys.
+   */
+
+  renameKey: function (key, fn) {
+    if (typeof key === 'function') {
+      this.options.renameKey = key;
+      return key;
+    }
+    if (typeof fn !== 'function') {
+      fn = this.options.renameKey;
+    }
+    if (typeof fn !== 'function') {
+      fn = utils.identity;
+    }
+    this.options.renameKey = fn;
+    return fn ? fn(key) : key;
   },
 
   /**
@@ -623,6 +631,7 @@ Template.prototype = Emitter({
 
     // get the engine
     var engine = this.engine(view.getEngine(ctx));
+
     if (!engine || !engine.hasOwnProperty('render')) {
       throw this.error('render', engine);
     }
@@ -634,7 +643,6 @@ Template.prototype = Emitter({
         view = this.compile(view, locals, isAsync);
         return this.render(view, locals, cb);
       } catch (err) {
-
         this.emit('error', err);
         return cb.call(this, err);
       }
@@ -722,7 +730,7 @@ Template.prototype = Emitter({
     thisArg.context = context || {};
     thisArg.app = this;
 
-    locals.helpers = utils.object.bindAll(helpers, thisArg);
+    locals.helpers = utils.bindAll(helpers, thisArg);
   },
 
   /**
@@ -767,12 +775,11 @@ Template.prototype = Emitter({
   },
 
   /**
-   * Call the given method on each value in `obj`.
+   * Show the `ownPropertyNames` on the given object or the instance.
    */
 
-  visit: function (method, obj) {
-    utils.visit(this, method, obj);
-    return this;
+  debug: function (obj) {
+    return utils.makeEnumerable(obj || this);
   },
 
   /**
@@ -784,20 +791,21 @@ Template.prototype = Emitter({
   },
 
   /**
-   * Build a tree of all property names on the given object and
-   * its ancestor objects.
+   * Call the given method on each value in `obj`.
    */
 
-  showKeys: function (obj) {
-    return utils.lang.protoTree(obj);
+  visit: function (method, obj) {
+    utils.visit(this, method, obj);
+    return this;
   },
 
   /**
-   * Show the `ownPropertyNames` on the given object or the instance.
+   * Call the given method on each value in `obj`.
    */
 
-  debug: function (obj) {
-    return utils.makeEnumerable(obj || this);
+  mapVisit: function (method, arr) {
+    utils.mapVisit(this, method, arr);
+    return this;
   }
 });
 

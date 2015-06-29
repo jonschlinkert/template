@@ -114,11 +114,11 @@ describe('collection methods', function () {
 
   describe('loaders', function () {
     it('should use generic loaders:', function () {
-      app.loader('glob', function (views, opts) {
+      app.loader('foo', function (views, opts) {
         return glob.sync.bind(glob);
       });
 
-      app.loader('toViews', ['glob'], function (views, opts) {
+      app.loader('bar', ['foo'], function (views, opts) {
         return function (files) {
           return files.reduce(function (acc, fp) {
             views.set(fp, {path: fp, content: fs.readFileSync(fp, 'utf8')});
@@ -127,7 +127,7 @@ describe('collection methods', function () {
         }
       });
 
-      app.pages('test/fixtures/*.txt', ['toViews']);
+      app.pages('test/fixtures/*.txt', ['bar']);
       app.views.pages.should.have.property('test/fixtures/a.txt');
     });
   });

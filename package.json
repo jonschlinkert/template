@@ -57,6 +57,7 @@
     "pluralize": "^1.1.2",
     "recent": "^0.1.0",
     "set-value": "^0.2.0",
+    "sort-object": "^2.0.0",
     "through2": "^2.0.0"
   },
   "devDependencies": {

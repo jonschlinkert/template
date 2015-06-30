@@ -25,7 +25,7 @@ app.create('page', { loaderType: 'sync' });
 /**
  * Load
  */
-app.pages('a.tmpl', {
+var pages = app.pages('a.tmpl', {
     path: 'a.tmpl',
     title: 'aaa',
     content: 'This is <%= title %>'

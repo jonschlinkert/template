@@ -11,6 +11,10 @@ describe('data', function () {
     app = new App();
   })
 
+  // app.data.option('renameKey', function (key) {
+  //   return path.basename(key);
+  // });  
+  
   it('should set a property on `cache.data`:', function () {
     app.data('a', 'b');
     app.cache.data.should.have.property('a');

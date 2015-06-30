@@ -3,13 +3,7 @@
 var App = require('..');
 var app = new App();
 
-/**
- * Loader
- */
-app.iterator('sync', require('iterator-sync'));
-app.loader('sync', function (key, value) {
-  return (this[key] = value);
-});
+app.engine('*', require('engine-lodash'));
 
 /**
  * Create
@@ -23,7 +17,7 @@ app.pages('a', {path: 'a', content: 'aaa...'});
 app.pages('b', {path: 'b', content: 'bbb...'});
 app.pages('c', {path: 'c', content: 'ccc...'});
 app.pages('d', {path: 'd', content: 'ddd...'})
-  .use(function (views, options, loaders) {
+  .use(function (views, options) {
     // console.log(arguments)
   })
 
@@ -32,7 +26,7 @@ var page = app.pages.get('d')
     console.log('view:', view)
   })
   .render(function (err, view) {
-    console.log('view:', view)
+    console.log('render:', view)
   })
 
 console.log('page:', page);
@@ -47,4 +41,23 @@ app.asyncHelper('snippet', function (key, options, cb) {
     .use(function (view) {
       app.render(trim(view.content), view.data, cb);
     });
+});
+
+
+app.posts('src/*.md'); // 2015-JUN-29-something.md
+app.indices('posts', options); // 2015.html, 2015/JUN.html
+app.preRender(':year.html', middleware(options));
+app.preRender(':year/:month.html', fn);
+
+var pagination = app.pages.get('*.xml')
+  .paginate(function (view) {
+    console.log('view:', view)
+  })
+
+var pagination = app.pages.paginate(function (view) {
+  console.log('view:', view)
+})
+
+var pagination = app.paginate('pages', function (view) {
+  console.log('view:', view)
 });

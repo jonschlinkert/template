@@ -16,6 +16,7 @@ describe('renameKey', function () {
       app = new App();
       app.engine('tmpl', require('engine-lodash'));
       app.create('page');
+      app.create('post');
     });
 
     it('should use `renameKey` defined on the `create` method:', function () {
@@ -44,13 +45,23 @@ describe('renameKey', function () {
 
     it('should use `renameKey` defined on collection.options:', function () {
       app.pages.option('renameKey', function (key) {
-        return 'bar/' + path.basename(key);
+        return 'page/' + path.basename(key);
+      });
+
+      app.posts.option('renameKey', function (key) {
+        return 'post/' + path.basename(key);
       });
 
       app.pages('test/fixtures/*.txt');
-      app.views.pages.should.have.property('bar/a.txt');
-      app.views.pages.should.have.property('bar/b.txt');
-      app.views.pages.should.have.property('bar/c.txt');
+      app.posts('test/fixtures/*.txt');
+
+      app.views.pages.should.have.property('page/a.txt');
+      app.views.pages.should.have.property('page/b.txt');
+      app.views.pages.should.have.property('page/c.txt');
+
+      app.views.posts.should.have.property('post/a.txt');
+      app.views.posts.should.have.property('post/b.txt');
+      app.views.posts.should.have.property('post/c.txt');
     });
 
     it('should use the `app.renameKey()` method:', function () {
@@ -130,9 +141,28 @@ describe('renameKey', function () {
       app.views.pages.should.have.property('bbb/b.txt');
       app.views.pages.should.have.property('bbb/c.txt');
     });
+
+    it('should use chained :', function () {
+      app
+        .pages('test/fixtures/*.txt', {
+          renameKey: function foo(key) {
+            return 'foo/' + path.basename(key);
+          }
+        })
+        .pages('test/fixtures/*.md', {
+          renameKey: function bar(key) {
+            return 'bar/' + path.basename(key);
+          }
+        });
+
+      app.views.pages.should.have.properties([
+        'foo/a.txt',
+        'bar/a.md'
+      ]);
+    });
   });
 
-  describe('should use custom `renameKey` functions for getting views', function () {
+  describe.skip('should use custom `renameKey` functions for getting views', function () {
     beforeEach(function () {
       app = new App();
       app.engine('tmpl', require('engine-lodash'));
@@ -147,6 +177,7 @@ describe('renameKey', function () {
       });
 
       app.posts('test/fixtures/*.txt');
+      app.posts.get('a.txt').should.have.property('path', 'test/fixtures/a.txt');
       app.posts.get('posts/a.txt').should.have.property('path', 'test/fixtures/a.txt');
     });
 
@@ -194,39 +225,4 @@ describe('renameKey', function () {
       app.views.pages.should.have.property('baz/c.txt');
     });
   });
-
-    // it('should add custom middleware handlers:', function () {
-    //   app.option('defaultLoader', false);
-    //   app.handler('foo');
-
-    //   app.foo(/./, function (file, next) {
-    //     file.foo = 'bar';
-    //     next();
-    //   });
-
-    //   app.pages('test/fixtures/*.txt', { cwd: process.cwd() }, function (views, options) {
-    //     return function (pattern, opts) {
-    //         extend(options, opts);
-
-    //         glob.sync(pattern, opts).forEach(function (fp) {
-    //           var view = {path: fp, content: fs.readFileSync(fp, 'utf8')}
-
-    //           app.handle('foo', view);
-    //           views.set(fp, view);
-    //         });
-
-    //         return views;
-    //       };
-    //     })
-    //     .pages('test/fixtures/*.md', function (views, options) {
-    //       return function () {
-    //         return views;
-    //       }
-    //     })
-
-    //   // app.pages('foo', {path: 'foo', content: 'this is content'});
-    //   // var page = app.pages.get('c.txt');
-    //   console.log(app.views.pages)
-    // });
-
 });

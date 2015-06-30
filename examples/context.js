@@ -72,8 +72,9 @@ app.render('example.md', function (err, res) {
 // should prefer `view.data` (front matter) over `view.locals`
 // when `prefer locals` is disabled
 app.pages.option('context', function contextFn(ctx, contexts, keys, fn) {
-  fn(ctx, keys, contexts);
+  fn(ctx, contexts, keys);
   ctx.title = contexts.matter.title;
+  console.log(ctx)
   return ctx;
 });
 
@@ -89,21 +90,20 @@ app.render('example.md', function (err, res) {
 
 
 // should use a custom `context` function
-app.page('example.md', '<%= title %>', { title: 'view locals' });
-var res = {};
+// app.page('example.md', '<%= title %>', { title: 'view locals' });
+// var res = {};
 
-var page = app.pages.get('example.md')
-  .context(function (ctx, contexts, keys, fn) {
-    fn(ctx, keys, contexts);
-    ctx.title = 'custom context method';
-    return ctx;
-  });
+// var page = app.pages.get('example.md')
+//   .context(function (ctx, contexts, keys, fn) {
+//     fn(ctx, keys, contexts);
+//     ctx.title = 'custom context method';
+//     return ctx;
+//   });
 
-  console.log(page);
 
-app.render(page, function (err, res) {
-  if (err) return console.log(err);
-  // console.log(res.contexts);
-  console.log('custom context method:', res.content);
-  //=> 'custom context method: custom context method'
-});
+// app.render(page, function (err, res) {
+//   if (err) return console.log(err);
+//   // console.log(res.contexts);
+//   console.log('custom context method:', res.content);
+//   //=> 'custom context method: custom context method'
+// });

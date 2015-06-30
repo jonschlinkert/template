@@ -35,6 +35,7 @@ function Template(options) {
     return new Template(options);
   }
   Emitter.call(this);
+  this.options = options || {};
   this.init();
 }
 
@@ -53,10 +54,8 @@ Template.prototype = Emitter({
     helpers.methods(this);
     lookup(this);
 
-    this.options = {
-      layoutDelims: ['{%', '%}'],
-      layoutTag: 'body'
-    };
+    this.options.layoutDelims = ['{%', '%}'];
+    this.options.layoutTag = 'body';
 
     // temporary.
     this.errors = {
@@ -255,7 +254,8 @@ Template.prototype = Emitter({
     var opts = clone(args.shift());
     var plural = this.inflect(single);
 
-    opts.loaderType = opts.loaderType || 'sync';
+    opts.renameKey = opts.renameKey || this.options.renameKey;
+    opts.loaderType = opts.loaderType || this.options.loaderType || 'sync';
     opts.collection = plural;
     opts.inflection = single;
     utils.defineProp(opts, 'app', this);

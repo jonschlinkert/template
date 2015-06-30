@@ -1,6 +1,7 @@
 'use strict';
 
 /* deps: mocha */
+var path = require('path');
 var assert = require('assert');
 var should = require('should');
 var matter = require('parser-front-matter');
@@ -18,12 +19,15 @@ describe('content', function () {
   })
 
   it('should use matching data from `cache.data`:', function (done) {
-    app.data('test/fixtures/data/*.json');
+    app.posts.option('renameKey', function (key) {
+      return path.basename(key, path.extname(key));
+    });
 
+    app.data('test/fixtures/data/*.json');
     app.post('test/fixtures/*.md');
-    app.views.posts.should.have.property('test/fixtures/matched.md');
+    app.views.posts.should.have.property('matched');
     
-    app.render('test/fixtures/matched.md', function (err, res) {
+    app.render('matched', function (err, res) {
       if (err) return done(err);
       res.content.should.equal('This is data from fixture matched.json');
       done();

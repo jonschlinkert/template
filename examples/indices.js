@@ -109,7 +109,7 @@ app.page('page3.hbs', {content: '{{ include "button.hbs"  btn }}'});
 /**
  * Load index pages for `pages`
  */
-app.indices('pages', { limit: 5 });
+app.indices('pages', { limit: 1 });
 
 console.log(app.views.indices['pages-index-2']);
 

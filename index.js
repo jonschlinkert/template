@@ -20,8 +20,12 @@ var engines = require('./lib/engines');
 var loaders = require('./lib/loaders/index');
 var helpers = require('./lib/helpers');
 var lookup = require('./lib/lookup');
-var Views = require('./lib/views');
 var utils = require('./lib/utils');
+
+var Collection = require('./lib/collection');
+var Views = require('./lib/views');
+var View = require('./lib/view');
+var Item = require('./lib/item');
 
 /**
  * Create a new instance of `Template` with the given `options.
@@ -88,6 +92,12 @@ Template.prototype = Emitter({
     loaders.iterators(this);
     loaders.first(this);
     loaders.data(this);
+
+    // set internal classes on cache to allow overriding
+    this.set('Collection', Collection);
+    this.set('Views', Views);
+    this.set('View', View);
+    this.set('Item', Item);
   },
 
   /**
@@ -149,6 +159,48 @@ Template.prototype = Emitter({
     set(this.options, key, val);
     this.emit('option', key, val);
     return this;
+  },
+
+  /**
+   * Sets a value on the cache.
+   *
+   * ```js
+   * app.set('View', View);
+   * ```
+   *
+   * @param {String} `key` Name of the value to set.
+   * @param {*} `val` Value to set.
+   * @return {Object} `this` to enable chaining
+   * @api public
+   */
+
+  set: function (key, val) {
+    if (isObject(key)) {
+      this.visit('set', key);
+      return this;
+    }
+    set(this.cache, key, val);
+    this.emit('cache', key, val);
+    return this;
+  },
+
+  /**
+   * Gets a value from the cache.
+   *
+   * ```js
+   * var View = app.get('View');
+   * ```
+   *
+   * @param {String} `key` Name of the value to get.
+   * @return {*} The value from the cache.
+   * @api public
+   */
+
+  get: function (key) {
+    if (key.indexOf('.') === -1) {
+      return this.cache[key];
+    }
+    return get(this.cache, key);
   },
 
   /**
@@ -260,6 +312,7 @@ Template.prototype = Emitter({
     opts.inflection = single;
     utils.defineProp(opts, 'app', this);
 
+    var Views = this.get('Views');
     var views = new Views(this, args, opts);
     this.viewType(plural, views.viewType());
 

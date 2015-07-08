@@ -93,25 +93,25 @@ app.indices('my-awesome-index-page.hbs', {
 /**
  * Render
  */
-var page = app.pages.get('home.hbs');
-console.log(page.permalink());
+// var page = app.pages.get('home.hbs');
+// app.pages.option('permalinks', {
+
+// });
+// console.log(page.permalink());
 
 var index = app.indices.get('my-awesome-index-page');
 
-// app.pages
-//   .sortBy('locals.title')
-//   // .permalinks({
-
-//   // })
-//   .paginate(index, {permalink: 'this-is-my-permalink/:collection/:num.html'}, function (err, views) {
-//     views.forEach(function (view) {
-//       view.render(function (err, view) {
-//         if (err) return console.error(err);
-//         console.log('==== INDEX ====');
-//         console.log(view.permalink(view.data.pagination));
-//         console.log(view.content);
-//         console.log('===============');
-//         console.log();
-//       });
-//     });
-//   });
+app.pages
+  .sortBy('locals.title')
+  .paginate(index, {permalink: 'this-is-my-permalink/:collection/:num.html'}, function (err, views) {
+    views.forEach(function (view) {
+      view.render(function (err, view) {
+        if (err) return console.error(err);
+        console.log('==== INDEX ====');
+        console.log(view.permalink(view.data.pagination));
+        console.log(view.content);
+        console.log('===============');
+        console.log();
+      });
+    });
+  });

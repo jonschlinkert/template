@@ -50,6 +50,7 @@
     "load-templates": "^0.8.6",
     "loader-cache": "^0.6.0",
     "micromatch": "^2.1.6",
+    "mixin-deep": "^1.1.1",
     "object.omit": "^1.1.0",
     "object.pick": "^1.1.1",
     "object.reduce": "^0.1.7",

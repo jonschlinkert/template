@@ -91,7 +91,7 @@ describe('context', function () {
     var page = app.pages.get('aaa.md');
 
     page.context(function (data, contexts) {
-      contexts.locals.title = contexts.matter.title;
+      contexts.locals.title = contexts.data.title;
       return this;
     });
 

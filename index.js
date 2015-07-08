@@ -9,6 +9,7 @@ var layouts = require('layouts');
 var Emitter = require('component-emitter');
 var isObject = require('isobject');
 var isGlob = require('is-glob');
+var mixin = require('mixin-object');
 var extend = require('extend-shallow');
 var Loaders = require('loader-cache');
 var inflect = require('pluralize');
@@ -526,22 +527,21 @@ Template.prototype = Emitter({
     }
 
     view.ctx('compile', locals);
-
     // build the context to pass to the engine
     var ctx = view.context(locals);
-
     // apply layout
     view = this.applyLayout(view, ctx);
-
-    // Bind context to helpers before passing to the engine.
-    this.bindHelpers(locals, ctx, (locals.async = isAsync));
-
     // handle `preCompile` middleware
     this.handleView('preCompile', view, locals);
 
+    // ensure that `overrides` are last
+    locals = extend({}, view.data, view.locals, locals);
+
+    // Bind context to helpers before passing to the engine.
+    this.bindHelpers(view, locals, ctx, (locals.async = isAsync));
+
     // compile the string
     view.fn = engine.compile(view.content, locals);
-
     // handle `postCompile` middleware
     this.handleView('postCompile', view, locals);
     return view;
@@ -574,11 +574,10 @@ Template.prototype = Emitter({
     this.handleView('preRender', view, locals);
 
     // build the context for the view
-    var ctx = view.context(locals);
+    var ctx = this.context(locals);
 
     // get the engine
     var engine = this.engine(view.getEngine(ctx));
-
     if (!engine || !engine.hasOwnProperty('render')) {
       throw this.error('render', engine);
     }
@@ -595,13 +594,14 @@ Template.prototype = Emitter({
       }
     }
 
+    var context = this.context(view, ctx, locals);
+
     // render the view
-    return engine.render(view.fn, ctx, function (err, res) {
+    return engine.render(view.fn, context, function (err, res) {
       if (err) {
         this.emit('error', err);
         return cb.call(this, err);
       }
-
       // handle `postRender` middleware
       view.content = res;
       this.handle('postRender', view, locals, cb);
@@ -625,7 +625,7 @@ Template.prototype = Emitter({
         this.handleView('onMerge', view, locals);
 
         if (view.options.nomerge) return;
-        if (opts.mergePartials === true) {
+        if (opts.mergePartials !== false) {
           name = 'partials';
         }
         acc[name] = acc[name] || {};
@@ -645,25 +645,29 @@ Template.prototype = Emitter({
    * @return {Object} The object to be passed to engines/views as context.
    */
 
-  context: function (view, locals) {
-    var ctx = {};
+  context: function (view, ctx, locals) {
+    var obj = {};
+    mixin(obj, ctx);
 
     // add partials to the context to pass to engines
-    extend(ctx, this.mergePartials(locals));
-    // Merge in `locals/data` from views
-    // extend(ctx, this.cache.context.partials);
+    // mixin(ctx, this.cache.context.partials);
+    mixin(obj, this.cache.data);
+    mixin(obj, view.data);
+    mixin(obj, view.locals);
+    mixin(obj, locals);
 
-    extend(ctx, this.cache.data);
-    extend(ctx, view.omit([view.protoKeys(), 'locals']));
-    extend(ctx, view.context(locals));
-    return ctx;
+    // var overrides = utils.bindAll(obj.overrides, view);
+
+    // ensure that `overrides` are last
+    // obj = mixin({}, obj, overrides);
+    return obj;
   },
 
   /**
    * Build the context for the given `view` and `locals`.
    */
 
-  bindHelpers: function (locals, context, isAsync) {
+  bindHelpers: function (view, locals, context, isAsync) {
     var helpers = {};
     extend(helpers, this.options.helpers);
     extend(helpers, this._.helpers.sync);
@@ -675,7 +679,12 @@ Template.prototype = Emitter({
     var thisArg = {};
     thisArg.options = extend({}, this.options.helper, locals);
     thisArg.context = context || {};
+    thisArg.context.view = view;
     thisArg.app = this;
+
+    // replace methods on `view` that usually return the instance
+    // with methods that return a value (to be used as helpers)
+    // var overrides = utils.bindAll(locals.overrides, view);
 
     locals.helpers = utils.bindAll(helpers, thisArg);
   },
@@ -722,7 +731,7 @@ Template.prototype = Emitter({
   },
 
   /**
-   * Show the `ownPropertyNames` on the given object or the instance.
+   * Show the properties on the given object or the instance.
    */
 
   debug: function (obj) {

@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "arr-flatten": "^1.0.1",
+    "assign-value": "^0.1.0",
     "bluebird": "^2.9.30",
     "clone-deep": "^0.2.0",
     "component-emitter": "^1.2.0",
@@ -51,6 +52,7 @@
     "loader-cache": "^0.6.0",
     "micromatch": "^2.1.6",
     "mixin-deep": "^1.1.1",
+    "mixin-object": "^2.0.0",
     "object.omit": "^1.1.0",
     "object.pick": "^1.1.1",
     "object.reduce": "^0.1.7",
@@ -58,7 +60,8 @@
     "recent": "^0.1.0",
     "set-value": "^0.2.0",
     "sort-object": "^2.0.0",
-    "through2": "^2.0.0"
+    "through2": "^2.0.0",
+    "union-value": "^0.1.1"
   },
   "devDependencies": {
     "async": "^1.3.0",

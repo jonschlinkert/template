@@ -2,6 +2,7 @@
 
 // require('time-require');
 
+var path = require('path');
 var typeOf = require('kind-of');
 var forOwn = require('for-own');
 var router = require('en-route');
@@ -61,6 +62,7 @@ Template.prototype = Emitter({
     // temporary.
     this.errors = {
       compile: 'Template#compile expects engines to have a compile method',
+      engine: 'Template#render cannot find an engine for: ',
       render: 'Template#render expects engines to have a render method',
     };
 
@@ -534,9 +536,6 @@ Template.prototype = Emitter({
     // handle `preCompile` middleware
     this.handleView('preCompile', view, locals);
 
-    // ensure that `overrides` are last
-    locals = extend({}, view.data, view.locals, locals);
-
     // Bind context to helpers before passing to the engine.
     this.bindHelpers(view, locals, ctx, (locals.async = isAsync));
 
@@ -559,15 +558,12 @@ Template.prototype = Emitter({
 
     // if `view` is a function, it's probably from chaining
     // a collection method
-    if (typeof view === 'function') {
-      return view.call(this);
-    }
+    if (typeof view === 'function') return view.call(this);
 
     // if `view` is a string, see if it's a cache view
-    if (typeof view === 'string') {
-      view = this.lookup(view);
-    }
+    if (typeof view === 'string') view = this.lookup(view);
 
+    // add `locals` to `view.contexts`
     view.ctx('render', locals);
 
     // handle `preRender` middleware
@@ -578,8 +574,11 @@ Template.prototype = Emitter({
 
     // get the engine
     var engine = this.engine(view.getEngine(ctx));
-    if (!engine || !engine.hasOwnProperty('render')) {
-      throw this.error('render', engine);
+    if (typeof engine === 'undefined') {
+      throw this.error('engine', path.extname(view.path));
+    }
+    if (!engine.hasOwnProperty('render')) {
+      throw this.error('render', JSON.stringify(view));
     }
 
     // if it's not already compiled, do that first

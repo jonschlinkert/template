@@ -55,7 +55,8 @@ describe('view.option()', function () {
       app.pages('foo.tmpl', {path: 'foo.tmpl', content: '<%= a %>', locals: {a: 'b'}});
       var page = app.pages.get('foo.tmpl');
       var ctx = page.context();
-      ctx.should.eql({a: 'b'});
+      ctx.should.have.property('a');
+      ctx.a.should.eql('b');
       done();
     });
 
@@ -63,7 +64,9 @@ describe('view.option()', function () {
       app.pages('foo.tmpl', {path: 'foo.tmpl', content: '<%= a %>', locals: {a: 'b'}, data: {c: 'd'}});
       var page = app.pages.get('foo.tmpl');
       var ctx = page.context();
-      ctx.should.eql({a: 'b', c: 'd'});
+      page.locals.should.have.properties(['a', 'c']);
+      ctx.a.should.eql('b');
+      ctx.c.should.eql('d');
       done();
     });
 
@@ -71,7 +74,8 @@ describe('view.option()', function () {
       app.pages('foo.tmpl', {path: 'foo.tmpl', content: '<%= a %>', locals: {a: 'b'}, data: {a: 'd'}});
       var page = app.pages.get('foo.tmpl');
       var ctx = page.context();
-      ctx.should.eql({a: 'b'});
+      ctx.should.have.property('a');
+      ctx.a.should.eql('b');
       done();
     });
 
@@ -79,7 +83,9 @@ describe('view.option()', function () {
       app.pages('foo.tmpl', {path: 'foo.tmpl', content: '<%= a %>', locals: {a: 'b'}, data: {a: 'd'}});
       var page = app.pages.get('foo.tmpl');
       var ctx = page.context({foo: 'bar'});
-      ctx.should.eql({a: 'b', foo: 'bar'});
+      ctx.should.have.properties(['a', 'foo']);
+      ctx.a.should.eql('b');
+      ctx.foo.should.eql('bar');
       done();
     });
 
@@ -87,7 +93,9 @@ describe('view.option()', function () {
       app.pages('foo.tmpl', {path: 'foo.tmpl', content: '<%= a %>', locals: {a: 'b'}, data: {a: 'd'}});
       var page = app.pages.get('foo.tmpl');
       var ctx = page.context({foo: 'bar'});
-      page.locals.should.eql({a: 'b', foo: 'bar'});
+      page.locals.should.have.properties(['a', 'foo']);
+      page.locals.a.should.eql('b');
+      page.locals.foo.should.eql('bar');
       done();
     });
   });

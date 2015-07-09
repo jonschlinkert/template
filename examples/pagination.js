@@ -86,7 +86,9 @@ app.lists('my-awesome-list-page.hbs', {
   content: 'BEFORE\n{{#each pagination.items}}{{locals.title}}\n{{/each}}\nAFTER',
   locals: {
     limit: 2,
-    permalink: ':collection/:num.html'
+    permalinks: {
+      structure: ':collection/:num.html'
+    }
   }
 });
 

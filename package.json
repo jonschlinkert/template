@@ -29,7 +29,7 @@
     "clone-deep": "^0.2.0",
     "component-emitter": "^1.2.0",
     "en-route": "^0.7.1",
-    "engine-cache": "^0.13.0",
+    "engine-cache": "^0.14.0",
     "event-stream": "^3.3.1",
     "export-files": "^2.0.1",
     "extend-shallow": "^2.0.0",

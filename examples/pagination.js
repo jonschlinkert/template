@@ -35,7 +35,7 @@ app.create('layout', { viewType: 'layout' });
  * These are used just like pages, but provide the layout for a list of pages.
  */
 
-app.create('index', {
+app.create('list', {
   viewType: 'renderable',
   renameKey: function (fp) {
     return path.basename(fp, path.extname(fp));
@@ -82,7 +82,7 @@ app.page('page3.hbs', {content: 'BEFORE\n{{ include "button.hbs"  btn }}\nAFTER'
  * Load index pages for `pages`
  */
 
-app.indices('my-awesome-index-page.hbs', {
+app.lists('my-awesome-list-page.hbs', {
   content: 'BEFORE\n{{#each pagination.items}}{{locals.title}}\n{{/each}}\nAFTER',
   locals: {
     limit: 2,
@@ -99,11 +99,11 @@ app.indices('my-awesome-index-page.hbs', {
 // });
 // console.log(page.permalink());
 
-var index = app.indices.get('my-awesome-index-page');
+var list = app.lists.get('my-awesome-list-page');
 
 app.pages
   .sortBy('locals.title')
-  .paginate(index, {permalink: 'this-is-my-permalink/:collection/:num.html'}, function (err, views) {
+  .paginate(list, {permalink: 'this-is-my-permalink/:collection/:num.html'}, function (err, views) {
     views.forEach(function (view) {
       view.render(function (err, view) {
         if (err) return console.error(err);
@@ -115,3 +115,18 @@ app.pages
       });
     });
   });
+
+
+// assemble.create('list');
+// assemble.lists('src/templates/lists/*.hbs');
+// var postList = assemble.lists.get('post-list');
+
+// assemble.create('post');
+// assemble.posts('/src/templates/posts/*.md');
+
+// assemble.posts.sortBy('data.title')
+//   .paginate(postList, { limit: 5 })
+//   .pipe(assemble.render())
+//   .pipe(assemble.permalinks())
+//   .pipe(assemble.dest('/blog'));
+

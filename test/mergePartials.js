@@ -21,7 +21,7 @@ describe('mergePartials', function () {
     app.bar('b', {path: 'b', content: 'bbb'});
     app.baz('c', {path: 'c', content: 'ccc'});
 
-    var actual = app.mergePartials({mergePartials: true});
+    var actual = app.mergePartials();
     actual.should.have.property('partials');
     actual.partials.should.have.properties(['a', 'b', 'c']);
   });
@@ -36,7 +36,7 @@ describe('mergePartials', function () {
     app.bar('b', {path: 'b', content: 'bbb'});
     app.baz('c', {path: 'c', content: 'ccc'});
 
-    var actual = app.mergePartials();
+    var actual = app.mergePartials({mergePartials: false});
     actual.should.not.have.property('partials');
     actual.should.eql({ foos: { a: 'aaa' }, bars: { b: 'bbb' }, bazs: { c: 'ccc' } });
   });
@@ -56,7 +56,7 @@ describe('mergePartials', function () {
     app.bar('b', {path: 'b', content: 'bbb'});
     app.baz('c', {path: 'c', content: 'ccc'});
 
-    var actual = app.mergePartials();
+    var actual = app.mergePartials({mergePartials: false});
     actual.should.not.have.property('partials');
     actual.should.eql({ foos: { a: 'aaa' }, bars: { b: 'bbb' }, bazs: { c: 'ccc' } });
   });
@@ -76,7 +76,7 @@ describe('mergePartials', function () {
     app.bar('b', {path: 'b', content: 'bbb'});
     app.baz('c', {path: 'c', content: 'ccc'});
 
-    var actual = app.mergePartials();
+    var actual = app.mergePartials({mergePartials: false});
     actual.should.eql({
       foos: {a: 'aaa onMerge'},
       bars: {b: 'bbb onMerge'},
@@ -100,7 +100,7 @@ describe('mergePartials', function () {
     app.bar('b', {path: 'b', content: 'bbb'});
     app.baz('c', {path: 'c', content: 'ccc'});
 
-    var actual = app.mergePartials();
+    var actual = app.mergePartials({mergePartials: false});
     actual.should.eql({ bazs: { c: 'ccc' } });
   });
 });

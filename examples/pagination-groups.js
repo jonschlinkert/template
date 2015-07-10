@@ -112,8 +112,12 @@ function getDateGroup (date) {
   var d = new Date(date);
   var year = d.getFullYear();
   var month = d.getMonth() + 1;
-  var group = '' + year + '-' + (month < 10 ? '0' : '') + month;
-  return group;
+  var day = d.getDate();
+  var groups = [];
+  groups.push('' + year);
+  groups.push('' + year + '-' + (month < 10 ? '0' : '') + month);
+  groups.push('' + year + '-' + (month < 10 ? '0' : '') + month + '-' + (day < 10 ? '0' : '') + day);
+  return groups;
 }
 
 var list = app.lists.get('archives');

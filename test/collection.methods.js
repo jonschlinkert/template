@@ -140,21 +140,8 @@ describe('collection methods', function () {
     });
   });
 
-  describe('.render:', function (done) {
-    it('should expose `.render` for rendering a view:', function (done) {
-      app.pages('a.tmpl', {path: 'a.tmpl', content: '<%= a %>', a: 'bbb'});
-      var page = app.pages.get('a.tmpl');
-
-      page.render({}, function (err, res) {
-        if (err) return done(err);
-        res.content.should.equal('bbb');
-        done();
-      });
-    });
-  });
-
   describe('.use', function () {
-    it('should expose `.use` for running plugins on a view:', function () {
+    it('should expose `.use` for running plugins on views:', function () {
       app
         .pages('test/fixtures/*.txt')
         .use(utils.rename);

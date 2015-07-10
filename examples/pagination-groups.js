@@ -95,7 +95,9 @@ app.post('tenth.md', {content: '## Tenth Post\n\n> This is the tenth post {{date
  * Load index pages for `posts`
  */
 
-app.lists('archives.hbs', {content: '<h1>{{pagination.collection}}</h1>\n<h2>{{slug}}</h2>\n\n{{#each pagination.items}}{{locals.title}}\n{{/each}}'});
+app.lists('archives.hbs', {
+  content: '<h1>{{pagination.collection}}</h1>\n<h2>{{slug}}</h2>\n\n{{#each pagination.items}}{{locals.title}}\n{{/each}}'
+});
 
 /**
  * Render
@@ -106,21 +108,32 @@ app.lists('archives.hbs', {content: '<h1>{{pagination.collection}}</h1>\n<h2>{{s
 // });
 // console.log(page.permalink());
 
+function getDateGroup (date) {
+  var d = new Date(date);
+  var year = d.getFullYear();
+  var month = d.getMonth() + 1;
+  var group = '' + year + '-' + (month < 10 ? '0' : '') + month;
+  return group;
+}
+
 var list = app.lists.get('archives');
 
 app.posts
-  .groupBy('locals.date')
-  .paginate(list, {
-    limit: 4,
-    permalinks: {structure: ':collection/:year/:num.html'}
-  }, function (err, views) {
-    views.forEach(function (view) {
-      view.render(function (err, view) {
-        if (err) return console.error(err);
-        console.log('==== INDEX ====');
-        console.log(view.permalink(view.data.pagination));
-        console.log(view.content);
-        console.log('===============');
+  .groupBy('locals.date', getDateGroup, function (err, groups) {
+    var keys = Object.keys(groups);
+    keys.forEach(function (key) {
+      var group = groups[key];
+      console.log('==== ' + key + ' ====');
+      group.paginate(list, {limit: 2}, function (err, views) {
+        views.forEach(function (view) {
+          view.render({slug: key}, function (err, view) {
+            if (err) return console.error(err);
+            console.log(view.permalink(view.data.pagination));
+            console.log(view.content);
+            console.log();
+          });
+        });
+        console.log('=====================');
         console.log();
       });
     });

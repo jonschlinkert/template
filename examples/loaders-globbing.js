@@ -22,7 +22,7 @@ app.engine('md', require('engine-lodash'));
 app.create('post')
   .create('list', {
     renameKey: function (fp) {
-      return path.basename(fp, path.extname(fp));
+      return path.basename(fp);
     }
   });
 
@@ -38,12 +38,12 @@ app.list('index.md', {
   }
 });
 
-var index = app.lists.get('index');
-var opts = {permalink: 'blog/posts/:collection/:num.html'};
+var index = app.lists.get('index.md');
+var opts = { permalink: 'blog/posts/:collection/:num.html' };
 
 // glob some templates onto the `post` collection
 glob({ gitignore: true })
-  .readdirStream('test/fixtures/**/*.md')
+  .readdirStream('test/fixtures/posts/**/*.md')
   .on('data', function (file) {
     app.posts(file.path, file);
   })
@@ -53,7 +53,9 @@ glob({ gitignore: true })
       .paginate(index, opts, function (err, posts) {
         posts.forEach(function (post) {
           post.render(function (err, post) {
-            console.log(post.permalink(post.data.pagination));
+            // console.log(post.data)
+            // console.log(post.permalink(post.data.pagination));
+            post.permalink(post.data.pagination);
           });
         });
       });

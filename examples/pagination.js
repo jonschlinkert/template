@@ -102,10 +102,12 @@ app.lists('my-awesome-list-page.hbs', {
 // console.log(page.permalink());
 
 var list = app.lists.get('my-awesome-list-page');
+var opts = {permalink: 'this-is-my-permalink/:collection/:num.html'};
 
 app.pages
   .sortBy('locals.title')
-  .paginate(list, {permalink: 'this-is-my-permalink/:collection/:num.html'}, function (err, views) {
+  .paginate(list, opts, function (err, views) {
+    console.log(views)
     views.forEach(function (view) {
       view.render(function (err, view) {
         if (err) return console.error(err);

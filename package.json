@@ -57,7 +57,6 @@
     "object.pick": "^1.1.1",
     "object.reduce": "^0.1.7",
     "parse-filepath": "^0.6.0",
-    "permalinks": "^0.3.1",
     "pluralize": "^1.1.2",
     "recent": "^0.1.0",
     "set-value": "^0.2.0",

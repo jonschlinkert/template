@@ -72,11 +72,27 @@ app.asyncHelper('include', function (name, locals, options, cb) {
  * Define a `page` that uses our new `include` helper
  */
 
-app.page('home.hbs', {content: 'BEFORE\n{{ include "button.hbs"  btn }}\nAFTER', title: 'home'}, { permalink: ':collection/home.html' });
-app.page('about.hbs', {content: 'BEFORE\n{{ include "button.hbs"  btn }}\nAFTER', title: 'about'});
-app.page('page1.hbs', {content: 'BEFORE\n{{ include "button.hbs"  btn }}\nAFTER', title: 'page1'});
-app.page('page2.hbs', {content: 'BEFORE\n{{ include "button.hbs"  btn }}\nAFTER', title: 'page2'});
-app.page('page3.hbs', {content: 'BEFORE\n{{ include "button.hbs"  btn }}\nAFTER', title: 'page3'});
+app.page('home.hbs', {
+  content: 'BEFORE\n{{ include "button.hbs"  btn }}\nAFTER',
+  title: 'home',
+  permalink: ':collection/home.html'
+});
+app.page('about.hbs', {
+  content: 'BEFORE\n{{ include "button.hbs"  btn }}\nAFTER',
+  title: 'about'
+});
+app.page('page1.hbs', {
+  content: 'BEFORE\n{{ include "button.hbs"  btn }}\nAFTER',
+  title: 'page1'
+});
+app.page('page2.hbs', {
+  content: 'BEFORE\n{{ include "button.hbs"  btn }}\nAFTER',
+  title: 'page2'
+});
+app.page('page3.hbs', {
+  content: 'BEFORE\n{{ include "button.hbs"  btn }}\nAFTER',
+  title: 'page3'
+});
 
 /**
  * Load index pages for `pages`
@@ -102,11 +118,11 @@ app.lists('my-awesome-list-page.hbs', {
 // console.log(page.permalink());
 
 var list = app.lists.get('my-awesome-list-page');
-var opts = {permalink: 'this-is-my-permalink/:collection/:num.html'};
+app.option({ permalinks: { structure: 'blog/:collection/:num.html' }});
 
 app.pages
   .sortBy('locals.title')
-  .paginate(list, opts, function (err, views) {
+  .paginate(list,function (err, views) {
     console.log(views)
     views.forEach(function (view) {
       view.render(function (err, view) {

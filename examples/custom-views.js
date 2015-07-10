@@ -1,7 +1,10 @@
 'use strict';
 
+var util = require('util');
 var App = require('..');
 var app = new App();
+
+
 app.engine('*', require('engine-lodash'));
 
 var Views = app.get('Views');
@@ -14,7 +17,7 @@ function CustomViews () {
 }
 
 // inherit prototype methods from `Views`
-require('util').inherits(CustomViews, Views);
+util.inherits(CustomViews, Views);
 
 // replace `set` method with custom `set` method
 CustomViews.prototype.set = function(key, value) {

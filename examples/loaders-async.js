@@ -7,14 +7,9 @@ var File = require('vinyl');
 var App = require('..');
 var app = new App();
 
-/**
- * async
- */
 
-var opts = { loaderType: 'async' };
-
-// loaders
-app.loader('base', opts, function (views, options) {
+// async loader
+app.loader('base', { loaderType: 'async' }, function (views, options) {
   return function (key, value, locals, next) {
     var results = {};
     value.path = value.path || key;
@@ -24,9 +19,11 @@ app.loader('base', opts, function (views, options) {
   };
 });
 
-// create a custom view collection
+// create a custom view collection, "pages", using the `base`
+// loader.
 app.create('page', opts, ['base']);
 
+// load some pages
 app.pages('home', {content: 'this is content...'}, opts,
   function (err, views) {
     if (err) console.error(err);

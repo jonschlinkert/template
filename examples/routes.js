@@ -26,14 +26,6 @@ app.postRender(/\.tmpl/, function (file, next) {
 app.engine('tmpl', require('engine-lodash'));
 
 /**
- * Loader
- */
-app.iterator('sync', require('iterator-sync'));
-app.loader('sync', function (key, value) {
-  return (this[key] = value);
-});
-
-/**
  * Create
  */
 app.create('page', { loaderType: 'sync' });
@@ -49,16 +41,8 @@ app.pages('d.tmpl', {path: 'd.tmpl', content: '<%= name %>', name: 'ddd'})
     // console.log(arguments)
   })
 
-var a = app.pages.get('a.tmpl');
-
-app.render(a, {}, function (err, res) {
-  if (err) return console.log(err);
-  console.log('Template#render:', arguments)
-});
-
-
-var b = app.pages.get('b.tmpl');
-
-b.render({}, function () {
-  console.log('View#render:', arguments)
-});
+app.pages.get('a.tmpl')
+  .render(function (err, res) {
+    if (err) return console.log(err);
+    console.log('View#render:', arguments)
+  });

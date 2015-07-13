@@ -128,12 +128,15 @@ app.posts
     keys.forEach(function (key) {
       var group = groups[key];
       console.log('==== ' + key + ' ====');
-      group.paginate(list, {limit: 2}, function (err, views) {
-        views.forEach(function (view) {
-          view.render({slug: key}, function (err, view) {
+      group.paginate(list, {limit: 2}, function (err, pages) {
+        pages.forEach(function (page) {
+          page.list.forEach(function (item) {
+            item.excerpt();
+          });
+          page.render({slug: key}, function (err, res) {
             if (err) return console.error(err);
-            console.log(view.permalink(view.data.pagination));
-            console.log(view.content);
+            console.log(res.permalink(res.data.pagination));
+            console.log(res.content);
             console.log();
           });
         });

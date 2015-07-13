@@ -98,7 +98,7 @@ app.page('page3.hbs', {
  * Load index pages for `pages`
  */
 
-app.lists('my-awesome-list-page.hbs', {
+app.lists('list-template.hbs', {
   content: 'BEFORE\n{{#each pagination.items}}{{locals.title}}\n{{/each}}\nAFTER',
   locals: {
     limit: 2,
@@ -111,18 +111,19 @@ app.lists('my-awesome-list-page.hbs', {
 /**
  * Render
  */
+
 // var page = app.pages.get('home.hbs');
 // app.pages.option('permalinks', {
 
 // });
 // console.log(page.permalink());
 
-var list = app.lists.get('my-awesome-list-page');
+var list = app.lists.get('list-template');
 app.option({ permalinks: { structure: 'blog/:collection/:num.html' }});
 
 app.pages
   .sortBy('locals.title')
-  .paginate(list,function (err, views) {
+  .paginate(list, function (err, views) {
     console.log(views)
     views.forEach(function (view) {
       view.render(function (err, view) {

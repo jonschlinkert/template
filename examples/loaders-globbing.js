@@ -40,6 +40,7 @@ app.list('index.md', {
 
 var index = app.lists.get('index.md');
 var opts = { permalink: 'blog/posts/:collection/:num.html' };
+console.time('glob');
 
 // glob some templates onto the `post` collection
 glob({ gitignore: true })
@@ -53,10 +54,9 @@ glob({ gitignore: true })
       .paginate(index, opts, function (err, posts) {
         posts.forEach(function (post) {
           post.render(function (err, post) {
-            // console.log(post.data)
-            // console.log(post.permalink(post.data.pagination));
-            post.permalink(post.data.pagination);
+            console.log(post.permalink(post.data.pagination));
           });
         });
+        console.timeEnd('glob');
       });
   });

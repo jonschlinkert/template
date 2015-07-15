@@ -503,11 +503,21 @@ Template.prototype = Emitter({
     var alias = this.viewTypes.layout;
     var len = alias.length, i = 0;
 
+    // TODO: this code shouldn't be needed! there is a normalization
+    // bug somewhere!
+    function setLayout(val) {
+      val.data = val.data || {};
+      val.locals = val.locals || {};
+      val.layout = val.layout || val.locals.layout || val.data.layout;
+      return val;
+    }
+
     while (len--) {
       var views = this.views[alias[i++]];
       for (var key in views) {
-        if (views.hasOwnProperty(key)) {
-          stack[key] = views[key];
+        var val = views[key];
+        if (views.hasOwnProperty(key) && typeof val !== 'function' && val.path) {
+          stack[key] = setLayout(val);
         }
       }
     }
@@ -518,6 +528,7 @@ Template.prototype = Emitter({
 
     // apply the layout
     var res = layouts(str, name, stack, opts);
+    // console.log(res.stack);
     view.option('stack', res.stack);
     view.option('layoutApplied', true);
     view.content = res.result;
@@ -554,9 +565,10 @@ Template.prototype = Emitter({
 
     // Bind context to helpers before passing to the engine.
     this.bindHelpers(view, locals, ctx, (locals.async = isAsync));
+    var settings = extend({}, ctx, locals);
 
     // compile the string
-    view.fn = engine.compile(view.content, locals);
+    view.fn = engine.compile(view.content, settings);
     // handle `postCompile` middleware
     this.handleView('postCompile', view, locals);
     return view;

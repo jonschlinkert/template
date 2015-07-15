@@ -189,7 +189,7 @@ function navTree (collection, prop) {
       var keys = Object.keys(categoryGroups);
       keys.forEach(function (category) {
         tree[category] = {
-          permalink: categoriesList.permalink('categories/:category.html', {category: category})
+          permalink: categoriesList.permalink('/categories/:category.html', {category: category})
         };
         var group = categoryGroups[category];
 

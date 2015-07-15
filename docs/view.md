@@ -43,6 +43,11 @@ The following properties are automatically added to every `view` object:
 **Example `view` object**
 
 ```js
+var options = {
+  dest: {base: ''},
+  src: {base: ''}
+};
+
 var view = {
   data: {},
   options: {},

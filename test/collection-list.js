@@ -23,13 +23,16 @@ describe('collections', function () {
         .filter(function (item) {
           return path.basename(item.path) === 'two.md';
         })
-        .render(function (err, items) {
-          if (err) return done(err);
-          done();
+        .sortBy()
+        .groupBy()
+        .forOwn(function (view, key) {
+      console.log(view.render)
+          view.render(function (err, res) {
+            
+          });
         });
 
+        // done();
     });
   });
 });
-
-

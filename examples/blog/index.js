@@ -28,11 +28,6 @@ app.preLayout(/\.(hbs|md)$/, function (view, next) {
   next();
 });
 
-// app.postLayout(/\.(hbs|md)$/, function (view, next) {
-//   console.log('postLayout', view.path);
-//   next();
-// });
-
 app.onLoad(/\.(hbs|md)$/, function (view, next) {
   matter.parse(view, next);
 });
@@ -69,6 +64,7 @@ app.asyncHelper('include', function (name, locals, options, cb) {
 app.helper('date_to_string', function () {
   return ''
 });
+
 app.helper('is', function () {
   return ''
 });
@@ -78,7 +74,7 @@ app.helper('is', function () {
  */
 
 app.create('page');
-app.create('post', { permalinks: { structure: ':year/:month/:day/:key.html'} });
+app.create('post', { permalinks: { structure: ':key.html'} });
 app.create('include', { viewType: 'partial', renameKey: renameKey });
 app.create('layout', { viewType: 'layout', renameKey: renameKey });
 
@@ -103,7 +99,7 @@ app.posts('src/_posts/*.md');
 app.layouts('src/_layouts/*.hbs');
 app.includes('src/_includes/*.hbs');
 
-console.log(Object.keys(app.views.includes));
+// console.log(Object.keys(app.views.includes));
 // process.exit();
 
 /**
@@ -111,6 +107,34 @@ console.log(Object.keys(app.views.includes));
  */
 
 app.lists('archives.hbs', {
+  cwd: 'src/_lists',
+  content: [
+    '<div class="pagination">',
+    '  <h1>{{pagination.collection}}</h1>',
+    '  <h2>{{slug}}</h2>',
+    '',
+    '  {{#each pagination.items}}',
+    '    <h3>{{data.title}}</h3>',
+    '  {{/each}}',
+    '</div>',
+  ].join('\n')
+});
+
+app.lists('tags.hbs', {
+  cwd: 'src/_lists',
+  content: [
+    '<div class="pagination">',
+    '  <h1>{{pagination.collection}}</h1>',
+    '  <h2>{{slug}}</h2>',
+    '',
+    '  {{#each pagination.items}}',
+    '    <h3>{{data.title}}</h3>',
+    '  {{/each}}',
+    '</div>',
+  ].join('\n')
+});
+
+app.lists('categories.hbs', {
   cwd: 'src/_lists',
   content: [
     '<div class="pagination">',
@@ -142,23 +166,64 @@ function getDateGroup (date) {
 }
 
 var list = app.lists.get('archives');
+var tagsList = app.lists.get('tags');
+var categoriesList = app.lists.get('categories');
 
 var groupStructures = [
-  ':year/index-:num.html',
-  ':year/:month/index-:num.html',
-  ':year/:month/:day/index-:num.html'
+  ':year/:num/index.html',
+  ':year/:month/:num/index.html',
+  ':year/:month/:day/:num/index.html'
 ];
+
 var dateRe = /^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?/;
 
-app.posts.forOwn(function (post, key) {
-  var base = path.basename(key, path.extname(key));
-  var name = base.slice(11);
-  var permalink = post.permalink({key: name});
-  post.render({permalink: permalink}, function (err, res) {
-    if (err) return console.error(err);
-    // writeDest(res, '_site/blog', permalink);
-  });
-});
+function navTree (collection, prop) {
+  var tree = {};
+  prop = ['data', prop].join('.');
+  app[collection]
+    .groupBy(prop, function (categories) {
+      if (typeof categories === 'object') {
+        return Object.keys(categories);
+      }
+    }, function (err, categoryGroups) {
+      var keys = Object.keys(categoryGroups);
+      keys.forEach(function (category) {
+        tree[category] = {
+          permalink: categoriesList.permalink('categories/:category.html', {category: category})
+        };
+        var group = categoryGroups[category];
+
+        group.groupBy(prop, function (categories) {
+          return categories[category];
+        }, function (err, tags) {
+          tree[category].tags = {};
+          Object.keys(tags).forEach(function (key) {
+            tree[category].tags[key] = {
+              permalink: tagsList.permalink('tags/:tag.html', {tag: key})
+            };
+          });
+          // console.log(category, Object.keys(tags));
+          // console.log();
+          // console.log(tags);
+        });
+      });
+    });
+  return tree;
+}
+
+var tree = navTree('posts', 'categories');
+console.log(JSON.stringify(tree, null, 2));
+
+
+// app.posts.forOwn(function (post, key) {
+//   var base = path.basename(key, path.extname(key));
+//   var name = base.slice(11);
+//   var permalink = post.permalink({key: name});
+//   post.render({permalink: permalink}, function (err, res) {
+//     if (err) return console.error(err);
+//     writeDest(res, '_site/blog', permalink);
+//   });
+// });
 
 // app.posts
 //   .groupBy('data.date', getDateGroup, function (err, groups) {
@@ -181,7 +246,7 @@ app.posts.forOwn(function (post, key) {
 //           page.render({slug: key, permalink: permalink}, function (err, res) {
 //             if (err) return console.error(err);
 //             // console.log(res);
-//             writeDest(res, '_site/archives', permalink);
+//             writeDest(res, '_site/blog/archives', permalink);
 //           });
 //         });
 //         console.log('=====================');

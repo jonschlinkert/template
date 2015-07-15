@@ -40,7 +40,7 @@ describe('views pagination', function () {
       var list = app.list.get('list.hbs');
 
       app.pages.paginate(function (err, pages) {
-        console.log(pages)
+        // console.log(pages)
       });
 
       app.pages.render('a.tmpl', {}, function (err, res) {

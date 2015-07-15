@@ -6,6 +6,7 @@ var path = require('path');
 var typeOf = require('kind-of');
 var forOwn = require('for-own');
 var router = require('en-route');
+var visit = require('object-visit');
 var layouts = require('layouts');
 var Emitter = require('component-emitter');
 var isObject = require('isobject');
@@ -13,11 +14,12 @@ var isGlob = require('is-glob');
 var mixin = require('mixin-object');
 var extend = require('extend-shallow');
 var Loaders = require('loader-cache');
-var inflect = require('pluralize');
+var inflect = require('inflection');
 var clone = require('clone-deep');
 var get = require('get-value');
 var set = require('set-value');
 
+var Collection = require('./lib/collection');
 var engines = require('./lib/engines');
 var loaders = require('./lib/loaders/index');
 var helpers = require('./lib/helpers');
@@ -78,6 +80,7 @@ Template.prototype = Emitter({
       partial: []
     };
 
+    this.collections = {};
     this.inflections = {};
     this.handlers(utils.methods);
     this.delegateLoaders([
@@ -252,10 +255,13 @@ Template.prototype = Emitter({
    * Create a new `Views` collection.
    */
 
-  create: function (single/*, options, loaders*/) {
+  create: function (name/*, options, loaders*/) {
     var args = utils.slice(arguments, 1);
     var opts = clone(args.shift());
-    var plural = this.inflect(single);
+
+    var single = inflect.singularize(name);
+    var plural = inflect.pluralize(name);
+    this.inflections[single] = plural;
 
     opts.renameKey = opts.renameKey || this.options.renameKey;
     opts.loaderType = opts.loaderType || this.options.loaderType || 'sync';
@@ -301,15 +307,15 @@ Template.prototype = Emitter({
   },
 
   /**
-   * Set and map the plural name for a view collection.
+   * Create a new collection with the given `name` and `items.`
    *
    * @param  {String} `name`
    * @return {String}
    * @api private
    */
 
-  inflect: function(name) {
-    return this.inflections[name] || (this.inflections[name] = inflect(name));
+  collection: function(name, items) {
+    return (this.collections[name] = new Collection(items));
   },
 
   /**
@@ -750,7 +756,7 @@ Template.prototype = Emitter({
    */
 
   visit: function (method, obj) {
-    utils.visit(this, method, obj);
+    visit(this, method, obj);
     return this;
   },
 

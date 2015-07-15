@@ -1,0 +1,19 @@
+{
+  "name": "blog",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "engine-handlebars": "^0.6.1",
+    "extend-shallow": "^2.0.0",
+    "liquid-to-handlebars": "^0.3.0",
+    "parser-front-matter": "^1.2.1",
+    "template": "^0.15.0",
+    "write": "^0.2.0"
+  }
+}

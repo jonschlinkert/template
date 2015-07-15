@@ -1,0 +1,30 @@
+---
+layout: default
+---
+
+<div class="post">
+  <h1 class="post-title">{{ title }}</h1>
+  <span class="post-date">{{date_to_string page.date}}</span>
+
+  {{> tweet-button }}
+
+  {% body %}
+</div>
+
+<div class="related">
+  <h2>Related Posts</h2>
+  <ul class="related-posts">
+    {{#related_posts}}
+
+      <li>
+        <h3>
+          <a href="{{ this.url }}">
+            {{ this.title }}
+            <small>{{date_to_string this.date}}</small>
+          </a>
+        </h3>
+      </li>
+    
+{{/related_posts}}
+  </ul>
+</div>

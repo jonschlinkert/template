@@ -1,0 +1,15 @@
+---
+layout: default
+name: "list"
+---
+
+<ul class="list">
+{{#posts}}
+
+  <li>
+    <span>{{date_to_string this.date}}</span>
+    <a href="{{ this.url }}">{{ this.title }}</a>
+  </li>
+
+{{/posts}}
+</ul>

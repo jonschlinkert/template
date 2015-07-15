@@ -1,0 +1,11 @@
+name:           Bootstrap Blog
+description:    Official blog for the Bootstrap framework.
+url:            http://blog.getbootstrap.com
+
+markdown:       kramdown
+highlighter:    pygments
+permalink:      pretty
+paginate:       5
+encoding:       UTF-8
+
+exclude:        ["README.md"]

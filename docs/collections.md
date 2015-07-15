@@ -16,4 +16,3 @@ To create a new collection:
 var collection = new App.Collection();
 ```
 
-

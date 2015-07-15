@@ -5,18 +5,6 @@ var app = new App();
 
 app.engine('tmpl', require('engine-lodash'));
 
-app.helper('double', function (str) {
-  return str + '-' + str;
-});
-
-app.helper('before', function (str) {
-  return 'before-' + str;
-});
-
-app.helper('after', function (str) {
-  return str + '-after';
-});
-
 /**
  * Create
  */

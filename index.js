@@ -24,7 +24,6 @@ var engines = require('./lib/engines');
 var loaders = require('./lib/loaders/index');
 var helpers = require('./lib/helpers');
 var lookup = require('./lib/lookup');
-var Views = require('./lib/views');
 var utils = require('./lib/utils');
 
 /**
@@ -73,6 +72,7 @@ Template.prototype = Emitter({
     this.cache.context = {};
     this.views = {};
     this.stash = {};
+    this.set('Views', require('./lib/views'));
 
     this.viewTypes = {
       layout: [],
@@ -104,6 +104,15 @@ Template.prototype = Emitter({
     this.on('error', function (msg, err) {
       console.error(msg, err);
     });
+  },
+
+  set: function (key, value) {
+    this.cache[key] = value;
+    return this;
+  },
+
+  get: function (key) {
+    return this.cache[key];
   },
 
   /**
@@ -269,6 +278,7 @@ Template.prototype = Emitter({
     opts.inflection = single;
     utils.defineProp(opts, 'app', this);
 
+    var Views = this.get('Views');
     var views = new Views(this, args, opts);
     this.viewType(plural, views.viewType());
 

@@ -25,3 +25,86 @@ The following properties are automatically added to every `view` object:
 
 
 ## Methods
+
+
+
+# View conventions
+
+## View properties
+
+### non-path properties
+
+- `stat` **Object**:
+- `data` **Object**:
+- `options` **Object**:
+- `history` **Array**:
+
+
+**Example `view` object**
+
+```js
+var view = {
+  data: {},
+  options: {},
+  history: [],
+  stat: {},
+
+  // path information
+  cwd: '.',
+  root: '',
+  src: {
+    path: '',
+    relative: '',
+    base: '',
+    name: '',
+    ext: ''
+  },
+  dest: {
+    path: '',
+    relative: '',
+    base: '',
+    name: '',
+    ext: ''
+  }
+}
+```
+
+## Path properties
+
+- `cwd` **String**:
+- `root` **String**:
+- `src` **Object**:
+- `dest` **Object**:
+
+### src properties
+
+- `path`:
+- `base`:
+- `name`:
+- `ext`:
+
+### dest properties
+
+- `path`:
+- `base`:
+- `name`:
+- `ext`:
+
+
+## Examples
+
+**Calculate a `dest.path`**
+
+```js
+var view = {
+  src: {
+    path: 'templates/pages/blog/foo.hbs',
+    base: 'templates/pages',
+  },
+  dest: {
+    base: 'gh_pages',
+    ext: '.html'
+  }
+};
+```
+

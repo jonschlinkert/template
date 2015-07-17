@@ -54,6 +54,7 @@
     "lazy-globby": "^0.1.1",
     "load-templates": "^0.8.6",
     "loader-cache": "^0.6.0",
+    "map-visit": "^0.1.0",
     "micromatch": "^2.1.6",
     "mixin-object": "^2.0.0",
     "object-visit": "^0.1.0",

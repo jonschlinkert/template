@@ -4,6 +4,7 @@
 var path = require('path');
 var assert = require('assert');
 var should = require('should');
+var once = require('once');
 var App = require('..');
 var app;
 
@@ -16,6 +17,7 @@ describe('collections', function () {
     })
 
     it('should create a new collection:', function (done) {
+      done = once(done);
       app.posts('test/fixtures/posts/**/*.md');
 
       app.posts.list('recent')
@@ -26,9 +28,8 @@ describe('collections', function () {
         .sortBy()
         .groupBy()
         .forOwn(function (view, key) {
-      console.log(view.render)
           view.render(function (err, res) {
-            
+            done(err);
           });
         });
 

@@ -6,6 +6,7 @@ var should = require('should');
 var forOwn = require('for-own');
 var Base = require('../lib/base');
 var Item = require('../lib/item');
+var View = require('../lib/view');
 var List = require('../lib/list');
 var Collection = require('../lib/collection');
 
@@ -390,10 +391,74 @@ describe('List', function () {
       });
     });
   });
+
+  it('should paginate items in the list', function () {
+    var view = new View(createView(), createViewOptions());
+    var collection = new Collection();
+    var list = new List();
+    list.item('post-1.md', createItem({categories: {one: ['A']}, name: 'Post 1', content: 'Post 1'}, {collection: collection}));
+    list.item('post-2.md', createItem({categories: {one: ['A'], two: ['B', 'C']}, name: 'Post 2', content: 'Post 2'}, {collection: collection}));
+    list.item('post-3.md', createItem({categories: {one: ['B'], two: ['C', 'D']}, name: 'Post 3', content: 'Post 3'}, {collection: collection}));
+    list.item('post-4.md', createItem({categories: {three: ['B'], four: ['E', 'F', 'G']}, name: 'Post 4', content: 'Post 4'}, {collection: collection}));
+    list.item('post-5.md', createItem({categories: {four: ['C', 'F']}, name: 'Post 5', content: 'Post 5'}, {collection: collection}));
+    list.item('post-6.md', createItem({categories: {four: ['F', 'G']}, name: 'Post 6', content: 'Post 6'}, {collection: collection}));
+    list.item('post-7.md', createItem({categories: {four: ['F', 'G']}, name: 'Post 7', content: 'Post 7'}, {collection: collection}));
+    var pages = list.paginate(view, {limit: 2});
+    assert.equal(pages.items.length, 4);
+    assert.deepEqual(pages.keys, {'page-1': 0, 'page-2': 1, 'page-3': 2, 'page-4': 3});
+
+    pages.forEach(function (page, i) {
+      switch (i) {
+        case 0:
+          assert.equal(page.data.pagination.items.length, 2);
+          assert.deepEqual(page.data.pagination.keys, {'post-1.md': 0, 'post-2.md': 1});
+          break;
+        case 1:
+          assert.equal(page.data.pagination.items.length, 2);
+          assert.deepEqual(page.data.pagination.keys, {'post-3.md': 0, 'post-4.md': 1});
+          break;
+        case 2:
+          assert.equal(page.data.pagination.items.length, 2);
+          assert.deepEqual(page.data.pagination.keys, {'post-5.md': 0, 'post-6.md': 1});
+          break;
+        case 3:
+          assert.equal(page.data.pagination.items.length, 1);
+          assert.deepEqual(page.data.pagination.keys, {'post-7.md': 0});
+          break;
+      }
+
+      // make sure that all the items in the list
+      // are equal to the items in the categories
+      page.data.pagination.forEach(function (item) {
+        assert.deepEqual(item, list.item(item.key));
+      });
+    });
+  });
 });
+
+function createApp (app) {
+  app = app || new Base({});
+  app.handleView = function () {};
+  return app;
+}
 
 function createItem(obj, options) {
   var item = new Item(options);
   item.visit('set', obj);
   return item;
 }
+
+function createView (view) {
+  view = view || {};
+  view.path = view.path || 'list.hbs';
+  view.content = view.content || 'list';
+  return view;
+}
+
+function createViewOptions (options) {
+  options = options || {};
+  options.app = options.app || createApp();
+  options.collection = options.collection || new Base({app: options.app, collection: 'lists'});
+  return options;
+}
+

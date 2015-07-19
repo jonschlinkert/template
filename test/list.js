@@ -328,9 +328,9 @@ describe('List', function () {
     list.item('bar', createItem({name: 'y-bar', content: 'bar'}, {collection: collection}));
     list.item('baz', createItem({name: 'x-baz', content: 'baz'}, {collection: collection}));
     list.item('bang', createItem({name: 'w-bang', content: 'bang'}, {collection: collection}));
-    assert.deepEqual(Object.keys(list), ['foo', 'bar', 'baz', 'bang']);
+    assert.deepEqual(Object.keys(list.keys), ['foo', 'bar', 'baz', 'bang']);
     list.sortBy('name');
-    assert.deepEqual(Object.keys(list), ['foo', 'bang', 'baz', 'bar']);
+    assert.deepEqual(Object.keys(list.keys), ['foo', 'bang', 'baz', 'bar']);
   });
 
   it('should be chainable', function () {
@@ -340,11 +340,11 @@ describe('List', function () {
     list.item('bar', createItem({name: 'y-bar', order: '10', content: 'bar'}, {collection: collection}));
     list.item('baz', createItem({name: 'x-baz', order: '30', content: 'baz'}, {collection: collection}));
     list.item('bang', createItem({name: 'w-bang', order: '40', content: 'bang'}, {collection: collection}));
-    assert.deepEqual(Object.keys(list), ['foo', 'bar', 'baz', 'bang']);
+    assert.deepEqual(Object.keys(list.keys), ['foo', 'bar', 'baz', 'bang']);
     list
       .sortBy('name')
       .sortBy('order');
-    assert.deepEqual(Object.keys(list), ['bar', 'foo', 'baz', 'bang']);
+    assert.deepEqual(Object.keys(list.keys), ['bar', 'foo', 'baz', 'bang']);
   });
 });
 

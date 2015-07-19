@@ -346,6 +346,50 @@ describe('List', function () {
       .sortBy('order');
     assert.deepEqual(Object.keys(list.keys), ['bar', 'foo', 'baz', 'bang']);
   });
+
+  it('should group the items by a property', function () {
+    var collection = new Collection();
+    var list = new List();
+    list.item('post-1.md', createItem({categories: {one: ['A']}, name: 'Post 1', content: 'Post 1'}, {collection: collection}));
+    list.item('post-2.md', createItem({categories: {one: ['A'], two: ['B', 'C']}, name: 'Post 2', content: 'Post 2'}, {collection: collection}));
+    list.item('post-3.md', createItem({categories: {one: ['B'], two: ['C', 'D']}, name: 'Post 3', content: 'Post 3'}, {collection: collection}));
+    list.item('post-4.md', createItem({categories: {three: ['B'], four: ['E', 'F', 'G']}, name: 'Post 4', content: 'Post 4'}, {collection: collection}));
+    list.item('post-5.md', createItem({categories: {four: ['C', 'F']}, name: 'Post 5', content: 'Post 5'}, {collection: collection}));
+    list.item('post-6.md', createItem({categories: {four: ['F', 'G']}, name: 'Post 6', content: 'Post 6'}, {collection: collection}));
+    var categoryGroups = list.groupBy('categories', function (categories) {
+      if (categories == null) return;
+      return Object.keys(categories);
+    });
+    assert.equal(categoryGroups.items.length, 4);
+    assert.deepEqual(categoryGroups.keys, {'one': 0, 'two': 1, 'three': 2, 'four': 3});
+
+    categoryGroups.forEach(function (category, i) {
+      switch (i) {
+        case 0:
+          assert.equal(category.items.length, 3);
+          assert.deepEqual(category.keys, {'post-1.md': 0, 'post-2.md': 1, 'post-3.md': 2});
+          break;
+        case 1:
+          assert.equal(category.items.length, 2);
+          assert.deepEqual(category.keys, {'post-2.md': 0, 'post-3.md': 1});
+          break;
+        case 2:
+          assert.equal(category.items.length, 1);
+          assert.deepEqual(category.keys, {'post-4.md': 0});
+          break;
+        case 3:
+          assert.equal(category.items.length, 3);
+          assert.deepEqual(category.keys, {'post-4.md': 0, 'post-5.md': 1, 'post-6.md': 2});
+          break;
+      }
+
+      // make sure that all the items in the list
+      // are equal to the items in the categories
+      category.forEach(function (item) {
+        assert.deepEqual(item, list.item(item.key));
+      });
+    });
+  });
 });
 
 function createItem(obj, options) {

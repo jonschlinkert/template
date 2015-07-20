@@ -6,6 +6,7 @@ var should = require('should');
 var forOwn = require('for-own');
 var Base = require('../lib/base');
 var Item = require('../lib/item');
+var List = require('../lib/list');
 var Collection = require('../lib/collection');
 
 describe('Collection', function () {
@@ -327,6 +328,29 @@ describe('Collection', function () {
       .sortBy('name')
       .sortBy('order');
     assert.deepEqual(Object.keys(collection), ['bar', 'foo', 'baz', 'bang']);
+  });
+
+  it('should get recent items returned as a List', function () {
+    var collection = new Collection();
+    collection.set('post-1', createItem({date: '2015-01-05', name: 'Post 1', content: 'Post 1'}, {collection: collection}));
+    collection.set('post-2', createItem({date: '2015-02-05', name: 'Post 2', content: 'Post 2'}, {collection: collection}));
+    collection.set('post-3', createItem({date: '2015-03-05', name: 'Post 3', content: 'Post 3'}, {collection: collection}));
+    collection.set('post-4', createItem({date: '2015-04-05', name: 'Post 4', content: 'Post 4'}, {collection: collection}));
+    collection.set('post-5', createItem({date: '2015-05-05', name: 'Post 5', content: 'Post 5'}, {collection: collection}));
+    collection.set('post-6', createItem({date: '2015-06-05', name: 'Post 6', content: 'Post 6'}, {collection: collection}));
+    collection.set('post-7', createItem({date: '2015-07-05', name: 'Post 7', content: 'Post 7'}, {collection: collection}));
+    var recent = collection.recent('date', null, {limit: 3});
+    assert.equal(recent instanceof List, true);
+    assert.equal(recent.items.length, 3);
+    assert.deepEqual(recent.items, [
+      {date: '2015-07-05', name: 'Post 7', content: 'Post 7', key: 'post-7'},
+      {date: '2015-06-05', name: 'Post 6', content: 'Post 6', key: 'post-6'},
+      {date: '2015-05-05', name: 'Post 5', content: 'Post 5', key: 'post-5'},
+    ]);
+
+    recent.forEach(function (post) {
+      assert.deepEqual(post, collection.get(post.key));
+    });
   });
 });
 

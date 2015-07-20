@@ -277,8 +277,8 @@ describe('List', function () {
     list.item('bar', createItem({name: 'bar', content: 'bar'}, {collection: collection}));
     list.item('baz', createItem({name: 'baz', content: 'baz'}, {collection: collection}));
     list.item('bang', createItem({name: 'bang', content: 'bang'}, {collection: collection}));
-    assert.equal(typeof list.keys, 'object');
-    assert.equal(Object.keys(list.keys).length, 4);
+    assert.equal(typeof list.keyMap, 'object');
+    assert.equal(Object.keys(list.keyMap).length, 4);
   });
 
   it('should get the current items on the list', function () {
@@ -288,7 +288,7 @@ describe('List', function () {
     list.item('bar', createItem({name: 'bar', content: 'bar'}, {collection: collection}));
     list.item('baz', createItem({name: 'baz', content: 'baz'}, {collection: collection}));
     list.item('bang', createItem({name: 'bang', content: 'bang'}, {collection: collection}));
-    var keys = list.keys;
+    var keys = list.keyMap;
     assert.deepEqual(Object.keys(keys), ['foo', 'bar', 'baz', 'bang']);
     forOwn(keys, function (item, key) {
       assert.deepEqual(list.items[item], list.item(key));
@@ -304,7 +304,7 @@ describe('List', function () {
     items.bang = createItem({name: 'bang', content: 'bang'}, {collection: collection});
     var list = new List({items: items});
     assert.deepEqual(Object.keys(items), ['foo', 'bar', 'baz', 'bang']);
-    assert.deepEqual(Object.keys(list.keys), ['foo', 'bar', 'baz', 'bang']);
+    assert.deepEqual(Object.keys(list.keyMap), ['foo', 'bar', 'baz', 'bang']);
     forOwn(items, function (item, key) {
       assert.deepEqual(item, list.item(key));
     });
@@ -317,9 +317,9 @@ describe('List', function () {
     list.item('bar', createItem({name: 'bar', content: 'bar'}, {collection: collection}));
     list.item('baz', createItem({name: 'baz', content: 'baz'}, {collection: collection}));
     list.item('bang', createItem({name: 'bang', content: 'bang'}, {collection: collection}));
-    assert.deepEqual(Object.keys(list.keys), ['foo', 'bar', 'baz', 'bang']);
+    assert.deepEqual(Object.keys(list.keyMap), ['foo', 'bar', 'baz', 'bang']);
     list.sortBy();
-    assert.deepEqual(Object.keys(list.keys), ['bang', 'bar', 'baz', 'foo']);
+    assert.deepEqual(Object.keys(list.keyMap), ['bang', 'bar', 'baz', 'foo']);
   });
 
   it('should sort the items a property', function () {
@@ -329,9 +329,9 @@ describe('List', function () {
     list.item('bar', createItem({name: 'y-bar', content: 'bar'}, {collection: collection}));
     list.item('baz', createItem({name: 'x-baz', content: 'baz'}, {collection: collection}));
     list.item('bang', createItem({name: 'w-bang', content: 'bang'}, {collection: collection}));
-    assert.deepEqual(Object.keys(list.keys), ['foo', 'bar', 'baz', 'bang']);
+    assert.deepEqual(Object.keys(list.keyMap), ['foo', 'bar', 'baz', 'bang']);
     list.sortBy('name');
-    assert.deepEqual(Object.keys(list.keys), ['foo', 'bang', 'baz', 'bar']);
+    assert.deepEqual(Object.keys(list.keyMap), ['foo', 'bang', 'baz', 'bar']);
   });
 
   it('should be chainable', function () {
@@ -341,11 +341,11 @@ describe('List', function () {
     list.item('bar', createItem({name: 'y-bar', order: '10', content: 'bar'}, {collection: collection}));
     list.item('baz', createItem({name: 'x-baz', order: '30', content: 'baz'}, {collection: collection}));
     list.item('bang', createItem({name: 'w-bang', order: '40', content: 'bang'}, {collection: collection}));
-    assert.deepEqual(Object.keys(list.keys), ['foo', 'bar', 'baz', 'bang']);
+    assert.deepEqual(Object.keys(list.keyMap), ['foo', 'bar', 'baz', 'bang']);
     list
       .sortBy('name')
       .sortBy('order');
-    assert.deepEqual(Object.keys(list.keys), ['bar', 'foo', 'baz', 'bang']);
+    assert.deepEqual(Object.keys(list.keyMap), ['bar', 'foo', 'baz', 'bang']);
   });
 
   it('should group the items by a property', function () {
@@ -362,25 +362,25 @@ describe('List', function () {
       return Object.keys(categories);
     });
     assert.equal(categoryGroups.items.length, 4);
-    assert.deepEqual(categoryGroups.keys, {'one': 0, 'two': 1, 'three': 2, 'four': 3});
+    assert.deepEqual(categoryGroups.keyMap, {'one': 0, 'two': 1, 'three': 2, 'four': 3});
 
     categoryGroups.forEach(function (category, i) {
       switch (i) {
         case 0:
           assert.equal(category.items.length, 3);
-          assert.deepEqual(category.keys, {'post-1.md': 0, 'post-2.md': 1, 'post-3.md': 2});
+          assert.deepEqual(category.keyMap, {'post-1.md': 0, 'post-2.md': 1, 'post-3.md': 2});
           break;
         case 1:
           assert.equal(category.items.length, 2);
-          assert.deepEqual(category.keys, {'post-2.md': 0, 'post-3.md': 1});
+          assert.deepEqual(category.keyMap, {'post-2.md': 0, 'post-3.md': 1});
           break;
         case 2:
           assert.equal(category.items.length, 1);
-          assert.deepEqual(category.keys, {'post-4.md': 0});
+          assert.deepEqual(category.keyMap, {'post-4.md': 0});
           break;
         case 3:
           assert.equal(category.items.length, 3);
-          assert.deepEqual(category.keys, {'post-4.md': 0, 'post-5.md': 1, 'post-6.md': 2});
+          assert.deepEqual(category.keyMap, {'post-4.md': 0, 'post-5.md': 1, 'post-6.md': 2});
           break;
       }
 
@@ -405,25 +405,25 @@ describe('List', function () {
     list.item('post-7.md', createItem({categories: {four: ['F', 'G']}, name: 'Post 7', content: 'Post 7'}, {collection: collection}));
     var pages = list.paginate(view, {limit: 2});
     assert.equal(pages.items.length, 4);
-    assert.deepEqual(pages.keys, {'page-1': 0, 'page-2': 1, 'page-3': 2, 'page-4': 3});
+    assert.deepEqual(pages.keyMap, {'page-1': 0, 'page-2': 1, 'page-3': 2, 'page-4': 3});
 
     pages.forEach(function (page, i) {
       switch (i) {
         case 0:
           assert.equal(page.data.pagination.items.length, 2);
-          assert.deepEqual(page.data.pagination.keys, {'post-1.md': 0, 'post-2.md': 1});
+          assert.deepEqual(page.data.pagination.keyMap, {'post-1.md': 0, 'post-2.md': 1});
           break;
         case 1:
           assert.equal(page.data.pagination.items.length, 2);
-          assert.deepEqual(page.data.pagination.keys, {'post-3.md': 0, 'post-4.md': 1});
+          assert.deepEqual(page.data.pagination.keyMap, {'post-3.md': 0, 'post-4.md': 1});
           break;
         case 2:
           assert.equal(page.data.pagination.items.length, 2);
-          assert.deepEqual(page.data.pagination.keys, {'post-5.md': 0, 'post-6.md': 1});
+          assert.deepEqual(page.data.pagination.keyMap, {'post-5.md': 0, 'post-6.md': 1});
           break;
         case 3:
           assert.equal(page.data.pagination.items.length, 1);
-          assert.deepEqual(page.data.pagination.keys, {'post-7.md': 0});
+          assert.deepEqual(page.data.pagination.keyMap, {'post-7.md': 0});
           break;
       }
 
@@ -434,6 +434,34 @@ describe('List', function () {
       });
     });
   });
+
+  it('should group and paginate the items by a property', function () {
+    var view = new View(createView(), createViewOptions());
+    var collection = new Collection();
+    var list = new List();
+    list.item('post-1.md', createItem({categories: {one: ['A']}, name: 'Post 1', content: 'Post 1'}, {collection: collection}));
+    list.item('post-2.md', createItem({categories: {one: ['A'], two: ['B', 'C']}, name: 'Post 2', content: 'Post 2'}, {collection: collection}));
+    list.item('post-3.md', createItem({categories: {one: ['B'], two: ['C', 'D']}, name: 'Post 3', content: 'Post 3'}, {collection: collection}));
+    list.item('post-4.md', createItem({categories: {three: ['B'], four: ['E', 'F', 'G']}, name: 'Post 4', content: 'Post 4'}, {collection: collection}));
+    list.item('post-5.md', createItem({categories: {four: ['C', 'F']}, name: 'Post 5', content: 'Post 5'}, {collection: collection}));
+    list.item('post-6.md', createItem({categories: {four: ['F', 'G']}, name: 'Post 6', content: 'Post 6'}, {collection: collection}));
+    var categoryGroups = list.groupBy('categories', function (categories) {
+      if (categories == null) return;
+      return Object.keys(categories);
+    });
+    assert.equal(categoryGroups.items.length, 4);
+    assert.deepEqual(categoryGroups.keyMap, {'one': 0, 'two': 1, 'three': 2, 'four': 3});
+
+    categoryGroups.forEach(function (category, i) {
+      var pages = category.paginate(view, {limit: 2});
+      pages.forEach(function (page) {
+        page.data.pagination.forEach(function (post) {
+          assert.deepEqual(post, list.item(post.key));
+        });
+      });
+    });
+  });
+
 });
 
 function createApp (app) {

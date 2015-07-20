@@ -274,12 +274,13 @@ Template.prototype = Emitter({
 
     opts.renameKey = opts.renameKey || this.options.renameKey;
     opts.loaderType = opts.loaderType || this.options.loaderType || 'sync';
-    opts.collection = plural;
+    opts.plural = plural;
     opts.inflection = single;
-    utils.defineProp(opts, 'app', this);
+    opts.loaders = args;
+    opts.app = this;
 
     var Views = this.get('Views');
-    var views = new Views(this, args, opts);
+    var views = new Views(opts);
     this.viewType(plural, views.viewType());
 
     views.on('cwd', function (dir) {

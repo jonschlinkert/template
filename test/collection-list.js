@@ -16,7 +16,7 @@ describe('collections', function () {
       app.create('posts');
     })
 
-    it('should create a new collection:', function (done) {
+    it.skip('should create a new collection:', function (done) {
       done = once(done);
       app.posts('test/fixtures/posts/**/*.md');
 

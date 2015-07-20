@@ -6,6 +6,7 @@ var glob = require('globby');
 var assert = require('assert');
 var should = require('should');
 var utils = require('../lib/utils');
+var once = require('once');
 var App = require('..');
 var app;
 
@@ -13,19 +14,21 @@ var app;
 describe('views pagination', function () {
   beforeEach(function () {
     app = new App();
-    app.engine('tmpl', require('engine-lodash'));
+    app.engine('hbs', require('engine-handlebars'));
     app.create('page');
     app.create('list');
 
   });
 
   describe('.pagination', function () {
-    it('should render a view from the collection:', function (done) {
-      app.pages('a.tmpl', {path: 'a.tmpl', content: 'a<%= title %>z', title: 'AAA'});
-      app.pages('b.tmpl', {path: 'b.tmpl', content: 'a<%= title %>z', title: 'BBB'});
-      app.pages('c.tmpl', {path: 'c.tmpl', content: 'a<%= title %>z', title: 'CCC'});
-      app.pages('d.tmpl', {path: 'd.tmpl', content: 'a<%= title %>z', title: 'DDD'});
-      app.pages('e.tmpl', {path: 'e.tmpl', content: 'a<%= title %>z', title: 'EEE'});
+    it('should render a paginated list from a views collection:', function (done) {
+      done = once(done);
+
+      app.pages('a.hbs', {path: 'a.hbs', content: 'a<%= title %>z', title: 'AAA'});
+      app.pages('b.hbs', {path: 'b.hbs', content: 'a<%= title %>z', title: 'BBB'});
+      app.pages('c.hbs', {path: 'c.hbs', content: 'a<%= title %>z', title: 'CCC'});
+      app.pages('d.hbs', {path: 'd.hbs', content: 'a<%= title %>z', title: 'DDD'});
+      app.pages('e.hbs', {path: 'e.hbs', content: 'a<%= title %>z', title: 'EEE'});
 
       app.list('list.hbs', {
         content: 'BEFORE\n{{#each pagination.items}}{{locals.title}}\n{{/each}}\nAFTER',
@@ -37,15 +40,53 @@ describe('views pagination', function () {
         }
       });
 
-      var list = app.list.get('list.hbs');
+      var list = app.lists.get('list.hbs');
 
-      app.pages.paginate(function (err, pages) {
-        // console.log(pages)
+      app.views.pages
+        .paginate(list, {limit: 2})
+        .render({}, function (err, res) {
+          if (err) return done(err);
+
+          res.length.should.equal(3);
+          res.forEach(function (ele) {
+            ele.content.should.match(/AAA|BBB|CCC|DDD|EEE/);
+          });
+
+          done();
+        });
+    });
+
+    it('should chain the `.pagination` method from the collection loader method:', function (done) {
+      done = once(done);
+      app.pages('a.hbs', {path: 'a.hbs', content: 'a<%= title %>z', title: 'AAA'});
+      app.pages('b.hbs', {path: 'b.hbs', content: 'a<%= title %>z', title: 'BBB'});
+      app.pages('c.hbs', {path: 'c.hbs', content: 'a<%= title %>z', title: 'CCC'});
+      app.pages('d.hbs', {path: 'd.hbs', content: 'a<%= title %>z', title: 'DDD'});
+      app.pages('e.hbs', {path: 'e.hbs', content: 'a<%= title %>z', title: 'EEE'});
+
+      app.list('list.hbs', {
+        content: 'BEFORE\n{{#each pagination.items}}{{locals.title}}\n{{/each}}\nAFTER',
+        locals: {
+          limit: 2,
+          permalinks: {
+            structure: ':collection/:num.html'
+          }
+        }
       });
 
-      app.pages.render('a.tmpl', {}, function (err, res) {
+      var list = app.lists.get('list.hbs');
+
+      var res = app.pages.paginate(list, {limit: 2});
+      res.items.length.should.equal(3);
+
+      res.render({}, function (err, res) {
         if (err) return done(err);
-        // res.content.should.equal('abbbz');
+
+        res.length.should.equal(3);
+        res.forEach(function (ele) {
+          ele.content.should.match(/AAA|BBB|CCC|DDD|EEE/);
+        });
+
         done();
       });
     });

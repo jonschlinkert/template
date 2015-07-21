@@ -7,6 +7,7 @@ var app = new App();
 
 app.engine('*', require('engine-lodash'));
 
+
 var Views = app.get('Views');
 // save original `set` method to use later
 var set = Views.prototype.set;

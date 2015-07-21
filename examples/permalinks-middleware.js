@@ -37,10 +37,10 @@ app.create('page', { loaderType: 'sync' });
 /**
  * Load
  */
-app.pages('a.hbs', {path: 'a.hbs', name: 'aaa', content: '<%= name %>'})
-  .pages('b', {path: 'b.hbs', name: 'bbb', content: '<%= name %>'})
-  .pages('c', {path: 'c.hbs', name: 'ccc', content: '<%= name %>'})
-  .pages('d', {path: 'd.hbs', name: 'ddd', content: '<%= name %>'})
+app.page('a.hbs', {path: 'a.hbs', name: 'aaa', content: '<%= name %>'})
+  .page('b', {path: 'b.hbs', name: 'bbb', content: '<%= name %>'})
+  .page('c', {path: 'c.hbs', name: 'ccc', content: '<%= name %>'})
+  .page('d', {path: 'd.hbs', name: 'ddd', content: '<%= name %>'})
 
 
 var page = app.pages.get('a.hbs')

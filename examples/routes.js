@@ -4,11 +4,6 @@ var App = require('..');
 var app = new App();
 
 
-app.onLoad(/\.tmpl/, function (file, next) {
-  file.content = file.content.toUpperCase();
-  next();
-});
-
 app.preRender(/\.tmpl/, function (file, next) {
   file.content = 'pre - ' + file.content;
   next();
@@ -38,7 +33,7 @@ app.pages('b.tmpl', {path: 'b.tmpl', content: '<%= name %>', name: 'bbb'});
 app.pages('c.tmpl', {path: 'c.tmpl', content: '<%= name %>', name: 'ccc'});
 app.pages('d.tmpl', {path: 'd.tmpl', content: '<%= name %>', name: 'ddd'})
   .use(function (views, options, loaders) {
-    // console.log(arguments)
+    console.log(arguments)
   })
 
 app.pages.get('a.tmpl')

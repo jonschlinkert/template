@@ -8,7 +8,8 @@ app.engine('*', require('engine-lodash'));
 /**
  * Create
  */
-app.create('page', { loaderType: 'sync' });
+app.create('page');
+app.create('post');
 
 /**
  * Load
@@ -44,20 +45,20 @@ app.asyncHelper('snippet', function (key, options, cb) {
 });
 
 
-app.posts('src/*.md'); // 2015-JUN-29-something.md
-app.indices('posts', options); // 2015.html, 2015/JUN.html
-app.preRender(':year.html', middleware(options));
-app.preRender(':year/:month.html', fn);
+app.posts('blog/src/*.md'); // 2015-JUN-29-something.md
+// app.indices('posts', options); // 2015.html, 2015/JUN.html
+// app.preRender(':year.html', middleware(options));
+// app.preRender(':year/:month.html', fn);
 
 var pagination = app.pages.get('*.xml')
-  .paginate(function (view) {
-    console.log('view:', view)
-  })
+  // .paginate(function (view) {
+  //   console.log('view:', view)
+  // })
 
-var pagination = app.pages.paginate(function (view) {
-  console.log('view:', view)
-})
+// var pagination = app.pages.paginate(function (view) {
+//   console.log('view:', view)
+// })
 
-var pagination = app.paginate('pages', function (view) {
-  console.log('view:', view)
-});
+// var pagination = app.paginate('pages', function (view) {
+//   console.log('view:', view)
+// });

@@ -16,7 +16,7 @@ app.create('page', { loaderType: 'sync' });
 app.pages('a.tmpl', {
     path: 'a.tmpl',
     title: 'aaa',
-    content: '<%= title %>'
+    content: 'before <%= title %> after'
   })
   .pages('b', {
     path: 'b.tmpl',
@@ -33,12 +33,7 @@ app.pages('a.tmpl', {
     title: 'ddd',
     content: '<%= title %>'
   })
-  .compile('a.tmpl');
-  // .render('a.tmpl', function (err, res) {
-  //   if (err) return console.log(err);
-  //   console.log(res);
-  // });
-
-var page = app.pages.get('a.tmpl');
-
-console.log(page.fn)
+  .render('a.tmpl', function (err, res) {
+    if (err) return console.log(err);
+    console.log(res.content);
+  });

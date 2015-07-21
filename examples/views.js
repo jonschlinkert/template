@@ -4,21 +4,15 @@ var App = require('..');
 var app = new App();
 
 /**
- * Loader
- */
-app.iterator('sync', require('iterator-sync'));
-app.loader('sync', function (key, value) {
-  return (this[key] = value);
-});
-
-/**
  * Create
  */
-app.create('page', { loaderType: 'sync' });
+
+app.create('page');
 
 /**
  * Load
  */
+
 app.pages('a', {path: 'a', content: 'aaa...'});
 app.pages('b', {path: 'b', content: 'bbb...'});
 app.pages('c', {path: 'c', content: 'ccc...'});
@@ -38,6 +32,7 @@ var pages = app.pages('e', {path: 'e', content: 'eee...'})
   //   return /^c/.test(key);
   // })
   .value()
+
 
 var pages2 = app.pages.filter(function (val, key, views) {
     return /^[a-f]/.test(key);

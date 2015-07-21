@@ -4,17 +4,9 @@ var App = require('..');
 var app = new App();
 
 /**
- * Loader
- */
-app.iterator('sync', require('iterator-sync'));
-app.loader('view', function (key, value) {
-  return (this[key] = value);
-});
-
-/**
  * Create
  */
-app.create('page', { loaderType: 'sync' });
+app.create('page');
 
 /**
  * Collection plugins

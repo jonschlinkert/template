@@ -52,14 +52,11 @@ app.pages('a.tmpl', {
   })
 
 
-// var sorted = app.pages.sortBy('locals.foo');
-// var sorted = app.pages.sortBy('locals.foo', function (view, prop) {
-
-// });
+var foo = app.pages.sortBy('locals.foo');
+console.log(foo)
 
 var sorted = app.pages.sortBy(function (view) {
   return get(view, 'data.date');
 });
 
-console.log(sorted)
 

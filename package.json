@@ -63,7 +63,7 @@
     "object.omit": "^1.1.0",
     "object.pick": "^1.1.1",
     "object.reduce": "^0.1.7",
-    "parse-filepath": "^0.6.0",
+    "parse-filepath": "^0.6.2",
     "recent": "^0.1.0",
     "relative-dest": "^0.1.0",
     "set-value": "^0.2.0",

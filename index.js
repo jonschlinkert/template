@@ -509,7 +509,7 @@ Template.prototype = Emitter({
     function setLayout(val) {
       val.data = val.data || {};
       val.locals = val.locals || {};
-      val.layout = val.layout || val.locals.layout || val.data.layout;
+      val.layout = val.layout || val.data.layout || val.locals.layout;
       return val;
     }
 
@@ -522,6 +522,8 @@ Template.prototype = Emitter({
         }
       }
     }
+
+    setLayout(view);
 
     // get the name of the first layout
     var name = view.layout;

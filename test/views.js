@@ -284,16 +284,16 @@ describe('Views', function () {
     Object.keys(views).should.eql(['bang', 'bar', 'baz', 'foo']);
   });
 
-  it('should sort the items a property', function () {
+  it('should sort the items by a property', function () {
     var views = new Views(createOptions());
-    views.set('foo', createView({path: 'a-foo', content: 'foo'}, {collection: views}));
-    views.set('bar', createView({path: 'y-bar', content: 'bar'}, {collection: views}));
-    views.set('baz', createView({path: 'x-baz', content: 'baz'}, {collection: views}));
-    views.set('bang', createView({path: 'w-bang', content: 'bang'}, {collection: views}));
+    views.set('foo', createView({name: 'a-foo', path: 'a-foo.hbs', content: 'foo'}, {collection: views}));
+    views.set('bar', createView({name: 'y-bar', path: 'y-bar.hbs', content: 'bar'}, {collection: views}));
+    views.set('baz', createView({name: 'x-baz', path: 'x-baz.hbs', content: 'baz'}, {collection: views}));
+    views.set('bang', createView({name: 'w-bang', path: 'w-bang.hbs', content: 'bang'}, {collection: views}));
     Object.keys(views).should.eql(['foo', 'bar', 'baz', 'bang']);
 
     views.sortBy('name');
-    Object.keys(views).should.eql(['bang', 'bar', 'baz', 'foo']);
+    Object.keys(views).should.eql(['foo', 'bang', 'baz', 'bar']);
   });
 
   it('should be chainable', function () {

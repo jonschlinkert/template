@@ -172,8 +172,8 @@ describe('List', function () {
     list.set('foo', 'bar');
     list.set('bar', 'baz');
     list.set('baz', 'bang');
-    var keys = ['foo', 'bar', 'baz'];
-    var vals = ['bar', 'baz', 'bang'];
+    var keys = ['items', 'foo', 'bar', 'baz'];
+    var vals = [list.items, 'bar', 'baz', 'bang'];
     list.forOwn(function (val, key) {
       var expectedKey = keys.shift();
       var expectedVal = vals.shift();
@@ -187,7 +187,7 @@ describe('List', function () {
     list.set('foo', 'bar');
     list.set('bar', 'baz');
     list.set('baz', 'bang');
-    var keys = ['foo', 'bar', 'baz'];
+    var keys = ['items', 'foo', 'bar', 'baz'];
     var len = keys.length
       + Object.keys(List.prototype).length
       + Object.keys(Base.prototype).length;

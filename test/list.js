@@ -49,8 +49,8 @@ describe('List', function () {
       };
     };
 
-    var bar1 = list.cache('foo', foo('bar1'));
-    var bar2 = list.cache('foo', foo('bar2'));
+    var bar1 = list.fragmentCache('foo', foo('bar1'));
+    var bar2 = list.fragmentCache('foo', foo('bar2'));
     assert.equal(bar1, 'bar1');
     assert.equal(bar2, 'bar1');
     assert.equal(bar2, bar1);

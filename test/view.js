@@ -35,7 +35,7 @@ describe('View', function () {
     assert.deepEqual(view._cache, {});
   });
 
-  it('should cache a function call', function () {
+  it('fragmentCache should cache a function call', function () {
     var view = new View(createView(), createOptions());
     function foo (bar) {
       return function () {
@@ -43,8 +43,8 @@ describe('View', function () {
       };
     };
 
-    var bar1 = view.cache('foo', foo('bar1'));
-    var bar2 = view.cache('foo', foo('bar2'));
+    var bar1 = view.fragmentCache('foo', foo('bar1'));
+    var bar2 = view.fragmentCache('foo', foo('bar2'));
     assert.equal(bar1, 'bar1');
     assert.equal(bar2, 'bar1');
     assert.equal(bar2, bar1);

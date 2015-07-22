@@ -37,7 +37,7 @@ describe('Item', function () {
     assert.equal(item.hasOwnProperty('_cache'), true);
   });
 
-  it('should cache a function call', function () {
+  it('fragmentCache should cache a function call', function () {
     var item = new Item();
     function foo (bar) {
       return function () {
@@ -45,8 +45,8 @@ describe('Item', function () {
       };
     };
 
-    var bar1 = item.cache('foo', foo('bar1'));
-    var bar2 = item.cache('foo', foo('bar2'));
+    var bar1 = item.fragmentCache('foo', foo('bar1'));
+    var bar2 = item.fragmentCache('foo', foo('bar2'));
     assert.equal(bar1, 'bar1');
     assert.equal(bar2, 'bar1');
     assert.equal(bar2, bar1);

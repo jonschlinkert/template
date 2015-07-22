@@ -39,7 +39,7 @@ describe('Views', function () {
     assert.equal(views.hasOwnProperty('_cache'), true);
   });
 
-  it('should cache a function call', function () {
+  it('fragmentCache should cache a function call', function () {
     var views = new Views(createOptions());
     function foo (bar) {
       return function () {
@@ -47,8 +47,8 @@ describe('Views', function () {
       };
     };
 
-    var bar1 = views.cache('foo', foo('bar1'));
-    var bar2 = views.cache('foo', foo('bar2'));
+    var bar1 = views.fragmentCache('foo', foo('bar1'));
+    var bar2 = views.fragmentCache('foo', foo('bar2'));
     assert.equal(bar1, 'bar1');
     assert.equal(bar2, 'bar1');
     assert.equal(bar2, bar1);

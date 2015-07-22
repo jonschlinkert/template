@@ -46,10 +46,10 @@ describe('Collection', function () {
       return function () {
         return bar;
       };
-    };
+    }
 
-    var bar1 = collection.cache('foo', foo('bar1'));
-    var bar2 = collection.cache('foo', foo('bar2'));
+    var bar1 = collection.fragmentCache('foo', foo('bar1'));
+    var bar2 = collection.fragmentCache('foo', foo('bar2'));
     assert.equal(bar1, 'bar1');
     assert.equal(bar2, 'bar1');
     assert.equal(bar2, bar1);

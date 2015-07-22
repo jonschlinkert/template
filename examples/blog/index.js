@@ -34,7 +34,9 @@ app.onLoad(/\.(hbs|md)$/, function (view, next) {
 });
 
 app.onLoad(/_posts\/.*\.md$/, function (view, next) {
-  var data = parseDate(view.data.date || path.basename(view.path));
+  var basename = path.basename(view.path);
+  var data = parseDate(view.data.date || basename);
+
   if (!data) return next();
 
   view.data = view.data || {};
@@ -42,6 +44,7 @@ app.onLoad(/_posts\/.*\.md$/, function (view, next) {
   view.data.year = data.year;
   view.data.month = data.month;
   view.data.day = data.day;
+  view.data.src.basename = basename;
   next();
 });
 
@@ -204,6 +207,8 @@ function getDateGroup (date) {
   return groups;
 }
 
+list.set('foo', val)
+
 var list = app.lists.get('archives');
 var tagsList = app.lists.get('tags');
 var categoriesList = app.lists.get('categories');
@@ -216,44 +221,80 @@ var groupStructures = [
 
 var dateRe = /^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?/;
 
+
+var tags = app.posts.get('foo.md')
+  .get('data.tags');
+
+
+var list = app.posts
+  .createList('tags')
+  .paginate()
+
+
+var groupCategories = app.posts
+  .createList('categories')
+  .groupBy('data.categories', groupTags);
+
+
+
+function createIndices(view, category) {
+
+}
+
+Object.keys(groupCategories).forEach(function (categoryKey) {
+  createIndices(view, groupCategories[categoryKey]);
+})
+
+
+
+
 /**
  * Generate navtree
  */
 
 function navTree (collection, prop) {
   var list = app[collection].list(prop);
-
   var tree = {};
-  list.groupBy(prop, function (categories) {
 
-    if (typeof categories === 'object') {
-      return Object.keys(categories);
-    }
-  }, function (err, categoryGroups) {
-    var keys = Object.keys(categoryGroups);
+  console.log(prop);
+  var groups = list.groupBy(prop);
+  console.log(groups)
 
-    keys.forEach(function (category) {
-      tree[category] = {
-        permalink: categoriesList.permalink('/categories/:category.html', {
-          category: category
-        })
-      };
+  // group.items.forEach(function (items) {
+  //   items.forEach(function (item) {
 
-      var group = categoryGroups[category];
-      group.groupBy(prop, function (categories) {
-        return categories[category];
-      }, function (err, tags) {
-        tree[category].tags = {};
-        Object.keys(tags).forEach(function (key) {
-          tree[category].tags[key] = {
-            permalink: tagsList.permalink('/tags/:tag.html', {
-              tag: key
-            })
-          };
-        });
-      });
-    });
-  });
+  //   });
+  // });
+
+  // list.groupBy(prop, function (categories) {
+  //   if (typeof categories === 'object') {
+  //     return Object.keys(categories);
+  //   }
+  // }, function (err, categoryGroups) {
+    // var keys = Object.keys(categoryGroups);
+
+    // keys.forEach(function (category) {
+    //   tree[category] = {
+    //     permalink: categoriesList.permalink('/categories/:category.html', {
+    //       category: category
+    //     })
+    //   };
+
+    //   var group = categoryGroups[category];
+    //   group.groupBy(prop, function (categories) {
+    //     return categories[category];
+    //   }, function (err, tags) {
+    //     tree[category].tags = {};
+    //     Object.keys(tags).forEach(function (key) {
+    //       tree[category].tags[key] = {
+    //         permalink: tagsList.permalink('/tags/:tag.html', {
+    //           tag: key
+    //         })
+    //       };
+    //     });
+    //   });
+    // });
+  // });
   return tree;
 }
 
@@ -261,58 +302,58 @@ function navTree (collection, prop) {
 /**
  * Data
  */
-
-app.data({sidenav: navTree('posts', 'categories'), dest: {base: 'blog'} });
+navTree('posts', 'data.categories')
+// app.data({sidenav: navTree('posts', 'categories'), dest: {base: 'blog'} });
 
 
 /**
  * Generate posts
  */
 
-app.posts.forOwn(function (post, key) {
-  var basename = path.basename(key, path.extname(key));
-  // remove date from basename
-  var permalink = post.permalink({key: basename.slice(11)});
+// app.posts.forOwn(function (post, key) {
+//   var basename = path.basename(key, path.extname(key));
+//   // remove date from basename
+//   var permalink = post.permalink({key: basename.slice(11)});
 
-  post.render({permalink: permalink}, function (err, res) {
-    if (err) return console.error(err);
-    writeDest(res, '_site/blog', permalink);
-  });
-});
+//   post.render({permalink: permalink}, function (err, res) {
+//     if (err) return console.error(err);
+//     writeDest(res, '_site/blog', permalink);
+//   });
+// });
 
 
-app.posts.list('date')
-  .groupBy('data.date', getDateGroup, function (err, groups) {
-    console.log(groups)
-    var keys = Object.keys(groups);
-    keys.reverse();
-    keys.forEach(function (key) {
-      var group = groups[key];
-      var m = dateRe.exec(key) || [];
-      var data = {
-        year: m[1],
-        month: m[2],
-        day: m[3]
-      };
+// app.posts.list('date')
+//   .groupBy('data.date', getDateGroup, function (err, groups) {
+//     console.log(groups)
+//     var keys = Object.keys(groups);
+//     keys.reverse();
+//     keys.forEach(function (key) {
+//       var group = groups[key];
+//       var m = dateRe.exec(key) || [];
+//       var data = {
+//         year: m[1],
+//         month: m[2],
+//         day: m[3]
+//       };
 
-      var structure = groupStructures[key.split('-').length - 1];
-      // console.log('==== ' + key + ' (' + structure + ') ====');
-      group.paginate(list, {limit: 2}, function (err, pages) {
-        pages.forEach(function (page) {
-          console.log(group);
-          data = extend({}, page.data.pagination, data);
-          var permalink = page.permalink(structure, data);
-          page.render({slug: key, permalink: permalink}, function (err, res) {
-            if (err) return console.error(err);
-            writeDest(res, '_site/blog/archives', permalink);
-          });
-        });
-      });
-    });
-  });
+//       var structure = groupStructures[key.split('-').length - 1];
+//       // console.log('==== ' + key + ' (' + structure + ') ====');
+//       group.paginate(list, {limit: 2}, function (err, pages) {
+//         pages.forEach(function (page) {
+//           console.log(group);
+//           data = extend({}, page.data.pagination, data);
+//           var permalink = page.permalink(structure, data);
+//           page.render({slug: key, permalink: permalink}, function (err, res) {
+//             if (err) return console.error(err);
+//             writeDest(res, '_site/blog/archives', permalink);
+//           });
+//         });
+//       });
+//     });
+//   });
 
-function writeDest(file, destBase, permalink) {
-  var dest = path.join(destBase, permalink);
-  // console.log('writing:', dest);
-  // write.sync(dest, file.content);
-}
+// function writeDest(file, destBase, permalink) {
+//   var dest = path.join(destBase, permalink);
+//   // console.log('writing:', dest);
+//   // write.sync(dest, file.content);
+// }

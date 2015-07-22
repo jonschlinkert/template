@@ -366,10 +366,12 @@ describe('List', function () {
       return Object.keys(categories);
     });
 
-    assert.equal(categoryGroups.items.length, 4);
-    assert.deepEqual(categoryGroups.keyMap, {'one': 0, 'two': 1, 'three': 2, 'four': 3});
+    var categoryKeys = Object.keys(categoryGroups);
+    assert.equal(categoryKeys.length, 4);
+    assert.deepEqual(categoryKeys, ['one', 'two', 'three', 'four']);
 
-    categoryGroups.forEach(function (category, i) {
+    categoryKeys.forEach(function (key, i) {
+      var category = categoryGroups[key];
       switch (i) {
         case 0:
           assert.equal(category.items.length, 3);
@@ -456,10 +458,12 @@ describe('List', function () {
       if (categories == null) return;
       return Object.keys(categories);
     });
-    assert.equal(categoryGroups.items.length, 4);
-    assert.deepEqual(categoryGroups.keyMap, {'one': 0, 'two': 1, 'three': 2, 'four': 3});
+    var categoryKeys = Object.keys(categoryGroups);
+    assert.equal(categoryKeys.length, 4);
+    assert.deepEqual(categoryKeys, ['one', 'two', 'three', 'four']);
 
-    categoryGroups.forEach(function (category, i) {
+    categoryKeys.forEach(function (key, i) {
+      var category = categoryGroups[key];
       var pages = category.paginate(view, {limit: 2});
       pages.forEach(function (page) {
         page.data.pagination.forEach(function (post) {

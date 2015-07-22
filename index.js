@@ -89,7 +89,12 @@ utils.delegate(Template.prototype, {
     this.cache.context = {};
     this.views = {};
     this.stash = {};
+
+    this.set('Item', require('./lib/item'));
+    this.set('View', require('./lib/view'));
+    this.set('List', require('./lib/list'));
     this.set('Views', require('./lib/views'));
+    this.set('Collection', require('./lib/collection'));
 
     this.viewTypes = {
       layout: [],
@@ -360,18 +365,6 @@ utils.delegate(Template.prototype, {
     helpers.collection(this, views, opts);
     helpers.view(this, views, opts);
     return this;
-  },
-
-  /**
-   * Create a new collection with the given `name` and `items.`
-   *
-   * @param  {String} `name`
-   * @return {String}
-   * @api private
-   */
-
-  collection: function(name, items) {
-    return (this.collections[name] = new Collection(items));
   },
 
   /**

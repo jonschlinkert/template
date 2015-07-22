@@ -1,0 +1,14 @@
+<ul class="pager {{modifier}}">
+  {{#is pagination.currentPage 1}}
+    <li class="pager-heading">POPULAR</li>
+  {{/is}}
+  {{#isnt pagination.currentPage 1}}
+    <li class="previous"><a href="{{relative page.dest prev.dest}}">&larr; Previous</a></li>
+  {{/isnt}}
+  {{#isnt pagination.currentPage pagination.totalPages}}
+    <li class="next"><a href="{{relative page.dest next.dest}}">Next &rarr;</a></li>
+  {{/isnt}}
+  {{#is pagination.currentPage pagination.totalPages}}
+    <li class="next disabled"><a href="{{relative page.dest next.dest}}">Next &rarr;</a></li>
+  {{/is}}
+</ul>

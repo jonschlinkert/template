@@ -18,6 +18,7 @@ function renameKey (fp) {
 
 app.engine('hbs', require('engine-handlebars'));
 app.engine('md', require('engine-handlebars'));
+app.data({title: 'My Blog!!!', site: {name: 'Foooo'}});
 
 /**
  * Need to get the frontmatter from the contents.
@@ -33,16 +34,33 @@ app.onLoad(/\.(hbs|md)$/, function (view, next) {
 });
 
 app.onLoad(/_posts\/.*\.md$/, function (view, next) {
-  var re = /^(\d{4})-(\d{2})-(\d{2})/;
-  var m = re.exec(view.data.date || path.basename(view.path));
-  if (!m) return next();
+  var data = parseDate(view.data.date || path.basename(view.path));
+  if (!data) return next();
 
-  view.data.date = m[0];
-  view.data.year = m[1];
-  view.data.month = m[2];
-  view.data.day = m[3];
+  view.data = view.data || {};
+  view.data.date = data.date;
+  view.data.year = data.year;
+  view.data.month = data.month;
+  view.data.day = data.day;
   next();
 });
+
+function parseDate(str, strict) {
+  // var re = /^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?/;
+  // if (strict) re = /^(\d{4})-(\d{2})-(\d{2})/;
+  var re = /^(\d{4})-(\d{2})-(\d{2})/;
+
+  var match = re.exec(str);
+  if (!match) return null;
+
+  var data = {};
+  data.date = match[0];
+  data.year = match[1];
+  data.month = match[2];
+  data.day = match[3];
+  return data;
+}
+
 
 /**
  * Register a custom async template helper for adding includes
@@ -57,7 +75,8 @@ app.asyncHelper('include', function (name, locals, options, cb) {
   var view = app.includes.get(name);
   locals = extend({}, locals, view.data);
   view.render(locals, function (err, res) {
-    cb(err, res.content);
+    if (err) return cb(err)
+    cb(null, res.content);
   });
 });
 
@@ -65,8 +84,30 @@ app.helper('date_to_string', function () {
   return ''
 });
 
+// app.helper('markdown', require('helper-markdown'));
+app.helper('unless', function (a, b) {
+  return !!a ? a : b;
+});
+
+app.helper('relative', function (a, b) {
+  return path.relative(a, b);
+});
+
+app.helper('extend', function (a, b) {
+  return extend(a, b);
+});
+
 app.helper('is', function () {
   return ''
+});
+
+app.helper('pager', function () {
+  return ''
+});
+
+app.helper('_log', function (msg) {
+  // console.log(msg);
+  return '';
 });
 
 /**
@@ -99,9 +140,6 @@ app.posts('src/_posts/*.md');
 app.layouts('src/_layouts/*.hbs');
 app.includes('src/_includes/*.hbs');
 
-// console.log(Object.keys(app.views.includes));
-// process.exit();
-
 /**
  * Load index pages for `posts`
  */
@@ -113,6 +151,7 @@ app.lists('archives.hbs', {
     '  <h1>{{pagination.collection}}</h1>',
     '  <h2>{{slug}}</h2>',
     '',
+    '    {{_log pagination}}',
     '  {{#each pagination.items}}',
     '    <h3>{{data.title}}</h3>',
     '  {{/each}}',
@@ -177,111 +216,103 @@ var groupStructures = [
 
 var dateRe = /^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?/;
 
-function navTree (collection, prop) {
-  var tree = {};
-  prop = ['data', prop].join('.');
-  app[collection]
-    .groupBy(prop, function (categories) {
-      if (typeof categories === 'object') {
-        return Object.keys(categories);
-      }
-    }, function (err, categoryGroups) {
-      var keys = Object.keys(categoryGroups);
-      keys.forEach(function (category) {
-        tree[category] = {
-          permalink: categoriesList.permalink('/categories/:category.html', {category: category})
-        };
-        var group = categoryGroups[category];
+/**
+ * Generate navtree
+ */
 
-        group.groupBy(prop, function (categories) {
-          return categories[category];
-        }, function (err, tags) {
-          tree[category].tags = {};
-          Object.keys(tags).forEach(function (key) {
-            tree[category].tags[key] = {
-              permalink: tagsList.permalink('tags/:tag.html', {tag: key})
-            };
-          });
-          // console.log(category, Object.keys(tags));
-          // console.log();
-          // console.log(tags);
+function navTree (collection, prop) {
+  var list = app[collection].list(prop);
+
+  var tree = {};
+  list.groupBy(prop, function (categories) {
+
+    if (typeof categories === 'object') {
+      return Object.keys(categories);
+    }
+  }, function (err, categoryGroups) {
+    var keys = Object.keys(categoryGroups);
+
+    keys.forEach(function (category) {
+      tree[category] = {
+        permalink: categoriesList.permalink('/categories/:category.html', {
+          category: category
+        })
+      };
+
+      var group = categoryGroups[category];
+      group.groupBy(prop, function (categories) {
+        return categories[category];
+      }, function (err, tags) {
+        tree[category].tags = {};
+        Object.keys(tags).forEach(function (key) {
+          tree[category].tags[key] = {
+            permalink: tagsList.permalink('/tags/:tag.html', {
+              tag: key
+            })
+          };
         });
       });
     });
+  });
   return tree;
 }
 
-var tree = navTree('posts', 'categories');
-console.log(JSON.stringify(tree, null, 2));
+
+/**
+ * Data
+ */
+
+app.data({sidenav: navTree('posts', 'categories'), dest: {base: 'blog'} });
 
 
-// app.posts.forOwn(function (post, key) {
-//   var base = path.basename(key, path.extname(key));
-//   var name = base.slice(11);
-//   var permalink = post.permalink({key: name});
-//   post.render({permalink: permalink}, function (err, res) {
-//     if (err) return console.error(err);
-//     writeDest(res, '_site/blog', permalink);
-//   });
-// });
+/**
+ * Generate posts
+ */
 
-// app.posts
-//   .groupBy('data.date', getDateGroup, function (err, groups) {
-//     var keys = Object.keys(groups);
-//     keys.reverse();
-//     keys.forEach(function (key) {
-//       var group = groups[key];
-//       var m = dateRe.exec(key);
-//       var data = {
-//         year: m[1],
-//         month: m[2],
-//         day: m[3]
-//       };
-//       var structure = groupStructures[key.split('-').length - 1];
-//       console.log('==== ' + key + ' (' + structure + ') ====');
-//       group.paginate(list, {limit: 2}, function (err, pages) {
-//         pages.forEach(function (page) {
-//           // console.log(group);
-//           var permalink = page.permalink(structure, extend({}, page.data.pagination, data));
-//           page.render({slug: key, permalink: permalink}, function (err, res) {
-//             if (err) return console.error(err);
-//             // console.log(res);
-//             writeDest(res, '_site/blog/archives', permalink);
-//           });
-//         });
-//         console.log('=====================');
-//         console.log();
-//       });
-//     });
-//   });
+app.posts.forOwn(function (post, key) {
+  var basename = path.basename(key, path.extname(key));
+  // remove date from basename
+  var permalink = post.permalink({key: basename.slice(11)});
+
+  post.render({permalink: permalink}, function (err, res) {
+    if (err) return console.error(err);
+    writeDest(res, '_site/blog', permalink);
+  });
+});
+
+
+app.posts.list('date')
+  .groupBy('data.date', getDateGroup, function (err, groups) {
+    console.log(groups)
+    var keys = Object.keys(groups);
+    keys.reverse();
+    keys.forEach(function (key) {
+      var group = groups[key];
+      var m = dateRe.exec(key) || [];
+      var data = {
+        year: m[1],
+        month: m[2],
+        day: m[3]
+      };
+
+      var structure = groupStructures[key.split('-').length - 1];
+      // console.log('==== ' + key + ' (' + structure + ') ====');
+      group.paginate(list, {limit: 2}, function (err, pages) {
+        pages.forEach(function (page) {
+          console.log(group);
+          data = extend({}, page.data.pagination, data);
+          var permalink = page.permalink(structure, data);
+          page.render({slug: key, permalink: permalink}, function (err, res) {
+            if (err) return console.error(err);
+            writeDest(res, '_site/blog/archives', permalink);
+          });
+        });
+      });
+    });
+  });
 
 function writeDest(file, destBase, permalink) {
-  console.log('writing...');
   var dest = path.join(destBase, permalink);
-  write.sync(dest, file.content);
+  // console.log('writing:', dest);
+  // write.sync(dest, file.content);
 }
-
-// function writeDest(file, srcBase, destBase) {
-//   var re = new RegExp('^' + srcBase);
-//   var base = file.path.replace(re, '');
-//   var name = path.basename(base, path.extname(base));
-//   var dir = path.dirname(base);
-
-//   console.log('writing...');
-//   var dest = path.join(destBase, dir, name + '.hbs');
-//   write.sync(dest, file.content);
-// }
-
-// assemble.create('list');
-// assemble.lists('src/templates/lists/*.hbs');
-// var postList = assemble.lists.get('post-list');
-
-// assemble.create('post');
-// assemble.posts('/src/templates/posts/*.md');
-
-// assemble.posts.sortBy('data.title')
-//   .paginate(postList, { limit: 5 })
-//   .pipe(assemble.permalinks())
-//   .pipe(assemble.render())
-//   .pipe(assemble.dest('/blog'));
-

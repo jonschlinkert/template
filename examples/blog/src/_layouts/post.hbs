@@ -2,20 +2,31 @@
 layout: default
 ---
 
+{{pager pagination modifier="pager-justified"}}
+
 <div class="post">
   <h1 class="post-title">{{ title }}</h1>
   <span class="post-date">{{date_to_string page.date}}</span>
 
   {{> tweet-button }}
 
+{{#markdown}}
   {% body %}
+{{/markdown}}
 </div>
 
-<div class="related">
-  <h2>Related Posts</h2>
-  <ul class="related-posts">
-    {{#related_posts}}
 
+<div class="posts">
+  <h2>Categories</h2>
+  <ul class="posts-categories">
+    {{#each sidenav}}
+      {{> sidenav this }}
+    {{/each}}
+  </ul>
+
+  <h2>Related Posts</h2>
+  <ul class="posts-related">
+    {{#related_posts}}
       <li>
         <h3>
           <a href="{{ this.url }}">
@@ -24,7 +35,6 @@ layout: default
           </a>
         </h3>
       </li>
-    
 {{/related_posts}}
   </ul>
 </div>

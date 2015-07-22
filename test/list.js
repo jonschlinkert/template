@@ -349,18 +349,23 @@ describe('List', function () {
   });
 
   it('should group the items by a property', function () {
+    // instantiate `Collection`, so we can borrow collection methods in list items
     var collection = new Collection();
     var list = new List();
-    list.item('post-1.md', createItem({categories: {one: ['A']}, name: 'Post 1', content: 'Post 1'}, {collection: collection}));
-    list.item('post-2.md', createItem({categories: {one: ['A'], two: ['B', 'C']}, name: 'Post 2', content: 'Post 2'}, {collection: collection}));
-    list.item('post-3.md', createItem({categories: {one: ['B'], two: ['C', 'D']}, name: 'Post 3', content: 'Post 3'}, {collection: collection}));
-    list.item('post-4.md', createItem({categories: {three: ['B'], four: ['E', 'F', 'G']}, name: 'Post 4', content: 'Post 4'}, {collection: collection}));
-    list.item('post-5.md', createItem({categories: {four: ['C', 'F']}, name: 'Post 5', content: 'Post 5'}, {collection: collection}));
-    list.item('post-6.md', createItem({categories: {four: ['F', 'G']}, name: 'Post 6', content: 'Post 6'}, {collection: collection}));
+    var opts = {collection: collection};
+
+    list.item('post-1.md', createItem({categories: {one: ['A']}, name: 'Post 1', content: 'Post 1'}, opts));
+    list.item('post-2.md', createItem({categories: {one: ['A'], two: ['B', 'C']}, name: 'Post 2', content: 'Post 2'}, opts));
+    list.item('post-3.md', createItem({categories: {one: ['B'], two: ['C', 'D']}, name: 'Post 3', content: 'Post 3'}, opts));
+    list.item('post-4.md', createItem({categories: {three: ['B'], four: ['E', 'F', 'G']}, name: 'Post 4', content: 'Post 4'}, opts));
+    list.item('post-5.md', createItem({categories: {four: ['C', 'F']}, name: 'Post 5', content: 'Post 5'}, opts));
+    list.item('post-6.md', createItem({categories: {four: ['F', 'G']}, name: 'Post 6', content: 'Post 6'}, opts));
+
     var categoryGroups = list.groupBy('categories', function (categories) {
       if (categories == null) return;
       return Object.keys(categories);
     });
+
     assert.equal(categoryGroups.items.length, 4);
     assert.deepEqual(categoryGroups.keyMap, {'one': 0, 'two': 1, 'three': 2, 'four': 3});
 
@@ -403,6 +408,8 @@ describe('List', function () {
     list.item('post-5.md', createItem({categories: {four: ['C', 'F']}, name: 'Post 5', content: 'Post 5'}, {collection: collection}));
     list.item('post-6.md', createItem({categories: {four: ['F', 'G']}, name: 'Post 6', content: 'Post 6'}, {collection: collection}));
     list.item('post-7.md', createItem({categories: {four: ['F', 'G']}, name: 'Post 7', content: 'Post 7'}, {collection: collection}));
+
+
     var pages = list.paginate(view, {limit: 2});
     assert.equal(pages.items.length, 4);
     assert.deepEqual(pages.keyMap, {'page-1': 0, 'page-2': 1, 'page-3': 2, 'page-4': 3});

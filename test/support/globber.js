@@ -1,7 +1,6 @@
 'use strict';
 
 var fs = require('fs');
-var _ = require('lodash');
 var path = require('path');
 var mm = require('micromatch');
 var isGlob = require('is-glob');

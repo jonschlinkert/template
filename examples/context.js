@@ -1,8 +1,6 @@
 'use strict';
 
 /* deps: mocha */
-var assert = require('assert');
-var should = require('should');
 var extend = require('extend-shallow');
 var matter = require('parser-front-matter');
 var App = require('..');

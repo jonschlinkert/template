@@ -177,7 +177,7 @@ describe('View', function () {
     assert.equal(typeof clone.baz, 'undefined');
   });
 
-  it('should iterator over `own` keys on object using forOwn', function () {
+  it('should iterate over `own` keys on object using forOwn', function () {
     var view = new View(createView(), createOptions());
     view.set('foo', 'bar');
     view.set('bar', 'baz');
@@ -192,7 +192,7 @@ describe('View', function () {
     });
   });
 
-  it('should iterator over all keys on object using forIn', function () {
+  it('should iterate over all keys on object using forIn', function () {
     var view = new View(createView(), createOptions());
     view.set('foo', 'bar');
     view.set('bar', 'baz');

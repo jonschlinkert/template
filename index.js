@@ -4,21 +4,32 @@
 
 var path = require('path');
 var typeOf = require('kind-of');
-var forOwn = require('for-own');
-var router = require('en-route');
-var visit = require('object-visit');
-var layouts = require('layouts');
-var Emitter = require('component-emitter');
 var isObject = require('isobject');
 var isGlob = require('is-glob');
 var mixin = require('mixin-object');
 var extend = require('extend-shallow');
-var Loaders = require('loader-cache');
-var inflect = require('inflection');
-var clone = require('clone-deep');
-var get = require('get-value');
-var set = require('set-value');
 
+/**
+ * Lazily required dependencies
+ */
+
+var lazy = require('lazy-cache')(require);
+var LoaderCache = lazy('loader-cache');
+var inflect = lazy('inflection');
+var clone = lazy('clone-deep');
+var visit = lazy('object-visit');
+var mapVisit = lazy('map-visit');
+var forOwn = lazy('for-own');
+var router = lazy('en-route');
+var layouts = lazy('layouts');
+var get = lazy('get-value');
+var set = lazy('set-value');
+
+/**
+ * Local modules
+ */
+
+var Base = require('./lib/base');
 var Collection = require('./lib/collection');
 var engines = require('./lib/engines');
 var loaders = require('./lib/loaders/index');
@@ -37,16 +48,22 @@ function Template(options) {
   if (!(this instanceof Template)) {
     return new Template(options);
   }
-  Emitter.call(this);
+  Base.call(this, options);
   this.options = options || {};
   this.init();
 }
 
 /**
- * Template methods
+ * Inherit `Base`
  */
 
-Template.prototype = Emitter({
+Base.extend(Template);
+
+/**
+ * `Template` prototype methods
+ */
+
+utils.delegate(Template.prototype, {
   constructor: Template,
 
   init: function () {
@@ -106,10 +123,35 @@ Template.prototype = Emitter({
     });
   },
 
+  /**
+   * Assign `value` to `key`.
+   *
+   * ```js
+   * app.set(key, value);
+   * ```
+   *
+   * @param {String} `key`
+   * @param {*} `value`
+   * @return {Object} `app` instance, to enable chaining
+   * @api public
+   */
+
   set: function (key, value) {
     this.cache[key] = value;
     return this;
   },
+
+  /**
+   * Get the value of `key`.
+   *
+   * ```js
+   * app.get(key);
+   * ```
+   *
+   * @param {String} `key`
+   * @return {any}
+   * @api public
+   */
 
   get: function (key) {
     return this.cache[key];
@@ -131,14 +173,14 @@ Template.prototype = Emitter({
           this.compose('data')(key, val);
           return this;
         }
-        return get(this.cache.data, key);
+        return get()(this.cache.data, key);
       }
       if (type === 'object') {
         this.visit('data', key);
         return this;
       }
     }
-    set(this.cache.data, key, val);
+    set()(this.cache.data, key, val);
     this.emit('data', key, val);
     return this;
   },
@@ -153,7 +195,7 @@ Template.prototype = Emitter({
       if (key.indexOf('.') === -1) {
         return this.options[key];
       }
-      return get(this.options, key);
+      return get()(this.options, key);
     }
 
     if (isObject(key)) {
@@ -161,7 +203,7 @@ Template.prototype = Emitter({
       return this;
     }
 
-    set(this.options, key, val);
+    set()(this.options, key, val);
     this.emit('option', key, val);
     return this;
   },
@@ -248,16 +290,23 @@ Template.prototype = Emitter({
 
   lazyLoaders: function() {
     if (typeof this.loaders === 'undefined') {
+      var Loaders = LoaderCache();
       this.loaders = new Loaders(this.options);
     }
   },
 
   /**
-   * Format an error
+   * Delegate loader methods
    */
 
-  error: function(id, msg) {
-    return new Error(this.errors[id] + msg);
+  delegateLoaders: function (methods) {
+    this.lazyLoaders();
+    var loaders = this.loaders, self = this;
+    utils.arrayify(methods).forEach(function (method) {
+      utils.defineProp(self, method, function() {
+        return loaders[method].apply(loaders, arguments);
+      });
+    });
   },
 
   /**
@@ -266,10 +315,10 @@ Template.prototype = Emitter({
 
   create: function (name/*, options, loaders*/) {
     var args = utils.slice(arguments, 1);
-    var opts = clone(args.shift());
+    var opts = clone()(args.shift());
 
-    var single = inflect.singularize(name);
-    var plural = inflect.pluralize(name);
+    var single = inflect().singularize(name);
+    var plural = inflect().pluralize(name);
     this.inflections[single] = plural;
 
     opts.renameKey = opts.renameKey || this.options.renameKey;
@@ -282,10 +331,6 @@ Template.prototype = Emitter({
     var Views = this.get('Views');
     var views = new Views(opts);
     this.viewType(plural, views.viewType());
-
-    views.on('cwd', function (dir) {
-      opts.cwd = dir;
-    });
 
     // init the collection object on `views`
     this.views[plural] = views;
@@ -372,7 +417,7 @@ Template.prototype = Emitter({
    * Add `Router` to the prototype
    */
 
-  Router: router.Router,
+  Router: router().Router,
 
   /**
    * Lazily initalize `router`, to allow options to
@@ -519,8 +564,7 @@ Template.prototype = Emitter({
     var str = view.content;
 
     // apply the layout
-    var res = layouts(str, name, stack, opts);
-    // console.log(res.stack);
+    var res = layouts()(str, name, stack, opts);
     view.option('stack', res.stack);
     view.option('layoutApplied', true);
     view.content = res.result;
@@ -639,7 +683,7 @@ Template.prototype = Emitter({
     return names.reduce(function (acc, name) {
       var collection = this.views[name];
 
-      forOwn(collection, function (view, key) {
+      forOwn()(collection, function (view, key) {
         // handle `onMerge` middleware
         this.handleView('onMerge', view, locals);
 
@@ -667,18 +711,10 @@ Template.prototype = Emitter({
   context: function (view, ctx, locals) {
     var obj = {};
     mixin(obj, ctx);
-
-    // add partials to the context to pass to engines
-    // mixin(ctx, this.cache.context.partials);
     mixin(obj, this.cache.data);
     mixin(obj, view.data);
     mixin(obj, view.locals);
     mixin(obj, locals);
-
-    // var overrides = utils.bindAll(obj.overrides, view);
-
-    // ensure that `overrides` are last
-    // obj = mixin({}, obj, overrides);
     return obj;
   },
 
@@ -701,25 +737,8 @@ Template.prototype = Emitter({
     thisArg.context.view = view;
     thisArg.app = this;
 
-    // replace methods on `view` that usually return the instance
-    // with methods that return a value (to be used as helpers)
-    // var overrides = utils.bindAll(locals.overrides, view);
-
+    // bind template helpers to the instance
     locals.helpers = utils.bindAll(helpers, thisArg);
-  },
-
-  /**
-   * Delegate loader methods
-   */
-
-  delegateLoaders: function (methods) {
-    this.lazyLoaders();
-    var loaders = this.loaders, self = this;
-    utils.arrayify(methods).forEach(function (method) {
-      utils.defineProp(self, method, function() {
-        return loaders[method].apply(loaders, arguments);
-      });
-    });
   },
 
   /**
@@ -750,6 +769,14 @@ Template.prototype = Emitter({
   },
 
   /**
+   * Format an error
+   */
+
+  error: function(id, msg) {
+    return new Error(this.errors[id] + msg);
+  },
+
+  /**
    * Show the properties on the given object or the instance.
    */
 
@@ -770,7 +797,7 @@ Template.prototype = Emitter({
    */
 
   visit: function (method, obj) {
-    visit(this, method, obj);
+    visit()(this, method, obj);
     return this;
   },
 
@@ -779,7 +806,7 @@ Template.prototype = Emitter({
    */
 
   mapVisit: function (method, arr) {
-    utils.mapVisit(this, method, arr);
+    mapVisit()(this, method, arr);
     return this;
   }
 });

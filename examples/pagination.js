@@ -3,7 +3,7 @@
 var path = require('path');
 var App = require('..');
 var app = new App();
-var _ = require('lodash');
+var extend = require('extend-shallow');
 var matter = require('parser-front-matter');
 
 /**
@@ -49,23 +49,6 @@ app.create('list', {
 
 app.include('button.hbs', {content: '---\ntext: Click me!\n---\n{{ text }}'});
 app.include('sidebar.hbs', {content: '---\ntext: Expand me!\n---\n{{ text }}'});
-
-/**
- * Register a custom async template helper for adding includes
- */
-
-app.asyncHelper('include', function (name, locals, options, cb) {
-  if (typeof options === 'function') {
-    cb = options;
-    options = locals;
-    locals = {};
-  }
-  var view = app.includes.get(name);
-  locals = _.extend({}, locals, view.data);
-  view.render(locals, function (err, res) {
-    cb(err, res.content);
-  });
-});
 
 
 /**

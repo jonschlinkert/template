@@ -3,7 +3,7 @@
 var path = require('path');
 var App = require('..');
 var app = new App();
-var _ = require('lodash');
+var extend = require('extend-shallow');
 var matter = require('parser-front-matter');
 
 /**
@@ -62,7 +62,7 @@ app.asyncHelper('include', function (name, locals, options, cb) {
     locals = {};
   }
   var view = app.includes.get(name);
-  locals = _.extend({}, locals, view.data);
+  locals = extend({}, locals, view.data);
   view.render(locals, function (err, res) {
     cb(err, res.content);
   });

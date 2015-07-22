@@ -33,7 +33,6 @@ var pages = app.pages('e', {path: 'e', content: 'eee...'})
   // })
   .value()
 
-
 var pages2 = app.pages.filter(function (val, key, views) {
     return /^[a-f]/.test(key);
   }).value();

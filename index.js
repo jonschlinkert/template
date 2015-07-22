@@ -504,26 +504,15 @@ Template.prototype = Emitter({
     var alias = this.viewTypes.layout;
     var len = alias.length, i = 0;
 
-    // TODO: this code shouldn't be needed! there is a normalization
-    // bug somewhere!
-    function setLayout(val) {
-      val.data = val.data || {};
-      val.locals = val.locals || {};
-      val.layout = val.layout || val.data.layout || val.locals.layout;
-      return val;
-    }
-
     while (len--) {
       var views = this.views[alias[i++]];
       for (var key in views) {
         var val = views[key];
         if (views.hasOwnProperty(key) && typeof val !== 'function' && val.path) {
-          stack[key] = setLayout(val);
+          stack[key] = val;
         }
       }
     }
-
-    setLayout(view);
 
     // get the name of the first layout
     var name = view.layout;

@@ -3,6 +3,7 @@
 // require('time-require');
 
 var path = require('path');
+var util = require('util');
 var typeOf = require('kind-of');
 var isObject = require('isobject');
 var isGlob = require('is-glob');
@@ -36,6 +37,7 @@ var loaders = require('./lib/loaders/index');
 var helpers = require('./lib/helpers');
 var lookup = require('./lib/lookup');
 var utils = require('./lib/utils');
+var viewFactory = require('./lib/view/');
 
 /**
  * Create a new instance of `Template` with the given `options.
@@ -58,6 +60,25 @@ function Template(options) {
  */
 
 Base.extend(Template);
+
+/**
+ *
+ * Expose `extend`, static method for allowing other classes to inherit
+ * from the `Item` class (and receive all of Item's prototype methods).
+ *
+ * ```js
+ * function MyCustomItem(options) {...}
+ * Item.extend(MyCustomItem);
+ * ```
+ *
+ * @param  {Object} `Ctor` Constructor function to extend with `Item`
+ * @return {undefined}
+ * @api public
+ */
+
+Template.extend = function(Ctor) {
+  util.inherits(Ctor, Template);
+};
 
 /**
  * `Template` prototype methods
@@ -326,7 +347,9 @@ utils.delegate(Template.prototype, {
     var plural = inflect().pluralize(name);
     this.inflections[single] = plural;
 
-    opts.renameKey = opts.renameKey || this.options.renameKey;
+    if (typeof opts.renameKey === 'undefined') {
+      opts.renameKey = this.options.renameKey;
+    }
     opts.loaderType = opts.loaderType || this.options.loaderType || 'sync';
     opts.plural = plural;
     opts.inflection = single;
@@ -336,6 +359,10 @@ utils.delegate(Template.prototype, {
     var Views = this.get('Views');
     var views = new Views(opts);
     this.viewType(plural, views.viewType());
+
+    // add custom View constructor for collection items
+    var ViewClass = viewFactory(single, opts);
+    this.set(single[0].toUpperCase() + single.slice(1), ViewClass);
 
     // init the collection object on `views`
     this.views[plural] = views;
@@ -555,10 +582,17 @@ utils.delegate(Template.prototype, {
     // get the name of the first layout
     var name = view.layout;
     var str = view.content;
+    var self = this;
 
     // apply the layout
-    var res = layouts()(str, name, stack, opts);
-    view.option('stack', res.stack);
+    var res = layouts()(str, name, stack, opts, function (layoutObj) {
+      // get the layout that is currently being applied to the view
+      view.currentLayout = layoutObj.layout;
+      self.handle('onLayout', view);
+      delete view.currentLayout;
+    });
+
+    view.option('layoutStack', res.history);
     view.option('layoutApplied', true);
     view.content = res.result;
 

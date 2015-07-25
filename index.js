@@ -99,17 +99,17 @@ utils.delegate(Template.prototype, {
     this.options.layoutTag = 'body';
 
     // temporary.
-    this.errors = {
+    utils.defineProp(this, 'errors', {
       compile: 'Template#compile expects engines to have a compile method',
       engine: 'Template#render cannot find an engine for: ',
       render: 'Template#render expects engines to have a render method',
-    };
+    });
 
+    this.loaders = {};
     this.cache = {};
     this.cache.data = {};
     this.cache.context = {};
     this.views = {};
-    this.stash = {};
 
     this.set('Item', require('./lib/item'));
     this.set('View', require('./lib/view'));
@@ -123,7 +123,6 @@ utils.delegate(Template.prototype, {
       partial: []
     };
 
-    this.collections = {};
     this.inflections = {};
     this.handlers(utils.methods);
     this.delegateLoaders([
@@ -187,10 +186,9 @@ utils.delegate(Template.prototype, {
    * Load data onto `app.cache.data`
    */
 
-  data: function(key, val) {
+  data: function(key, val, escape) {
     if (arguments.length === 1) {
       var type = typeOf(key);
-
       if (type === 'string') {
         if (key.indexOf('.') === -1) {
           return this.cache.data[key];
@@ -315,7 +313,7 @@ utils.delegate(Template.prototype, {
    */
 
   lazyLoaders: function() {
-    if (typeof this.loaders === 'undefined') {
+    if (!Object.keys(this.loaders).length) {
       var Loaders = LoaderCache();
       this.loaders = new Loaders(this.options);
     }
@@ -656,6 +654,11 @@ utils.delegate(Template.prototype, {
 
     // add `locals` to `view.contexts`
     view.ctx('render', locals);
+    for (var key in locals) {
+      if (locals.hasOwnProperty(key) && !this.cache.data.hasOwnProperty(key)) {
+        this.cache.data[key] = locals[key];
+      }
+    }
 
     // handle `preRender` middleware
     this.handleView('preRender', view, locals);

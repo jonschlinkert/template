@@ -80,23 +80,22 @@ describe('built-in helpers:', function () {
     beforeEach(function () {
       app = new App();
       app.engine(['tmpl', 'md'], require('engine-lodash'));
-      app.create('partial', { viewType: 'partial' });
-      app.create('page');
+      app.create('partials', { viewType: 'partial' });
+      app.create('pages');
 
       // parse front matter
       app.onLoad(/./, function (view, next) {
         matter.parse(view, next);
-        next();
       });
     });
 
-    it('should pass view locals to the `partial` helper.', function (done) {
+    it('should pass expose front matter to the `partial` helper.', function (done) {
       app.partial('a.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}});
       app.page('b.md', {path: 'b.md', content: 'foo <%= partial("a.md") %> bar'});
 
       app.render('b.md', function (err, res) {
         if (err) return done(err);
-        res.content.should.equal('foo BBB bar');
+        res.content.should.equal('foo AAA bar');
         done();
       });
     });
@@ -123,7 +122,20 @@ describe('built-in helpers:', function () {
       });
     });
 
-    it.skip('should use render method locals', function (done) {
+    it('should use locals from the `view.render` method:', function (done) {
+      app.partial('abc.md', {content: '<%= name %>'});
+      app.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("abc.md") %> bar'});
+
+      var view = app.pages.get('xyz.md');
+
+      view.render({name: 'DDD'}, function (err, res) {
+        if (err) return done(err);
+        res.content.should.equal('foo DDD bar');
+        done();
+      });
+    });
+
+    it('should use locals from the `app.render` method:', function (done) {
       app.partial('abc.md', {content: '<%= name %>'});
       app.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("abc.md") %> bar'});
 
@@ -171,7 +183,6 @@ describe('built-in helpers:', function () {
       // parse front matter
       app.onLoad(/./, function (view, next) {
         matter.parse(view, next);
-        next();
       });
     });
 
@@ -211,13 +222,13 @@ describe('built-in helpers:', function () {
       });
     });
 
-    it.skip('should use render locals when other locals are not defined.', function (done) {
+    it('should use render locals when other locals are not defined.', function (done) {
       app.partial('abc.md', {content: '<%= name %>'});
       app.page('xyz.md', {path: 'xyz.md', content: 'foo <%= partial("abc.md") %> bar'});
 
       app.render('xyz.md', {name: 'DDD'}, function (err, res) {
         if (err) return done(err);
-        // res.content.should.equal('foo DDD bar');
+        res.content.should.equal('foo DDD bar');
         done();
       });
     });
@@ -232,7 +243,6 @@ describe('built-in helpers:', function () {
       // parse front matter
       app.onLoad(/./, function (view, next) {
         matter.parse(view, next);
-        next();
       });
     });
 
@@ -279,7 +289,7 @@ describe('built-in helpers:', function () {
       var page = app.pages.get('g.md');
       page.render(locals, function (err, res) {
         if (err) return done(err);
-        res.content.should.equal('<title>Halle Nicole</title>');
+        res.content.should.equal('<title>Brian Woodward</title>');
         done(null, res.content);
       });
     });

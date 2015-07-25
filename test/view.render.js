@@ -75,7 +75,7 @@ describe('view.option()', function () {
       var page = app.pages.get('foo.tmpl');
       var ctx = page.context();
       ctx.should.have.property('a');
-      ctx.a.should.eql('b');
+      ctx.a.should.equal('d');
       done();
     });
 
@@ -84,8 +84,8 @@ describe('view.option()', function () {
       var page = app.pages.get('foo.tmpl');
       var ctx = page.context({foo: 'bar'});
       ctx.should.have.properties(['a', 'foo']);
-      ctx.a.should.eql('b');
-      ctx.foo.should.eql('bar');
+      ctx.a.should.equal('d');
+      ctx.foo.should.equal('bar');
       done();
     });
 
@@ -94,8 +94,8 @@ describe('view.option()', function () {
       var page = app.pages.get('foo.tmpl');
       var ctx = page.context({foo: 'bar'});
       page.locals.should.have.properties(['a', 'foo']);
-      page.locals.a.should.eql('b');
-      page.locals.foo.should.eql('bar');
+      page.locals.a.should.equal('d');
+      page.locals.foo.should.equal('bar');
       done();
     });
   });

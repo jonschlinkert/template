@@ -51,8 +51,8 @@ describe('collection methods', function () {
       var page = app.pages.get('foo.tmpl');
       var ctx = page.context();
       ctx.should.have.properties(['a', 'c']);
-      ctx.a.should.eql('b');
-      ctx.c.should.eql('d');
+      ctx.a.should.equal('b');
+      ctx.c.should.equal('d');
       done();
     });
 
@@ -61,7 +61,7 @@ describe('collection methods', function () {
       var page = app.pages.get('foo.tmpl');
       var ctx = page.context();
       ctx.should.have.property('a');
-      ctx.a.should.eql('b');
+      ctx.a.should.equal('d');
       done();
     });
 
@@ -70,18 +70,8 @@ describe('collection methods', function () {
       var page = app.pages.get('foo.tmpl');
       var ctx = page.context({foo: 'bar'});
       ctx.should.have.properties(['a', 'foo']);
-      ctx.a.should.eql('b');
-      ctx.foo.should.eql('bar');
-      done();
-    });
-
-    it('should extend `view.locals` with the object passed to the method:', function (done) {
-      app.pages('foo.tmpl', {path: 'foo.tmpl', content: '<%= a %>', locals: {a: 'b'}, data: {a: 'd'}});
-      var page = app.pages.get('foo.tmpl');
-      var ctx = page.context({foo: 'bar'});
-      page.locals.should.have.properties(['a', 'foo']);
-      page.locals.a.should.eql('b');
-      page.locals.foo.should.eql('bar');
+      ctx.a.should.equal('d');
+      ctx.foo.should.equal('bar');
       done();
     });
   });

@@ -18,7 +18,7 @@ describe('renameKey', function () {
     app.create('post');
   });
 
-  describe.only('global options:', function () {
+  describe('global options:', function () {
     it('should use `renameKey` function defined on global opts:', function () {
       app.option('renameKey', function (key) {
         return path.basename(key, path.extname(key));

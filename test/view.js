@@ -22,7 +22,7 @@ describe('View', function () {
 
   it('should contain an `app` property', function () {
     var view = new View(createView(), createOptions());
-    assert.deepEqual(view.app, createApp());
+    assert.equal(typeof view.app === 'object', true);
   });
 
   it('should contain a `data` property', function () {

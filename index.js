@@ -37,7 +37,8 @@ var loaders = require('./lib/loaders/index');
 var helpers = require('./lib/helpers');
 var lookup = require('./lib/lookup');
 var utils = require('./lib/utils');
-var viewFactory = require('./lib/view/');
+var viewFactory = require('./lib/factory/view');
+var fileFactory = require('./lib/factory/file');
 
 /**
  * Create a new instance of `Template` with the given `options.
@@ -51,7 +52,6 @@ function Template(options) {
     return new Template(options);
   }
   Base.call(this, options);
-  this.options = options || {};
   this.init();
 }
 
@@ -99,10 +99,16 @@ utils.delegate(Template.prototype, {
     this.options.layoutTag = 'body';
 
     // temporary.
-    utils.defineProp(this, 'errors', {
-      compile: 'Template#compile expects engines to have a compile method',
-      engine: 'Template#render cannot find an engine for: ',
-      render: 'Template#render expects engines to have a render method',
+    this.define('errors', {
+      compile: {
+        engine: 'cannot find an engine for: ',
+        method: 'expects engines to have a compile method',
+      },
+      render: {
+        callback: 'is async and expects a callback function: ',
+        engine: 'cannot find an engine for: ',
+        method: 'expects engines to have a render method',
+      }
     });
 
     this.loaders = {};
@@ -146,40 +152,10 @@ utils.delegate(Template.prototype, {
     this.on('error', function (msg, err) {
       console.error(msg, err);
     });
-  },
 
-  /**
-   * Assign `value` to `key`.
-   *
-   * ```js
-   * app.set(key, value);
-   * ```
-   *
-   * @param {String} `key`
-   * @param {*} `value`
-   * @return {Object} `app` instance, to enable chaining
-   * @api public
-   */
-
-  set: function (key, value) {
-    this.cache[key] = value;
-    return this;
-  },
-
-  /**
-   * Get the value of `key`.
-   *
-   * ```js
-   * app.get(key);
-   * ```
-   *
-   * @param {String} `key`
-   * @return {any}
-   * @api public
-   */
-
-  get: function (key) {
-    return this.cache[key];
+    this.on('option', function (key, value) {
+      if (key === 'mixins') this.visit('mixin', value);
+    });
   },
 
   /**
@@ -210,112 +186,13 @@ utils.delegate(Template.prototype, {
   },
 
   /**
-   * Set or get an option on the instance.
-   */
-
-  option: function(key, val) {
-    var len = arguments.length;
-    if (len === 1 && typeof key === 'string') {
-      if (key.indexOf('.') === -1) {
-        return this.options[key];
-      }
-      return get()(this.options, key);
-    }
-
-    if (isObject(key)) {
-      this.visit('option', key);
-      return this;
-    }
-
-    set()(this.options, key, val);
-    this.emit('option', key, val);
-    return this;
-  },
-
-  /**
-   * Enable `key`.
-   *
-   * ```js
-   * app.enable('a');
-   * ```
-   * @param {String} `key`
-   * @return {Object} `Options`to enable chaining
-   * @api public
-   */
-
-  enable: function(key) {
-    this.option(key, true);
-    return this;
-  },
-
-  /**
-   * Disable `key`.
-   *
-   * ```js
-   * app.disable('a');
-   * ```
-   *
-   * @param {String} `key` The option to disable.
-   * @return {Object} `Options`to enable chaining
-   * @api public
-   */
-
-  disable: function(key) {
-    this.option(key, false);
-    return this;
-  },
-
-  /**
-   * Check if `key` is enabled (truthy).
-   *
-   * ```js
-   * app.enabled('a');
-   * //=> false
-   *
-   * app.enable('a');
-   * app.enabled('a');
-   * //=> true
-   * ```
-   *
-   * @param {String} `key`
-   * @return {Boolean}
-   * @api public
-   */
-
-  enabled: function(key) {
-    return Boolean(this.options[key]);
-  },
-
-  /**
-   * Check if `key` is disabled (falsey).
-   *
-   * ```js
-   * app.disabled('a');
-   * //=> true
-   *
-   * app.enable('a');
-   * app.disabled('a');
-   * //=> false
-   * ```
-   *
-   * @param {String} `key`
-   * @return {Boolean} Returns true if `key` is disabled.
-   * @api public
-   */
-
-  disabled: function(key) {
-    return !Boolean(this.options[key]);
-  },
-
-  /**
    * Lazily initalize `router`, to allow options to
    * be passed in after init.
    */
 
   lazyLoaders: function() {
     if (!Object.keys(this.loaders).length) {
-      var Loaders = LoaderCache();
-      this.loaders = new Loaders(this.options);
+      this.loaders = (new LoaderCache())(this.options);
     }
   },
 
@@ -325,9 +202,11 @@ utils.delegate(Template.prototype, {
 
   delegateLoaders: function (methods) {
     this.lazyLoaders();
-    var loaders = this.loaders, self = this;
+    var loaders = this.loaders;
+    var self = this;
+
     utils.arrayify(methods).forEach(function (method) {
-      utils.defineProp(self, method, function() {
+      self.mixin(method, function() {
         return loaders[method].apply(loaders, arguments);
       });
     });
@@ -335,11 +214,18 @@ utils.delegate(Template.prototype, {
 
   /**
    * Create a new `Views` collection.
+   *
+   * @param  {String} name The name of the collection. Plural or singular form.
+   * @param  {Object} opts Collection options
+   * @param  {String|Array|Function} loaders Loaders to use for adding views to the collection.
+   * @return {Object} Returns the instance for chaining.
+   * @api public
    */
 
-  create: function (name/*, options, loaders*/) {
+  create: function (name, opts, loaders) {
     var args = utils.slice(arguments, 1);
-    var opts = clone()(args.shift());
+    opts = clone()(args.shift());
+    loaders = args;
 
     var single = inflect().singularize(name);
     var plural = inflect().pluralize(name);
@@ -351,7 +237,7 @@ utils.delegate(Template.prototype, {
     opts.loaderType = opts.loaderType || this.options.loaderType || 'sync';
     opts.plural = plural;
     opts.inflection = single;
-    opts.loaders = args;
+    opts.loaders = loaders;
     opts.app = this;
 
     var Views = this.get('Views');
@@ -364,7 +250,7 @@ utils.delegate(Template.prototype, {
 
     // init the collection object on `views`
     this.views[plural] = views;
-    this.loader(plural, opts, args);
+    this.loader(plural, opts, loaders);
 
     // wrap loaders to expose the collection and opts
     utils.defineProp(opts, 'wrap', views.wrap.bind(views, opts));
@@ -390,25 +276,6 @@ utils.delegate(Template.prototype, {
     helpers.collection(this, views, opts);
     helpers.view(this, views, opts);
     return this;
-  },
-
-  /**
-   * Rename view keys.
-   */
-
-  renameKey: function (key, fn) {
-    if (typeof key === 'function') {
-      this.options.renameKey = key;
-      return key;
-    }
-    if (typeof fn !== 'function') {
-      fn = this.options.renameKey;
-    }
-    if (typeof fn !== 'function') {
-      fn = utils.identity;
-    }
-    this.options.renameKey = fn;
-    return fn ? fn(key) : key;
   },
 
   /**
@@ -444,7 +311,7 @@ utils.delegate(Template.prototype, {
 
   lazyRouter: function() {
     if (typeof this.router === 'undefined') {
-      utils.defineProp(this, 'router', new this.Router({
+      this.define('router', new this.Router({
         methods: utils.methods
       }));
     }
@@ -611,9 +478,13 @@ utils.delegate(Template.prototype, {
 
     // get the engine to use
     locals = locals || {};
-    var engine = this.engine(view.getEngine(locals));
-    if (!engine || !engine.hasOwnProperty('compile')) {
-      throw this.error('compile', engine);
+    var engine = this.engine(locals.engine ? locals.engine : view.engine);
+
+    if (typeof engine === 'undefined') {
+      throw this.error('compile', 'engine', view);
+    }
+    if (!engine.hasOwnProperty('compile')) {
+      throw this.error('compile', 'method', engine);
     }
 
     view.ctx('compile', locals);
@@ -652,6 +523,8 @@ utils.delegate(Template.prototype, {
     // if `view` is a string, see if it's a cache view
     if (typeof view === 'string') view = this.lookup(view);
 
+    locals = locals || {};
+
     // add `locals` to `view.contexts`
     view.ctx('render', locals);
     for (var key in locals) {
@@ -667,12 +540,16 @@ utils.delegate(Template.prototype, {
     var ctx = this.context(locals);
 
     // get the engine
-    var engine = this.engine(view.getEngine(ctx));
+    var engine = this.engine(locals.engine ? locals.engine : view.engine);
+
+    if (typeof cb !== 'function') {
+      throw this.error('render', 'callback');
+    }
     if (typeof engine === 'undefined') {
-      throw this.error('engine', path.extname(view.path));
+      throw this.error('render', 'engine', path.extname(view.path));
     }
     if (!engine.hasOwnProperty('render')) {
-      throw this.error('render', JSON.stringify(view));
+      throw this.error('render', 'method', JSON.stringify(view));
     }
 
     // if it's not already compiled, do that first
@@ -789,7 +666,7 @@ utils.delegate(Template.prototype, {
     this.lazyRouter();
     this.router.method(methods);
     utils.arrayify(methods).forEach(function (method) {
-      utils.defineProp(this, method, function(path) {
+      this.define(method, function(path) {
         var route = this.router.route(path);
         var args = [].slice.call(arguments, 1);
         route[method].apply(route, args);
@@ -802,8 +679,8 @@ utils.delegate(Template.prototype, {
    * Format an error
    */
 
-  error: function(id, msg) {
-    return new Error(this.errors[id] + msg);
+  error: function(method, id, msg) {
+    return new Error(this.errors[method][id] + 'Template#' + method + ' ' + msg);
   },
 
   /**
@@ -820,6 +697,20 @@ utils.delegate(Template.prototype, {
 
   mixin: function (name, fn) {
     Template.prototype[name] = fn;
+  },
+
+  /**
+   * Define a non-enumerable property on the instance.
+   *
+   * @param  {String} key The property name.
+   * @param  {any} value Property value.
+   * @return {Object} Returns the instance of `Template`, for chaining.
+   * @api public
+   */
+
+  define: function (key, value) {
+    utils.defineProp(this, key, value);
+    return this;
   },
 
   /**

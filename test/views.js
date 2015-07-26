@@ -133,7 +133,7 @@ describe('Views', function () {
     assert.equal(views.pickOption('foo'), 'bar');
   });
 
-  it.skip('should `use` a function passing the object and options to the function', function () {
+  it('should `use` a function, exposing the views object and options to the function', function () {
     var views = new Views(createOptions({foo: 'bar'}));
     views.use(function (obj, options) {
       assert.deepEqual(obj, views);
@@ -143,8 +143,8 @@ describe('Views', function () {
     });
   });
 
-  it.skip('should omit keys from object', function () {
-    var views = new Views(createOptions());
+  it('should omit keys from object', function () {
+    var views = new Views({});
     views.set('foo', 'bar');
     views.set('bar', 'baz');
     views.set('baz', 'bang');
@@ -154,7 +154,7 @@ describe('Views', function () {
     assert.equal(clone.baz, 'bang');
   });
 
-  it.skip('should pick only the keys from object', function () {
+  it('should pick only the keys from object', function () {
     var views = new Views(createOptions());
     views.set('foo', 'bar');
     views.set('bar', 'baz');
@@ -165,7 +165,7 @@ describe('Views', function () {
     assert.equal(typeof clone.baz, 'undefined');
   });
 
-  it.skip('should iterator over `own` keys on object using forOwn', function () {
+  it('should iterator over `own` keys on object using forOwn', function () {
     var views = new Views(createOptions());
     views.set('foo', 'bar');
     views.set('bar', 'baz');
@@ -180,7 +180,7 @@ describe('Views', function () {
     });
   });
 
-  it.skip('should iterate over all keys on object using forIn', function () {
+  it('should iterate over all keys on object using forIn', function () {
     var views = new Views(createOptions());
     views.set('foo', 'bar');
     views.set('bar', 'baz');

@@ -39,7 +39,6 @@ describe('renameKey', function () {
 
       app.create('pages');
       app.create('posts');
-
       app.post({'a/b/c/post.txt': {content: 'this is contents'}});
       app.page('a/b/c/page.txt', 'this is contents');
 

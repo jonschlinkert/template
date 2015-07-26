@@ -51,6 +51,7 @@ function Template(options) {
   if (!(this instanceof Template)) {
     return new Template(options);
   }
+  this.options = options || {};
   Base.call(this, options);
   this.init();
 }
@@ -60,25 +61,6 @@ function Template(options) {
  */
 
 Base.extend(Template);
-
-/**
- *
- * Expose `extend`, static method for allowing other classes to inherit
- * from the `Item` class (and receive all of Item's prototype methods).
- *
- * ```js
- * function MyCustomItem(options) {...}
- * Item.extend(MyCustomItem);
- * ```
- *
- * @param  {Object} `Ctor` Constructor function to extend with `Item`
- * @return {undefined}
- * @api public
- */
-
-Template.extend = function(Ctor) {
-  util.inherits(Ctor, Template);
-};
 
 /**
  * `Template` prototype methods
@@ -94,9 +76,6 @@ utils.delegate(Template.prototype, {
     engines(this);
     helpers.methods(this);
     lookup(this);
-
-    this.options.layoutDelims = ['{%', '%}'];
-    this.options.layoutTag = 'body';
 
     // temporary.
     this.define('errors', {
@@ -117,11 +96,11 @@ utils.delegate(Template.prototype, {
     this.cache.context = {};
     this.views = {};
 
-    this.set('Item', require('./lib/item'));
-    this.set('View', require('./lib/view'));
-    this.set('List', require('./lib/list'));
-    this.set('Views', require('./lib/views'));
-    this.set('Collection', require('./lib/collection'));
+    this.define('Item', require('./lib/item'));
+    this.define('View', require('./lib/view'));
+    this.define('List', require('./lib/list'));
+    this.define('Views', require('./lib/views'));
+    this.define('Collection', require('./lib/collection'));
 
     this.viewTypes = {
       layout: [],
@@ -156,6 +135,19 @@ utils.delegate(Template.prototype, {
     this.on('option', function (key, value) {
       if (key === 'mixins') this.visit('mixin', value);
     });
+  },
+
+  /**
+   * Fallback on default settings if the given property
+   * is not defined or doesn't match the given `type` of value.
+   */
+
+  defaults: function (prop, value, type) {
+    var val = get(this.options, prop);
+    if ((!type && typeOf(val) === 'undefined') || typeOf(val) !== type) {
+      set(this.options, prop, value);
+    }
+    return this;
   },
 
   /**
@@ -206,7 +198,7 @@ utils.delegate(Template.prototype, {
     var self = this;
 
     utils.arrayify(methods).forEach(function (method) {
-      self.mixin(method, function() {
+      self.define(method, function() {
         return loaders[method].apply(loaders, arguments);
       });
     });
@@ -231,14 +223,19 @@ utils.delegate(Template.prototype, {
     var plural = inflect().pluralize(name);
     this.inflections[single] = plural;
 
-    if (typeof opts.renameKey === 'undefined') {
+    if (typeof opts.renameKey === 'undefined' && this.options.renameKey) {
       opts.renameKey = this.options.renameKey;
     }
-    opts.loaderType = opts.loaderType || this.options.loaderType || 'sync';
+
     opts.plural = plural;
     opts.inflection = single;
     opts.loaders = loaders;
     opts.app = this;
+    opts = extend({}, opts, this.options);
+
+    if (!opts.loaderType) {
+      opts.loaderType = 'sync';
+    }
 
     var Views = this.get('Views');
     var views = new Views(opts);
@@ -246,7 +243,8 @@ utils.delegate(Template.prototype, {
 
     // add custom View constructor for collection items
     var ViewClass = viewFactory(single, opts);
-    this.set(single[0].toUpperCase() + single.slice(1), ViewClass);
+    var classKey = single[0].toUpperCase() + single.slice(1);
+    this.define(classKey, ViewClass);
 
     // init the collection object on `views`
     this.views[plural] = views;
@@ -518,18 +516,23 @@ utils.delegate(Template.prototype, {
 
     // if `view` is a function, it's probably from chaining
     // a collection method
-    if (typeof view === 'function') return view.call(this);
+    if (typeof view === 'function') {
+      return view.call(this);
+    }
 
     // if `view` is a string, see if it's a cache view
-    if (typeof view === 'string') view = this.lookup(view);
+    if (typeof view === 'string') {
+      view = this.lookup(view);
+    }
 
     locals = locals || {};
 
     // add `locals` to `view.contexts`
     view.ctx('render', locals);
+    var data = this.cache.data;
     for (var key in locals) {
-      if (locals.hasOwnProperty(key) && !this.cache.data.hasOwnProperty(key)) {
-        this.cache.data[key] = locals[key];
+      if (locals.hasOwnProperty(key) && !data.hasOwnProperty(key)) {
+        data[key] = locals[key];
       }
     }
 
@@ -731,6 +734,25 @@ utils.delegate(Template.prototype, {
     return this;
   }
 });
+
+/**
+ *
+ * Expose `extend`, static method for allowing other classes to inherit
+ * from the `Item` class (and receive all of Item's prototype methods).
+ *
+ * ```js
+ * function MyCustomItem(options) {...}
+ * Item.extend(MyCustomItem);
+ * ```
+ *
+ * @param  {Object} `Ctor` Constructor function to extend with `Item`
+ * @return {undefined}
+ * @api public
+ */
+
+Template.extend = function(Ctor) {
+  util.inherits(Ctor, Template);
+};
 
 /**
  * Expose `Template`

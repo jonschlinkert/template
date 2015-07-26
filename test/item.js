@@ -20,19 +20,19 @@ describe('Item', function () {
   });
 
   it('should contain an `app` property', function () {
-    var item = new Item({app: {}});
+    var item = new Item({}, {app: {}});
     assert.deepEqual(item.app, {});
     assert.equal(item.hasOwnProperty('app'), true);
   });
 
   it('should contain a `data` property', function () {
-    var item = new Item({app: {}});
+    var item = new Item({}, {app: {}});
     assert.deepEqual(item.data, {});
     assert.equal(item.hasOwnProperty('data'), true);
   });
 
   it('should contain a `_cache` property', function () {
-    var item = new Item({app: {}});
+    var item = new Item({}, {app: {}});
     assert.deepEqual(item._cache, {});
     assert.equal(item.hasOwnProperty('_cache'), true);
   });
@@ -81,7 +81,7 @@ describe('Item', function () {
   });
 
   it('should get an option', function () {
-    var item = new Item({foo: 'bar'});
+    var item = new Item({}, {foo: 'bar'});
     assert.equal(item.option('foo'), 'bar');
   });
 
@@ -123,32 +123,31 @@ describe('Item', function () {
   });
 
   it('should pick an option from the local `options`', function () {
-    var item = new Item({foo: 'bar'});
+    var item = new Item({}, {foo: 'bar'});
     assert.equal(item.pickOption('foo'), 'bar');
   });
 
   it('should pick an option from the collection `options`', function () {
     var collection = new Base({foo: 'bar'});
-    var item = new Item({collection: collection});
+    var item = new Item({}, {collection: collection});
     assert.equal(item.pickOption('foo'), 'bar');
   });
 
-
   it('should pick an option from the `app.options`', function () {
     var app = new Base({foo: 'bar'});
-    var item = new Item({app: app});
+    var item = new Item({}, {app: app});
     assert.equal(item.pickOption('foo'), 'bar');
   });
 
   it('should pick an option from `app.options` when `collection.options` does not have the option', function () {
     var app = new Base({foo: 'bar'});
     var collection = new Base();
-    var item = new Item({app: app, collection: collection});
+    var item = new Item({}, {app: app, collection: collection});
     assert.equal(item.pickOption('foo'), 'bar');
   });
 
   it('should `use` a function passing the object and options to the function', function () {
-    var item = new Item({foo: 'bar'});
+    var item = new Item({}, {foo: 'bar'});
     item.use(function (obj, options) {
       assert.deepEqual(obj, item);
       assert.deepEqual(item.options, options);
@@ -273,7 +272,7 @@ describe('Item', function () {
 
   it('should track changes when `track changes` is enabled', function () {
     var app = new Base({'track changes': true});
-    var item = new Item({app: app});
+    var item = new Item({}, {app: app});
     item.mixin('upper', function (prop) {
       this.track('upper', 'Making ' + prop + ' upper case.');
       var val = this.get(prop);

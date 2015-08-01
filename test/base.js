@@ -211,7 +211,7 @@ describe('Base', function () {
       {bang: 'boom', boom: 'beep'},
       {beep: 'boop', boop: 'bop'}
     ];
-    base.mapVisit('set', arr);
+    base.visit('set', arr);
     assert.equal(base.get('foo'), 'bar');
     assert.equal(base.get('bar'), 'baz');
     assert.equal(base.get('baz'), 'bang');

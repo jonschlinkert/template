@@ -229,7 +229,7 @@ describe('View', function () {
       {bang: 'boom', boom: 'beep'},
       {beep: 'boop', boop: 'bop'}
     ];
-    view.mapVisit('set', arr);
+    view.visit('set', arr);
     assert.equal(view.get('foo'), 'bar');
     assert.equal(view.get('bar'), 'baz');
     assert.equal(view.get('baz'), 'bang');

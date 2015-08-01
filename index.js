@@ -18,8 +18,7 @@ var lazy = require('lazy-cache')(require);
 var LoaderCache = lazy('loader-cache');
 var inflect = lazy('inflection');
 var clone = lazy('clone-deep');
-var visit = lazy('object-visit');
-var mapVisit = lazy('map-visit');
+var visit = lazy('collection-visit');
 var forOwn = lazy('for-own');
 var router = lazy('en-route');
 var layouts = lazy('layouts');
@@ -156,8 +155,7 @@ utils.delegate(Template.prototype, {
 
   data: function(key, val, escape) {
     if (arguments.length === 1) {
-      var type = typeOf(key);
-      if (type === 'string') {
+      if (typeof key === 'string') {
         if (key.indexOf('.') === -1) {
           return this.cache.data[key];
         }
@@ -167,7 +165,7 @@ utils.delegate(Template.prototype, {
         }
         return get()(this.cache.data, key);
       }
-      if (type === 'object') {
+      if (typeof key === 'object') {
         this.visit('data', key);
         return this;
       }
@@ -722,15 +720,6 @@ utils.delegate(Template.prototype, {
 
   visit: function (method, obj) {
     visit()(this, method, obj);
-    return this;
-  },
-
-  /**
-   * Call the given method on each value in `obj`.
-   */
-
-  mapVisit: function (method, arr) {
-    mapVisit()(this, method, arr);
     return this;
   }
 });

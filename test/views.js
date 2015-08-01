@@ -204,7 +204,7 @@ describe('Views', function () {
       {b: createView({path: 'b'})},
       {c: createView({path: 'c'})},
     ];
-    views.mapVisit('set', arr);
+    views.visit('set', arr);
     assert.equal(views.get('a').path, 'a');
     assert.equal(views.get('b').path, 'b');
     assert.equal(views.get('c').path, 'c');

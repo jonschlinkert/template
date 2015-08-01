@@ -219,7 +219,7 @@ describe('List', function () {
       {bang: 'boom', boom: 'beep'},
       {beep: 'boop', boop: 'bop'}
     ];
-    list.mapVisit('set', arr);
+    list.visit('set', arr);
     assert.equal(list.get('foo'), 'bar');
     assert.equal(list.get('bar'), 'baz');
     assert.equal(list.get('baz'), 'bang');

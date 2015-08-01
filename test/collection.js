@@ -218,7 +218,7 @@ describe('Collection', function () {
       {bang: 'boom', boom: 'beep'},
       {beep: 'boop', boop: 'bop'}
     ];
-    collection.mapVisit('set', arr);
+    collection.visit('set', arr);
     assert.equal(collection.get('foo'), 'bar');
     assert.equal(collection.get('bar'), 'baz');
     assert.equal(collection.get('baz'), 'bang');

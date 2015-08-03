@@ -681,14 +681,6 @@ utils.delegate(Template.prototype, {
   },
 
   /**
-   * Show the properties on the given object or the instance.
-   */
-
-  debug: function (obj) {
-    return utils.makeEnumerable(obj || this);
-  },
-
-  /**
    * Add a method to the Template prototype
    */
 

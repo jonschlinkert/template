@@ -15,6 +15,32 @@ var File = require('vinyl');
 var App = require('..');
 var app;
 
+function streamIterator(stack) {
+  return function () {
+    var self = this;
+    var args = [].slice.call(arguments);
+    var stream = through.obj();
+    if (!stack.length) {
+      stack = [through.obj()];
+    }
+
+    var len = stack.length, i = 0;
+    while (len--) {
+      var fn = stack[i++];
+      if (typeof fn === 'function') {
+        stack[i - 1] = fn.apply(self, args);
+      }
+    }
+
+    var results = es.pipe.apply(es, stack);
+    process.nextTick(function () {
+      stream.write(args[0]);
+      stream.end();
+    });
+    return stream.pipe(results);
+  };
+}
+
 describe('loaders', function () {
   describe('register sync', function () {
     beforeEach(function () {
@@ -44,6 +70,7 @@ describe('loaders', function () {
   describe('register async', function () {
     beforeEach(function () {
       app = new App();
+      app.iterator('async', require('iterator-async'));
     });
 
     it('should register an async iterator:', function () {
@@ -64,6 +91,7 @@ describe('loaders', function () {
   describe('register promise', function () {
     beforeEach(function () {
       app = new App();
+      app.iterator('promise', require('iterator-promise'));
     });
 
     it('should register a promise iterator:', function () {
@@ -84,6 +112,7 @@ describe('loaders', function () {
   describe('register stream', function () {
     beforeEach(function () {
       app = new App();
+      app.iterator('stream', streamIterator);
     });
 
     it('should register a stream iterator:', function () {
@@ -105,6 +134,9 @@ describe('loaders', function () {
     beforeEach(function () {
       app = new App();
       app.engine('md', require('engine-lodash'));
+      app.iterator('promise', require('iterator-promise'));
+      app.iterator('async', require('iterator-async'));
+      app.iterator('stream', streamIterator);
     });
 
     it('should support multiple custom loaders:', function () {
@@ -409,6 +441,7 @@ describe('loaders', function () {
   describe('async:', function () {
     beforeEach(function () {
       app = new App();
+      app.iterator('async', require('iterator-async'));
     });
 
     describe('.create():', function () {
@@ -550,6 +583,7 @@ describe('loaders', function () {
   describe('promise:', function () {
     beforeEach(function () {
       app = new App();
+      app.iterator('promise', require('iterator-promise'));
     });
 
     it('should use custom promise loaders', function (done) {
@@ -597,6 +631,7 @@ describe('loaders', function () {
   describe('stream:', function () {
     beforeEach(function () {
       app = new App();
+      app.iterator('stream', streamIterator);
     });
 
     it('should use custom stream loaders', function (done) {

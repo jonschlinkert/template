@@ -11,13 +11,19 @@ describe('data', function () {
     app = new App();
   })
 
-  // app.data.option('renameKey', function (key) {
-  //   return path.basename(key);
-  // });  
-  
-  it('should set a property on `cache.data`:', function () {
+  it('should set key-value pair on `cache.data`:', function () {
     app.data('a', 'b');
     app.cache.data.should.have.property('a');
+  });
+
+  it('should set an object on `cache.data`:', function () {
+    app.data({foo: 'bar'});
+    app.cache.data.should.have.property('foo');
+  });
+
+  it('should set an array of objects on `cache.data`:', function () {
+    app.data({one: 'two'}, {three: 'four'});
+    app.cache.data.should.have.properties(['one', 'three']);
   });
 
   it('should extend a property onto `cache.data`:', function () {

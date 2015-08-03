@@ -4,8 +4,6 @@
 
 var path = require('path');
 var util = require('util');
-var typeOf = require('kind-of');
-var isObject = require('isobject');
 var isGlob = require('is-glob');
 var mixin = require('mixin-object');
 var extend = require('extend-shallow');
@@ -16,12 +14,12 @@ var extend = require('extend-shallow');
 
 var lazy = require('lazy-cache')(require);
 var LoaderCache = lazy('loader-cache');
+var lazyLayouts = lazy('layouts');
 var inflect = lazy('inflection');
 var clone = lazy('clone-deep');
 var visit = lazy('collection-visit');
 var forOwn = lazy('for-own');
 var router = lazy('en-route');
-var layouts = lazy('layouts');
 var get = lazy('get-value');
 var set = lazy('set-value');
 
@@ -30,14 +28,12 @@ var set = lazy('set-value');
  */
 
 var Base = require('./lib/base');
-var Collection = require('./lib/collection');
 var engines = require('./lib/engines');
-var loaders = require('./lib/loaders/index');
+var loaders = require('./lib/loaders');
 var helpers = require('./lib/helpers');
 var lookup = require('./lib/lookup');
 var utils = require('./lib/utils');
 var viewFactory = require('./lib/factory/view');
-var fileFactory = require('./lib/factory/file');
 
 /**
  * Create a new instance of `Template` with the given `options.
@@ -50,7 +46,6 @@ function Template(options) {
   if (!(this instanceof Template)) {
     return new Template(options);
   }
-  this.options = options || {};
   Base.call(this, options);
   this.init();
 }
@@ -92,14 +87,16 @@ utils.delegate(Template.prototype, {
     this.loaders = {};
     this.cache = {};
     this.cache.data = {};
+
     this.cache.context = {};
     this.views = {};
 
-    this.define('Item', require('./lib/item'));
-    this.define('View', require('./lib/view'));
-    this.define('List', require('./lib/list'));
-    this.define('Views', require('./lib/views'));
+    this.define('Base', require('./lib/base'));
     this.define('Collection', require('./lib/collection'));
+    this.define('Item', require('./lib/item'));
+    this.define('List', require('./lib/list'));
+    this.define('View', require('./lib/view'));
+    this.define('Views', require('./lib/views'));
 
     this.viewTypes = {
       layout: [],
@@ -118,7 +115,7 @@ utils.delegate(Template.prototype, {
 
     // initialize iterators and loaders
     loaders.iterators(this);
-    loaders.first(this);
+    loaders.base(this);
     loaders.data(this);
   },
 
@@ -132,28 +129,17 @@ utils.delegate(Template.prototype, {
     });
 
     this.on('option', function (key, value) {
-      if (key === 'mixins') this.visit('mixin', value);
+      if (key === 'mixins') {
+        this.visit('mixin', value);
+      }
     });
-  },
-
-  /**
-   * Fallback on default settings if the given property
-   * is not defined or doesn't match the given `type` of value.
-   */
-
-  defaults: function (prop, value, type) {
-    var val = get(this.options, prop);
-    if ((!type && typeOf(val) === 'undefined') || typeOf(val) !== type) {
-      set(this.options, prop, value);
-    }
-    return this;
   },
 
   /**
    * Load data onto `app.cache.data`
    */
 
-  data: function(key, val, escape) {
+  data: function(key, val) {
     if (arguments.length === 1) {
       if (typeof key === 'string') {
         if (key.indexOf('.') === -1) {
@@ -165,11 +151,15 @@ utils.delegate(Template.prototype, {
         }
         return get()(this.cache.data, key);
       }
-      if (typeof key === 'object') {
-        this.visit('data', key);
-        return this;
-      }
     }
+
+    if (typeof key === 'object') {
+      var args = [].slice.call(arguments);
+      key = [].concat.apply([], args);
+      this.visit('data', key);
+      return this;
+    }
+
     set()(this.cache.data, key, val);
     this.emit('data', key, val);
     return this;
@@ -417,6 +407,7 @@ utils.delegate(Template.prototype, {
       return view;
     }
 
+
     // handle pre-layout middleware
     this.handle('preLayout', view);
 
@@ -440,18 +431,23 @@ utils.delegate(Template.prototype, {
       }
     }
 
+    // un-lazy
+    var layouts = lazyLayouts();
+
     // get the name of the first layout
     var name = view.layout;
     var str = view.content;
     var self = this;
 
-    // apply the layout
-    var res = layouts()(str, name, stack, opts, function (layoutObj) {
-      // get the layout that is currently being applied to the view
+    // Handle each layout before it's applied to a view
+    function handleLayout(layoutObj) {
       view.currentLayout = layoutObj.layout;
       self.handle('onLayout', view);
       delete view.currentLayout;
-    });
+    }
+
+    // actually apply the layout
+    var res = layouts(str, name, stack, opts, handleLayout);
 
     view.option('layoutStack', res.history);
     view.option('layoutApplied', true);

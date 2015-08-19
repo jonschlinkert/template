@@ -6,38 +6,30 @@ var app = new App();
 app.engine('tmpl', require('engine-lodash'));
 
 /**
- * Create
+ * Create a view collection
  */
-app.create('page', { loaderType: 'sync' });
+app.create('pages');
 
 /**
- * Load
+ * Load views onto the collection you created
  */
-app.pages('a.tmpl', {
-    path: 'a.tmpl',
-    name: 'aaa',
-    content: '<%= name %>'
-  })
-  .pages('b', {
-    path: 'b.tmpl',
-    name: 'bbb',
-    content: '<%= name %>'
-  })
-  .pages('c', {
-    path: 'c.tmpl',
-    name: 'ccc',
-    content: '<%= name %>'
-  })
-  .pages('d', {
-    path: 'd.tmpl',
-    name: 'ddd',
-    content: '<%= name %>'
-  })
 
-var page = app.pages.get('a.tmpl');
+app.page('welcome.tmpl', {path: 'welcome.tmpl', content: 'Hello, <%= name %>!'})
+  .page('goodbye.tmpl', {path: 'goodbye.tmpl', content: 'Goodbye, <%= name %>!'});
 
-page.render(function (err, res) {
+// get a template
+var page = app.pages.get('welcome.tmpl');
+
+// render a template
+page.render({name: 'Bob'}, function (err, res) {
   if (err) return console.log(err);
-  console.log(res);
-});
+  console.log(res.content);
+  //=> 'Hello, Bob!'
 
+  app.pages.get('goodbye.tmpl')
+    .render({name: 'Bob'}, function (err, res) {
+      if (err) return console.log(err);
+      console.log(res.content);
+      //=> 'Goodbye, Bob!'
+    });
+});

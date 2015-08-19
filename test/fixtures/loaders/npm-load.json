@@ -1,6 +1,6 @@
 {
   "npm-load.json": {
-    "path": "fixtures/loaders/npm-load.json",
+    "path": "test/fixtures/loaders/npm-load.json",
     "content": "---\nauthor: Brian Woodward\n---\nThis is content from json. Author: {{author}}"
   }
 }

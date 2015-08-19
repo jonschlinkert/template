@@ -1,59 +1,114 @@
-/*!
- * template <https://github.com/jonschlinkert/template>
- *
- * Copyright (c) 2014-2015, Jon Schlinkert, Brian Woodward.
- * Licensed under the MIT License (MIT)
- */
-
 'use strict';
 
+/* deps: mocha */
+var path = require('path');
+var assert = require('assert');
 var should = require('should');
-var Template = require('./app');
-var template;
+var matter = require('parser-front-matter');
+var App = require('..');
+var app;
 
+describe('content', function () {
+  beforeEach(function () {
+    app = new App();
+    app.create('post');
+    app.engine('md', require('engine-lodash'));
+    app.onLoad(/\.md$/, function (view, next) {
+      matter.parse(view, next);
+    });
+  })
 
-describe('template context', function() {
-  beforeEach(function() {
-    template = new Template();
+  it('should use matching data from `cache.data`:', function (done) {
+    app.posts.option('renameKey', function (key) {
+      return path.basename(key, path.extname(key));
+    });
+
+    app.data('test/fixtures/data/*.json');
+    app.post('test/fixtures/*.md');
+    app.views.posts.should.have.property('matched');
+    
+    app.render('matched', function (err, res) {
+      if (err) return done(err);
+      res.content.should.equal('This is data from fixture matched.json');
+      done();
+    });
   });
 
-  describe('context:', function () {
-    it('should pass data to templates in the `.render()` method:', function (done) {
-      template.data({ abc: 'xyz'});
-      template.page('aaa.md', '<%= abc %>');
+  it('should use generic data from `cache.data` when no matching names are found:', function (done) {
+    app.data('test/fixtures/data/*.json');
 
-      template.render('aaa.md', function (err, content) {
-        if (err) console.log(err);
-        content.should.equal('xyz');
-        done();
-      });
+    app.post('test/fixtures/*.md');
+    app.views.posts.should.have.property('test/fixtures/generic.md');
+
+    app.render('test/fixtures/generic.md', function (err, res) {
+      if (err) return done(err);
+      res.content.should.equal('This is generic data from data.json!');
+      done();
     });
+  });
 
-    it('should pass data to templates in the `.render()` method:', function () {
-      template.data({ letter: 'b'});
-      template.page('aaa.md', 'a<%= letter %>c');
-      template.render('aaa.md').should.equal('abc');
+  it('should use data from front-matter:', function (done) {
+    app.data('test/fixtures/data/*.json');
+
+    app.post('test/fixtures/*.md');
+    app.views.posts.should.have.property('test/fixtures/front-matter.md');
+
+    app.render('test/fixtures/front-matter.md', function (err, res) {
+      if (err) return done(err);
+      res.content.should.equal('This is data from front matter');
+      done();
     });
+  });
 
-    it('should give preference to locals over "global" data:', function () {
-      template.data({ letter: 'b'});
-      template.page('aaa.md', 'a<%= letter %>c', { letter: 'bbb'});
-      template.render('aaa.md').should.equal('abbbc');
+  it('should use data passed as an object to the `data` method:', function (done) {
+    app.data({title: 'foo!'});
+
+    app.post('test/fixtures/*.md');
+    app.views.posts.should.have.property('test/fixtures/generic.md');
+
+    app.render('test/fixtures/generic.md', function (err, res) {
+      if (err) return done(err);
+      res.content.should.equal('This is foo!');
+      done();
     });
+  });
 
-    it('should give preference to front matter over locals:', function () {
-      template.data({ letter: 'b'});
-      template.page('aaa.md', '---\nletter: zzz\n---\na<%= letter %>c', { letter: 'bbb'});
-      template.render('aaa.md').should.equal('azzzc');
+  it('should prefer front-matter over generic data:', function (done) {
+    app.data({title: 'foo'});
+
+    app.post('test/fixtures/*.md');
+    app.views.posts.should.have.property('test/fixtures/front-matter.md');
+
+    app.render('test/fixtures/front-matter.md', function (err, res) {
+      if (err) return done(err);
+      res.content.should.equal('This is data from front matter');
+      done();
     });
+  });
 
-    describe('when `options.preferLocals` is defined:', function () {
-      it('should give preference to locals over front matter:', function () {
-        template.enable('preferLocals');
-        template.data({ letter: 'b'});
-        template.page('aaa.md', '---\nletter: zzz\n---\na<%= letter %>c', { letter: 'bbb'});
-        template.render('aaa.md').should.equal('abbbc');
-      });
+  it('should prefer front-matter over matched data:', function (done) {
+    app.data('test/fixtures/data/*.json');
+
+    app.post('test/fixtures/*.md');
+    app.views.posts.should.have.property('test/fixtures/matched-matter.md');
+
+    app.render('test/fixtures/matched-matter.md', function (err, res) {
+      if (err) return done(err);
+      res.content.should.equal('This is matched and front-matter data!');
+      done();
+    });
+  });
+
+  it('should prefer front-matter over matched data passed as an object:', function (done) {
+    app.data({'matched-matter': {title: 'foo'}});
+
+    app.post('test/fixtures/*.md');
+    app.views.posts.should.have.property('test/fixtures/matched-matter.md');
+
+    app.render('test/fixtures/matched-matter.md', function (err, res) {
+      if (err) return done(err);
+      res.content.should.equal('This is matched and front-matter data!');
+      done();
     });
   });
 });

@@ -27,16 +27,20 @@ lazy('layouts');
  * Local modules
  */
 
-var Base = require('./lib/base');
+var viewFactory = require('./lib/factory/view');
 var engines = require('./lib/engines');
 var loaders = require('./lib/loaders');
 var helpers = require('./lib/helpers');
 var lookup = require('./lib/lookup');
 var utils = require('./lib/utils');
-var viewFactory = require('./lib/factory/view');
+var Base = require('./lib/base');
 
 /**
  * Create a new instance of `Template` with the given `options.
+ *
+ * ```js
+ * var app = require('template')();
+ * ```
  *
  * @param {Object} `options`
  * @api public
@@ -62,6 +66,10 @@ Base.extend(Template);
 
 utils.delegate(Template.prototype, {
   constructor: Template,
+
+  /**
+   * Initialize defaults
+   */
 
   init: function () {
     this._ = {};
@@ -137,6 +145,21 @@ utils.delegate(Template.prototype, {
 
   /**
    * Load data onto `app.cache.data`
+   *
+   * ```js
+   * console.log(app.cache.data);
+   * //=> {};
+   *
+   * app.data('a', 'b');
+   * app.data({c: 'd'});
+   * console.log(app.cache.data);
+   * //=> {a: 'b', c: 'd'}
+   * ```
+   * @name .data
+   * @param {String|Object} `key` Key of the value to set, or object to extend.
+   * @param {any} `val`
+   * @return {Object} Returns the instance of `Template` for chaining
+   * @api public
    */
 
   data: function(key, val) {
@@ -195,6 +218,13 @@ utils.delegate(Template.prototype, {
   /**
    * Create a new `Views` collection.
    *
+   * ```js
+   * app.create('foo');
+   * app.foo('*.hbs');
+   * var view = app.foo.get('baz.hbs');
+   * ```
+   *
+   * @name .create
    * @param  {String} name The name of the collection. Plural or singular form.
    * @param  {Object} opts Collection options
    * @param  {String|Array|Function} loaders Loaders to use for adding views to the collection.
@@ -269,7 +299,6 @@ utils.delegate(Template.prototype, {
    *
    * @param {String} `plural` e.g. `pages`
    * @param {Object} `options`
-   * @api private
    */
 
   viewType: function(plural, types) {
@@ -305,6 +334,18 @@ utils.delegate(Template.prototype, {
 
   /**
    * Handle middleware for the given `view` and locals.
+   *
+   * ```js
+   * app.handle('customHandle', view);
+   * ```
+   *
+   * @name .handle
+   * @param {String} `method` Router VERB
+   * @param {Object} `view` View object
+   * @param {Object} `locals`
+   * @param {Function} `cb`
+   * @return {Object}
+   * @api public
    */
 
   handle: function (method, view, locals, cb) {
@@ -337,6 +378,7 @@ utils.delegate(Template.prototype, {
    * Run the given handler only if the view has not
    * already been handled by the method
    *
+   * @name .handleView
    * @param  {Object} `collection` Collection name
    * @param  {Object} `locals`
    * @return {Array} Returns an array of view objects with rendered content.
@@ -366,10 +408,10 @@ utils.delegate(Template.prototype, {
    * Special-cased "all" method, applying the given route `path`,
    * middleware, and callback.
    *
+   * @name .all
    * @param {String} `path`
    * @param {Function} `callback`
    * @return {Object} `this` for chaining
-   * @api public
    */
 
   all: function(path/*, callback*/) {
@@ -382,10 +424,10 @@ utils.delegate(Template.prototype, {
   /**
    * Proxy to `Router#param`
    *
+   * @name .param
    * @param {String} `name`
    * @param {Function} `fn`
-   * @return {Object} `this` for chaining
-   * @api public
+   * @return {Object} Returns the instance of `Template` for chaining.
    */
 
   param: function(/*name, fn*/) {
@@ -397,9 +439,9 @@ utils.delegate(Template.prototype, {
   /**
    * Apply a layout to the given `view`.
    *
+   * @name .applyLayout
    * @param  {Object} `view`
-   * @param  {Object} `locals`
-   * @return {Object}
+   * @return {Object} Returns a `view` object.
    */
 
   applyLayout: function(view) {
@@ -455,7 +497,20 @@ utils.delegate(Template.prototype, {
   },
 
   /**
-   * Compile a view.
+   * Compile `content` with the given `locals`.
+   *
+   * ```js
+   * var blogPost = app.post('2015-09-01-foo-bar');
+   * var view = app.compile(blogPost);
+   * // view.fn => [function]
+   * ```
+   *
+   * @name .compile
+   * @param  {Object|String} `view` View object.
+   * @param  {Object} `locals`
+   * @param  {Boolean} `isAsync` Load async helpers
+   * @return {Object} View object with `fn` property with the compiled function.
+   * @api public
    */
 
   compile: function(view, locals, isAsync) {
@@ -495,7 +550,20 @@ utils.delegate(Template.prototype, {
   },
 
   /**
-   * Render a view.
+   * Render `content` with the given `locals` and `callback`.
+   *
+   * ```js
+   * var blogPost = app.post('2015-09-01-foo-bar');
+   * app.render(blogPost, function(err, view) {
+   *   // `view` is an object with a rendered `content` property
+   * });
+   * ```
+   *
+   * @name .render
+   * @param  {Object|String} `file` String or normalized template object.
+   * @param  {Object} `locals` Locals to pass to registered view engines.
+   * @param  {Function} `callback`
+   * @api public
    */
 
   render: function (view, locals, cb) {
@@ -574,10 +642,15 @@ utils.delegate(Template.prototype, {
   /**
    * Merge "partials" view types. This is necessary for template
    * engines that only support one class of partials.
+   *
+   * @name .mergePartials
+   * @param {Object} `locals`
+   * @param {Array} `viewTypes` Optionally pass an array of viewTypes to include.
+   * @return {Object} Merged partials
    */
 
-  mergePartials: function (locals, keys) {
-    var names = keys || this.viewTypes.partial;
+  mergePartials: function (locals, viewTypes) {
+    var names = viewTypes || this.viewTypes.partial;
     var opts = lazy.extend({}, this.options, locals);
 
     return names.reduce(function (acc, name) {
@@ -603,6 +676,7 @@ utils.delegate(Template.prototype, {
    * This can be overridden by passing a function to the
    * `mergeContext` option.
    *
+   * @name .context
    * @param  {Object} `view` Template object
    * @param  {Object} `locals`
    * @return {Object} The object to be passed to engines/views as context.
@@ -689,8 +763,7 @@ utils.delegate(Template.prototype, {
    *
    * @param  {String} key The property name.
    * @param  {any} value Property value.
-   * @return {Object} Returns the instance of `Template`, for chaining.
-   * @api public
+   * @return {Object} Returns the instance of `Template` for chaining.
    */
 
   define: function (key, value) {
@@ -720,11 +793,11 @@ utils.delegate(Template.prototype, {
  *
  * @param  {Object} `Ctor` Constructor function to extend with `Item`
  * @return {undefined}
- * @api public
  */
 
 Template.extend = function(Ctor) {
   util.inherits(Ctor, Template);
+  lazy.extend(Ctor, Template);
 };
 
 /**

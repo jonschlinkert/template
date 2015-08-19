@@ -4,24 +4,24 @@
 
 var path = require('path');
 var util = require('util');
-var isGlob = require('is-glob');
-var mixin = require('mixin-object');
-var extend = require('extend-shallow');
+var lazy = require('lazy-cache')(require);
 
 /**
  * Lazily required dependencies
  */
 
-var lazy = require('lazy-cache')(require);
-var LoaderCache = lazy('loader-cache');
-var lazyLayouts = lazy('layouts');
-var inflect = lazy('inflection');
-var clone = lazy('clone-deep');
-var visit = lazy('collection-visit');
-var forOwn = lazy('for-own');
-var router = lazy('en-route');
-var get = lazy('get-value');
-var set = lazy('set-value');
+lazy('is-glob', 'isGlob');
+lazy('mixin-object', 'mixin');
+lazy('extend-shallow', 'extend');
+lazy('loader-cache', 'LoaderCache');
+lazy('inflection', 'inflect');
+lazy('clone-deep', 'clone');
+lazy('collection-visit', 'visit');
+lazy('for-own', 'forOwn');
+lazy('en-route', 'router');
+lazy('get-value', 'get');
+lazy('set-value', 'set');
+lazy('layouts');
 
 /**
  * Local modules
@@ -145,11 +145,11 @@ utils.delegate(Template.prototype, {
         if (key.indexOf('.') === -1) {
           return this.cache.data[key];
         }
-        if (isGlob(key)) {
+        if (lazy.isGlob(key)) {
           this.compose('data')(key, val);
           return this;
         }
-        return get()(this.cache.data, key);
+        return lazy.get(this.cache.data, key);
       }
     }
 
@@ -160,7 +160,7 @@ utils.delegate(Template.prototype, {
       return this;
     }
 
-    set()(this.cache.data, key, val);
+    lazy.set(this.cache.data, key, val);
     this.emit('data', key, val);
     return this;
   },
@@ -172,7 +172,7 @@ utils.delegate(Template.prototype, {
 
   lazyLoaders: function() {
     if (!Object.keys(this.loaders).length) {
-      this.loaders = (new LoaderCache())(this.options);
+      this.loaders = new lazy.LoaderCache(this.options);
     }
   },
 
@@ -204,11 +204,11 @@ utils.delegate(Template.prototype, {
 
   create: function (name, opts, loaders) {
     var args = utils.slice(arguments, 1);
-    opts = clone()(args.shift());
+    opts = lazy.clone(args.shift());
     loaders = args;
 
-    var single = inflect().singularize(name);
-    var plural = inflect().pluralize(name);
+    var single = lazy.inflect.singularize(name);
+    var plural = lazy.inflect.pluralize(name);
     this.inflections[single] = plural;
 
     if (typeof opts.renameKey === 'undefined' && this.options.renameKey) {
@@ -219,7 +219,7 @@ utils.delegate(Template.prototype, {
     opts.inflection = single;
     opts.loaders = loaders;
     opts.app = this;
-    opts = extend({}, opts, this.options);
+    opts = lazy.extend({}, opts, this.options);
 
     if (!opts.loaderType) {
       opts.loaderType = 'sync';
@@ -288,7 +288,7 @@ utils.delegate(Template.prototype, {
    * Add `Router` to the prototype
    */
 
-  Router: router().Router,
+  Router: lazy.router.Router,
 
   /**
    * Lazily initalize `router`, to allow options to
@@ -407,14 +407,13 @@ utils.delegate(Template.prototype, {
       return view;
     }
 
-
     // handle pre-layout middleware
     this.handle('preLayout', view);
 
     var opts = {};
-    extend(opts, this.options);
-    extend(opts, view.options);
-    extend(opts, view.context());
+    lazy.extend(opts, this.options);
+    lazy.extend(opts, view.options);
+    lazy.extend(opts, view.context());
 
     // get the layout stack
     var stack = {};
@@ -431,9 +430,6 @@ utils.delegate(Template.prototype, {
       }
     }
 
-    // un-lazy
-    var layouts = lazyLayouts();
-
     // get the name of the first layout
     var name = view.layout;
     var str = view.content;
@@ -447,7 +443,7 @@ utils.delegate(Template.prototype, {
     }
 
     // actually apply the layout
-    var res = layouts(str, name, stack, opts, handleLayout);
+    var res = lazy.layouts(str, name, stack, opts, handleLayout);
 
     view.option('layoutStack', res.history);
     view.option('layoutApplied', true);
@@ -489,7 +485,7 @@ utils.delegate(Template.prototype, {
 
     // Bind context to helpers before passing to the engine.
     this.bindHelpers(view, locals, ctx, (locals.async = isAsync));
-    var settings = extend({}, ctx, locals);
+    var settings = lazy.extend({}, ctx, locals);
 
     // compile the string
     view.fn = engine.compile(view.content, settings);
@@ -582,12 +578,12 @@ utils.delegate(Template.prototype, {
 
   mergePartials: function (locals, keys) {
     var names = keys || this.viewTypes.partial;
-    var opts = extend({}, this.options, locals);
+    var opts = lazy.extend({}, this.options, locals);
 
     return names.reduce(function (acc, name) {
       var collection = this.views[name];
 
-      forOwn()(collection, function (view, key) {
+      lazy.forOwn(collection, function (view, key) {
         // handle `onMerge` middleware
         this.handleView('onMerge', view, locals);
 
@@ -614,11 +610,11 @@ utils.delegate(Template.prototype, {
 
   context: function (view, ctx, locals) {
     var obj = {};
-    mixin(obj, ctx);
-    mixin(obj, this.cache.data);
-    mixin(obj, view.data);
-    mixin(obj, view.locals);
-    mixin(obj, locals);
+    lazy.mixin(obj, ctx);
+    lazy.mixin(obj, this.cache.data);
+    lazy.mixin(obj, view.data);
+    lazy.mixin(obj, view.locals);
+    lazy.mixin(obj, locals);
     return obj;
   },
 
@@ -628,15 +624,15 @@ utils.delegate(Template.prototype, {
 
   bindHelpers: function (view, locals, context, isAsync) {
     var helpers = {};
-    extend(helpers, this.options.helpers);
-    extend(helpers, this._.helpers.sync);
+    lazy.extend(helpers, this.options.helpers);
+    lazy.extend(helpers, this._.helpers.sync);
 
-    if (isAsync) extend(helpers, this._.helpers.async);
-    extend(helpers, locals.helpers);
+    if (isAsync) lazy.extend(helpers, this._.helpers.async);
+    lazy.extend(helpers, locals.helpers);
 
     // build the context to expose as `this` in helpers
     var thisArg = {};
-    thisArg.options = extend({}, this.options.helper, locals);
+    thisArg.options = lazy.extend({}, this.options.helper, locals);
     thisArg.context = context || {};
     thisArg.context.view = view;
     thisArg.app = this;
@@ -707,7 +703,7 @@ utils.delegate(Template.prototype, {
    */
 
   visit: function (method, obj) {
-    visit()(this, method, obj);
+    lazy.visit(this, method, obj);
     return this;
   }
 });
@@ -719,7 +715,7 @@ utils.delegate(Template.prototype, {
  *
  * ```js
  * function MyCustomItem(options) {...}
- * Item.extend(MyCustomItem);
+ * Item.lazy.extend(MyCustomItem);
  * ```
  *
  * @param  {Object} `Ctor` Constructor function to extend with `Item`

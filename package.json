@@ -27,11 +27,15 @@
     "array-sort": "^0.1.1",
     "assign-value": "^0.1.0",
     "async": "^1.4.0",
+    "async-each": "^0.1.6",
     "clone-deep": "^0.2.0",
     "collection-visit": "^0.1.0",
     "component-emitter": "^1.2.0",
     "copy": "^0.1.1",
     "dashify": "^0.1.0",
+    "define-property": "^0.1.3",
+    "delegate-properties": "^0.2.1",
+    "detect-conflicts": "^0.1.0",
     "en-route": "^0.7.1",
     "engine-cache": "^0.14.0",
     "export-files": "^2.0.1",
@@ -48,7 +52,7 @@
     "is-glob": "^2.0.0",
     "kind-of": "^2.0.0",
     "layouts": "^0.10.1",
-    "lazy-cache": "^0.1.0",
+    "lazy-cache": "^0.2.2",
     "lazy-globby": "^0.1.1",
     "load-templates": "^0.8.8",
     "loader-cache": "^0.6.0",
@@ -59,7 +63,9 @@
     "object.reduce": "^0.1.7",
     "parse-filepath": "^0.6.3",
     "recent": "^0.1.0",
+    "relative": "^3.0.1",
     "relative-dest": "^0.1.0",
+    "rewrite-ext": "^0.2.0",
     "set-value": "^0.2.0",
     "sort-object": "^3.0.0",
     "write": "^0.2.1"
@@ -86,6 +92,7 @@
     "success-symbol": "^0.1.0",
     "swig": "^1.4.2",
     "through2": "^2.0.0",
+    "time-require": "jonschlinkert/time-require",
     "vinyl": "^0.5.0"
   },
   "keywords": [
@@ -134,5 +141,15 @@
     "walrus",
     "whiskers",
     "yaml"
-  ]
+  ],
+  "verb": {
+    "related": {
+      "list": [
+        "layouts",
+        "en-route",
+        "assemble",
+        "verb"
+      ]
+    }
+  }
 }

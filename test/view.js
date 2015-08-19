@@ -182,31 +182,14 @@ describe('View', function () {
     view.set('foo', 'bar');
     view.set('bar', 'baz');
     view.set('baz', 'bang');
-    var keys = ['path', 'content', 'contexts', 'foo', 'bar', 'baz'];
-    var vals = ['foo.hbs', 'foo', {locals: {}, data: {}}, 'bar', 'baz', 'bang'];
+    var keys = ['path', 'content', 'base', 'contexts', 'foo', 'bar', 'baz'];
+    var vals = ['foo.hbs', 'foo', process.cwd(), {locals: {}, data: {}}, 'bar', 'baz', 'bang'];
     view.forOwn(function (val, key) {
       var expectedKey = keys.shift();
       var expectedVal = vals.shift();
       assert.equal(key, expectedKey);
       assert.deepEqual(val, expectedVal);
     });
-  });
-
-  it('should iterate over all keys on object using forIn', function () {
-    var view = new View(createView(), createOptions());
-    view.set('foo', 'bar');
-    view.set('bar', 'baz');
-    view.set('baz', 'bang');
-    var keys = ['path', 'content', 'contexts', 'foo', 'bar', 'baz', 'locals', 'dest'];
-    var len = keys.length
-      + Object.keys(Item.prototype).length
-      + Object.keys(View.prototype).length
-      + Object.keys(Base.prototype).length;
-    var count = 0;
-    view.forIn(function (val, key) {
-      count++;
-    });
-    assert.equal(count, len);
   });
 
   it('should visit all properties on an object and call the specified method', function () {

@@ -522,6 +522,7 @@ utils.delegate(Template.prototype, {
     // get the engine to use
     locals = locals || {};
     var engine = this.engine(locals.engine ? locals.engine : view.engine);
+    lazy.extend(locals, engine.options);
 
     if (typeof engine === 'undefined') {
       throw this.error('compile', 'engine', view);
@@ -602,6 +603,7 @@ utils.delegate(Template.prototype, {
 
     // get the engine
     var engine = this.engine(locals.engine ? locals.engine : view.engine);
+    lazy.extend(locals, engine.options);
 
     if (typeof cb !== 'function') {
       throw this.error('render', 'callback');

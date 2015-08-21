@@ -132,10 +132,6 @@ utils.delegate(Template.prototype, {
    */
 
   listen: function () {
-    this.on('error', function (msg, err) {
-      console.error(msg, err);
-    });
-
     this.on('option', function (key, value) {
       if (key === 'mixins') {
         this.visit('mixin', value);
@@ -225,10 +221,10 @@ utils.delegate(Template.prototype, {
    * ```
    *
    * @name .create
-   * @param  {String} name The name of the collection. Plural or singular form.
-   * @param  {Object} opts Collection options
-   * @param  {String|Array|Function} loaders Loaders to use for adding views to the collection.
-   * @return {Object} Returns the instance for chaining.
+   * @param  {String} `name` The name of the collection. Plural or singular form.
+   * @param  {Object} `opts` Collection options
+   * @param  {String|Array|Function} `loaders` Loaders to use for adding views to the created collection.
+   * @return {Object} Returns the `Assemble` instance for chaining.
    * @api public
    */
 
@@ -706,7 +702,7 @@ utils.delegate(Template.prototype, {
 
     // build the context to expose as `this` in helpers
     var thisArg = {};
-    thisArg.options = lazy.extend({}, this.options.helper, locals);
+    thisArg.options = lazy.extend({}, this.options, locals);
     thisArg.context = context || {};
     thisArg.context.view = view;
     thisArg.app = this;

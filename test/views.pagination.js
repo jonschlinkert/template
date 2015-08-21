@@ -56,7 +56,7 @@ describe('views pagination', function () {
         });
     });
 
-    it('should chain the `.pagination` method from the collection loader method:', function (done) {
+    it.only('should chain the `.pagination` method from the collection loader method:', function (done) {
       done = once(done);
       app.pages('a.hbs', {path: 'a.hbs', content: 'a<%= title %>z', title: 'AAA'});
       app.pages('b.hbs', {path: 'b.hbs', content: 'a<%= title %>z', title: 'BBB'});

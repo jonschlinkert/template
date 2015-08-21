@@ -1,6 +1,6 @@
 'use strict';
 
-// require('time-require');
+// require('time-require')
 
 var path = require('path');
 var util = require('util');
@@ -168,7 +168,11 @@ utils.delegate(Template.prototype, {
           this.compose('data')(key, val);
           return this;
         }
-        return lazy.get(this.cache.data, key);
+        var val = lazy.get(this.cache.data, key);
+        if (typeof val !== 'undefined') return val;
+        val = utils.tryRequire(key);
+        this.visit('data', val);
+        return val;
       }
     }
 

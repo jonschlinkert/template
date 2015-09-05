@@ -89,7 +89,7 @@ describe('built-in helpers:', function () {
       });
     });
 
-    it('should pass expose front matter to the `partial` helper.', function (done) {
+    it('should expose front matter to the `partial` helper.', function (done) {
       app.partial('a.md', {content: '---\nname: "AAA"\n---\n<%= name %>', locals: {name: 'BBB'}});
       app.page('b.md', {path: 'b.md', content: 'foo <%= partial("a.md") %> bar'});
 

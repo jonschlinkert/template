@@ -1,7 +1,5 @@
 'use strict';
 
-// require('time-require')
-
 var path = require('path');
 var util = require('util');
 var lazy = require('lazy-cache')(require);
@@ -16,6 +14,7 @@ lazy('extend-shallow', 'extend');
 lazy('loader-cache', 'LoaderCache');
 lazy('inflection', 'inflect');
 lazy('clone-deep', 'clone');
+lazy('define-property', 'define');
 lazy('collection-visit', 'visit');
 lazy('for-own', 'forOwn');
 lazy('en-route', 'router');
@@ -132,6 +131,10 @@ utils.delegate(Template.prototype, {
    */
 
   listen: function () {
+    this.on('error', function (msg, err) {
+      console.error(msg.message, err);
+    });
+
     this.on('option', function (key, value) {
       if (key === 'mixins') {
         this.visit('mixin', value);
@@ -269,7 +272,7 @@ utils.delegate(Template.prototype, {
     this.loader(plural, opts, loaders);
 
     // wrap loaders to expose the collection and opts
-    utils.defineProp(opts, 'wrap', views.wrap.bind(views, opts));
+    lazy.define(opts, 'wrap', views.wrap.bind(views, opts));
     opts.defaultLoader = opts.defaultLoader || 'default';
 
     // create the actual loader function
@@ -285,8 +288,8 @@ utils.delegate(Template.prototype, {
 
     // decorate named loader methods back to the collection
     // to allow chaining like `.pages().pages()` etc
-    utils.defineProp(views, plural, fn);
-    utils.defineProp(views, single, fn);
+    lazy.define(views, plural, fn);
+    lazy.define(views, single, fn);
 
     // add collection and view (item) helpers
     helpers.collection(this, views, opts);
@@ -452,11 +455,6 @@ utils.delegate(Template.prototype, {
     // handle pre-layout middleware
     this.handle('preLayout', view);
 
-    var opts = {};
-    lazy.extend(opts, this.options);
-    lazy.extend(opts, view.options);
-    lazy.extend(opts, view.context());
-
     // get the layout stack
     var stack = {};
     var alias = this.viewTypes.layout;
@@ -483,6 +481,11 @@ utils.delegate(Template.prototype, {
       self.handle('onLayout', view);
       delete view.currentLayout;
     }
+
+    var opts = {};
+    lazy.extend(opts, this.options);
+    lazy.extend(opts, view.options);
+    lazy.extend(opts, view.context());
 
     // actually apply the layout
     var res = lazy.layouts(str, name, stack, opts, handleLayout);
@@ -521,8 +524,9 @@ utils.delegate(Template.prototype, {
 
     // get the engine to use
     locals = locals || {};
+    locals.settings = locals.settings || {};
     var engine = this.engine(locals.engine ? locals.engine : view.engine);
-    lazy.extend(locals, engine.options);
+    lazy.extend(locals.settings, engine.options);
 
     if (typeof engine === 'undefined') {
       throw this.error('compile', 'engine', view);
@@ -603,7 +607,6 @@ utils.delegate(Template.prototype, {
 
     // get the engine
     var engine = this.engine(locals.engine ? locals.engine : view.engine);
-    lazy.extend(locals, engine.options);
 
     if (typeof cb !== 'function') {
       throw this.error('render', 'callback');
@@ -675,8 +678,6 @@ utils.delegate(Template.prototype, {
 
   /**
    * Build the context for the given `view` and `locals`.
-   * This can be overridden by passing a function to the
-   * `mergeContext` option.
    *
    * @name .context
    * @param  {Object} `view` Template object
@@ -695,7 +696,7 @@ utils.delegate(Template.prototype, {
   },
 
   /**
-   * Build the context for the given `view` and `locals`.
+   * Bind context to helpers.
    */
 
   bindHelpers: function (view, locals, context, isAsync) {
@@ -769,7 +770,7 @@ utils.delegate(Template.prototype, {
    */
 
   define: function (key, value) {
-    utils.defineProp(this, key, value);
+    lazy.define(this, key, value);
     return this;
   },
 

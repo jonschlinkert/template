@@ -1,7 +1,5 @@
 'use strict';
 
-// require('time-require');
-
 var path = require('path');
 var util = require('util');
 var lazy = require('lazy-cache')(require);
@@ -472,6 +470,8 @@ utils.delegate(Template.prototype, {
     var name = view.layout;
     var str = view.content;
     var self = this;
+
+    if (!name) return view;
 
     // Handle each layout before it's applied to a view
     function handleLayout(layoutObj) {

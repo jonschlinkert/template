@@ -2,7 +2,7 @@
 
 var fs = require('fs');
 var async = require('async');
-var glob = require('globby');
+var glob = require('matched');
 var App = require('..');
 var app = new App();
 

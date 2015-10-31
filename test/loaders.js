@@ -4,7 +4,7 @@ var fs = require('fs');
 var async = require('async');
 var forIn = require('for-in');
 var path = require('path');
-var glob = require('globby');
+var glob = require('matched');
 var assert = require('assert');
 var should = require('should');
 var globber = require('./support/globber');
@@ -207,7 +207,7 @@ describe('loaders', function () {
 
       app.post('test/fixtures/*.md');
       app.views.posts.should.have.property('a.md');
-      
+
       app.render('a.md', function (err, res) {
         if (err) return done(err);
         done();

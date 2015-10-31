@@ -6,7 +6,7 @@ var path = require('path');
 var extend = require('extend-shallow');
 var assert = require('assert');
 var should = require('should');
-var glob = require('globby');
+var glob = require('matched');
 var App = require('..');
 var app;
 

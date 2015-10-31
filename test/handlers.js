@@ -5,7 +5,7 @@ var fs = require('fs');
 var extend = require('extend-shallow');
 var assert = require('assert');
 var should = require('should');
-var glob = require('globby');
+var glob = require('matched');
 var utils = require('../lib/utils');
 var App = require('..');
 var app;

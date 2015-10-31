@@ -2,7 +2,7 @@
 var fs = require('fs');
 var path = require('path');
 var through = require('through2');
-var glob = require('globby');
+var glob = require('matched');
 var File = require('vinyl');
 var App = require('..');
 var app = new App();

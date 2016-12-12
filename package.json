@@ -55,7 +55,7 @@
     "load-templates": "^0.8.8",
     "loader-cache": "^0.6.1",
     "matched": "^0.3.2",
-    "micromatch": "jonschlinkert/micromatch#2.3.0",
+    "micromatch": "^2.3.11",
     "mixin-object": "^2.0.1",
     "object.omit": "^2.0.0",
     "object.pick": "^1.1.1",
